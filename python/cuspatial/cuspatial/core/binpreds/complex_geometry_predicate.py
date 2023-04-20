@@ -16,6 +16,7 @@ from cuspatial.core.binpreds.binpred_interface import (
 from cuspatial.utils.binpred_utils import (
     _count_results_in_multipoint_geometries,
     _false_series,
+    _true_series,
 )
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
@@ -154,7 +155,9 @@ class ComplexGeometryPredicate(BinPred):
 
         return allpairs_result
 
-    def _postprocess_multi(self, lhs, rhs, preprocessor_result, op_result):
+    def _postprocess_multi(
+        self, lhs, rhs, preprocessor_result, op_result, mode
+    ):
         """Reconstruct the original geometry from the result of the
         contains_properly call.
 
@@ -190,6 +193,30 @@ class ComplexGeometryPredicate(BinPred):
         result_df = hits.reset_index().merge(
             expected_count.reset_index(), on="rhs_index"
         )
+
+        # Handling for the basic predicates
+        if mode == "basic_none":
+            none_result = _true_series(len(rhs))
+            if len(result_df) == 0:
+                return none_result
+            none_result.loc[result_df["point_index_x"] > 0] = False
+            return none_result
+        elif mode == "basic_any":
+            any_result = _false_series(len(rhs))
+            if len(result_df) == 0:
+                return any_result
+            any_result.loc[result_df["point_index_x"] > 0] = True
+            return any_result
+        elif mode == "basic_count":
+            count_result = cudf.Series(cp.zeros(len(rhs)), dtype="int32")
+            if len(result_df) == 0:
+                return count_result
+            count_result.loc[result_df["rhs_index"]] = result_df[
+                "point_index_x"
+            ]
+            return count_result
+
+        # Handling for full contains (equivalent to basic predicate all)
         result_df["feature_in_polygon"] = (
             result_df["point_index_x"] >= result_df["point_index_y"]
         )

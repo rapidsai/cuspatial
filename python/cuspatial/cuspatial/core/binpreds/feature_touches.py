@@ -70,9 +70,12 @@ class LineStringPolygonTouches(BinPred):
     def _preprocess(self, lhs, rhs):
         # Intersection occurs
         intersects = lhs.intersects(rhs)
-        # No points in the lhs are in the rhs
-        contains = rhs.contains_properly(lhs)
-        return intersects & ~contains
+        # The linestring is contained but is not
+        # contained properly, it crosses
+        # This is the equivalent of crosses
+        contains = rhs.contains(lhs)
+        contains_properly = rhs.contains_properly(lhs)
+        return intersects | (~contains & contains_properly)
 
 
 class PolygonPolygonTouches(BinPred):

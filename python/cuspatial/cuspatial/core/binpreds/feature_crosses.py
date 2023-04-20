@@ -45,8 +45,13 @@ class PolygonLineStringCrosses(CrossesByIntersectionPredicate):
 
 class LineStringPolygonCrosses(PolygonLineStringCrosses):
     def _preprocess(self, lhs, rhs):
-        """Note the order of arguments is reversed."""
-        return ~super()._preprocess(rhs, lhs)
+        contains = rhs.contains(lhs)
+        contains_properly = rhs.contains_properly(lhs)
+        intersects = lhs._basic_intersects_through(rhs)
+        breakpoint()
+        return (~contains & contains_properly) | (
+            ~contains & ~contains_properly & intersects
+        )
 
 
 class PointPointCrosses(CrossesPredicateBase):

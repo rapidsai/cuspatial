@@ -190,7 +190,7 @@ class GeoSeries(cudf.Series):
             full_sizes = self.polygons.ring_offset.take(
                 self.polygons.part_offset.take(self.polygons.geometry_offset)
             )
-            return full_sizes[1:] - full_sizes[:-1] - 1
+            return full_sizes[1:] - full_sizes[:-1]
         elif contains_only_linestrings(self):
             # Not supporting multilinestring yet
             full_sizes = self.lines.part_offset.take(
@@ -1401,8 +1401,8 @@ class GeoSeries(cudf.Series):
         rhs = _multipoints_from_geometry(other)
         result = pairwise_multipoint_equals_count(lhs, rhs)
         sizes = (
-            rhs.multipoints.geometry_offset[1:]
-            - rhs.multipoints.geometry_offset[:-1]
+            lhs.multipoints.geometry_offset[1:]
+            - lhs.multipoints.geometry_offset[:-1]
         )
         return result == sizes
 
@@ -1464,8 +1464,7 @@ class GeoSeries(cudf.Series):
         lhs = self
         rhs = _multipoints_from_geometry(other)
         contains = lhs.contains_properly(rhs, mode="basic_count")
-        intersects = lhs._basic_intersects_count(other)
-        return contains + intersects // 2
+        return contains
 
     def _basic_contains_none(self, other):
         """Utility method that returns True if none of the points in the lhs

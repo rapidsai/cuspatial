@@ -6,6 +6,8 @@ import pandas as pd
 import pytest
 from binpred_test_dispatch import predicate, simple_test  # noqa: F401
 
+from cuspatial.utils.column_utils import contains_only_polygons
+
 """Decorator function that xfails a test if an exception is throw
 by the test function. Will be removed when all tests are passing."""
 
@@ -75,6 +77,17 @@ def test_simple_features(
         (lhs, rhs) = simple_test[2], simple_test[3]
         gpdlhs = lhs.to_geopandas()
         gpdrhs = rhs.to_geopandas()
+
+        # Reverse
+        if predicate == "contains" and not contains_only_polygons(rhs):
+            return
+        pred_fn = getattr(rhs, predicate)
+        got = pred_fn(lhs)
+        gpd_pred_fn = getattr(gpdrhs, predicate)
+        expected = gpd_pred_fn(gpdlhs)
+        assert (got.values_host == expected.values).all()
+
+        # Forward
         pred_fn = getattr(lhs, predicate)
         got = pred_fn(rhs)
         gpd_pred_fn = getattr(gpdlhs, predicate)

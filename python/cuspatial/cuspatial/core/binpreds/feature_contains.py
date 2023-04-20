@@ -14,8 +14,8 @@ from cuspatial.utils.binpred_utils import (
     MultiPoint,
     Point,
     Polygon,
-    _multipoints_from_geometry,
 )
+from cuspatial.utils.column_utils import contains_only_points
 
 GeoSeries = TypeVar("GeoSeries")
 
@@ -32,12 +32,15 @@ class ContainsPredicateBase(ComplexGeometryPredicate):
 
     def _compute_predicate(self, lhs, rhs, preprocessor_result):
         contains = lhs._basic_contains_count(rhs).reset_index(drop=True)
-        rhs_points = _multipoints_from_geometry(rhs)
-        intersects = lhs._basic_intersects_count(rhs_points).reset_index(
-            drop=True
-        )
+        # Special case in GeoPandas, points are not contained
+        # in the boundary of a polygon.
+        if contains_only_points(rhs):
+            breakpoint()
+            return contains > 0
+        intersects = lhs._basic_intersects_count(rhs).reset_index(drop=True)
         # TODO: Need better point counting in intersection.
-        return contains + intersects // 2 >= rhs.sizes
+        breakpoint()
+        return contains + intersects >= rhs.sizes
 
 
 class ContainsPredicate(ContainsPredicateBase):

@@ -22,6 +22,11 @@ def _false_series(size):
     return cudf.Series(cp.zeros(size, dtype=cp.bool_))
 
 
+def _true_series(size):
+    """Return a Series of True values"""
+    return cudf.Series(cp.ones(size, dtype=cp.bool_))
+
+
 def _count_results_in_multipoint_geometries(point_indices, point_result):
     """Count the number of points in each multipoint geometry.
 
@@ -161,6 +166,7 @@ def _multipoints_from_polygons(geoseries):
     polygon_offsets = geoseries.polygons.ring_offset.take(
         geoseries.polygons.part_offset.take(geoseries.polygons.geometry_offset)
     )
+    # Drop the endpoint from all polygons
     return cuspatial.GeoSeries.from_multipoints_xy(xy, polygon_offsets)
 
 
