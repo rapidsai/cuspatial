@@ -4,13 +4,7 @@ from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     NotImplementedPredicate,
 )
-from cuspatial.core.binpreds.complex_geometry_predicate import (
-    ComplexGeometryPredicate,
-)
 from cuspatial.core.binpreds.feature_contains import ContainsPredicateBase
-from cuspatial.core.binpreds.feature_contains_properly import (
-    ContainsProperlyPredicate,
-)
 from cuspatial.core.binpreds.feature_equals import EqualsPredicateBase
 from cuspatial.core.binpreds.feature_intersects import IntersectsPredicateBase
 from cuspatial.utils.binpred_utils import (
@@ -59,26 +53,14 @@ class LineStringLineStringWithin(IntersectsPredicateBase):
         return intersects & equals
 
 
-class ComplexPolygonWithin(
-    ContainsProperlyPredicate, ComplexGeometryPredicate
-):
-    """Implements within for complex polygons. Depends on contains result
-    for the types.
-
-    Used by:
-    (MultiPoint, Polygon)
-    (LineString, Polygon)
-    (Polygon, Polygon)
-    """
-
-    def _preprocess(self, lhs, rhs):
-        # Note the order of arguments is reversed.
-        return super()._preprocess(rhs, lhs)
-
-
 class LineStringPolygonWithin(BinPred):
     def _preprocess(self, lhs, rhs):
-        return rhs.contains_properly(rhs)
+        return rhs.contains(rhs)
+
+
+class PolygonPolygonWithin(BinPred):
+    def _preprocess(self, lhs, rhs):
+        return rhs.contains(lhs)
 
 
 DispatchDict = {
@@ -89,7 +71,7 @@ DispatchDict = {
     (MultiPoint, Point): NotImplementedPredicate,
     (MultiPoint, MultiPoint): NotImplementedPredicate,
     (MultiPoint, LineString): WithinIntersectsPredicate,
-    (MultiPoint, Polygon): ComplexPolygonWithin,
+    (MultiPoint, Polygon): PolygonPolygonWithin,
     (LineString, Point): WithinIntersectsPredicate,
     (LineString, MultiPoint): WithinIntersectsPredicate,
     (LineString, LineString): LineStringLineStringWithin,
@@ -97,5 +79,5 @@ DispatchDict = {
     (Polygon, Point): WithinPredicateBase,
     (Polygon, MultiPoint): WithinPredicateBase,
     (Polygon, LineString): WithinPredicateBase,
-    (Polygon, Polygon): ComplexPolygonWithin,
+    (Polygon, Polygon): PolygonPolygonWithin,
 }

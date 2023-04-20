@@ -11,8 +11,6 @@ from cuspatial.utils.binpred_utils import (
     MultiPoint,
     Point,
     Polygon,
-    _linestring_to_boundary,
-    _polygon_to_boundary,
 )
 
 
@@ -59,31 +57,33 @@ class LineStringLineStringTouches(BinPred):
     def _preprocess(self, lhs, rhs):
         """A and B have at least one point in common, and the common points
         lie in at least one boundary"""
-        lhs_boundary = _linestring_to_boundary(lhs)
-        rhs_boundary = _linestring_to_boundary(rhs)
-        point_intersections = lhs._basic_intersects_at_point_only(rhs)
-        boundary_intersects = lhs_boundary._basic_intersects(rhs_boundary)
-        equals = lhs._basic_equals_all(rhs)
-        return point_intersections & boundary_intersects & ~equals
+        # Point is equal
+        equals = lhs._basic_equals(rhs)
+        # Linestrings are not equal
+        equals_all = lhs._basic_equals_all(rhs)
+        # Linestrings do not cross
+        crosses = ~lhs.crosses(rhs)
+        return equals & crosses & ~equals_all
 
 
 class LineStringPolygonTouches(BinPred):
     def _preprocess(self, lhs, rhs):
-        lhs_boundary = _linestring_to_boundary(lhs)
-        rhs_boundary = _polygon_to_boundary(rhs)
-        boundary_intersects = lhs_boundary._basic_intersects(rhs_boundary)
-        interior_contains_any = rhs._basic_contains_any(lhs)
-        return boundary_intersects & ~interior_contains_any
+        # Intersection occurs
+        intersects = lhs.intersects(rhs)
+        # No points in the lhs are in the rhs
+        contains = rhs.contains_properly(lhs)
+        return intersects & ~contains
 
 
 class PolygonPolygonTouches(BinPred):
     def _preprocess(self, lhs, rhs):
-        lhs_boundary = _polygon_to_boundary(lhs)
-        rhs_boundary = _polygon_to_boundary(rhs)
-        boundary_intersects = lhs_boundary._basic_intersects(rhs_boundary)
+        # Intersection occurs
+        intersects = lhs.intersects(rhs)
+        # No points in the lhs are in the rhs
         contains = rhs._basic_contains_any(lhs)
-        # Count results here?
-        return boundary_intersects & ~contains
+        # Not equal
+        equals_all = lhs._basic_equals_all(rhs)
+        return intersects & ~contains & ~equals_all
 
 
 DispatchDict = {

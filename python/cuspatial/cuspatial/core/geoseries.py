@@ -1465,7 +1465,7 @@ class GeoSeries(cudf.Series):
         rhs = _multipoints_from_geometry(other)
         contains = lhs.contains_properly(rhs, mode="basic_count")
         intersects = lhs._basic_intersects_count(other)
-        return contains + intersects
+        return contains + intersects // 2
 
     def _basic_contains_none(self, other):
         """Utility method that returns True if none of the points in the lhs
@@ -1483,7 +1483,6 @@ class GeoSeries(cudf.Series):
         rhs = _multipoints_from_geometry(other)
         contains = lhs.contains_properly(rhs, mode="basic_any")
         intersects = lhs._basic_intersects(other)
-        breakpoint()
         return contains | intersects
 
     def _basic_contains_all(self, other):

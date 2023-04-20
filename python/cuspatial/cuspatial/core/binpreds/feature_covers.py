@@ -47,9 +47,8 @@ class LineStringLineStringCovers(IntersectsPredicateBase):
 
 class PolygonPolygonCovers(ContainsPredicateBase):
     def _preprocess(self, lhs, rhs):
-        contains_none = rhs._basic_contains_none(lhs)
-        equals = rhs._basic_equals(lhs)
-        return contains_none | equals
+        contains = lhs.contains(rhs)
+        return contains
 
 
 DispatchDict = {

@@ -37,7 +37,7 @@ class ContainsPredicateBase(ComplexGeometryPredicate):
             drop=True
         )
         # TODO: Need better point counting in intersection.
-        return contains + intersects >= rhs.sizes
+        return contains + intersects // 2 >= rhs.sizes
 
 
 class ContainsPredicate(ContainsPredicateBase):

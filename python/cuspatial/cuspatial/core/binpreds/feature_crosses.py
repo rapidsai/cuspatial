@@ -38,10 +38,7 @@ class CrossesByIntersectionPredicate(IntersectsPredicateBase):
 class PolygonLineStringCrosses(CrossesByIntersectionPredicate):
     def _compute_predicate(self, lhs, rhs, preprocessor_result):
         intersects_through = lhs._basic_intersects_through(rhs)
-        # intersects_any = lhs._basic_intersects(rhs)
-        # intersects_points = lhs._basic_intersects_points(rhs)
         equals = rhs._basic_equals(lhs)
-        # contains_any = lhs._basic_contains_any(rhs)
         contains_all = lhs._basic_contains_all(rhs)
         return ~contains_all & ~equals & intersects_through
 
@@ -49,17 +46,13 @@ class PolygonLineStringCrosses(CrossesByIntersectionPredicate):
 class LineStringPolygonCrosses(PolygonLineStringCrosses):
     def _preprocess(self, lhs, rhs):
         """Note the order of arguments is reversed."""
-        return super()._preprocess(rhs, lhs)
+        return ~super()._preprocess(rhs, lhs)
 
 
 class PointPointCrosses(CrossesPredicateBase):
     def _preprocess(self, lhs, rhs):
         """Points can't cross other points, so we return False."""
         return _false_series(len(lhs))
-
-
-class PolygonPolygonCrosses(PolygonLineStringCrosses):
-    pass
 
 
 DispatchDict = {
@@ -78,5 +71,5 @@ DispatchDict = {
     (Polygon, Point): CrossesPredicateBase,
     (Polygon, MultiPoint): CrossesPredicateBase,
     (Polygon, LineString): PolygonLineStringCrosses,
-    (Polygon, Polygon): PolygonPolygonCrosses,
+    (Polygon, Polygon): ImpossiblePredicate,
 }
