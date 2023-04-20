@@ -2,7 +2,6 @@
 
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
-    ImpossiblePredicate,
     NotImplementedPredicate,
 )
 from cuspatial.core.binpreds.complex_geometry_predicate import (
@@ -85,7 +84,7 @@ class LineStringPolygonWithin(BinPred):
 
 
 DispatchDict = {
-    (Point, Point): ImpossiblePredicate,
+    (Point, Point): WithinPredicateBase,
     (Point, MultiPoint): WithinIntersectsPredicate,
     (Point, LineString): PointLineStringWithin,
     (Point, Polygon): PointPolygonWithin,
