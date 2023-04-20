@@ -16,7 +16,7 @@ def xfail_on_exception(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            pytest.xfail(f"Xfailling due to an exception: {e}")
+            pytest.xfail(f"Xfailing due to an exception: {e}")
 
     return wrapper
 
