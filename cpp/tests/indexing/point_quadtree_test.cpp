@@ -27,8 +27,7 @@
 #include <cudf_test/table_utilities.hpp>
 #include <cudf_test/type_lists.hpp>
 
-struct QuadtreeOnPointErrorTest : public cudf::test::BaseFixture {
-};
+struct QuadtreeOnPointErrorTest : public cudf::test::BaseFixture {};
 
 TYPED_TEST_CASE(QuadtreeOnPointIndexingTest, cudf::test::FloatingPointTypes);
 

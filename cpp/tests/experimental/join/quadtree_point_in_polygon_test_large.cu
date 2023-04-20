@@ -42,8 +42,7 @@
  */
 
 template <typename T>
-struct PIPRefineTestLarge : public cuspatial::test::BaseFixture {
-};
+struct PIPRefineTestLarge : public cuspatial::test::BaseFixture {};
 
 using TestTypes = ::testing::Types<float, double>;
 
