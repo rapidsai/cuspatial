@@ -212,7 +212,6 @@ class ComplexGeometryPredicate(BinPred):
             if len(result_df) == 0:
                 return count_result
             hits = result_df["point_index_x"]
-            breakpoint()
             hits.index = count_result.iloc[result_df["rhs_index"]].index
             count_result.iloc[result_df["rhs_index"]] = hits
             return count_result

@@ -48,7 +48,6 @@ class LineStringPolygonCrosses(PolygonLineStringCrosses):
         contains = rhs.contains(lhs)
         contains_properly = rhs.contains_properly(lhs)
         intersects = lhs._basic_intersects_through(rhs)
-        breakpoint()
         return (~contains & contains_properly) | (
             ~contains & ~contains_properly & intersects
         )

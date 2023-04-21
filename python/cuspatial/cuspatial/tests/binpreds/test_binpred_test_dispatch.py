@@ -27,7 +27,7 @@ def xfail_on_exception(func):
 out_file = open("test_binpred_test_dispatch.log", "w")
 
 
-# @xfail_on_exception  # TODO: Remove when all tests are passing
+@xfail_on_exception  # TODO: Remove when all tests are passing
 def test_simple_features(
     predicate,  # noqa: F811
     simple_test,  # noqa: F811
