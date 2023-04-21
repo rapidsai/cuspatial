@@ -6,6 +6,7 @@ from shapely.geometry import LineString, MultiPoint, Point, Polygon
 import cuspatial
 from cuspatial.core.binpreds.binpred_dispatch import EQUALS_DISPATCH
 from cuspatial.utils.binpred_utils import (
+    _linestrings_to_center_point,
     _open_polygon_rings,
     _points_and_lines_to_multipoints,
 )
@@ -144,7 +145,8 @@ def test_points_and_lines_to_multipoints():
             MultiPoint([(1, 1), (2, 2)]),
         ]
     )
-    got = _points_and_lines_to_multipoints(mixed)
+    offsets = [0, 1, 2]
+    got = _points_and_lines_to_multipoints(mixed, offsets)
     assert (got.multipoints.xy == expected.multipoints.xy).all()
 
 
@@ -161,7 +163,8 @@ def test_points_and_lines_to_multipoints_reverse():
             MultiPoint([(0, 0)]),
         ]
     )
-    got = _points_and_lines_to_multipoints(mixed)
+    offsets = [0, 1, 2]
+    got = _points_and_lines_to_multipoints(mixed, offsets)
     assert (got.multipoints.xy == expected.multipoints.xy).all()
 
 
@@ -180,7 +183,8 @@ def test_points_and_lines_to_multipoints_two_points_one_linestring():
             MultiPoint([(3, 3)]),
         ]
     )
-    got = _points_and_lines_to_multipoints(mixed)
+    offsets = [0, 1, 2, 3]
+    got = _points_and_lines_to_multipoints(mixed, offsets)
     assert (got.multipoints.xy == expected.multipoints.xy).all()
 
 
@@ -199,7 +203,8 @@ def test_points_and_lines_to_multipoints_two_linestrings_one_point():
             MultiPoint([(3, 3), (4, 4)]),
         ]
     )
-    got = _points_and_lines_to_multipoints(mixed)
+    offsets = [0, 1, 2, 3]
+    got = _points_and_lines_to_multipoints(mixed, offsets)
     assert (got.multipoints.xy == expected.multipoints.xy).all()
 
 
@@ -228,5 +233,107 @@ def test_points_and_lines_to_multipoints_complex():
             MultiPoint([(14, 14)]),
         ]
     )
-    got = _points_and_lines_to_multipoints(mixed)
+    offsets = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    got = _points_and_lines_to_multipoints(mixed, offsets)
     assert (got.multipoints.xy == expected.multipoints.xy).all()
+
+
+def test_points_and_lines_to_multipoints_no_points():
+    mixed = cuspatial.GeoSeries(
+        [
+            LineString([(0, 0), (1, 1), (2, 2), (3, 3)]),
+            LineString([(5, 5), (6, 6)]),
+            LineString([(9, 9), (10, 10), (11, 11)]),
+            LineString([(12, 12), (13, 13)]),
+        ]
+    )
+    expected = cuspatial.GeoSeries(
+        [
+            MultiPoint([(0, 0), (1, 1), (2, 2), (3, 3)]),
+            MultiPoint([(5, 5), (6, 6)]),
+            MultiPoint([(9, 9), (10, 10), (11, 11)]),
+            MultiPoint([(12, 12), (13, 13)]),
+        ]
+    )
+    offsets = [0, 1, 2, 3, 4]
+    got = _points_and_lines_to_multipoints(mixed, offsets)
+    assert (got.multipoints.xy == expected.multipoints.xy).all()
+
+
+def test_points_and_lines_to_multipoints_no_linestrings():
+    mixed = cuspatial.GeoSeries(
+        [
+            Point(0, 0),
+            Point(4, 4),
+            Point(7, 7),
+            Point(8, 8),
+            Point(14, 14),
+        ]
+    )
+    expected = cuspatial.GeoSeries(
+        [
+            MultiPoint([(0, 0)]),
+            MultiPoint([(4, 4)]),
+            MultiPoint([(7, 7)]),
+            MultiPoint([(8, 8)]),
+            MultiPoint([(14, 14)]),
+        ]
+    )
+    offsets = [0, 1, 2, 3, 4, 5]
+    got = _points_and_lines_to_multipoints(mixed, offsets)
+    assert (got.multipoints.xy == expected.multipoints.xy).all()
+
+
+def test_points_and_lines_to_multipoints_real_example():
+    mixed = cuspatial.GeoSeries(
+        [
+            Point(7, 7),
+            Point(4, 4),
+            LineString([(5, 5), (6, 6)]),
+            LineString([(9, 9), (10, 10), (11, 11)]),
+            LineString([(12, 12), (13, 13)]),
+            Point(8, 8),
+            Point(14, 14),
+        ]
+    )
+    expected = cuspatial.GeoSeries(
+        [
+            MultiPoint([(7, 7), (4, 4)]),
+            MultiPoint(
+                [
+                    (5, 5),
+                    (6, 6),
+                    (9, 9),
+                    (10, 10),
+                    (11, 11),
+                    (12, 12),
+                    (13, 13),
+                ]
+            ),
+            MultiPoint([(8, 8), (14, 14)]),
+        ]
+    )
+    offsets = [0, 2, 5, 7]
+    got = _points_and_lines_to_multipoints(mixed, offsets)
+    assert (got.multipoints.xy == expected.multipoints.xy).all()
+
+
+def test_linestrings_to_center_point():
+    linestrings = cuspatial.GeoSeries(
+        [
+            LineString([(0, 0), (10, 10)]),
+            LineString([(5, 5), (6, 6)]),
+            LineString([(10, 10), (9, 9)]),
+            LineString([(11, 11), (1, 1)]),
+        ]
+    )
+    expected = cuspatial.GeoSeries(
+        [
+            Point(5, 5),
+            Point(5.5, 5.5),
+            Point(9.5, 9.5),
+            Point(6, 6),
+        ]
+    )
+    got = _linestrings_to_center_point(linestrings)
+    assert (got.points.xy == expected.points.xy).all()

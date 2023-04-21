@@ -303,7 +303,7 @@ def _open_polygon_rings(geoseries):
     )
 
 
-def _points_and_lines_to_multipoints(geoseries):
+def _points_and_lines_to_multipoints(geoseries, offsets):
     """Converts a geoseries of points and lines into a geoseries of
     multipoints."""
     points_mask = geoseries.type == "Point"
@@ -312,21 +312,50 @@ def _points_and_lines_to_multipoints(geoseries):
         raise ValueError("Geoseries must contain only points and lines")
     points = geoseries[points_mask]
     lines = geoseries[lines_mask]
-    offsets = _zero_series(len(geoseries))
-    offsets[points_mask] = 1
+    points_offsets = _zero_series(len(geoseries))
+    points_offsets[points_mask] = 1
     lines_series = geoseries[lines_mask]
     lines_sizes = lines_series.sizes
-    lines_sizes.index = offsets[lines_mask].index
-    offsets[lines_mask] = lines_series.sizes.values
     xy = _zero_series(len(points.points.xy) + len(lines.lines.xy))
     sizes = _zero_series(len(geoseries))
+    if (lines_sizes != 0).all():
+        lines_sizes.index = points_offsets[lines_mask].index
+        points_offsets[lines_mask] = lines_series.sizes.values
+        sizes[lines_mask] = lines.sizes.values * 2
     sizes[points_mask] = 2
-    sizes[lines_mask] = lines.sizes.values * 2
     # TODO Inevitable host device copy
     points_xy_mask = cp.array(np.repeat(points_mask, sizes.values_host))
     xy.iloc[points_xy_mask] = points.points.xy.reset_index(drop=True)
     xy.iloc[~points_xy_mask] = lines.lines.xy.reset_index(drop=True)
-    breakpoint()
-    return cuspatial.GeoSeries.from_multipoints_xy(
-        xy, cudf.concat([cudf.Series(0), offsets.cumsum()])
+    collected_offsets = cudf.concat(
+        [cudf.Series([0]), sizes.cumsum()]
+    ).reset_index(drop=True)[offsets]
+    result = cuspatial.GeoSeries.from_multipoints_xy(
+        xy, collected_offsets // 2
+    )
+    return result
+
+
+def _linestrings_to_center_point(geoseries):
+    if (geoseries.sizes != 2).any():
+        raise ValueError(
+            "Geoseries must contain only linestrings with two points"
+        )
+    x = geoseries.lines.x
+    y = geoseries.lines.y
+    return cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame(
+            {
+                "x": (
+                    x[::2].reset_index(drop=True)
+                    + x[1::2].reset_index(drop=True)
+                )
+                / 2,
+                "y": (
+                    y[::2].reset_index(drop=True)
+                    + y[1::2].reset_index(drop=True)
+                )
+                / 2,
+            }
+        ).interleave_columns()
     )

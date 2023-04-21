@@ -2,9 +2,6 @@
 
 from typing import TypeVar
 
-import cupy as cp
-import numpy as np
-
 import cudf
 
 from cuspatial.core.binpreds.binpred_interface import (
@@ -19,6 +16,8 @@ from cuspatial.utils.binpred_utils import (
     MultiPoint,
     Point,
     Polygon,
+    _false_series,
+    _linestrings_to_center_point,
     _open_polygon_rings,
     _points_and_lines_to_multipoints,
     _zero_series,
@@ -45,62 +44,19 @@ class ContainsPredicateBase(ComplexGeometryPredicate):
     def _intersection_results_for_contains(self, lhs, rhs):
         pli = lhs._basic_intersects_pli(rhs)
         pli_features = pli[1]
+        if len(pli_features) == 0:
+            return _zero_series(len(lhs))
+
         pli_offsets = cudf.Series(pli[0])
-        # Which feature goes with which offset?
-        pli_sizes = pli_offsets[1:].reset_index(drop=True) - pli_offsets[
-            :-1
-        ].reset_index(drop=True)
-        # Have to use host to create the offsets mapping
-        pli_mapping = cp.array(
-            np.arange(len(lhs)).repeat(pli_sizes.values_host)
+
+        multipoints = _points_and_lines_to_multipoints(
+            pli_features, pli_offsets
         )
 
-        # This mapping identifies which intersect feature belongs to which
-        # intersection.
+        intersect_equals_count = multipoints._basic_equals_count(rhs)
 
-        points_mask = pli_features.type == "Point"
-        lines_mask = pli_features.type == "Linestring"
-
-        points = pli_features[points_mask]
-        lines = pli_features[lines_mask]
-
-        final_intersection_count = _zero_series(len(lhs))
-        from cuspatial.core.geoseries import GeoSeries
-
-        #  Write a new method, _points_and_lines_to_multipoints that condenses
-        # The result into a single multipoint that can be worked with.
-        multipoints = _points_and_lines_to_multipoints(pli_features)
-
-        if len(lines) > 0:
-            # This is wrong. If a linestring is in a single intersection,
-            # it will tile out to all of the features. It needs to be
-            # compared only against the matching feature. pli_mapping
-            # determines which features match which intersections.
-
-            multipoints = GeoSeries.from_multipoints_xy(
-                lines.lines.xy, pli_offsets * 2
-            )
-            lines_intersect_equals_count = multipoints._basic_equals_count(rhs)
-            final_intersection_count.iloc[
-                pli_mapping[lines_mask]
-            ] = lines_intersect_equals_count[pli_mapping[lines_mask]]
-            breakpoint()
-        if len(points) > 0:
-            # Each point falls on the edge of the polygon and is in the
-            # boundary.
-            multipoints = GeoSeries.from_multipoints_xy(
-                points.points.xy.tile(len(lhs)),
-                cp.arange(len(lhs) + 1) * len(points),
-            )
-            points_intersect_equals_count = multipoints._basic_equals_count(
-                rhs
-            ) // len(lhs)
-            final_intersection_count.iloc[
-                pli_mapping[points_mask]
-            ] = points_intersect_equals_count[pli_mapping[points_mask]]
-            breakpoint()
-        # TODO Have to use .iloc here because of a bug in cudf
-        return final_intersection_count
+        breakpoint()
+        return intersect_equals_count
 
     def _compute_polygon_polygon_contains(self, lhs, rhs, preprocessor_result):
         lines_rhs = _open_polygon_rings(rhs)
@@ -114,11 +70,29 @@ class ContainsPredicateBase(ComplexGeometryPredicate):
         self, lhs, rhs, preprocessor_result
     ):
         contains = lhs._basic_contains_count(rhs).reset_index(drop=True)
-        if (contains == 0).all():
-            # If a linestring only intersects with the boundary of a polygon,
-            # it is not contained.
-            return rhs.sizes == 2
         intersects = self._intersection_results_for_contains(lhs, rhs)
+        if (contains == 0).all() and (intersects != 0).all():
+            # The hardest case. We need to check if the linestring is
+            # contained in the boundary of the polygon, the interior,
+            # or the exterior.
+            # We only need to test linestrings that are length 2.
+            # Divide the linestring in half and test the point for containment
+            # in the polygon.
+
+            breakpoint()
+            if (rhs.sizes == 2).any():
+                center_points = _linestrings_to_center_point(
+                    rhs[rhs.sizes == 2]
+                )
+                size_two_results = _false_series(len(lhs))
+                size_two_results[rhs.sizes == 2] = (
+                    lhs._basic_contains_count(center_points) > 0
+                )
+                return size_two_results
+            else:
+                line_intersections = _false_series(len(lhs))
+                line_intersections[intersects == rhs.sizes] = True
+                return line_intersections
         return contains + intersects >= rhs.sizes
 
     def _compute_predicate(self, lhs, rhs, preprocessor_result):
