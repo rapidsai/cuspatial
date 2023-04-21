@@ -1,6 +1,7 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
 import cupy as cp
+import numpy as np
 
 import cudf
 
@@ -25,6 +26,16 @@ def _false_series(size):
 def _true_series(size):
     """Return a Series of True values"""
     return cudf.Series(cp.ones(size, dtype=cp.bool_))
+
+
+def _zero_series(size):
+    """Return a Series of zeros"""
+    return cudf.Series(cp.zeros(size, dtype=cp.int32))
+
+
+def _one_series(size):
+    """Return a Series of ones"""
+    return cudf.Series(cp.ones(size, dtype=cp.int32))
 
 
 def _count_results_in_multipoint_geometries(point_indices, point_result):
@@ -134,7 +145,7 @@ def _linestrings_from_geometry(geoseries):
     elif geoseries.column_type == ColumnType.LINESTRING:
         return geoseries
     elif geoseries.column_type == ColumnType.POLYGON:
-        return _linestrings_from_polygons(geoseries)
+        return _open_polygon_rings(geoseries)
     else:
         raise NotImplementedError(
             "Cannot convert type {} to linestrings".format(geoseries.type)
@@ -267,3 +278,55 @@ def _is_complex(geoseries):
     if len(geoseries.multipoints.xy) > 0:
         return True
     return False
+
+
+def _open_polygon_rings(geoseries):
+    """Converts a geoseries of polygons into a geoseries of linestrings
+    by opening the rings of each polygon."""
+    x = geoseries.polygons.x
+    y = geoseries.polygons.y
+    parts = geoseries.polygons.part_offset.take(
+        geoseries.polygons.geometry_offset
+    )
+    rings_mask = geoseries.polygons.ring_offset - 1
+    rings_mask[0] = 0
+    mask = _true_series(len(x))
+    mask[rings_mask[1:]] = False
+    x = x[mask]
+    y = y[mask]
+    xy = cudf.DataFrame({"x": x, "y": y}).interleave_columns()
+    rings = geoseries.polygons.ring_offset - cp.arange(len(rings_mask))
+    return cuspatial.GeoSeries.from_linestrings_xy(
+        xy,
+        rings,
+        parts,
+    )
+
+
+def _points_and_lines_to_multipoints(geoseries):
+    """Converts a geoseries of points and lines into a geoseries of
+    multipoints."""
+    points_mask = geoseries.type == "Point"
+    lines_mask = geoseries.type == "Linestring"
+    if (points_mask + lines_mask).sum() != len(geoseries):
+        raise ValueError("Geoseries must contain only points and lines")
+    points = geoseries[points_mask]
+    lines = geoseries[lines_mask]
+    offsets = _zero_series(len(geoseries))
+    offsets[points_mask] = 1
+    lines_series = geoseries[lines_mask]
+    lines_sizes = lines_series.sizes
+    lines_sizes.index = offsets[lines_mask].index
+    offsets[lines_mask] = lines_series.sizes.values
+    xy = _zero_series(len(points.points.xy) + len(lines.lines.xy))
+    sizes = _zero_series(len(geoseries))
+    sizes[points_mask] = 2
+    sizes[lines_mask] = lines.sizes.values * 2
+    # TODO Inevitable host device copy
+    points_xy_mask = cp.array(np.repeat(points_mask, sizes.values_host))
+    xy.iloc[points_xy_mask] = points.points.xy.reset_index(drop=True)
+    xy.iloc[~points_xy_mask] = lines.lines.xy.reset_index(drop=True)
+    breakpoint()
+    return cuspatial.GeoSeries.from_multipoints_xy(
+        xy, cudf.concat([cudf.Series(0), offsets.cumsum()])
+    )

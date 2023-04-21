@@ -211,9 +211,10 @@ class ComplexGeometryPredicate(BinPred):
             count_result = cudf.Series(cp.zeros(len(rhs)), dtype="int32")
             if len(result_df) == 0:
                 return count_result
-            count_result.loc[result_df["rhs_index"]] = result_df[
-                "point_index_x"
-            ]
+            hits = result_df["point_index_x"]
+            breakpoint()
+            hits.index = count_result.iloc[result_df["rhs_index"]].index
+            count_result.iloc[result_df["rhs_index"]] = hits
             return count_result
 
         # Handling for full contains (equivalent to basic predicate all)

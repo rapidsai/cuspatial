@@ -190,20 +190,20 @@ class GeoSeries(cudf.Series):
             full_sizes = self.polygons.ring_offset.take(
                 self.polygons.part_offset.take(self.polygons.geometry_offset)
             )
-            return full_sizes[1:] - full_sizes[:-1]
+            return cudf.Series(full_sizes[1:] - full_sizes[:-1])
         elif contains_only_linestrings(self):
             # Not supporting multilinestring yet
             full_sizes = self.lines.part_offset.take(
                 self.lines.geometry_offset
             )
-            return full_sizes[1:] - full_sizes[:-1]
+            return cudf.Series(full_sizes[1:] - full_sizes[:-1])
         elif contains_only_multipoints(self):
             return (
                 self.multipoints.geometry_offset[1:]
                 - self.multipoints.geometry_offset[:-1]
             )
         elif contains_only_points(self):
-            return cp.repeat(cp.array(1), len(self))
+            return cudf.Series(cp.repeat(cp.array(1), len(self)))
         else:
             if len(self) == 0:
                 return cudf.Series([0], dtype="int32")
@@ -370,7 +370,7 @@ class GeoSeries(cudf.Series):
                     "map": self._sr.index,
                     "idx": cp.arange(len(self._sr.index))
                     if not isinstance(item, Integral)
-                    else 0,
+                    else item,
                 }
             )
             index_df = cudf.DataFrame({"map": item}).reset_index()
