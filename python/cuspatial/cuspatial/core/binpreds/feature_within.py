@@ -55,7 +55,7 @@ class LineStringLineStringWithin(IntersectsPredicateBase):
 
 class LineStringPolygonWithin(BinPred):
     def _preprocess(self, lhs, rhs):
-        return rhs.contains(rhs)
+        return rhs.contains(lhs)
 
 
 class PolygonPolygonWithin(BinPred):
