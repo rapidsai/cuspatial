@@ -34,7 +34,7 @@ namespace cuspatial {
  * @return Column of distances between each pair of input geometries, same type as input coordinate
  * types.
  *
- * @throw cuspatial::logic_error if `multilinestrings` and `multipolygons` has different coordinate
+ * @throw cuspatial::logic_error if `multilinestrings` and `multipolygons` have different coordinate
  * types.
  * @throw cuspatial::logic_error if `multilinestrings` is not a linestring column and
  * `multipolygons` is not a polygon column.
