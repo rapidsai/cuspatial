@@ -366,12 +366,7 @@ class GeoSeries(cudf.Series):
                 return self._sr.iloc[item]
 
             map_df = cudf.DataFrame(
-                {
-                    "map": self._sr.index,
-                    "idx": cp.arange(len(self._sr.index))
-                    if not isinstance(item, Integral)
-                    else item,
-                }
+                {"map": self._sr.index, "idx": cp.arange(len(self._sr.index))}
             )
             index_df = cudf.DataFrame({"map": item}).reset_index()
             new_index = index_df.merge(
@@ -403,8 +398,8 @@ class GeoSeries(cudf.Series):
 
         def __getitem__(self, indexes):
             # Slice the types and offsets
-            union_offsets = self._sr._column._meta.union_offsets.loc[indexes]
-            union_types = self._sr._column._meta.input_types.loc[indexes]
+            union_offsets = self._sr._column._meta.union_offsets.iloc[indexes]
+            union_types = self._sr._column._meta.input_types.iloc[indexes]
 
             points = self._sr._column.points
             mpoints = self._sr._column.mpoints

@@ -29,7 +29,9 @@ def test_adjacent():
 
 
 def test_interior():
-    lhs = cuspatial.GeoSeries([Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])])
+    lhs = cuspatial.GeoSeries(
+        [Polygon([(0, 0), (0, 1), (1, 1), (1, 0), (0, 0)])]
+    )
     rhs = cuspatial.GeoSeries(
         [Polygon([(0, 0), (0, 0.5), (0.5, 0.5), (0.5, 0)])]
     )

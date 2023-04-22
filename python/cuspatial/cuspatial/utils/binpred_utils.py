@@ -145,7 +145,7 @@ def _linestrings_from_geometry(geoseries):
     elif geoseries.column_type == ColumnType.LINESTRING:
         return geoseries
     elif geoseries.column_type == ColumnType.POLYGON:
-        return _open_polygon_rings(geoseries)
+        return _linestrings_from_polygons(geoseries)
     else:
         raise NotImplementedError(
             "Cannot convert type {} to linestrings".format(geoseries.type)

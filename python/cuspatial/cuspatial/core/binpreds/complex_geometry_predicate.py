@@ -205,7 +205,8 @@ class ComplexGeometryPredicate(BinPred):
             any_result = _false_series(len(rhs))
             if len(result_df) == 0:
                 return any_result
-            any_result.loc[result_df["point_index_x"] > 0] = True
+            indexes = result_df["rhs_index"][result_df["point_index_x"] > 0]
+            any_result.iloc[indexes] = True
             return any_result
         elif mode == "basic_count":
             count_result = cudf.Series(cp.zeros(len(rhs)), dtype="int32")
@@ -231,6 +232,9 @@ class ComplexGeometryPredicate(BinPred):
         contains_properly call. Used when the rhs is naturally points.
         """
         allpairs_result = self._reindex_allpairs(lhs, op_result)
+        if self.config.allpairs:
+            return allpairs_result
+
         final_result = _false_series(len(rhs))
         if len(lhs) == len(rhs):
             matches = (

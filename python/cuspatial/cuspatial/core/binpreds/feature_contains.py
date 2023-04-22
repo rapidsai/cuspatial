@@ -54,7 +54,7 @@ class ContainsPredicateBase(ComplexGeometryPredicate):
         )
 
         intersect_equals_count = multipoints._basic_equals_count(rhs)
-
+        breakpoint()
         return intersect_equals_count
 
     def _compute_polygon_polygon_contains(self, lhs, rhs, preprocessor_result):
@@ -62,6 +62,7 @@ class ContainsPredicateBase(ComplexGeometryPredicate):
         contains = lhs._basic_contains_count(lines_rhs).reset_index(drop=True)
         intersects = self._intersection_results_for_contains(lhs, lines_rhs)
         polygon_size_reduction = 1
+        breakpoint()
         return contains + intersects >= rhs.sizes - polygon_size_reduction
 
     def _compute_polygon_linestring_contains(
