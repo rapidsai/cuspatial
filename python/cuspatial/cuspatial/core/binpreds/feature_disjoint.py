@@ -26,12 +26,7 @@ class DisjointByWayOfContains(BinPred):
         (Point, Polygon)
         (Polygon, Point)
         """
-        from cuspatial.core.binpreds.binpred_dispatch import CONTAINS_DISPATCH
-
-        predicate = CONTAINS_DISPATCH[(lhs.column_type, rhs.column_type)](
-            align=self.config.align
-        )
-        return ~predicate(lhs, rhs)
+        return ~lhs._basic_contains_any(rhs)
 
 
 class PointLineStringDisjoint(PointLineStringIntersects):
@@ -72,9 +67,7 @@ class LineStringPolygonDisjoint(BinPred):
 
 class PolygonPolygonDisjoint(BinPred):
     def _preprocess(self, lhs, rhs):
-        intersects = lhs._basic_intersects(rhs)
-        contains = rhs._basic_contains_any(lhs)
-        return ~intersects & ~contains
+        return ~lhs._basic_contains_any(rhs) & ~rhs._basic_contains_any(lhs)
 
 
 DispatchDict = {
@@ -92,6 +85,6 @@ DispatchDict = {
     (LineString, Polygon): LineStringPolygonDisjoint,
     (Polygon, Point): DisjointByWayOfContains,
     (Polygon, MultiPoint): NotImplementedPredicate,
-    (Polygon, LineString): NotImplementedPredicate,
+    (Polygon, LineString): DisjointByWayOfContains,
     (Polygon, Polygon): PolygonPolygonDisjoint,
 }

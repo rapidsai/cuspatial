@@ -155,11 +155,20 @@ class LineStringPolygonIntersects(IntersectsPredicateBase):
         return intersects | contains
 
 
+class PolygonLineStringIntersects(BinPred):
+    def _preprocess(self, lhs, rhs):
+        intersects = lhs._basic_intersects(rhs)
+        contains = lhs._basic_contains_any(rhs)
+        return intersects | contains
+
+
 class PolygonPolygonIntersects(IntersectsPredicateBase):
     def _preprocess(self, lhs, rhs):
         intersects = lhs._basic_intersects(rhs)
-        contains = rhs._basic_contains_any(lhs)
-        return intersects | contains
+        contains_rhs = rhs._basic_contains_any(lhs)
+        contains_lhs = lhs._basic_contains_any(rhs)
+
+        return intersects | contains_rhs | contains_lhs
 
 
 """ Type dispatch dictionary for intersects binary predicates. """
@@ -178,6 +187,6 @@ DispatchDict = {
     (LineString, Polygon): LineStringPolygonIntersects,
     (Polygon, Point): PolygonPointIntersects,
     (Polygon, MultiPoint): NotImplementedPredicate,
-    (Polygon, LineString): NotImplementedPredicate,
+    (Polygon, LineString): PolygonLineStringIntersects,
     (Polygon, Polygon): PolygonPolygonIntersects,
 }

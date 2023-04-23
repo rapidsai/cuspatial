@@ -1,6 +1,7 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
 from cuspatial.core.binpreds.binpred_interface import (
+    BinPred,
     ImpossiblePredicate,
     NotImplementedPredicate,
 )
@@ -45,6 +46,16 @@ class LineStringLineStringCovers(IntersectsPredicateBase):
         return rhs._basic_equals_all(lhs)
 
 
+class PolygonPointCovers(BinPred):
+    def _preprocess(self, lhs, rhs):
+        return lhs._basic_contains_any(rhs)
+
+
+class PolygonLineStringCovers(BinPred):
+    def _preprocess(self, lhs, rhs):
+        return lhs._basic_contains_all(rhs)
+
+
 class PolygonPolygonCovers(ContainsPredicateBase):
     def _preprocess(self, lhs, rhs):
         contains = lhs.contains(rhs)
@@ -55,7 +66,7 @@ DispatchDict = {
     (Point, Point): CoversPredicateBase,
     (Point, MultiPoint): NotImplementedPredicate,
     (Point, LineString): ImpossiblePredicate,
-    (Point, Polygon): CoversPredicateBase,
+    (Point, Polygon): ImpossiblePredicate,
     (MultiPoint, Point): NotImplementedPredicate,
     (MultiPoint, MultiPoint): NotImplementedPredicate,
     (MultiPoint, LineString): NotImplementedPredicate,
@@ -64,8 +75,8 @@ DispatchDict = {
     (LineString, MultiPoint): NotImplementedPredicate,
     (LineString, LineString): LineStringLineStringCovers,
     (LineString, Polygon): CoversPredicateBase,
-    (Polygon, Point): CoversPredicateBase,
+    (Polygon, Point): PolygonPointCovers,
     (Polygon, MultiPoint): CoversPredicateBase,
-    (Polygon, LineString): CoversPredicateBase,
+    (Polygon, LineString): PolygonLineStringCovers,
     (Polygon, Polygon): PolygonPolygonCovers,
 }

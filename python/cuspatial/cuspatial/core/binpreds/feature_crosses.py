@@ -1,6 +1,9 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
-from cuspatial.core.binpreds.binpred_interface import ImpossiblePredicate
+from cuspatial.core.binpreds.binpred_interface import (
+    BinPred,
+    ImpossiblePredicate,
+)
 from cuspatial.core.binpreds.feature_equals import EqualsPredicateBase
 from cuspatial.core.binpreds.feature_intersects import IntersectsPredicateBase
 from cuspatial.utils.binpred_utils import (
@@ -35,22 +38,15 @@ class CrossesByIntersectionPredicate(IntersectsPredicateBase):
         return intersects & ~equals
 
 
-class PolygonLineStringCrosses(CrossesByIntersectionPredicate):
-    def _compute_predicate(self, lhs, rhs, preprocessor_result):
-        intersects_through = lhs._basic_intersects_through(rhs)
-        equals = rhs._basic_equals(lhs)
-        contains_all = lhs._basic_contains_all(rhs)
-        return ~contains_all & ~equals & intersects_through
-
-
-class LineStringPolygonCrosses(PolygonLineStringCrosses):
+class PolygonLineStringCrosses(BinPred):
     def _preprocess(self, lhs, rhs):
-        contains = rhs.contains(lhs)
-        contains_properly = rhs.contains_properly(lhs)
-        intersects = lhs._basic_intersects_through(rhs)
-        return (~contains & contains_properly) | (
-            ~contains & ~contains_properly & intersects
-        )
+        breakpoint()
+        return lhs._basic_contains_none(rhs)
+
+
+class LineStringPolygonCrosses(BinPred):
+    def _preprocess(self, lhs, rhs):
+        return ~rhs._basic_contains_any(lhs)
 
 
 class PointPointCrosses(CrossesPredicateBase):

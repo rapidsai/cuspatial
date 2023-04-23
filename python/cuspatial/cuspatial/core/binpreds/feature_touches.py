@@ -3,7 +3,6 @@
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     ImpossiblePredicate,
-    PreprocessorResult,
 )
 from cuspatial.core.binpreds.feature_contains import ContainsPredicateBase
 from cuspatial.utils.binpred_utils import (
@@ -28,16 +27,9 @@ class TouchesPredicateBase(ContainsPredicateBase):
     (Polygon, Polygon)
     """
 
-    def _compute_predicate(
-        self,
-        lhs,
-        rhs,
-        preprocessor_result: PreprocessorResult,
-    ):
-        # contains = lhs._basic_contains_any(rhs)
+    def _preprocess(self, lhs, rhs):
         equals = lhs._basic_equals(rhs)
-        intersects = lhs._basic_intersects(rhs)
-        return equals | intersects
+        return equals
 
 
 class PointLineStringTouches(BinPred):
@@ -68,25 +60,32 @@ class LineStringLineStringTouches(BinPred):
 
 class LineStringPolygonTouches(BinPred):
     def _preprocess(self, lhs, rhs):
+        intersects = lhs._basic_intersects_count(rhs) == 1
+        contains_none = ~lhs.contains_properly(rhs)
+        return intersects & contains_none
+
+
+class PolygonPointTouches(BinPred):
+    def _preprocess(self, lhs, rhs):
+        intersects = lhs._basic_intersects(rhs)
+        return intersects
+
+
+class PolygonLineStringTouches(BinPred):
+    def _preprocess(self, lhs, rhs):
         # Intersection occurs
-        intersects = lhs.intersects(rhs)
-        # The linestring is contained but is not
-        # contained properly, it crosses
-        # This is the equivalent of crosses
-        contains = rhs.contains(lhs)
-        contains_properly = rhs.contains_properly(lhs)
-        return intersects | (~contains & contains_properly)
+        intersects = lhs._basic_intersects_count(rhs) == 1
+        contains_none = ~lhs.contains_properly(rhs)
+        return intersects & contains_none
 
 
 class PolygonPolygonTouches(BinPred):
     def _preprocess(self, lhs, rhs):
-        # Intersection occurs
-        intersects = lhs.intersects(rhs)
-        # No points in the lhs are in the rhs
-        contains = rhs._basic_contains_any(lhs)
-        # Not equal
-        equals_all = lhs._basic_equals_all(rhs)
-        return intersects & ~contains & ~equals_all
+        contains_lhs_none = lhs._basic_contains_count(rhs) == 0
+        contains_rhs_none = rhs._basic_contains_count(lhs) == 0
+        intersects = lhs._basic_intersects_count(rhs) == 1
+        breakpoint()
+        return contains_lhs_none & contains_rhs_none & intersects
 
 
 DispatchDict = {
@@ -102,8 +101,8 @@ DispatchDict = {
     (LineString, MultiPoint): TouchesPredicateBase,
     (LineString, LineString): LineStringLineStringTouches,
     (LineString, Polygon): LineStringPolygonTouches,
-    (Polygon, Point): TouchesPredicateBase,
+    (Polygon, Point): PolygonPointTouches,
     (Polygon, MultiPoint): TouchesPredicateBase,
-    (Polygon, LineString): TouchesPredicateBase,
+    (Polygon, LineString): PolygonLineStringTouches,
     (Polygon, Polygon): PolygonPolygonTouches,
 }
