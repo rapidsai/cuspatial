@@ -38,15 +38,18 @@ class CrossesByIntersectionPredicate(IntersectsPredicateBase):
         return intersects & ~equals
 
 
-class PolygonLineStringCrosses(BinPred):
-    def _preprocess(self, lhs, rhs):
-        breakpoint()
-        return lhs._basic_contains_none(rhs)
-
-
 class LineStringPolygonCrosses(BinPred):
     def _preprocess(self, lhs, rhs):
-        return ~rhs._basic_contains_any(lhs)
+        contains = rhs.contains(lhs)
+        contains_any = rhs._basic_contains_any(lhs)
+        return ~contains & contains_any
+
+
+class PolygonLineStringCrosses(BinPred):
+    def _preprocess(self, lhs, rhs):
+        contains = lhs.contains(rhs)
+        contains_any = lhs._basic_contains_any(rhs)
+        return ~contains & contains_any
 
 
 class PointPointCrosses(CrossesPredicateBase):

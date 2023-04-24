@@ -1485,5 +1485,6 @@ class GeoSeries(cudf.Series):
         `.contains_properly call."""
         lhs = self
         rhs = _multipoints_from_geometry(other)
+        breakpoint()
         contains = lhs.contains(rhs, mode="basic_all")
         return contains

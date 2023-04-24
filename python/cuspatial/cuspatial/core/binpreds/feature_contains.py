@@ -5,6 +5,7 @@ from typing import TypeVar
 import cudf
 
 from cuspatial.core.binpreds.binpred_interface import (
+    BinPred,
     ImpossiblePredicate,
     NotImplementedPredicate,
 )
@@ -121,6 +122,13 @@ class PointPointContains(ContainsPredicateBase):
         return lhs._basic_equals(rhs)
 
 
+class LineStringPointContains(BinPred):
+    def _preprocess(self, lhs, rhs):
+        intersects = lhs._basic_intersects(rhs)
+        equals = lhs._basic_equals(rhs)
+        return intersects & ~equals
+
+
 class LineStringMultiPointContainsPredicate(ContainsPredicateBase):
     def _compute_results(self, lhs, rhs, preprocessor_result):
         return lhs._linestring_multipoint_contains(rhs)
@@ -143,7 +151,7 @@ DispatchDict = {
     (MultiPoint, MultiPoint): NotImplementedPredicate,
     (MultiPoint, LineString): NotImplementedPredicate,
     (MultiPoint, Polygon): NotImplementedPredicate,
-    (LineString, Point): ContainsPredicateBase,
+    (LineString, Point): LineStringPointContains,
     (LineString, MultiPoint): LineStringMultiPointContainsPredicate,
     (LineString, LineString): LineStringLineStringContainsPredicate,
     (LineString, Polygon): ImpossiblePredicate,

@@ -2,11 +2,10 @@
 
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
+    ImpossiblePredicate,
     NotImplementedPredicate,
 )
-from cuspatial.core.binpreds.feature_contains import ContainsPredicateBase
 from cuspatial.core.binpreds.feature_equals import EqualsPredicateBase
-from cuspatial.core.binpreds.feature_intersects import IntersectsPredicateBase
 from cuspatial.utils.binpred_utils import (
     LineString,
     MultiPoint,
@@ -28,26 +27,27 @@ class WithinPredicateBase(EqualsPredicateBase):
     pass
 
 
-class WithinIntersectsPredicate(IntersectsPredicateBase):
+class WithinIntersectsPredicate(BinPred):
     def _preprocess(self, lhs, rhs):
         intersects = rhs._basic_intersects(lhs)
         equals = rhs._basic_equals(lhs)
         return intersects & ~equals
 
 
-class PointLineStringWithin(WithinIntersectsPredicate):
+class PointLineStringWithin(BinPred):
     def _preprocess(self, lhs, rhs):
-        # Note the order of arguments is reversed.
-        return super()._preprocess(rhs, lhs)
+        intersects = lhs.intersects(rhs)
+        equals = lhs._basic_equals(rhs)
+        return intersects & ~equals
 
 
-class PointPolygonWithin(ContainsPredicateBase):
+class PointPolygonWithin(BinPred):
     def _preprocess(self, lhs, rhs):
         return rhs.contains_properly(lhs)
 
 
-class LineStringLineStringWithin(IntersectsPredicateBase):
-    def _compute_predicate(self, lhs, rhs, preprocessor_result):
+class LineStringLineStringWithin(BinPred):
+    def _preprocess(self, lhs, rhs):
         intersects = rhs._basic_intersects(lhs)
         equals = rhs._basic_equals_all(lhs)
         return intersects & equals
@@ -72,7 +72,7 @@ DispatchDict = {
     (MultiPoint, MultiPoint): NotImplementedPredicate,
     (MultiPoint, LineString): WithinIntersectsPredicate,
     (MultiPoint, Polygon): PolygonPolygonWithin,
-    (LineString, Point): WithinIntersectsPredicate,
+    (LineString, Point): ImpossiblePredicate,
     (LineString, MultiPoint): WithinIntersectsPredicate,
     (LineString, LineString): LineStringLineStringWithin,
     (LineString, Polygon): LineStringPolygonWithin,

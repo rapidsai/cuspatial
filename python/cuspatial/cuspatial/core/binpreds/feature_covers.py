@@ -53,8 +53,7 @@ class PolygonPointCovers(BinPred):
 
 class PolygonLineStringCovers(BinPred):
     def _preprocess(self, lhs, rhs):
-        contains = lhs.contains(rhs)
-        return contains
+        return lhs._basic_contains_all(rhs)
 
 
 class PolygonPolygonCovers(ContainsPredicateBase):

@@ -84,7 +84,6 @@ class PolygonPolygonTouches(BinPred):
         contains_lhs_none = lhs._basic_contains_count(rhs) == 0
         contains_rhs_none = rhs._basic_contains_count(lhs) == 0
         intersects = lhs._basic_intersects_count(rhs) == 1
-        breakpoint()
         return contains_lhs_none & contains_rhs_none & intersects
 
 
