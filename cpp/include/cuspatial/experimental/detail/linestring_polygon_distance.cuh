@@ -101,8 +101,6 @@ pairwise_linestring_polygon_distance_kernel(MultiLinestringRange multilinestring
     auto [a, b] = multilinestrings.segment_begin()[multilinestring_segment_id];
     auto [c, d] = multipolygons.segment_begin()[multipolygon_segment_id];
 
-    auto distance = sqrt(squared_segment_distance(a, b, c, d));
-
     atomicMin(&distances[geometry_id], sqrt(squared_segment_distance(a, b, c, d)));
   }
 };
