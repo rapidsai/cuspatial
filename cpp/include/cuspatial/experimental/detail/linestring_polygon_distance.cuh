@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <cuspatial_test/test_util.cuh>
-
 #include "distance_utils.cuh"
 
 #include <cuspatial/cuda_utils.hpp>
@@ -85,13 +83,6 @@ pairwise_linestring_polygon_distance_kernel(MultiLinestringRange multilinestring
     auto geometry_id = thrust::distance(thread_bounds.begin(), it);
     auto local_idx   = idx - *it;
 
-    // if (geometry_id == 0)
-    //   printf("idx: %d, geometry_id: %d, intersects?: %d, local_idx: %d\n",
-    //          static_cast<int>(idx),
-    //          static_cast<int>(geometry_id),
-    //          static_cast<int>(intersects[geometry_id]),
-    //          static_cast<int>(local_idx));
-
     if (intersects[geometry_id]) {
       distances[geometry_id] = 0.0f;
       continue;
@@ -107,28 +98,10 @@ pairwise_linestring_polygon_distance_kernel(MultiLinestringRange multilinestring
     auto multipolygon_segment_id =
       local_idx / num_segment_this_multilinestring + multipolygons_segment_offsets[geometry_id];
 
-    // if (geometry_id == 0)
-    //   printf(
-    //     "multilinestring_segment_id: %d, "
-    //     "multipolygon_segment_id: %d\n",
-    //     static_cast<int>(multilinestring_segment_id),
-    //     static_cast<int>(multipolygon_segment_id));
-
     auto [a, b] = multilinestrings.segment_begin()[multilinestring_segment_id];
     auto [c, d] = multipolygons.segment_begin()[multipolygon_segment_id];
 
     auto distance = sqrt(squared_segment_distance(a, b, c, d));
-    // if (geometry_id == 0)
-    //   printf("ab: (%f, %f) -> (%f, %f), cd: (%f, %f) -> (%f, %f), dist: %f\n",
-    //          static_cast<float>(a.x),
-    //          static_cast<float>(a.y),
-    //          static_cast<float>(b.x),
-    //          static_cast<float>(b.y),
-    //          static_cast<float>(c.x),
-    //          static_cast<float>(c.y),
-    //          static_cast<float>(d.x),
-    //          static_cast<float>(d.y),
-    //          static_cast<float>(distance));
 
     atomicMin(&distances[geometry_id], sqrt(squared_segment_distance(a, b, c, d)));
   }
