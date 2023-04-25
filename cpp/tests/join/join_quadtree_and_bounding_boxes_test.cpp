@@ -29,8 +29,7 @@
 #include <cudf_test/type_lists.hpp>
 
 template <typename T>
-struct JoinQuadtreeAndBoundingBoxesErrorTest : public cudf::test::BaseFixture {
-};
+struct JoinQuadtreeAndBoundingBoxesErrorTest : public cudf::test::BaseFixture {};
 
 TYPED_TEST_CASE(JoinQuadtreeAndBoundingBoxesErrorTest, cudf::test::FloatingPointTypes);
 

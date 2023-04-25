@@ -90,6 +90,9 @@ ConfigureTest(LINESTRING_DISTANCE_TEST
 ConfigureTest(POINT_POLYGON_DISTANCE_TEST
     spatial/point_polygon_distance_test.cpp)
 
+ConfigureTest(LINESTRING_POLYGON_DISTANCE_TEST
+    spatial/linestring_polygon_distance_test.cpp)
+
 ConfigureTest(LINESTRING_INTERSECTION_TEST
     spatial/linestring_intersection_test.cpp)
 
