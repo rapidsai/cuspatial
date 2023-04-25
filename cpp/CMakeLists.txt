@@ -108,6 +108,14 @@ include(cmake/Modules/ConfigureCUDA.cmake)
 rapids_cpm_init()
 # find or add cuDF
 include(cmake/thirdparty/CUSPATIAL_GetCUDF.cmake)
+
+# install nvtx3
+CPMAddPackage(
+    NAME NVTX
+    GITHUB_REPOSITORY NVIDIA/NVTX
+    GIT_TAG v3.1.0-c-cpp
+    GIT_SHALLOW TRUE)
+
 # find or install GoogleTest
 if (CUSPATIAL_BUILD_TESTS)
     include(cmake/thirdparty/get_gtest.cmake)
@@ -196,7 +204,7 @@ endif()
 target_compile_definitions(cuspatial PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
 
 # Specify the target module library dependencies
-target_link_libraries(cuspatial PUBLIC cudf::cudf)
+target_link_libraries(cuspatial PRIVATE nvtx3-cpp PUBLIC cudf::cudf)
 
 add_library(cuspatial::cuspatial ALIAS cuspatial)
 
