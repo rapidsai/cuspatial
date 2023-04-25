@@ -25,6 +25,7 @@
 #include <cuspatial/experimental/point_in_polygon.cuh>
 #include <cuspatial/experimental/polygon_bounding_boxes.cuh>
 #include <cuspatial/experimental/spatial_join.cuh>
+#include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
@@ -58,7 +59,7 @@ inline auto generate_points(
 {
   auto engine     = cuspatial::test::deterministic_engine(0);
   auto uniform    = cuspatial::test::make_normal_dist<T>(0.0, 1.0);
-  auto pgen       = cuspatial::test::point_generator(T{0.0}, T{1.0}, engine, uniform);
+  auto pgen       = cuspatial::test::point_generator(cuspatial::vec_2d<T>{0.0, 0.0}, cuspatial::vec_2d<T>{1.0, 1.0}, engine, engine, uniform, uniform);
   auto num_points = quads.size() * points_per_quad;
   rmm::device_uvector<cuspatial::vec_2d<T>> points(num_points, stream, mr);
 
