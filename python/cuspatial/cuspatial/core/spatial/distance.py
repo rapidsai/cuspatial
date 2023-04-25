@@ -458,19 +458,12 @@ def pairwise_point_polygon_distance(points: GeoSeries, polygons: GeoSeries):
     )
 
     # Handle slicing in geoseries
-    points_column = (
-        points._column.points._column
-        if point_collection_type == CollectionType.SINGLE
-        else points._column.mpoints._column
-    )
-    points_column = points_column.take(
-        points._column._meta.union_offsets._column
-    )
+    if point_collection_type == CollectionType.SINGLE:
+        points_column = points.points.column()
+    else:
+        points_column = points.multipoints.column()
 
-    polygon_column = polygons._column.polygons._column
-    polygon_column = polygon_column.take(
-        polygons._column._meta.union_offsets._column
-    )
+    polygon_column = polygons.polygons.column()
 
     return Series._from_data(
         {
@@ -555,12 +548,8 @@ def pairwise_linestring_polygon_distance(
         raise ValueError("`polygon` array must contain only polygons")
 
     # Handle slicing in geoseries
-    linestrings_column = linestrings._column.lines._column.take(
-        linestrings._column._meta.union_offsets._column
-    )
-    polygon_column = polygons._column.polygons._column.take(
-        polygons._column._meta.union_offsets._column
-    )
+    linestrings_column = linestrings.lines.column()
+    polygon_column = polygons.polygons.column()
 
     return Series._from_data(
         {None: c_pairwise_line_poly_dist(linestrings_column, polygon_column)}
