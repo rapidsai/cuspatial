@@ -134,6 +134,32 @@ TYPED_TEST(SegmentIntersectionTest, IntersectAtEndPoint)
   run_single_intersection_test(ab, cd, points_expected, segments_expected);
 }
 
+TYPED_TEST(SegmentIntersectionTest, IntersectAtEndPoint2)
+{
+  using T = TypeParam;
+
+  segment<T> ab{{-1.0, 0.0}, {0.0, 0.0}};
+  segment<T> cd{{0.0, 0.0}, {0.0, 1.0}};
+
+  std::vector<thrust::optional<vec_2d<T>>> points_expected{vec_2d<T>{0.0, 0.0}};
+  std::vector<thrust::optional<segment<T>>> segments_expected{thrust::nullopt};
+
+  run_single_intersection_test(ab, cd, points_expected, segments_expected);
+}
+
+TYPED_TEST(SegmentIntersectionTest, IntersectAtEndPoint3)
+{
+  using T = TypeParam;
+
+  segment<T> ab{{-1.0, 0.0}, {0.0, 0.0}};
+  segment<T> cd{{1.0, 0.0}, {0.0, 0.0}};
+
+  std::vector<thrust::optional<vec_2d<T>>> points_expected{vec_2d<T>{0.0, 0.0}};
+  std::vector<thrust::optional<segment<T>>> segments_expected{thrust::nullopt};
+
+  run_single_intersection_test(ab, cd, points_expected, segments_expected);
+}
+
 TYPED_TEST(SegmentIntersectionTest, UnparallelDisjoint1)
 {
   using T = TypeParam;

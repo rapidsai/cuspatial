@@ -137,36 +137,40 @@ __forceinline__ T __device__ squared_segment_distance(vec_2d<T> const& a,
 
 /**
  * @internal
- * @brief Given two collinear or parallel segments, return their potential overlapping segment
+ * @brief Given two collinear or parallel segments, return their potential overlapping segment or
+ * point
  *
  * @p a, @p b, @p c, @p d refer to end points of segment ab and cd.
  * @p center is the geometric center of the segments, used to decondition the coordinates.
  *
- * @return optional end points of overlapping segment
+ * @return A pair of optional overlapping point or segments
  */
 template <typename T>
-__forceinline__ thrust::optional<segment<T>> __device__ collinear_or_parallel_overlapping_segments(
-  vec_2d<T> a, vec_2d<T> b, vec_2d<T> c, vec_2d<T> d, vec_2d<T> center = vec_2d<T>{})
+__forceinline__
+
+  thrust::pair<thrust::optional<vec_2d<T>>, thrust::optional<segment<T>>>
+    __device__ collinear_or_parallel_overlapping_segments(
+      vec_2d<T> a, vec_2d<T> b, vec_2d<T> c, vec_2d<T> d, vec_2d<T> center = vec_2d<T>{})
 {
   auto ab = b - a;
   auto ac = c - a;
 
   // Parallel
-  if (not float_equal(det(ab, ac), T{0})) return thrust::nullopt;
+  if (not float_equal(det(ab, ac), T{0})) return {thrust::nullopt, thrust::nullopt};
 
   // Must be on the same line, sort the endpoints
   if (b < a) thrust::swap(a, b);
   if (d < c) thrust::swap(c, d);
 
   // Test if not overlap
-  if (b < c || d < a) return thrust::nullopt;
+  if (b < c || d < a) return {thrust::nullopt, thrust::nullopt};
 
   // Compute smallest interval between the segments
   auto e0 = a > c ? a : c;
   auto e1 = b < d ? b : d;
 
-  // Decondition the coordinates
-  return segment<T>{e0 + center, e1 + center};
+  if (e0 == e1) { return {e0 + center, thrust::nullopt}; }
+  return {thrust::nullopt, segment<T>{e0 + center, e1 + center}};
 }
 
 /**
@@ -192,7 +196,7 @@ segment_intersection(segment<T> const& segment1, segment<T> const& segment2)
 
   if (float_equal(denom, T{0})) {
     // Segments parallel or collinear
-    return {thrust::nullopt, collinear_or_parallel_overlapping_segments(a, b, c, d, center)};
+    return collinear_or_parallel_overlapping_segments(a, b, c, d, center);
   }
 
   auto ac               = c - a;

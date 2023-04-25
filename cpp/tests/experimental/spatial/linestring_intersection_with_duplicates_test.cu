@@ -656,3 +656,38 @@ TYPED_TEST(LinestringIntersectionDuplicatesTest, TwoPairsMultitoMulti)
                      {},
                      {});
 }
+
+TYPED_TEST(LinestringIntersectionDuplicatesTest, OnePairWithRings)
+{
+  using T = TypeParam;
+  using P = vec_2d<T>;
+
+  using index_t = std::size_t;
+
+  auto multilinestrings1 = make_multilinestring_array<T>({0, 1}, {0, 2}, {{-1, 0}, {0, 0}});
+
+  auto multilinestrings2 =
+    make_multilinestring_array<T>({0, 1}, {0, 5}, {{0, 0}, {0, 1}, {1, 1}, {1, 0}, {0, 0}});
+
+  CUSPATIAL_RUN_TEST(this->template run_single<index_t>,
+                     multilinestrings1.range(),
+                     multilinestrings2.range(),
+                     // Point offsets
+                     {0, 2},
+                     // Expected Points
+                     {P{0.0, 0.0}, P{0.0, 0.0}},
+                     // Segment offsets
+                     {0, 0},
+                     // Expected segments
+                     {},
+                     // Point look-back ids
+                     {0, 0},
+                     {0, 0},
+                     {0, 0},
+                     {0, 3},
+                     // segment look-back ids
+                     {},
+                     {},
+                     {},
+                     {});
+}
