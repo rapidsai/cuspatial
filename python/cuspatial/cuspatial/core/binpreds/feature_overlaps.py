@@ -35,9 +35,14 @@ class OverlapsPredicateBase(EqualsPredicateBase):
 
 class PolygonPolygonOverlaps(ContainsPredicateBase):
     def _preprocess(self, lhs, rhs):
-        equals_all = lhs._basic_equals_all(rhs)
-        intersects_not_touches = lhs._basic_intersects_through(rhs)
-        return ~equals_all & intersects_not_touches
+        contains_lhs = lhs.contains(rhs)
+        contains_rhs = rhs.contains(lhs)
+        contains_properly_lhs = lhs._basic_contains_properly_any(rhs)
+        contains_properly_rhs = rhs._basic_contains_properly_any(lhs)
+        breakpoint()
+        return ~(contains_lhs | contains_rhs) & (
+            contains_properly_lhs | contains_properly_rhs
+        )
 
 
 class PolygonPointOverlaps(ContainsPredicateBase):

@@ -41,6 +41,9 @@ from cuspatial.core.binpreds.binpred_dispatch import (
 from cuspatial.utils.binpred_utils import (
     _linestrings_from_geometry,
     _multipoints_from_geometry,
+    _multipoints_is_degenerate,
+    _points_and_lines_to_multipoints,
+    _zero_series,
 )
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
@@ -1427,13 +1430,18 @@ class GeoSeries(cudf.Series):
     def _basic_intersects_count(self, other):
         """Utility method that returns the number of points in the lhs geometry
         that intersect with the rhs geometry."""
-        result = self._basic_intersects_pli(other)
-        # Flatten result into list of sizes
-        is_offsets = cudf.Series(result[0])
-        is_sizes = is_offsets[1:].reset_index(drop=True) - is_offsets[
-            :-1
-        ].reset_index(drop=True)
-        return is_sizes
+        pli = self._basic_intersects_pli(other)
+        breakpoint()
+        if len(pli[1]) == 0:
+            return _zero_series(len(other))
+        intersections = _points_and_lines_to_multipoints(pli[1], pli[0])
+        sizes = cudf.Series(intersections.sizes)
+        # If the result is degenerate
+        is_degenerate = _multipoints_is_degenerate(intersections)
+        # If all the points in the intersection are in the rhs
+        if len(is_degenerate) > 0:
+            sizes[is_degenerate] = 1
+        return sizes
 
     def _basic_intersects(self, other):
         """Utility method that returns True if any point in the lhs geometry
@@ -1478,6 +1486,14 @@ class GeoSeries(cudf.Series):
         contains = lhs.contains_properly(rhs, mode="basic_any")
         intersects = lhs._basic_intersects(other)
         return contains | intersects
+
+    def _basic_contains_properly_any(self, other):
+        """Utility method that returns True if any point in the lhs geometry
+        is contained_properly in the rhs geometry."""
+        lhs = self
+        rhs = _multipoints_from_geometry(other)
+        contains = lhs.contains_properly(rhs, mode="basic_any")
+        return contains
 
     def _basic_contains_all(self, other):
         """Utililty method that returns True if all points in the lhs geometry

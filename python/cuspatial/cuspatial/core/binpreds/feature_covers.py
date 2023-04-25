@@ -16,6 +16,9 @@ from cuspatial.utils.binpred_utils import (
     MultiPoint,
     Point,
     Polygon,
+    _linestrings_is_degenerate,
+    _points_and_lines_to_multipoints,
+    _zero_series,
 )
 
 
@@ -53,7 +56,24 @@ class PolygonPointCovers(BinPred):
 
 class PolygonLineStringCovers(BinPred):
     def _preprocess(self, lhs, rhs):
-        return lhs._basic_contains_all(rhs)
+        contains_count = lhs._basic_contains_count(rhs)
+        pli = lhs._basic_intersects_pli(rhs)
+        intersections = pli[1]
+        equality = _zero_series(len(rhs))
+        breakpoint()
+        if len(intersections) == len(rhs):
+            # If the result is degenerate
+            is_degenerate = _linestrings_is_degenerate(intersections)
+            # If all the points in the intersection are in the rhs
+            equality = intersections._basic_equals_count(rhs)
+            if len(is_degenerate) > 0:
+                equality[is_degenerate] = 1
+        elif len(intersections) > 0:
+            matching_length_multipoints = _points_and_lines_to_multipoints(
+                intersections, pli[0]
+            )
+            equality = matching_length_multipoints._basic_equals_count(rhs)
+        return contains_count + equality >= rhs.sizes
 
 
 class PolygonPolygonCovers(ContainsPredicateBase):

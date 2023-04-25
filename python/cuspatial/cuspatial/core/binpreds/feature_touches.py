@@ -60,9 +60,12 @@ class LineStringLineStringTouches(BinPred):
 
 class LineStringPolygonTouches(BinPred):
     def _preprocess(self, lhs, rhs):
-        intersects = lhs._basic_intersects_count(rhs) == 1
-        contains_none = ~lhs.contains_properly(rhs)
-        return intersects & contains_none
+        intersects = lhs._basic_intersects_count(rhs)
+        contains = rhs.contains(lhs)
+        contains_any = rhs._basic_contains_properly_any(lhs)
+        breakpoint()
+        intersects = (intersects == 1) | (intersects == 2)
+        return intersects & ~contains & ~contains_any
 
 
 class PolygonPointTouches(BinPred):
@@ -71,12 +74,9 @@ class PolygonPointTouches(BinPred):
         return intersects
 
 
-class PolygonLineStringTouches(BinPred):
+class PolygonLineStringTouches(LineStringPolygonTouches):
     def _preprocess(self, lhs, rhs):
-        # Intersection occurs
-        intersects = lhs._basic_intersects_count(rhs) == 1
-        contains_none = ~lhs.contains_properly(rhs)
-        return intersects & contains_none
+        return super()._preprocess(rhs, lhs)
 
 
 class PolygonPolygonTouches(BinPred):

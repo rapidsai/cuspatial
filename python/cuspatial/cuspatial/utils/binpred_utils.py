@@ -359,3 +359,24 @@ def _linestrings_to_center_point(geoseries):
             }
         ).interleave_columns()
     )
+
+
+def _multipoints_is_degenerate(geoseries):
+    """Only tests if the first two points are degenerate."""
+    offsets = geoseries.multipoints.geometry_offset[:-1]
+    sizes_mask = geoseries.sizes > 1
+    x1 = geoseries.multipoints.x[offsets[sizes_mask]]
+    x2 = geoseries.multipoints.x[offsets[sizes_mask] + 1]
+    y1 = geoseries.multipoints.y[offsets[sizes_mask]]
+    y2 = geoseries.multipoints.y[offsets[sizes_mask] + 1]
+    result = _false_series(len(geoseries))
+    is_degenerate = (
+        x1.reset_index(drop=True) == x2.reset_index(drop=True)
+    ) & (y1.reset_index(drop=True) == y2.reset_index(drop=True))
+    result[sizes_mask] = is_degenerate.reset_index(drop=True)
+    return result
+
+
+def _linestrings_is_degenerate(geoseries):
+    multipoints = _multipoints_from_geometry(geoseries)
+    return _multipoints_is_degenerate(multipoints)
