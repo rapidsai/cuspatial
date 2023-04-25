@@ -31,8 +31,7 @@ template <typename T, typename R = T>
 using wrapper = fixed_width_column_wrapper<T, R>;
 
 template <typename T>
-struct PointInPolygonTest : public BaseFixture {
-};
+struct PointInPolygonTest : public BaseFixture {};
 
 // float and double are logically the same but would require separate tests due to precision.
 using TestTypes = FloatingPointTypes;
@@ -60,8 +59,7 @@ TYPED_TEST(PointInPolygonTest, Empty)
 }
 
 template <typename T>
-struct PointInPolygonUnsupportedTypesTest : public BaseFixture {
-};
+struct PointInPolygonUnsupportedTypesTest : public BaseFixture {};
 
 using UnsupportedTestTypes = RemoveIf<ContainedIn<TestTypes>, NumericTypes>;
 TYPED_TEST_CASE(PointInPolygonUnsupportedTypesTest, UnsupportedTestTypes);
@@ -84,8 +82,7 @@ TYPED_TEST(PointInPolygonUnsupportedTypesTest, UnsupportedPointType)
 }
 
 template <typename T>
-struct PointInPolygonUnsupportedChronoTypesTest : public BaseFixture {
-};
+struct PointInPolygonUnsupportedChronoTypesTest : public BaseFixture {};
 
 TYPED_TEST_CASE(PointInPolygonUnsupportedChronoTypesTest, ChronoTypes);
 
@@ -107,8 +104,7 @@ TYPED_TEST(PointInPolygonUnsupportedChronoTypesTest, UnsupportedPointChronoType)
     cuspatial::logic_error);
 }
 
-struct PointInPolygonErrorTest : public BaseFixture {
-};
+struct PointInPolygonErrorTest : public BaseFixture {};
 
 TEST_F(PointInPolygonErrorTest, EmptyPolygonOffsets)
 {

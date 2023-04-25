@@ -36,8 +36,7 @@ namespace cuspatial {
 namespace test {
 
 template <typename T>
-struct PairwisePointLinestringDistanceTest : public ::testing::Test {
-};
+struct PairwisePointLinestringDistanceTest : public ::testing::Test {};
 
 // float and double are logically the same but would require separate tests due to precision.
 using TestTypes = ::testing::Types<float, double>;
