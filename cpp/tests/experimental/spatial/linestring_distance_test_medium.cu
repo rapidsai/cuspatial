@@ -34,8 +34,7 @@ using namespace cuspatial;
 using namespace cuspatial::test;
 
 template <typename T>
-struct PairwiseLinestringDistanceTestMedium : public ::testing::Test {
-};
+struct PairwiseLinestringDistanceTestMedium : public ::testing::Test {};
 
 // float and double are logically the same but would require separate tests due to precision.
 using TestTypes = ::testing::Types<float, double>;

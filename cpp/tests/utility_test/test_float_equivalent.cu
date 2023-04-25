@@ -26,8 +26,7 @@ using namespace cuspatial;
 using namespace cuspatial::test;
 
 template <typename T>
-struct ULPFloatingPointEquivalenceTest : public ::testing::Test {
-};
+struct ULPFloatingPointEquivalenceTest : public ::testing::Test {};
 
 using TestTypes = ::testing::Types<float, double>;
 

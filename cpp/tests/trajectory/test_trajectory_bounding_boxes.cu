@@ -19,8 +19,7 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/trajectory.hpp>
 
-struct TrajectoryBoundingBoxesErrorTest : public cuspatial::test::BaseFixture {
-};
+struct TrajectoryBoundingBoxesErrorTest : public cuspatial::test::BaseFixture {};
 
 TEST_F(TrajectoryBoundingBoxesErrorTest, SizeMismatch)
 {

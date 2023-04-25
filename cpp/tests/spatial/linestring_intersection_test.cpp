@@ -208,8 +208,7 @@ struct LinestringIntersectionTest : public LinestringIntersectionTestBase {
   }
 };
 
-struct LinestringIntersectionTestUntyped : public LinestringIntersectionTestBase {
-};
+struct LinestringIntersectionTestUntyped : public LinestringIntersectionTestBase {};
 
 // float and double are logically the same but would require separate tests due to precision.
 using TestTypes = FloatingPointTypes;
