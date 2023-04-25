@@ -482,7 +482,7 @@ def pairwise_linestring_polygon_distance(
     The distance between a (multi)linestrings and a (multi)polygon
     is defined as the shortest distance between every segment in the
     multilinestring and every edge of the (multi)polygon. If the
-    multilinestring and multipolygon intersects, the distance is 0.
+    multilinestring and multipolygon intersect, the distance is 0.
 
     This algorithm computes distance pairwise. The ith row in the result is
     the distance between the ith (multi)linestring in `linestrings` and the ith
