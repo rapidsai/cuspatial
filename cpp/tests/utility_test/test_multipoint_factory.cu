@@ -23,8 +23,7 @@ using namespace cuspatial::detail;
 using namespace cuspatial::test;
 
 template <typename T>
-struct MultiPointFactoryTest : public BaseFixture {
-};
+struct MultiPointFactoryTest : public BaseFixture {};
 
 using TestTypes = ::testing::Types<float, double>;
 TYPED_TEST_CASE(MultiPointFactoryTest, TestTypes);

@@ -30,13 +30,11 @@
 constexpr cudf::test::debug_output_level verbosity{cudf::test::debug_output_level::ALL_ERRORS};
 
 template <typename T>
-struct SpatialRangeTest : public cudf::test::BaseFixture {
-};
+struct SpatialRangeTest : public cudf::test::BaseFixture {};
 
 using TestTypes = cudf::test::Types<float, double>;
 
-struct SpatialWindowErrorTest : public cudf::test::BaseFixture {
-};
+struct SpatialWindowErrorTest : public cudf::test::BaseFixture {};
 
 TEST_F(SpatialWindowErrorTest, TypeMismatch)
 {
@@ -66,8 +64,7 @@ struct IsFloat {
 using NonFloatTypes = cudf::test::RemoveIf<IsFloat, cudf::test::NumericTypes>;
 
 template <typename T>
-struct SpatialWindowUnsupportedTypesTest : public cudf::test::BaseFixture {
-};
+struct SpatialWindowUnsupportedTypesTest : public cudf::test::BaseFixture {};
 
 TYPED_TEST_CASE(SpatialWindowUnsupportedTypesTest, NonFloatTypes);
 
@@ -82,8 +79,7 @@ TYPED_TEST(SpatialWindowUnsupportedTypesTest, ShouldThrow)
 }
 
 template <typename T>
-struct SpatialWindowUnsupportedChronoTypesTest : public cudf::test::BaseFixture {
-};
+struct SpatialWindowUnsupportedChronoTypesTest : public cudf::test::BaseFixture {};
 
 TYPED_TEST_CASE(SpatialWindowUnsupportedChronoTypesTest, cudf::test::ChronoTypes);
 

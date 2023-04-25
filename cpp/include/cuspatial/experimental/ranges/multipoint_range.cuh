@@ -57,10 +57,10 @@ class multipoint_range {
   /**
    * @brief Construct a new multipoint array object
    */
-  multipoint_range(GeometryIterator geometry_begin,
-                   GeometryIterator geometry_end,
-                   VecIterator points_begin,
-                   VecIterator points_end);
+  CUSPATIAL_HOST_DEVICE multipoint_range(GeometryIterator geometry_begin,
+                                         GeometryIterator geometry_end,
+                                         VecIterator points_begin,
+                                         VecIterator points_end);
   /**
    * @brief Returns the number of multipoints in the array.
    */
