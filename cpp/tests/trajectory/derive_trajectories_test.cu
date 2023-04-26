@@ -17,9 +17,9 @@
 #include "cuspatial_test/vector_equality.hpp"
 #include "trajectory_test_utils.cuh"
 
-#include <cuspatial/derive_trajectories.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/iterator_factory.cuh>
+#include <cuspatial/trajectory.cuh>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
