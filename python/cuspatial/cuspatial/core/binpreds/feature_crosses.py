@@ -40,20 +40,15 @@ class CrossesByIntersectionPredicate(IntersectsPredicateBase):
 
 class LineStringPolygonCrosses(BinPred):
     def _preprocess(self, lhs, rhs):
-        contains = rhs.contains(lhs)
-        contains_any = rhs._basic_contains_properly_any(lhs)
         intersects = rhs._basic_intersects_through(lhs)
-        breakpoint()
-        return ~contains & (contains_any & intersects)
+        touches = rhs.touches(lhs)
+        contains = rhs.contains(lhs)
+        return ~touches & intersects & ~contains
 
 
-class PolygonLineStringCrosses(BinPred):
+class PolygonLineStringCrosses(LineStringPolygonCrosses):
     def _preprocess(self, lhs, rhs):
-        contains = lhs.contains(rhs)
-        contains_any = lhs._basic_contains_properly_any(rhs)
-        intersects = lhs._basic_intersects_through(rhs)
-        breakpoint()
-        return ~contains & (contains_any & intersects)
+        return super()._preprocess(rhs, lhs)
 
 
 class PointPointCrosses(CrossesPredicateBase):

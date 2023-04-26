@@ -1431,7 +1431,6 @@ class GeoSeries(cudf.Series):
         """Utility method that returns the number of points in the lhs geometry
         that intersect with the rhs geometry."""
         pli = self._basic_intersects_pli(other)
-        breakpoint()
         if len(pli[1]) == 0:
             return _zero_series(len(other))
         intersections = _points_and_lines_to_multipoints(pli[1], pli[0])
@@ -1501,6 +1500,5 @@ class GeoSeries(cudf.Series):
         `.contains_properly call."""
         lhs = self
         rhs = _multipoints_from_geometry(other)
-        breakpoint()
         contains = lhs.contains(rhs, mode="basic_all")
         return contains

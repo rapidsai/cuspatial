@@ -60,7 +60,6 @@ class PolygonLineStringCovers(BinPred):
         pli = lhs._basic_intersects_pli(rhs)
         intersections = pli[1]
         equality = _zero_series(len(rhs))
-        breakpoint()
         if len(intersections) == len(rhs):
             # If the result is degenerate
             is_degenerate = _linestrings_is_degenerate(intersections)
