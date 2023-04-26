@@ -17,8 +17,8 @@
 #pragma once
 
 #include <cuspatial/detail/utility/floating_point.cuh>
-#include <cuspatial/experimental/geometry/segment.cuh>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/segment.cuh>
+#include <cuspatial/geometry/vec_2d.hpp>
 
 #include <thrust/optional.h>
 #include <thrust/pair.h>

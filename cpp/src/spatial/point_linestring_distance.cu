@@ -27,10 +27,10 @@
 
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/iterator_factory.cuh>
-#include <cuspatial/experimental/point_linestring_distance.cuh>
-#include <cuspatial/experimental/ranges/multilinestring_range.cuh>
-#include <cuspatial/experimental/ranges/multipoint_range.cuh>
+#include <cuspatial/iterator_factory.cuh>
+#include <cuspatial/point_linestring_distance.cuh>
+#include <cuspatial/range/multilinestring_range.cuh>
+#include <cuspatial/range/multipoint_range.cuh>
 
 #include <thrust/iterator/counting_iterator.h>
 
