@@ -16,8 +16,8 @@
 
 #pragma once
 
+#include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <iomanip>
 #include <rmm/device_uvector.hpp>
@@ -100,7 +100,14 @@ void print_device_range(Iter begin,
 }
 
 /**
- * @brief
+ * @brief Print a device vector.
+ *
+ * @note Copies the device vector to host before printing.
+ *
+ * @tparam Vector The device vector type
+ * @param vec The device vector to print
+ * @param pre String to print before the device vector
+ * @param post String to print after the device vector
  */
 template <typename Vector>
 void print_device_vector(Vector const& vec, std::string_view pre = "", std::string_view post = "\n")

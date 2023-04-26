@@ -819,7 +819,7 @@ INPUT                  = main_page.md \
                          developer_guide/DOCUMENTATION.md \
                          developer_guide/DEVELOPER_GUIDE.md \
                          developer_guide/TESTING.md \
-                         developer_guide/REFACTORING_GUIDE.md \
+                         developer_guide/HEADER_ONLY_API_GUIDE.md \
                          ../include
 
 # This tag can be used to specify the character encoding of the source files
@@ -1155,7 +1155,7 @@ HTML_FOOTER            =
 # obsolete.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_STYLESHEET        = 
+HTML_STYLESHEET        =
 
 # The HTML_EXTRA_STYLESHEET tag can be used to specify additional user-defined
 # cascading style sheets that are included after the standard style sheets
