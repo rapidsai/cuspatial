@@ -18,9 +18,9 @@
 #include <cuspatial_test/vector_equality.hpp>
 #include <cuspatial_test/vector_factories.cuh>
 
+#include <cuspatial/bounding_boxes.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/point_quadtree.cuh>
-#include <cuspatial/polygon_bounding_boxes.cuh>
 #include <cuspatial/range/multipolygon_range.cuh>
 #include <cuspatial/spatial_join.cuh>
 
