@@ -1,4 +1,4 @@
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.
 
 from libcpp.memory cimport unique_ptr
 
@@ -9,7 +9,7 @@ from cudf._lib.cpp.column.column_view cimport column_view
 from cuspatial._lib.cpp.optional cimport optional
 
 
-cdef extern from "cuspatial/distance/linestring_distance.hpp" \
+cdef extern from "cuspatial/distance.hpp" \
         namespace "cuspatial" nogil:
     cdef unique_ptr[column] pairwise_linestring_distance(
         const optional[column_view] multilinestring1_geometry_offsets,

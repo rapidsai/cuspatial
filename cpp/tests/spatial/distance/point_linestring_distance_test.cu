@@ -16,10 +16,10 @@
 
 #include <cuspatial_test/vector_equality.hpp>
 
+#include <cuspatial/distance.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/iterator_factory.cuh>
-#include <cuspatial/point_linestring_distance.cuh>
 #include <cuspatial/range/multilinestring_range.cuh>
 #include <cuspatial/range/multipoint_range.cuh>
 
