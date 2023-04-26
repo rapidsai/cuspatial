@@ -20,9 +20,9 @@
 #include <cuspatial/column/geometry_column_view.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/intersection.cuh>
+#include <cuspatial/intersection.hpp>
 #include <cuspatial/iterator_factory.cuh>
-#include <cuspatial/linestring_intersection.cuh>
-#include <cuspatial/linestring_intersection.hpp>
 #include <cuspatial/range/multilinestring_range.cuh>
 #include <cuspatial/types.hpp>
 
