@@ -547,7 +547,6 @@ def pairwise_linestring_polygon_distance(
     if not contains_only_polygons(polygons):
         raise ValueError("`polygon` array must contain only polygons")
 
-    # Handle slicing in geoseries
     linestrings_column = linestrings.lines.column()
     polygon_column = polygons.polygons.column()
 
