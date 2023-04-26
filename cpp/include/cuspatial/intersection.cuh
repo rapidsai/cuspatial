@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,4 +92,4 @@ linestring_intersection_result<T, index_t> pairwise_linestring_intersection(
 
 }  // namespace cuspatial
 
-#include <cuspatial/detail/linestring_intersection.cuh>
+#include <cuspatial/detail/intersection/linestring_intersection.cuh>
