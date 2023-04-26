@@ -8,6 +8,7 @@ from cudf.core.column import as_column
 
 from cuspatial._lib.distance import (
     pairwise_linestring_distance as cpp_pairwise_linestring_distance,
+    pairwise_linestring_polygon_distance as c_pairwise_line_poly_dist,
     pairwise_point_distance as cpp_pairwise_point_distance,
     pairwise_point_linestring_distance as c_pairwise_point_linestring_distance,
     pairwise_point_polygon_distance as c_pairwise_point_polygon_distance,
@@ -80,7 +81,8 @@ def directed_hausdorff_distance(multipoints: GeoSeries):
     1  2.0  0.000000
     """
 
-    if len(multipoints) == 0:
+    num_spaces = len(multipoints)
+    if num_spaces == 0:
         return DataFrame()
 
     if not contains_only_multipoints(multipoints):
@@ -92,11 +94,7 @@ def directed_hausdorff_distance(multipoints: GeoSeries):
         as_column(multipoints.multipoints.geometry_offset[:-1]),
     )
 
-    num_spaces = len(multipoints)
-    with cudf.core.buffer.acquire_spill_lock():
-        result = result.data_array_view(mode="read")
-        result = result.reshape(num_spaces, num_spaces)
-        return DataFrame(result)
+    return DataFrame._from_columns(result, range(num_spaces))
 
 
 def haversine_distance(p1: GeoSeries, p2: GeoSeries):
@@ -446,7 +444,7 @@ def pairwise_point_polygon_distance(points: GeoSeries, polygons: GeoSeries):
         raise ValueError("`points` array must contain only points")
 
     if not contains_only_polygons(polygons):
-        raise ValueError("`linestrings` array must contain only linestrings")
+        raise ValueError("`polygons` array must contain only polygons")
 
     if len(points.points.xy) > 0 and len(points.multipoints.xy) > 0:
         raise NotImplementedError(
@@ -460,19 +458,12 @@ def pairwise_point_polygon_distance(points: GeoSeries, polygons: GeoSeries):
     )
 
     # Handle slicing in geoseries
-    points_column = (
-        points._column.points._column
-        if point_collection_type == CollectionType.SINGLE
-        else points._column.mpoints._column
-    )
-    points_column = points_column.take(
-        points._column._meta.union_offsets._column
-    )
+    if point_collection_type == CollectionType.SINGLE:
+        points_column = points.points.column()
+    else:
+        points_column = points.multipoints.column()
 
-    polygon_column = polygons._column.polygons._column
-    polygon_column = polygon_column.take(
-        polygons._column._meta.union_offsets._column
-    )
+    polygon_column = polygons.polygons.column()
 
     return Series._from_data(
         {
@@ -480,6 +471,87 @@ def pairwise_point_polygon_distance(points: GeoSeries, polygons: GeoSeries):
                 point_collection_type, points_column, polygon_column
             )
         }
+    )
+
+
+def pairwise_linestring_polygon_distance(
+    linestrings: GeoSeries, polygons: GeoSeries
+):
+    """Compute distance between pairs of (multi)linestrings and (multi)polygons
+
+    The distance between a (multi)linestrings and a (multi)polygon
+    is defined as the shortest distance between every segment in the
+    multilinestring and every edge of the (multi)polygon. If the
+    multilinestring and multipolygon intersect, the distance is 0.
+
+    This algorithm computes distance pairwise. The ith row in the result is
+    the distance between the ith (multi)linestring in `linestrings` and the ith
+    (multi)polygon in `polygons`.
+
+    Parameters
+    ----------
+    linestrings : GeoSeries
+        The (multi)linestrings to compute the distance from.
+    polygons : GeoSeries
+        The (multi)polygons to compute the distance from.
+
+    Returns
+    -------
+    distance : cudf.Series
+
+    Notes
+    -----
+    The input `GeoSeries` must contain a single type geometry.
+    For example, `linestrings` series cannot contain both linestrings and
+    polygons.
+
+    Examples
+    --------
+    Compute distance between a linestring and a polygon:
+    >>> from shapely.geometry import LineString, Polygon
+    >>> lines = cuspatial.GeoSeries([
+    ...     LineString([(0, 0), (1, 1)])])
+    >>> polys = cuspatial.GeoSeries([
+    ...     Polygon([(-1, -1), (-1, 0), (-2, 0), (-1, -1)])
+    ... ])
+    >>> cuspatial.pairwise_linestring_polygon_distance(lines, polys)
+    0    1.0
+    dtype: float64
+
+    Compute distance between a multipoint and a multipolygon
+    >>> from shapely.geometry import MultiLineString, MultiPolygon
+    >>> lines = cuspatial.GeoSeries([
+    ...     MultiLineString([
+    ...             LineString([(0, 0), (1, 1)]),
+    ...             LineString([(1, 1), (2, 2)])])
+    ...     ])
+    >>> polys = cuspatial.GeoSeries([
+    ...     MultiPolygon([
+    ...             Polygon([(-1, -1), (-1, 0), (-2, 0), (-1, -1)]),
+    ...             Polygon([(-2, 0), (-3, 0), (-3, -1), (-2, 0)])])
+    ...     ])
+    >>> cuspatial.pairwise_linestring_polygon_distance(lines, polys)
+    0    1.0
+    dtype: float64
+    """
+
+    if len(linestrings) != len(polygons):
+        raise ValueError("Unmatched input geoseries length.")
+
+    if len(linestrings) == 0:
+        return cudf.Series(dtype=linestrings.lines.xy.dtype)
+
+    if not contains_only_linestrings(linestrings):
+        raise ValueError("`linestrings` array must contain only linestrings")
+
+    if not contains_only_polygons(polygons):
+        raise ValueError("`polygon` array must contain only polygons")
+
+    linestrings_column = linestrings.lines.column()
+    polygon_column = polygons.polygons.column()
+
+    return Series._from_data(
+        {None: c_pairwise_line_poly_dist(linestrings_column, polygon_column)}
     )
 
 

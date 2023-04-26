@@ -32,7 +32,7 @@ dependencies:
 - pytest
 - pytest-cov
 - pytest-xdist
-- python>=3.8,<3.11
+- python>=3.9,<3.11
 - rmm=23.06
 - scikit-build>=0.13.1
 - setuptools

@@ -104,14 +104,13 @@
  *      @{
  *          @brief Factory method to create coordinate iterators
  *
- *          CuSpatial functions inside `experimental` folder are header-only and only accepts
- *          input/output iterators on coordinates. These factory functions are convenient ways
- *          to create iterators from data in various format.
+ *          CuSpatial header-only API functions only accept input/output iterators. These factory
+ *          make it easier to create iterators from data in various formats.
  *          @file iterator_factory.hpp
  *      @}
  *      @defgroup ranges Ranges
  *      @{
- *          @brief Abstract Data Type that Represents any containers represented by a start and end
+ *          @brief Abstract Data Type that represents any containers represented by a start and end
  *          iterator
  *
  *          cuSpatial header only APIs accept ranges that provide flattened views of
