@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -136,5 +136,5 @@ OutputIt trajectory_distances_and_speeds(IndexT num_trajectories,
 
 }  // namespace cuspatial
 
-#include <cuspatial/detail/derive_trajectories.cuh>
-#include <cuspatial/detail/trajectory_distances_and_speeds.cuh>
+#include <cuspatial/detail/trajectory/derive_trajectories.cuh>
+#include <cuspatial/detail/trajectory/trajectory_distances_and_speeds.cuh>
