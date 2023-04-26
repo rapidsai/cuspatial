@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <cuspatial/experimental/iterator_factory.cuh>
-#include <cuspatial/experimental/spatial_join.cuh>
+#include <cuspatial/iterator_factory.cuh>
+#include <cuspatial/spatial_join.cuh>
 
 #include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>

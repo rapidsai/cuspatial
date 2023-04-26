@@ -15,9 +15,9 @@
  */
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/iterator_factory.cuh>
-#include <cuspatial/experimental/point_in_polygon.cuh>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/iterator_factory.cuh>
+#include <cuspatial/point_in_polygon.cuh>
 
 #include <cudf/column/column.hpp>
 #include <cudf/column/column_factories.hpp>
