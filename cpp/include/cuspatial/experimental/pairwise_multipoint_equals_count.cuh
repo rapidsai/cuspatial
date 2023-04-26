@@ -25,7 +25,7 @@
 namespace cuspatial {
 
 /**
- * @brief Compute the number of multipoint pairs that are equal.
+ * @brief Count the number of equal points in multipoint pairs.
  *
  * Given two ranges of multipoints, this function counts points in the left-hand
  * multipoint that exist in the corresponding right-hand multipoint.
@@ -53,11 +53,8 @@ namespace cuspatial {
  * @param[in]  rhs_first multipoint_range of second array of multipoints
  * @param[out] count_first: beginning of range of uint32_t counts
  * @param[in]  stream: The CUDA stream on which to perform computations and allocate memory.
- *
- * @tparam MultiPointRangeA Iterator over multipoints. Must meet the requirements of
- * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
- * @tparam MultiPointRangeB Iterator over multipoints. Must meet the requirements of
- * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible.
+ * @tparam MultiPointRangeA The multipolygon range to compare point equality from
+ * @tparam MultiPointRangeB The multipolygon range to compare point equality to
  * @tparam OutputIt Iterator over uint32_t. Must meet the requirements of
  * [LegacyRandomAccessIterator][LinkLRAI] and be device-accessible and mutable.
  *
