@@ -1,4 +1,4 @@
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.
 
 from libcpp.memory cimport unique_ptr
 
@@ -7,7 +7,7 @@ from cudf._lib.column cimport column, column_view
 from cuspatial._lib.cpp.optional cimport optional
 
 
-cdef extern from "cuspatial/point_linestring_nearest_points.hpp" \
+cdef extern from "cuspatial/nearest_points.hpp" \
         namespace "cuspatial" nogil:
 
     cdef struct point_linestring_nearest_points_result:

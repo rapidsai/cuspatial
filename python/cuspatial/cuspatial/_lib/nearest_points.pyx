@@ -1,10 +1,12 @@
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.
+
 from libcpp.utility cimport move
 
 from cudf._lib.column cimport Column
 from cudf._lib.cpp.column.column_view cimport column_view
 
 from cuspatial._lib.cpp.optional cimport optional
-from cuspatial._lib.cpp.point_linestring_nearest_points cimport (
+from cuspatial._lib.cpp.nearest_points cimport (
     pairwise_point_linestring_nearest_points as c_func,
     point_linestring_nearest_points_result,
 )
