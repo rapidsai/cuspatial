@@ -62,7 +62,9 @@ class multipolygon_range {
   using ring_it_t     = RingIterator;
   using point_it_t    = VecIterator;
   using point_t       = iterator_value_type<VecIterator>;
-  using element_t     = iterator_vec_base_type<VecIterator>;
+
+  using index_t   = iterator_value_type<GeometryIterator>;
+  using element_t = iterator_vec_base_type<VecIterator>;
 
   int64_t static constexpr INVALID_INDEX = -1;
 
@@ -179,6 +181,15 @@ class multipolygon_range {
 
   /// Returns an iterator to the end of the segment
   CUSPATIAL_HOST_DEVICE auto segment_end();
+
+  /// Range Casting
+
+  /// Cast the range of multipolygons as a range of multipoints, ignoring all edge connections and
+  /// ring relationships.
+  CUSPATIAL_HOST_DEVICE auto as_multipoint_range();
+
+  /// Cast the range of multipolygons as a range of multilinestrings, ignoring ring relationships.
+  CUSPATIAL_HOST_DEVICE auto as_multilinestring_range();
 
  protected:
   GeometryIterator _geometry_begin;

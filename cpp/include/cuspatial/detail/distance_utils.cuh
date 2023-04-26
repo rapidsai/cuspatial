@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <cuspatial/detail/algorithm/is_point_in_polygon.cuh>
 #include <cuspatial/detail/utility/zero_data.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/iterator_factory.cuh>
