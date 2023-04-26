@@ -97,7 +97,7 @@ ConfigureTest(POINT_POLYGON_DISTANCE_TEST
 
 # equality
 ConfigureTest(PAIRWISE_MULTIPOINT_EQUALS_COUNT_TEST
-    spatial/pairwise_multipoint_equals_count_test.cpp)
+    spatial/equality/pairwise_multipoint_equals_count_test.cpp)
 
 # intersection
 ConfigureTest(LINESTRING_INTERSECTION_TEST
@@ -209,7 +209,7 @@ ConfigureTest(POLYGON_DISTANCE_TEST_EXP
 
 # equality
 ConfigureTest(PAIRWISE_MULTIPOINT_EQUALS_COUNT_TEST_EXP
-    experimental/spatial/pairwise_multipoint_equals_count_test.cu)
+    spatial/equality/pairwise_multipoint_equals_count_test.cu)
 
 # intersection
 ConfigureTest(LINESTRING_INTERSECTION_TEST_EXP
