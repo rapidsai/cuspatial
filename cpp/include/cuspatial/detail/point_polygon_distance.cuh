@@ -20,7 +20,6 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/algorithm/is_point_in_polygon.cuh>
-#include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/detail/utility/device_atomics.cuh>
 #include <cuspatial/detail/utility/linestring.cuh>
 #include <cuspatial/detail/utility/zero_data.cuh>

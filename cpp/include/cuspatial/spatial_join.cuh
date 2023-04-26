@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/detail/join/intersection.cuh>
 #include <cuspatial/detail/join/traversal.cuh>
+#include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/point_quadtree.cuh>
 #include <cuspatial/traits.hpp>
 

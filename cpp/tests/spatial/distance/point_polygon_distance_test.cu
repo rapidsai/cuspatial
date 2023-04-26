@@ -17,8 +17,8 @@
 #include <cuspatial_test/vector_equality.hpp>
 #include <cuspatial_test/vector_factories.cuh>
 
-#include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/point_polygon_distance.cuh>
 #include <cuspatial/range/range.cuh>
 

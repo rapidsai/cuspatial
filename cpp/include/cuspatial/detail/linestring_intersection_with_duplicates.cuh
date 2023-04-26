@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/detail/linestring_intersection_count.cuh>
 #include <cuspatial/detail/utility/linestring.cuh>
 #include <cuspatial/detail/utility/zero_data.cuh>
