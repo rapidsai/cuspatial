@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,11 @@
 #include <iterator>
 
 namespace cuspatial {
+
+/**
+ * @addtogroup spatial_join
+ * @{
+ */
 
 /**
  * @brief Sinusoidal projection of longitude/latitude relative to origin to Cartesian (x/y)
@@ -64,6 +69,11 @@ OutputIt sinusoidal_projection(InputIt lon_lat_first,
                                vec_2d<T> origin,
                                rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
+/**
+ * @addtogroup spatial_join
+ * @{
+ */
+
 }  // namespace cuspatial
 
-#include <cuspatial/detail/sinusoidal_projection.cuh>
+#include <cuspatial/detail/projection/sinusoidal_projection.cuh>

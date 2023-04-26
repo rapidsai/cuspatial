@@ -42,46 +42,37 @@
  *
  *          This module contains APIs that transforms cartesian and geodesic coordinates.
  *          @file projection.hpp
- *          @file coordinate_transform.hpp
- *          @file sinusoidal_projection.cuh
+  *          @file projection.cuh
  *      @}
  *      @defgroup distance Distance
  *      @{
  *          @brief Distance computation APIs
  *
- *          @file point_distance.hpp
- *          @file point_distance.cuh
- *          @file point_linestring_distance.hpp
- *          @file point_linestring_distance.cuh
- *          @file linestring_distance.hpp
- *          @file linestring_distance.cuh
- *          @file hausdorff.hpp
- *          @file hausdorff.cuh
- *          @file haversine.hpp
- *          @file haversine.cuh
+ *          @file distance.hpp
+ *          @file distance.cuh
  *      @}
  *      @defgroup spatial_relationship Spatial Relationship
  *      @{
  *          @brief APIs related to spatial relationship
  *
-            @file bounding_box.hpp
+            @file bounding_boxes.hpp
+            @file bounding_boxes.cuh
  *          @file point_in_polygon.hpp
  *          @file point_in_polygon.cuh
- *          @file polygon_bounding_box.hpp
- *          @file linestring_bounding_box.hpp
  *          @file spatial_window.hpp
  *      @}
  *      @defgroup nearest_points Nearest Points
  *      @{
  *          @brief APIs to compute the nearest points between geometries
- *          @file point_linestring_nearest_points.hpp
- *          @file point_linestring_nearest_points.cuh
+ *          @file nearest_points.hpp
+ *          @file nearest_points.cuh
  *      @}
  * @}
  * @defgroup trajectory_api Trajectory APIs
  * @{
  *      @brief APIs related to trajectories
  *      @file trajectory.hpp
+ *      @file trajectory.cuh
  * @}
  * @defgroup spatial_indexing Spatial Indexing
  * @{
@@ -97,7 +88,11 @@
  * @{
  *      @brief Type declarations for cuspatial
  *      @file types.hpp
+ *      @file box.hpp
  *      @file vec_2d.hpp
+ *      @file linestring_ref.cuh
+ *      @file polygon_ref.cuh
+ *      @file segment.cuh
  *      @file geometry_column_view.hpp
  *
  *      @defgroup type_factories Factory Methods
@@ -118,6 +113,7 @@
  *          @file range.cuh
  *          @file multipoint_range.cuh
  *          @file multilinestring_range.cuh
+ *          @file multipolygon_range.cuh
  *      @}
  * @defgroup exception Exception
  * @{
