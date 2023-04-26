@@ -124,13 +124,6 @@ def test_point_polygon_geocities(naturalearth_cities, naturalearth_lowres):
     gpu_cities = cuspatial.from_geopandas(naturalearth_cities.geometry)
     gpu_countries = cuspatial.from_geopandas(naturalearth_lowres.geometry)
 
-    print(
-        len(naturalearth_lowres),
-        len(naturalearth_lowres[: len(naturalearth_cities)]),
-        len(gpu_countries),
-        len(gpu_countries[: len(naturalearth_cities)]),
-    )
-
     expect = naturalearth_cities.geometry[:N].distance(
         naturalearth_lowres.geometry[:N]
     )
