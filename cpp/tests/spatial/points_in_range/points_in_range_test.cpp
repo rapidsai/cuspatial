@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/spatial_window.hpp>
+#include <cuspatial/points_in_range.hpp>
 
 #include <cudf/table/table.hpp>
 
@@ -41,9 +41,8 @@ TEST_F(SpatialWindowErrorTest, TypeMismatch)
   auto points_x = cudf::test::fixed_width_column_wrapper<float>({1.0, 2.0, 3.0});
   auto points_y = cudf::test::fixed_width_column_wrapper<double>({0.0, 1.0, 2.0});
 
-  EXPECT_THROW(
-    auto result = cuspatial::points_in_spatial_window(1.5, 5.5, 1.5, 5.5, points_x, points_y),
-    cuspatial::logic_error);
+  EXPECT_THROW(auto result = cuspatial::points_in_range(1.5, 5.5, 1.5, 5.5, points_x, points_y),
+               cuspatial::logic_error);
 }
 
 TEST_F(SpatialWindowErrorTest, SizeMismatch)
@@ -51,9 +50,8 @@ TEST_F(SpatialWindowErrorTest, SizeMismatch)
   auto points_x = cudf::test::fixed_width_column_wrapper<double>({1.0, 2.0, 3.0});
   auto points_y = cudf::test::fixed_width_column_wrapper<double>({0.0});
 
-  EXPECT_THROW(
-    auto result = cuspatial::points_in_spatial_window(1.5, 5.5, 1.5, 5.5, points_x, points_y),
-    cuspatial::logic_error);
+  EXPECT_THROW(auto result = cuspatial::points_in_range(1.5, 5.5, 1.5, 5.5, points_x, points_y),
+               cuspatial::logic_error);
 }
 
 struct IsFloat {
@@ -73,9 +71,8 @@ TYPED_TEST(SpatialWindowUnsupportedTypesTest, ShouldThrow)
   auto points_x = cudf::test::fixed_width_column_wrapper<TypeParam>({1.0, 2.0, 3.0});
   auto points_y = cudf::test::fixed_width_column_wrapper<TypeParam>({0.0, 1.0, 2.0});
 
-  EXPECT_THROW(
-    auto result = cuspatial::points_in_spatial_window(1.5, 5.5, 1.5, 5.5, points_x, points_y),
-    cuspatial::logic_error);
+  EXPECT_THROW(auto result = cuspatial::points_in_range(1.5, 5.5, 1.5, 5.5, points_x, points_y),
+               cuspatial::logic_error);
 }
 
 template <typename T>
@@ -90,7 +87,6 @@ TYPED_TEST(SpatialWindowUnsupportedChronoTypesTest, ShouldThrow)
   auto points_x = cudf::test::fixed_width_column_wrapper<T, R>({R{1}, R{2}, R{3}});
   auto points_y = cudf::test::fixed_width_column_wrapper<T, R>({R{0}, R{1}, R{2}});
 
-  EXPECT_THROW(
-    auto result = cuspatial::points_in_spatial_window(1.5, 5.5, 1.5, 5.5, points_x, points_y),
-    cuspatial::logic_error);
+  EXPECT_THROW(auto result = cuspatial::points_in_range(1.5, 5.5, 1.5, 5.5, points_x, points_y),
+               cuspatial::logic_error);
 }

@@ -113,8 +113,8 @@ ConfigureTest(PAIRWISE_POINT_IN_POLYGON_TEST
     spatial/point_in_polygon/pairwise_point_in_polygon_test.cpp)
 
 # points in range
-ConfigureTest(SPATIAL_WINDOW_POINT_TEST
-    spatial/points_in_range/spatial_window_test.cpp)
+ConfigureTest(POINTS_IN_RANGE_TEST
+    spatial/points_in_range/points_in_range_test.cpp)
 
 # trajectory
 ConfigureTest(TRAJECTORY_DISTANCES_AND_SPEEDS_TEST

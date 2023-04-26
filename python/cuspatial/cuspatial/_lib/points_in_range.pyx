@@ -1,4 +1,4 @@
-# Copyright (c) 2020, NVIDIA CORPORATION.
+# Copyright (c) 2020-2023, NVIDIA CORPORATION.
 
 from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
@@ -7,16 +7,16 @@ from cudf._lib.column cimport Column, column_view
 from cudf._lib.cpp.table.table cimport table
 from cudf._lib.utils cimport data_from_unique_ptr
 
-from cuspatial._lib.cpp.spatial_window cimport (
-    points_in_spatial_window as cpp_points_in_spatial_window,
+from cuspatial._lib.cpp.points_in_range cimport (
+    points_in_range as cpp_points_in_range,
 )
 
 
-cpdef points_in_spatial_window(
-    double window_min_x,
-    double window_max_x,
-    double window_min_y,
-    double window_max_y,
+cpdef points_in_range(
+    double range_min_x,
+    double range_max_x,
+    double range_min_y,
+    double range_max_y,
     Column x,
     Column y
 ):
@@ -27,11 +27,11 @@ cpdef points_in_spatial_window(
 
     with nogil:
         c_result = move(
-            cpp_points_in_spatial_window(
-                window_min_x,
-                window_max_x,
-                window_min_y,
-                window_max_y,
+            cpp_points_in_range(
+                range_min_x,
+                range_max_x,
+                range_min_y,
+                range_max_y,
                 x_v,
                 y_v
             )
