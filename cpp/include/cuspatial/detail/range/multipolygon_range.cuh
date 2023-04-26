@@ -23,6 +23,8 @@
 #include <cuspatial/geometry/segment.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/geometry_collection/multipolygon_ref.cuh>
+#include <cuspatial/range/multilinestring_range.cuh>
+#include <cuspatial/range/multipoint_range.cuh>
 #include <cuspatial/traits.hpp>
 
 #include <thrust/binary_search.h>

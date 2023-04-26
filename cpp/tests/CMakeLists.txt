@@ -148,6 +148,7 @@ ConfigureTest(POINT_QUADTREE_TEST_EXP
 # join
 ConfigureTest(JOIN_QUADTREE_AND_BOUNDING_BOXES_TEST_EXP
     join/join_quadtree_and_bounding_boxes_test.cu)
+
 ConfigureTest(JOIN_POINT_IN_POLYGON_SMALL_TEST_EXP
     join/quadtree_point_in_polygon_test_small.cu)
 
@@ -204,7 +205,7 @@ ConfigureTest(LINESTRING_DISTANCE_TEST_EXP
     spatial/distance/linestring_distance_test_medium.cu)
 
 ConfigureTest(POLYGON_DISTANCE_TEST_EXP
-    spatial/polygon_distance_test.cu)
+    spatial/distance/polygon_distance_test.cu)
 
 # intersection
 ConfigureTest(LINESTRING_INTERSECTION_TEST_EXP

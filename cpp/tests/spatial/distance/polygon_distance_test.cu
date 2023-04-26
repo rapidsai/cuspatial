@@ -19,9 +19,9 @@
 #include <cuspatial_test/vector_factories.cuh>
 
 #include <cuspatial/detail/iterator.hpp>
-#include <cuspatial/experimental/polygon_distance.cuh>
-#include <cuspatial/experimental/ranges/range.cuh>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/polygon_distance.cuh>
+#include <cuspatial/range/range.cuh>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
