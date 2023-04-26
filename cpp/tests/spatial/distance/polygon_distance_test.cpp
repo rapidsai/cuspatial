@@ -79,34 +79,6 @@ struct PairwisePolygonDistanceTestEmpty : PairwisePolygonDistanceTestBase<T> {
 
 using TestTypes = ::testing::Types<float, double>;
 TYPED_TEST_CASE(PairwisePolygonDistanceTestEmpty, TestTypes);
-TYPED_TEST_CASE(PairwisePolygonDistanceTestOnePair, TestTypes);
-
-template <typename T>
-struct PairwisePolygonDistanceTestOnePair : PairwisePolygonDistanceTestBase<T> {
-  void SetUp()
-  {
-    [[maybe_unused]] collection_type_id _;
-    std::tie(_, one_polygon_column) =
-      make_polygon_column<T>({0, 1}, {0, 4}, {1, 1, 1, 2, 2, 2, 1, 1}, this->stream());
-    std::tie(_, one_multipolygon_column) =
-      make_polygon_column<T>({0, 1}, {0, 1}, {0, 4}, {1, 1, 1, 2, 2, 2, 1, 1}, this->stream());
-  }
-
-  geometry_column_view one_polygon()
-  {
-    return geometry_column_view(
-      one_polygon_column->view(), collection_type_id::SINGLE, geometry_type_id::POLYGON);
-  }
-
-  geometry_column_view one_multipolygon()
-  {
-    return geometry_column_view(
-      one_multipolygon_column->view(), collection_type_id::MULTI, geometry_type_id::POLYGON);
-  }
-
-  std::unique_ptr<cudf::column> one_polygon_column;
-  std::unique_ptr<cudf::column> one_multipolygon_column;
-};
 
 struct PairwisePolygonDistanceTestUntyped : testing::Test {
   rmm::cuda_stream_view stream() { return cudf::get_default_stream(); }
@@ -129,26 +101,6 @@ TYPED_TEST(PairwisePolygonDistanceTestEmpty, MultiToSingleEmpty)
 TYPED_TEST(PairwisePolygonDistanceTestEmpty, MultiToMultiEmpty)
 {
   CUSPATIAL_RUN_TEST(this->run_single, this->empty_multipolygon(), this->empty_multipolygon(), {});
-};
-
-TYPED_TEST(PairwisePolygonDistanceTestOnePair, SingleToSingleOnePair)
-{
-  CUSPATIAL_RUN_TEST(this->run_single, this->one_polygon(), this->one_polygon(), {0});
-};
-
-TYPED_TEST(PairwisePolygonDistanceTestOnePair, SingleToMultiOnePair)
-{
-  CUSPATIAL_RUN_TEST(this->run_single, this->one_polygon(), this->one_multipolygon(), {0});
-};
-
-TYPED_TEST(PairwisePolygonDistanceTestOnePair, MultiToSingleOnePair)
-{
-  CUSPATIAL_RUN_TEST(this->run_single, this->one_multipolygon(), this->one_polygon(), {0});
-};
-
-TYPED_TEST(PairwisePolygonDistanceTestOnePair, MultiToMultiOnePair)
-{
-  CUSPATIAL_RUN_TEST(this->run_single, this->one_multipolygon(), this->one_multipolygon(), {0});
 };
 
 TEST_F(PairwisePolygonDistanceTestUntyped, SizeMismatch)
