@@ -23,8 +23,7 @@
 
 #include <rmm/device_uvector.hpp>
 
-struct TrajectoryDistanceSpeedErrorTest : public cuspatial::test::BaseFixture {
-};
+struct TrajectoryDistanceSpeedErrorTest : public cuspatial::test::BaseFixture {};
 
 TEST_F(TrajectoryDistanceSpeedErrorTest, SizeMismatch)
 {

@@ -255,6 +255,10 @@ class GeoSeries(cudf.Series):
             """
             return self._meta.input_types.index[self._meta.input_types != -1]
 
+        def column(self):
+            """Return the ListColumn reordered by union offset."""
+            return self._get_current_features(self._type)
+
     class MultiPointGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
             super().__init__(list_series, meta)
