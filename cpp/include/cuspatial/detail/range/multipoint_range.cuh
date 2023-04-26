@@ -54,10 +54,11 @@ struct to_multipoint_functor {
 }  // namespace detail
 
 template <typename GeometryIterator, typename VecIterator>
-multipoint_range<GeometryIterator, VecIterator>::multipoint_range(GeometryIterator geometry_begin,
-                                                                  GeometryIterator geometry_end,
-                                                                  VecIterator points_begin,
-                                                                  VecIterator points_end)
+CUSPATIAL_HOST_DEVICE multipoint_range<GeometryIterator, VecIterator>::multipoint_range(
+  GeometryIterator geometry_begin,
+  GeometryIterator geometry_end,
+  VecIterator points_begin,
+  VecIterator points_end)
   : _geometry_begin(geometry_begin),
     _geometry_end(geometry_end),
     _points_begin(points_begin),
