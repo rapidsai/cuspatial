@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <cuspatial/experimental/point_quadtree.cuh>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/point_quadtree.cuh>
 
 #include <benchmarks/fixture/rmm_pool_raii.hpp>
 #include <nvbench/nvbench.cuh>

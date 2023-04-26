@@ -17,7 +17,7 @@
 #include <cuspatial_test/geometry_generator.cuh>
 #include <cuspatial_test/vector_equality.hpp>
 
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 
 #include <gtest/gtest-param-test.h>
 #include <type_traits>
