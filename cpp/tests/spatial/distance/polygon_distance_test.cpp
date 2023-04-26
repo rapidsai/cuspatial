@@ -20,8 +20,8 @@
 #include <cuspatial/column/geometry_column_view.hpp>
 #include <cuspatial/distance/polygon_distance.hpp>
 #include <cuspatial/error.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/types.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <cudf_test/column_utilities.hpp>
 #include <cudf_test/column_wrapper.hpp>
