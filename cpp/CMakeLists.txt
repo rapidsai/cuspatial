@@ -109,16 +109,11 @@ rapids_cpm_init()
 # find or add cuDF
 include(cmake/thirdparty/CUSPATIAL_GetCUDF.cmake)
 
-# # install nvtx3
-# CPMAddPackage(
-#     NAME NVTX
-#     GITHUB_REPOSITORY NVIDIA/NVTX
-#     GIT_TAG v3.1.0-c-cpp
-#     GIT_SHALLOW TRUE)
-
 rapids_cpm_find(
     NVTX3 3.1.0
     GLOBAL_TARGETS nvtx3-cpp
+    BUILD_EXPORT_SET cuspatial-exports
+    INSTALL_EXPORT_SET cuspatial-exports
     CPM_ARGS
         GITHUB_REPOSITORY NVIDIA/NVTX
         GIT_TAG v3.1.0-c-cpp
@@ -215,7 +210,7 @@ target_compile_definitions(cuspatial PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${
 
 # Specify the target module library dependencies
 target_link_libraries(cuspatial PUBLIC cudf::cudf)
-target_link_libraries(cuspatial PUBLIC nvtx3-cpp)
+target_link_libraries(cuspatial PRIVATE nvtx3-cpp)
 
 add_library(cuspatial::cuspatial ALIAS cuspatial)
 
