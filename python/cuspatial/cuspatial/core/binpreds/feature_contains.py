@@ -50,10 +50,17 @@ class ContainsPredicate(ContainsGeometryProcessor):
 
         pli_offsets = cudf.Series(pli[0])
 
+        # Convert the pli to multipoints for equality checking
         multipoints = _points_and_lines_to_multipoints(
             pli_features, pli_offsets
         )
 
+        # A point in the rhs can be one of three possible states:
+        # 1. It is in the interior of the lhs
+        # 2. It is in the exterior of the lhs
+        # 3. It is on the boundary of the lhs
+        # This function tests if the point in the rhs is in the boundary
+        # of the lhs
         intersect_equals_count = rhs._basic_equals_count(multipoints)
         return intersect_equals_count
 
@@ -61,6 +68,9 @@ class ContainsPredicate(ContainsGeometryProcessor):
         lines_rhs = _open_polygon_rings(rhs)
         contains = lhs._basic_contains_count(lines_rhs).reset_index(drop=True)
         intersects = self._intersection_results_for_contains(lhs, lines_rhs)
+        # A closed polygon has an extra line segment that is not used in
+        # counting the number of points. We need to subtract this from the
+        # number of points in the polygon.
         polygon_size_reduction = rhs.polygons.part_offset.take(
             rhs.polygons.geometry_offset[1:]
         ) - rhs.polygons.part_offset.take(rhs.polygons.geometry_offset[:-1])
@@ -97,7 +107,8 @@ class ContainsPredicate(ContainsGeometryProcessor):
     def _compute_predicate(self, lhs, rhs, preprocessor_result):
         if contains_only_points(rhs):
             # Special case in GeoPandas, points are not contained
-            # in the boundary of a polygon.
+            # in the boundary of a polygon, so only return true if
+            # the points are contained_properly.
             contains = lhs._basic_contains_count(rhs).reset_index(drop=True)
             return contains > 0
         elif contains_only_linestrings(rhs):

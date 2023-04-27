@@ -5,7 +5,6 @@ import cupy as cp
 
 import cudf
 
-import cuspatial
 from cuspatial.core.binops.intersection import pairwise_linestring_intersection
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
@@ -20,6 +19,7 @@ from cuspatial.utils.binpred_utils import (
     Point,
     Polygon,
     _false_series,
+    _linestrings_from_geometry,
 )
 
 
@@ -87,14 +87,14 @@ class IntersectsByEquals(EqualsPredicateBase):
     pass
 
 
-class PolygonPointIntersects(IntersectsPredicateBase):
+class PolygonPointIntersects(BinPred):
     def _preprocess(self, lhs, rhs):
         contains = lhs._basic_contains_any(rhs)
         intersects = lhs._basic_intersects(rhs)
         return contains | intersects
 
 
-class PointPolygonIntersects(IntersectsPredicateBase):
+class PointPolygonIntersects(BinPred):
     def _preprocess(self, lhs, rhs):
         contains = rhs._basic_contains_any(lhs)
         intersects = rhs._basic_intersects(lhs)
@@ -105,24 +105,7 @@ class LineStringPointIntersects(IntersectsPredicateBase):
     def _preprocess(self, lhs, rhs):
         """Convert rhs to linestrings by making a linestring that has
         the same start and end point."""
-        x = cp.repeat(rhs.points.x, 2)
-        y = cp.repeat(rhs.points.y, 2)
-        xy = cudf.DataFrame({"x": x, "y": y}).interleave_columns()
-        parts = cp.arange((len(lhs) + 1)) * 2
-        geometries = cp.arange(len(lhs) + 1)
-        ls_rhs = cuspatial.GeoSeries.from_linestrings_xy(xy, parts, geometries)
-        return self._compute_predicate(
-            lhs, ls_rhs, PreprocessorResult(lhs, ls_rhs)
-        )
-
-
-class LineStringMultiPointIntersects(IntersectsPredicateBase):
-    def _preprocess(self, lhs, rhs):
-        """Convert rhs to linestrings."""
-        xy = rhs.multipoints.xy
-        parts = rhs.multipoints.geometry_offset
-        geometries = cp.arange(len(lhs) + 1)
-        ls_rhs = cuspatial.GeoSeries.from_linestrings_xy(xy, parts, geometries)
+        ls_rhs = _linestrings_from_geometry(rhs)
         return self._compute_predicate(
             lhs, ls_rhs, PreprocessorResult(lhs, ls_rhs)
         )
@@ -134,21 +117,7 @@ class PointLineStringIntersects(LineStringPointIntersects):
         return super()._preprocess(rhs, lhs)
 
 
-class LineStringPointIntersects(IntersectsPredicateBase):
-    def _preprocess(self, lhs, rhs):
-        """Convert rhs to linestrings."""
-        x = cp.repeat(rhs.points.x, 2)
-        y = cp.repeat(rhs.points.y, 2)
-        xy = cudf.DataFrame({"x": x, "y": y}).interleave_columns()
-        parts = cp.arange((len(lhs) + 1)) * 2
-        geometries = cp.arange(len(lhs) + 1)
-        ls_rhs = cuspatial.GeoSeries.from_linestrings_xy(xy, parts, geometries)
-        return self._compute_predicate(
-            lhs, ls_rhs, PreprocessorResult(lhs, ls_rhs)
-        )
-
-
-class LineStringPolygonIntersects(IntersectsPredicateBase):
+class LineStringPolygonIntersects(BinPred):
     def _preprocess(self, lhs, rhs):
         intersects = lhs._basic_intersects(rhs)
         contains = rhs._basic_contains_any(lhs)
@@ -182,7 +151,7 @@ DispatchDict = {
     (MultiPoint, LineString): NotImplementedPredicate,
     (MultiPoint, Polygon): NotImplementedPredicate,
     (LineString, Point): LineStringPointIntersects,
-    (LineString, MultiPoint): LineStringMultiPointIntersects,
+    (LineString, MultiPoint): LineStringPointIntersects,
     (LineString, LineString): IntersectsPredicateBase,
     (LineString, Polygon): LineStringPolygonIntersects,
     (Polygon, Point): PolygonPointIntersects,
