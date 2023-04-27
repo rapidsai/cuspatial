@@ -100,11 +100,11 @@ class ContainsProperlyPredicate(
             )
         if self._should_use_quadtree(lhs):
             pip_result = contains_properly(
-                lhs, preprocessor_result.points, how="quadtree"
+                lhs, preprocessor_result.final_rhs, how="quadtree"
             )
         else:
             pip_result = contains_properly(
-                lhs, preprocessor_result.points, how="byte-limited"
+                lhs, preprocessor_result.final_rhs, how="byte-limited"
             )
         op_result = ContainsOpResult(pip_result, preprocessor_result)
         return self._postprocess(lhs, rhs, preprocessor_result, op_result)
