@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <cuspatial/range/range.cuh>
 #include <cuspatial/types.hpp>
 
 #include <cudf/lists/lists_column_view.hpp>

@@ -118,6 +118,7 @@ endif()
 
 add_library(cuspatial
     src/column/geometry_column_view.cpp
+    src/column/mixed_geometry_column_view.cpp
     src/indexing/construction/point_quadtree.cu
     src/join/quadtree_point_in_polygon.cu
     src/join/quadtree_point_to_nearest_linestring.cu

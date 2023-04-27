@@ -17,7 +17,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 
-#include <gtest/gtest.h>
+#include <cudf_test/cudf_gtest.hpp>
 
 namespace cuspatial {
 namespace test {

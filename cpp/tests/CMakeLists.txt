@@ -50,6 +50,10 @@ endfunction(ConfigureTest)
 
 # Column-based API
 
+# column
+ConfigureTest(MIXED_GEOMETRY_COLUMN_VIEW_TEST
+    column/mixed_geometry_column_view_test.cpp)
+
 # index
 ConfigureTest(POINT_QUADTREE_TEST
     index/point_quadtree_test.cpp)
