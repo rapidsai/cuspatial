@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <cuspatial_test/geometry_fixtures.hpp>
 #include <cuspatial_test/column_factories.hpp>
+#include <cuspatial_test/geometry_fixtures.hpp>
 #include <cuspatial_test/vector_equality.hpp>
 
 #include <cuspatial/column/geometry_column_view.hpp>

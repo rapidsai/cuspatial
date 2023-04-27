@@ -27,8 +27,6 @@
 
 #include <cudf/utilities/default_stream.hpp>
 
-#include <gtest/gtest.h>
-
 namespace cuspatial {
 namespace test {
 
@@ -38,9 +36,8 @@ namespace test {
  * @tparam T Type of the coordinates
  */
 template <typename T>
-class CommonGeometryColumnFixture : BaseFixture {
+class CommonGeometryColumnFixture : public BaseFixture {
  protected:
-
   // TODO: explore SetUpTestSuite to perform per-test-suite initialization, saving expenses.
   // However, this requires making `stream()` method a static member.
   void SetUp()
