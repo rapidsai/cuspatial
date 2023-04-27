@@ -1452,11 +1452,6 @@ class GeoSeries(cudf.Series):
         is_sizes = self._basic_intersects_count(other)
         return is_sizes > 0
 
-    def _basic_intersects_at_point_only(self, other):
-        """Utility method that returns True if only a single point in the lhs
-        geometry intersects with the rhs geometry."""
-        return self._basic_intersects_count(other) == 1
-
     def _basic_intersects_through(self, other):
         """Utility method that returns True if at least two points in the lhs
         geometry intersect with the rhs geometry."""
@@ -1471,15 +1466,6 @@ class GeoSeries(cudf.Series):
         rhs = _multipoints_from_geometry(other)
         contains = lhs.contains_properly(rhs, mode="basic_count")
         return contains
-
-    def _basic_contains_none(self, other):
-        """Utility method that returns True if none of the points in the lhs
-        geometry are contained_properly in the rhs geometry."""
-        lhs = self
-        rhs = _multipoints_from_geometry(other)
-        contains = lhs.contains_properly(rhs, mode="basic_none")
-        intersects = lhs._basic_intersects(other)
-        return contains & ~intersects
 
     def _basic_contains_any(self, other):
         """Utility method that returns True if any point in the lhs geometry
@@ -1496,13 +1482,4 @@ class GeoSeries(cudf.Series):
         lhs = self
         rhs = _multipoints_from_geometry(other)
         contains = lhs.contains_properly(rhs, mode="basic_any")
-        return contains
-
-    def _basic_contains_all(self, other):
-        """Utililty method that returns True if all points in the lhs geometry
-        are contained_properly in the rhs geometry. Equivalent to the public
-        `.contains_properly call."""
-        lhs = self
-        rhs = _multipoints_from_geometry(other)
-        contains = lhs.contains(rhs, mode="basic_all")
         return contains
