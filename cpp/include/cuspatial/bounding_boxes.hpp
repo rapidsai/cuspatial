@@ -25,9 +25,12 @@
 namespace cuspatial {
 
 /**
+ * @addtogroup spatial_relationship
+ * @{
+ */
+
+/**
  * @brief Compute minimum bounding boxes of a set of linestrings and an expansion radius.
- *
- * @ingroup spatial_relationship
  *
  * @param linestring_offsets Begin indices of the first point in each linestring (i.e. prefix-sum)
  * @param x Linestring point x-coordinates
@@ -55,8 +58,6 @@ std::unique_ptr<cudf::table> linestring_bounding_boxes(
 /**
  * @brief Compute minimum bounding box for each polygon in a list.
  *
- * @ingroup spatial_relationship
- *
  * @param poly_offsets Begin indices of the first ring in each polygon (i.e. prefix-sum)
  * @param ring_offsets Begin indices of the first point in each ring (i.e. prefix-sum)
  * @param x Polygon point x-coordinates
@@ -81,5 +82,9 @@ std::unique_ptr<cudf::table> polygon_bounding_boxes(
   cudf::column_view const& y,
   double expansion_radius             = 0.0,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial

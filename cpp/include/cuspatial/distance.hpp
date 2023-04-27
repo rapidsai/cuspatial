@@ -59,8 +59,6 @@ std::unique_ptr<cudf::column> haversine_distance(
 /**
  * @brief computes Hausdorff distances for all pairs in a collection of spaces
  *
- * @ingroup distance
- *
  * https://en.wikipedia.org/wiki/Hausdorff_distance
  *
  * Example in 1D (this function operates in 2D):

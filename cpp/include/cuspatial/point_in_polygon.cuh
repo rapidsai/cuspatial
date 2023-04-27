@@ -21,8 +21,11 @@
 namespace cuspatial {
 
 /**
- * @ingroup spatial_relationship
- *
+ * @addtogroup spatial_relationship
+ * @{
+ */
+
+/**
  * @brief Tests whether the specified points are inside any of the specified polygons.
  *
  * Tests whether points are inside at most 31 polygons. Polygons are a collection of one or more
@@ -111,8 +114,6 @@ OutputIt point_in_polygon(Cart2dItA test_points_first,
                           rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
 /**
- * @ingroup spatial_relationship
- *
  * @brief Given (point, polygon) pairs, tests whether the point of each pair is inside the polygon
  * of the pair.
  *
@@ -196,6 +197,10 @@ OutputIt pairwise_point_in_polygon(Cart2dItA test_points_first,
                                    Cart2dItB polygon_points_last,
                                    OutputIt output,
                                    rmm::cuda_stream_view stream = rmm::cuda_stream_default);
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial
 

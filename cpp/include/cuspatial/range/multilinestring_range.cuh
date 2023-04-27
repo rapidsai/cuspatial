@@ -28,8 +28,11 @@
 namespace cuspatial {
 
 /**
+ * @addtogroup ranges
+ */
+
+/**
  * @brief Non-owning range-based interface to multilinestring data
- * @ingroup ranges
  *
  * Provides a range-based interface to contiguous storage of multilinestring data, to make it easier
  * to access and iterate over multilinestrings, linestrings and points.
@@ -211,7 +214,6 @@ class multilinestring_range {
 
 /**
  * @brief Create a multilinestring_range object from size and start iterators
- * @ingroup ranges
  *
  * @tparam GeometryIteratorDiffType Index type of the size of the geometry array
  * @tparam PartIteratorDiffType Index type of the size of the part array
@@ -260,7 +262,6 @@ auto make_multilinestring_range(GeometryIteratorDiffType num_multilinestrings,
 
 /**
  * @brief Create a range object of multilinestring data from offset and point ranges
- * @ingroup ranges
  *
  * @tparam IntegerRange1 Range to integers
  * @tparam IntegerRange2 Range to integers
@@ -285,7 +286,6 @@ auto make_multilinestring_range(IntegerRange1 geometry_offsets,
 }
 
 /**
- * @ingroup ranges
  * @brief Create a range object of multilinestring from cuspatial::geometry_column_view.
  * Specialization for linestrings column.
  *
@@ -315,7 +315,6 @@ auto make_multilinestring_range(GeometryColumnView const& linestrings_column)
 }
 
 /**
- * @ingroup ranges
  * @brief Create a range object of multilinestring from cuspatial::geometry_column_view.
  * Specialization for multilinestrings column.
  *
@@ -344,6 +343,10 @@ auto make_multilinestring_range(GeometryColumnView const& linestrings_column)
                                points_it,
                                points_it + points_xy.size() / 2);
 };
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial
 

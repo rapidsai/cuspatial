@@ -24,8 +24,8 @@
 // Below are the main groups that doxygen uses to build
 // the Modules page in the specified order.
 //
-// To add a new API to an existing group, just use the
-// @ingroup tag in the API's doxygen comment.
+// To add a new API to an existing group, just use the @ingroup tag in the API's Doxygen
+// comment or @addtogroup in the file, inside the namespace.
 // Add a new group by first specifying in the hierarchy below.
 
 /**

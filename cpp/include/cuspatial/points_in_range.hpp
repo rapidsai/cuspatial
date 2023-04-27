@@ -27,9 +27,11 @@
 namespace cuspatial {
 
 /**
+ * @addtogroup spatial_relationship
+ */
+
+/**
  * @brief Find all points (x,y) that fall within a rectangular query range.
- *
- * @ingroup spatial_relationship
  *
  * A point (x, y) is in the range if `x > range_min_x && x < range_min_y && y > range_min_y && y
  * < range_max_y`.
@@ -59,5 +61,9 @@ std::unique_ptr<cudf::table> points_in_range(
   cudf::column_view const& x,
   cudf::column_view const& y,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial

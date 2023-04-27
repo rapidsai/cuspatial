@@ -24,7 +24,11 @@
 namespace cuspatial {
 
 /**
- * @ingroup nearest_points
+ * @addtogroup nearest_points
+ * @{
+ */
+
+/**
  * @brief Container for the result of `pairwise_point_linestring_nearest_points`
  */
 struct point_linestring_nearest_points_result {
@@ -45,7 +49,6 @@ struct point_linestring_nearest_points_result {
 };
 
 /**
- * @ingroup nearest_points
  * @brief Compute the nearest points and geometry ID between pairs of (multi)point and
  * (multi)linestring
  *
@@ -163,5 +166,9 @@ point_linestring_nearest_points_result pairwise_point_linestring_nearest_points(
   cudf::device_span<cudf::size_type const> linestring_part_offsets,
   cudf::column_view linestring_points_xy,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial

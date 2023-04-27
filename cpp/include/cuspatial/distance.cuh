@@ -27,6 +27,7 @@ namespace cuspatial {
 
 /**
  * @addtogroup distance
+ * @{
  */
 
 /**
@@ -264,6 +265,28 @@ OutputIt pairwise_linestring_polygon_distance(
   rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
 /**
+ * @brief Computes pairwise multipolygon to multipolygon distance
+ *
+ * @tparam MultiPolygonRangeA An instance of template type `multipolygon_range`
+ * @tparam MultiPolygonRangeB An instance of template type `multipolygon_range`
+ * @tparam OutputIt iterator type for output array. Must meet the requirements of [LRAI](LinkLRAI).
+ * Must be an iterator to type convertible from floating points.
+ *
+ * @param lhs The first multipolygon range to compute distance from
+ * @param rhs The second multipolygon range to compute distance to
+ * @param stream The CUDA stream on which to perform computations
+ * @return Output Iterator past the last distance computed
+ *
+ * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+ * "LegacyRandomAccessIterator"
+ */
+template <class MultipolygonRangeA, class MultipolygonRangeB, class OutputIt>
+OutputIt pairwise_polygon_distance(MultipolygonRangeA lhs,
+                                   MultipolygonRangeB rhs,
+                                   OutputIt distances_first,
+                                   rmm::cuda_stream_view stream = rmm::cuda_stream_default);
+
+/**
  * @} // end of doxygen group
  */
 
@@ -276,3 +299,4 @@ OutputIt pairwise_linestring_polygon_distance(
 #include <cuspatial/detail/distance/point_distance.cuh>
 #include <cuspatial/detail/distance/point_linestring_distance.cuh>
 #include <cuspatial/detail/distance/point_polygon_distance.cuh>
+#include <cuspatial/detail/distance/polygon_distance.cuh>
