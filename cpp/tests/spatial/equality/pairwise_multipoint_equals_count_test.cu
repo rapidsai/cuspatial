@@ -20,8 +20,8 @@
 
 #include <cuspatial/constants.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/pairwise_multipoint_equals_count.cuh>
-#include <cuspatial/experimental/sinusoidal_projection.cuh>
+#include <cuspatial/pairwise_multipoint_equals_count.cuh>
+#include <cuspatial/sinusoidal_projection.cuh>
 #include <cuspatial/vec_2d.hpp>
 
 #include <rmm/device_vector.hpp>

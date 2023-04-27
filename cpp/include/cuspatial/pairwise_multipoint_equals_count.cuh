@@ -71,4 +71,4 @@ OutputIt pairwise_multipoint_equals_count(MultiPointRangeA lhs_first,
 
 }  // namespace cuspatial
 
-#include <cuspatial/experimental/detail/pairwise_multipoint_equals_count.cuh>
+#include <cuspatial/detail/pairwise_multipoint_equals_count.cuh>
