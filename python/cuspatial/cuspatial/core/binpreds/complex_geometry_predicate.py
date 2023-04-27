@@ -175,6 +175,23 @@ class ComplexGeometryPredicate(BinPred):
             The result of the preprocessor.
         op_result : ContainsProperlyOpResult
             The result of the contains_properly call.
+        mode : str
+            The mode of the predicate. Various mode options are available
+            to support binary predicates. The mode options are `full`,
+            `basic_none`, `basic_any`, and `basic_count`. If the default
+            option `full` is specified, `.contains` or .contains_properly`
+            will return a boolean series indicating whether each feature
+            in the right-hand GeoSeries is contained by the corresponding
+            feature in the left-hand GeoSeries. If `basic_none` is
+            specified, `.contains` or .contains_properly` returns the
+            inverse of `full`. If `basic_any` is specified, `.contains` or
+            .contains_properly` returns a boolean series indicating
+            whether any point in the right-hand GeoSeries is contained by
+            the corresponding feature in the left-hand GeoSeries. If the
+            `basic_count` option is specified, `.contains` or
+            .contains_properly` returns a series of integers indicating
+            the number of points in the right-hand GeoSeries that are
+            contained by the corresponding feature in the left-hand
 
         Returns
         -------
