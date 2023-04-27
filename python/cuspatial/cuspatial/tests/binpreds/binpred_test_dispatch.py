@@ -504,7 +504,43 @@ type_dispatch = {
 
 
 def simple_test_dispatch():
-    """Generates a list of test cases for each geometry type combination."""
+    """Generates a list of test cases for each geometry type combination.
+
+    Each dispatched test case is a tuple of the form:
+    (test_name, test_description, lhs, rhs)
+    which is run in `test_binpred_test_dispatch.py`.
+
+    The test_name is a unique identifier for the test case.
+    The test_description is a string representation of the test case.
+    The lhs and rhs are GeoSeries of the left and right geometries.
+
+    lhs and rhs are always constructed as a list of 3 geometries since
+    the binpred function is designed to operate primarily on groups of
+    geometries. The first and third feature in the list always match
+    the first geometry specified in `test_description`, and the rhs is always
+    a group of three of the second geometry specified in `test_description`.
+    The second feature in the lhs varies.
+
+    When the types of the lhs and rhs are equal, the second geometry
+    from `test_description` is substituted for the second geometry in the lhs.
+    This produces a test form of:
+    lhs     rhs
+    A       B
+    B       B
+    A       B
+
+    This decision has two primary benefits:
+    1. It causes the test to produce varied results (meaning results of the
+    form (True, False, True) or (False, True, False), greatly reducing the
+    likelihood of an "all-False" or "all-True" predicate producing
+    false-positive results.
+    2. It tests every binary predicate against self, such as A.touches(A)
+    for every predicate and geometry combination.
+
+    When the types of lhs and rhs are not equal this variation is not
+    performed, since we cannot currently use predicate operations on mixed
+    geometry types.
+    """
     for types in type_dispatch:
         generator = type_dispatch[types]
         for test_name, test_description, lhs, rhs in generator:

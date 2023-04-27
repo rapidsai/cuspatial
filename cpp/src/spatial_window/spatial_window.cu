@@ -15,8 +15,8 @@
  */
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/iterator_factory.cuh>
-#include <cuspatial/experimental/points_in_range.cuh>
+#include <cuspatial/iterator_factory.cuh>
+#include <cuspatial/points_in_range.cuh>
 
 #include <cudf/column/column.hpp>
 #include <cudf/column/column_view.hpp>
