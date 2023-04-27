@@ -88,9 +88,9 @@ def test_one_pair_with_overlap():
     expect_ids = pd.DataFrame(
         {
             "lhs_linestring_id": [[0]],
-            "lhs_segment_id": [[0]],
+            "lhs_segment_id": [[1]],
             "rhs_linestring_id": [[0]],
-            "rhs_segment_id": [[0]],
+            "rhs_segment_id": [[1]],
         }
     )
 
@@ -122,9 +122,9 @@ def test_two_pairs_with_intersect_and_overlap():
     expect_ids = pd.DataFrame(
         {
             "lhs_linestring_id": [[0], [0, 0]],
-            "lhs_segment_id": [[0], [1, 0]],
+            "lhs_segment_id": [[1], [1, 0]],
             "rhs_linestring_id": [[0], [0, 0]],
-            "rhs_segment_id": [[0], [0, 2]],
+            "rhs_segment_id": [[1], [0, 2]],
         }
     )
 
