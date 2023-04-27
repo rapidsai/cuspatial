@@ -239,6 +239,8 @@ class ContainsGeometryProcessor(BinPred):
             return count_result
 
         # Handling for full contains (equivalent to basic predicate all)
+        # for each input pair i: result[i] =  true iff point[i] is
+        # contained in at least one polygon of multipolygon[i].
         result_df["feature_in_polygon"] = (
             result_df["point_index_x"] >= result_df["point_index_y"]
         )

@@ -140,8 +140,6 @@ class ContainsProperlyPredicate(ContainsGeometryProcessor):
             polygon.
         """
 
-        # for each input pair i: result[i] =  true iff point[i] is
-        # contained in at least one polygon of multipolygon[i].
         if _is_complex(rhs):
             return super()._postprocess_multi(
                 lhs, rhs, preprocessor_result, op_result, mode=self.config.mode
