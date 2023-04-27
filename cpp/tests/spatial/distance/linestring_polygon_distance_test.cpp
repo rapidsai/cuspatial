@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <cuspatial_test/geometry_fixtures.hpp>
 #include <cuspatial_test/column_factories.hpp>
 #include <cuspatial_test/vector_equality.hpp>
 
@@ -40,42 +41,7 @@ using namespace cudf;
 using namespace cudf::test;
 
 template <typename T>
-struct PairwiseLinestringPolygonDistanceTest : ::testing::Test {
-  rmm::cuda_stream_view stream() { return cudf::get_default_stream(); }
-  void SetUp()
-  {
-    collection_type_id _;
-    std::tie(_, empty_linestring_column)      = make_linestring_column<T>({0}, {}, stream());
-    std::tie(_, empty_multilinestring_column) = make_linestring_column<T>({0}, {0}, {}, stream());
-    std::tie(_, empty_polygon_column)         = make_polygon_column<T>({0}, {0}, {}, stream());
-    std::tie(_, empty_multipolygon_column)    = make_polygon_column<T>({0}, {0}, {0}, {}, stream());
-  }
-
-  geometry_column_view empty_linestring()
-  {
-    return geometry_column_view(
-      empty_linestring_column->view(), collection_type_id::SINGLE, geometry_type_id::LINESTRING);
-  }
-
-  geometry_column_view empty_multilinestring()
-  {
-    return geometry_column_view(empty_multilinestring_column->view(),
-                                collection_type_id::MULTI,
-                                geometry_type_id::LINESTRING);
-  }
-
-  geometry_column_view empty_polygon()
-  {
-    return geometry_column_view(
-      empty_polygon_column->view(), collection_type_id::SINGLE, geometry_type_id::POLYGON);
-  }
-
-  geometry_column_view empty_multipolygon()
-  {
-    return geometry_column_view(
-      empty_multipolygon_column->view(), collection_type_id::MULTI, geometry_type_id::POLYGON);
-  }
-
+struct PairwiseLinestringPolygonDistanceTest : CommonGeometryColumnFixture<T> {
   void run_single(geometry_column_view linestrings,
                   geometry_column_view polygons,
                   std::initializer_list<T> expected)
@@ -83,11 +49,6 @@ struct PairwiseLinestringPolygonDistanceTest : ::testing::Test {
     auto got = pairwise_linestring_polygon_distance(linestrings, polygons);
     CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(*got, fixed_width_column_wrapper<T>(expected));
   }
-
-  std::unique_ptr<cudf::column> empty_linestring_column;
-  std::unique_ptr<cudf::column> empty_multilinestring_column;
-  std::unique_ptr<cudf::column> empty_polygon_column;
-  std::unique_ptr<cudf::column> empty_multipolygon_column;
 };
 
 struct PairwiseLinestringPolygonDistanceTestUntyped : testing::Test {
