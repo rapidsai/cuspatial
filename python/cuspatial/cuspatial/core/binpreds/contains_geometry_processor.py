@@ -25,7 +25,7 @@ from cuspatial.utils.column_utils import (
 )
 
 
-class ComplexGeometryPredicate(BinPred):
+class ContainsGeometryProcessor(BinPred):
     def _preprocess_multi(self, lhs, rhs):
         """Flatten any rhs into only its points xy array. This is necessary
         because the basic predicate for contains, point-in-polygon,
