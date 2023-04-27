@@ -50,7 +50,7 @@ class PreprocessorResult:
         The left-hand GeoSeries.
     rhs : GeoSeries
         The right-hand GeoSeries.
-    points : GeoSeries
+    final_rhs : GeoSeries
         The rhs GeoSeries, if modified by the preprocessor. For example
         the contains preprocessor converts any complex feature type into
         a collection of points.
@@ -68,12 +68,12 @@ class PreprocessorResult:
     ):
         self.lhs = lhs
         self.rhs = rhs
-        self.points = final_rhs
+        self.final_rhs = final_rhs
         self.point_indices = point_indices
 
     def __repr__(self):
         return f"PreprocessorResult(lhs={self.lhs}, rhs={self.rhs}, \
-        points={self.points}, point_indices={self.point_indices})"
+        points={self.final_rhs}, point_indices={self.point_indices})"
 
     def __str__(self):
         return self.__repr__()

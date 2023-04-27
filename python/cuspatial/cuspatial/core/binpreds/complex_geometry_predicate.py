@@ -40,8 +40,8 @@ class ComplexGeometryPredicate(BinPred):
 
         Returns
         -------
-        result : GeoSeries
-            A GeoSeries of boolean values indicating whether each feature in
+        result : cudf.Series
+            A cudf.Series of boolean values indicating whether each feature in
             the right-hand GeoSeries satisfies the requirements of the point-
             in-polygon basic predicate with its corresponding feature in the
             left-hand GeoSeries.
@@ -135,7 +135,11 @@ class ComplexGeometryPredicate(BinPred):
         Returns
         -------
         cudf.DataFrame
-
+            A cudf.DataFrame with two columns: `polygon_index` and
+            `point_index`. The `polygon_index` column contains the index
+            of the polygon from the original lhs that contains the point,
+            and the `point_index` column contains the index of the point
+            from the preprocessor final_rhs input to point-in-polygon.
         """
         # Convert the quadtree part indices df into a polygon indices df
         polygon_indices = (
