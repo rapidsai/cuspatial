@@ -204,6 +204,9 @@ ConfigureTest(LINESTRING_DISTANCE_TEST_EXP
     spatial/distance/linestring_distance_test.cu
     spatial/distance/linestring_distance_test_medium.cu)
 
+ConfigureTest(POLYGON_DISTANCE_TEST_EXP
+    spatial/distance/polygon_distance_test.cu)
+
 # intersection
 ConfigureTest(LINESTRING_INTERSECTION_TEST_EXP
     spatial/intersection/linestring_intersection_count_test.cu

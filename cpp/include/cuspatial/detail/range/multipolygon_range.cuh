@@ -23,6 +23,8 @@
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/geometry_collection/multipolygon_ref.cuh>
 #include <cuspatial/iterator_factory.cuh>
+#include <cuspatial/range/multilinestring_range.cuh>
+#include <cuspatial/range/multipoint_range.cuh>
 #include <cuspatial/traits.hpp>
 
 #include <thrust/binary_search.h>
@@ -439,6 +441,41 @@ multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
   is_first_point_of_multipolygon(IndexType1 point_idx, IndexType2 geometry_idx)
 {
   return point_idx == _ring_begin[_part_begin[_geometry_begin[geometry_idx]]];
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::as_multipoint_range()
+{
+  auto multipoint_geometry_it = thrust::make_permutation_iterator(
+    _ring_begin, thrust::make_permutation_iterator(_part_begin, _geometry_begin));
+
+  return multipoint_range{multipoint_geometry_it,
+                          multipoint_geometry_it + thrust::distance(_geometry_begin, _geometry_end),
+                          _point_begin,
+                          _point_end};
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
+  as_multilinestring_range()
+{
+  auto multilinestring_geometry_it =
+    thrust::make_permutation_iterator(_part_begin, _geometry_begin);
+  return multilinestring_range{
+    multilinestring_geometry_it,
+    multilinestring_geometry_it + thrust::distance(_geometry_begin, _geometry_end),
+    _ring_begin,
+    _ring_end,
+    _point_begin,
+    _point_end};
 }
 
 }  // namespace cuspatial
