@@ -9,7 +9,7 @@ from cuspatial._lib.cpp.column.geometry_column_view cimport (
 )
 
 
-cdef extern from "cuspatial/distance/linestring_polygon_distance.hpp" \
+cdef extern from "cuspatial/distance.hpp" \
         namespace "cuspatial" nogil:
     cdef unique_ptr[column] pairwise_linestring_polygon_distance(
         const geometry_column_view & multilinestrings,
