@@ -9,8 +9,8 @@ from cuspatial.core.binpreds.binpred_interface import (
     ImpossiblePredicate,
     NotImplementedPredicate,
 )
-from cuspatial.core.binpreds.complex_geometry_predicate import (
-    ComplexGeometryPredicate,
+from cuspatial.core.binpreds.contains_geometry_processor import (
+    ContainsGeometryProcessor,
 )
 from cuspatial.utils.binpred_utils import (
     LineString,
@@ -32,7 +32,7 @@ from cuspatial.utils.column_utils import (
 GeoSeries = TypeVar("GeoSeries")
 
 
-class ContainsPredicateBase(ComplexGeometryPredicate):
+class ContainsPredicate(ContainsGeometryProcessor):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.config.allpairs = kwargs.get("allpairs", False)
@@ -112,12 +112,7 @@ class ContainsPredicateBase(ComplexGeometryPredicate):
             raise NotImplementedError("Invalid rhs for contains operation")
 
 
-class ContainsPredicate(ContainsPredicateBase):
-    def _compute_results(self, lhs, rhs, preprocessor_result):
-        return lhs._contains(rhs)
-
-
-class PointPointContains(ContainsPredicateBase):
+class PointPointContains(BinPred):
     def _preprocess(self, lhs, rhs):
         return lhs._basic_equals(rhs)
 
@@ -129,12 +124,7 @@ class LineStringPointContains(BinPred):
         return intersects & ~equals
 
 
-class LineStringMultiPointContainsPredicate(ContainsPredicateBase):
-    def _compute_results(self, lhs, rhs, preprocessor_result):
-        return lhs._linestring_multipoint_contains(rhs)
-
-
-class LineStringLineStringContainsPredicate(ContainsPredicateBase):
+class LineStringLineStringContainsPredicate(BinPred):
     def _preprocess(self, lhs, rhs):
         count = lhs._basic_equals_count(rhs)
         return count == rhs.sizes
@@ -152,11 +142,11 @@ DispatchDict = {
     (MultiPoint, LineString): NotImplementedPredicate,
     (MultiPoint, Polygon): NotImplementedPredicate,
     (LineString, Point): LineStringPointContains,
-    (LineString, MultiPoint): LineStringMultiPointContainsPredicate,
+    (LineString, MultiPoint): NotImplementedPredicate,
     (LineString, LineString): LineStringLineStringContainsPredicate,
     (LineString, Polygon): ImpossiblePredicate,
-    (Polygon, Point): ContainsPredicateBase,
-    (Polygon, MultiPoint): ContainsPredicateBase,
-    (Polygon, LineString): ContainsPredicateBase,
-    (Polygon, Polygon): ContainsPredicateBase,
+    (Polygon, Point): ContainsPredicate,
+    (Polygon, MultiPoint): ContainsPredicate,
+    (Polygon, LineString): ContainsPredicate,
+    (Polygon, Polygon): ContainsPredicate,
 }

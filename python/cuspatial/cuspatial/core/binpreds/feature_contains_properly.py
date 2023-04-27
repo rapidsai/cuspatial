@@ -10,9 +10,8 @@ from cuspatial.core.binpreds.binpred_interface import (
     PreprocessorResult,
 )
 from cuspatial.core.binpreds.contains import contains_properly
-from cuspatial.core.binpreds.feature_contains import (
-    ComplexGeometryPredicate,
-    ContainsPredicateBase,
+from cuspatial.core.binpreds.contains_geometry_processor import (
+    ContainsGeometryProcessor,
 )
 from cuspatial.utils.binpred_utils import (
     LineString,
@@ -29,9 +28,7 @@ from cuspatial.utils.column_utils import (
 GeoSeries = TypeVar("GeoSeries")
 
 
-class ContainsProperlyPredicate(
-    ContainsPredicateBase, ComplexGeometryPredicate
-):
+class ContainsProperlyPredicate(ContainsGeometryProcessor):
     def __init__(self, **kwargs):
         """Base class for binary predicates that are defined in terms of a
         `contains` basic predicate. This class implements the logic that
