@@ -37,6 +37,7 @@
 #include <type_traits>
 
 namespace cuspatial {
+
 namespace detail {
 
 template <class MultiPointRangeA, class MultiPointRangeB, class OutputIt>

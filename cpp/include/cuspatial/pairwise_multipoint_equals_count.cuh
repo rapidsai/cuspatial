@@ -23,6 +23,7 @@
 #include <iterator>
 
 namespace cuspatial {
+
 /**
  * @brief Count the number of equal points in multipoint pairs.
  *
