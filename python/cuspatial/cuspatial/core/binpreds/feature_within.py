@@ -2,17 +2,9 @@
 
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
+    ImpossiblePredicate,
     NotImplementedPredicate,
 )
-from cuspatial.core.binpreds.complex_geometry_predicate import (
-    ComplexGeometryPredicate,
-)
-from cuspatial.core.binpreds.feature_contains import ContainsPredicateBase
-from cuspatial.core.binpreds.feature_contains_properly import (
-    ContainsProperlyPredicate,
-)
-from cuspatial.core.binpreds.feature_equals import EqualsPredicateBase
-from cuspatial.core.binpreds.feature_intersects import IntersectsPredicateBase
 from cuspatial.utils.binpred_utils import (
     LineString,
     MultiPoint,
@@ -21,66 +13,45 @@ from cuspatial.utils.binpred_utils import (
 )
 
 
-class WithinPredicateBase(EqualsPredicateBase):
-    """Base class for binary predicates that are defined in terms of a
-    root-level binary predicate. For example, a Point-Point Within
-    predicate is defined in terms of a Point-Point Contains predicate.
-    Used by:
-    (Polygon, Point)
-    (Polygon, MultiPoint)
-    (Polygon, LineString)
-    """
-
-    pass
+class WithinPredicateBase(BinPred):
+    def _preprocess(self, lhs, rhs):
+        return lhs._basic_equals_all(rhs)
 
 
-class WithinIntersectsPredicate(IntersectsPredicateBase):
+class WithinIntersectsPredicate(BinPred):
     def _preprocess(self, lhs, rhs):
         intersects = rhs._basic_intersects(lhs)
         equals = rhs._basic_equals(lhs)
         return intersects & ~equals
 
 
-class PointLineStringWithin(WithinIntersectsPredicate):
+class PointLineStringWithin(BinPred):
     def _preprocess(self, lhs, rhs):
-        # Note the order of arguments is reversed.
-        return super()._preprocess(rhs, lhs)
+        intersects = lhs.intersects(rhs)
+        equals = lhs._basic_equals(rhs)
+        return intersects & ~equals
 
 
-class PointPolygonWithin(ContainsPredicateBase):
+class PointPolygonWithin(BinPred):
     def _preprocess(self, lhs, rhs):
         return rhs.contains_properly(lhs)
 
 
-class LineStringLineStringWithin(IntersectsPredicateBase):
-    def _compute_predicate(self, lhs, rhs, preprocessor_result):
+class LineStringLineStringWithin(BinPred):
+    def _preprocess(self, lhs, rhs):
         intersects = rhs._basic_intersects(lhs)
         equals = rhs._basic_equals_all(lhs)
         return intersects & equals
 
 
-class ComplexPolygonWithin(
-    ContainsProperlyPredicate, ComplexGeometryPredicate
-):
-    """Implements within for complex polygons. Depends on contains result
-    for the types.
-
-    Used by:
-    (MultiPoint, Polygon)
-    (LineString, Polygon)
-    (Polygon, Polygon)
-    """
-
-    def _preprocess(self, lhs, rhs):
-        # Note the order of arguments is reversed.
-        return super()._preprocess(rhs, lhs)
-
-
 class LineStringPolygonWithin(BinPred):
     def _preprocess(self, lhs, rhs):
-        contains_all = rhs._basic_contains_all(lhs)
-        intersects = rhs._basic_intersects(lhs)
-        return contains_all & intersects
+        return rhs.contains(lhs)
+
+
+class PolygonPolygonWithin(BinPred):
+    def _preprocess(self, lhs, rhs):
+        return rhs.contains(lhs)
 
 
 DispatchDict = {
@@ -91,13 +62,13 @@ DispatchDict = {
     (MultiPoint, Point): NotImplementedPredicate,
     (MultiPoint, MultiPoint): NotImplementedPredicate,
     (MultiPoint, LineString): WithinIntersectsPredicate,
-    (MultiPoint, Polygon): ComplexPolygonWithin,
-    (LineString, Point): WithinIntersectsPredicate,
+    (MultiPoint, Polygon): PolygonPolygonWithin,
+    (LineString, Point): ImpossiblePredicate,
     (LineString, MultiPoint): WithinIntersectsPredicate,
     (LineString, LineString): LineStringLineStringWithin,
     (LineString, Polygon): LineStringPolygonWithin,
     (Polygon, Point): WithinPredicateBase,
     (Polygon, MultiPoint): WithinPredicateBase,
     (Polygon, LineString): WithinPredicateBase,
-    (Polygon, Polygon): ComplexPolygonWithin,
+    (Polygon, Polygon): PolygonPolygonWithin,
 }
