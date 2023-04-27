@@ -19,21 +19,11 @@
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/utility/zero_data.cuh>
 #include <cuspatial/error.hpp>
-<<<<<<< HEAD:cpp/include/cuspatial/experimental/detail/pairwise_multipoint_equals_count.cuh
-#include <cuspatial/experimental/iterator_factory.cuh>
-#include <cuspatial/experimental/ranges/multipoint_range.cuh>
-#include <cuspatial/experimental/ranges/range.cuh>
-#include <cuspatial/traits.hpp>
-#include <cuspatial/vec_2d.hpp>
-  == == ==
-  =
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/range/multipoint_range.cuh>
 #include <cuspatial/range/range.cuh>
 #include <cuspatial/traits.hpp>
-    >>>>>>> branch - 23.06 : cpp / include / cuspatial / detail /
-                             pairwise_multipoint_equals_count.cuh
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
@@ -46,71 +36,72 @@
 #include <iterator>
 #include <type_traits>
 
-                             namespace cuspatial
+namespace cuspatial {
+namespace detail {
+
+template <class MultiPointRangeA, class MultiPointRangeB, class OutputIt>
+void __global__ pairwise_multipoint_equals_count_kernel(MultiPointRangeA lhs,
+                                                        MultiPointRangeB rhs,
+                                                        OutputIt output)
 {
-  namespace detail {
+  using T = typename MultiPointRangeA::point_t::value_type;
 
-  template <class MultiPointRangeA, class MultiPointRangeB, class OutputIt>
-  void __global__ pairwise_multipoint_equals_count_kernel(MultiPointRangeA lhs,
-                                                          MultiPointRangeB rhs,
-                                                          OutputIt output)
-  {
-    using T = typename MultiPointRangeA::point_t::value_type;
+  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < lhs.num_points();
+       idx += gridDim.x * blockDim.x) {
+    auto geometry_id    = lhs.geometry_idx_from_point_idx(idx);
+    vec_2d<T> lhs_point = lhs.point_begin()[idx];
+    auto rhs_multipoint = rhs[geometry_id];
 
-    for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < lhs.num_points();
-         idx += gridDim.x * blockDim.x) {
-      auto geometry_id    = lhs.geometry_idx_from_point_idx(idx);
-      vec_2d<T> lhs_point = lhs.point_begin()[idx];
-      auto rhs_multipoint = rhs[geometry_id];
-
-      atomicAdd(&output[geometry_id],
-                thrust::binary_search(
-                  thrust::seq, rhs_multipoint.begin(), rhs_multipoint.end(), lhs_point));
-    }
+    atomicAdd(
+      &output[geometry_id],
+      thrust::binary_search(thrust::seq, rhs_multipoint.begin(), rhs_multipoint.end(), lhs_point));
   }
+}
 
-  }  // namespace detail
+}  // namespace detail
 
-  template <class MultiPointRangeA, class MultiPointRangeB, class OutputIt>
-  OutputIt pairwise_multipoint_equals_count(
-    MultiPointRangeA lhs, MultiPointRangeB rhs, OutputIt output, rmm::cuda_stream_view stream)
-  {
-    using T       = typename MultiPointRangeA::point_t::value_type;
-    using index_t = typename MultiPointRangeB::index_t;
+template <class MultiPointRangeA, class MultiPointRangeB, class OutputIt>
+OutputIt pairwise_multipoint_equals_count(MultiPointRangeA lhs,
+                                          MultiPointRangeB rhs,
+                                          OutputIt output,
+                                          rmm::cuda_stream_view stream)
+{
+  using T       = typename MultiPointRangeA::point_t::value_type;
+  using index_t = typename MultiPointRangeB::index_t;
 
-    static_assert(is_same_floating_point<T, typename MultiPointRangeB::point_t::value_type>(),
-                  "Origin and input must have the same base floating point type.");
+  static_assert(is_same_floating_point<T, typename MultiPointRangeB::point_t::value_type>(),
+                "Origin and input must have the same base floating point type.");
 
-    CUSPATIAL_EXPECTS(lhs.size() == rhs.size(), "lhs and rhs inputs should have the same size.");
+  CUSPATIAL_EXPECTS(lhs.size() == rhs.size(), "lhs and rhs inputs should have the same size.");
 
-    if (lhs.size() == 0) return output;
+  if (lhs.size() == 0) return output;
 
-    // Create a sorted copy of the rhs points.
-    auto key_it = make_geometry_id_iterator<index_t>(rhs.offsets_begin(), rhs.offsets_end());
+  // Create a sorted copy of the rhs points.
+  auto key_it = make_geometry_id_iterator<index_t>(rhs.offsets_begin(), rhs.offsets_end());
 
-    rmm::device_uvector<index_t> rhs_keys(rhs.num_points(), stream);
-    rmm::device_uvector<vec_2d<T>> rhs_point_sorted(rhs.num_points(), stream);
+  rmm::device_uvector<index_t> rhs_keys(rhs.num_points(), stream);
+  rmm::device_uvector<vec_2d<T>> rhs_point_sorted(rhs.num_points(), stream);
 
-    thrust::copy(rmm::exec_policy(stream), key_it, key_it + rhs.num_points(), rhs_keys.begin());
-    thrust::copy(
-      rmm::exec_policy(stream), rhs.point_begin(), rhs.point_end(), rhs_point_sorted.begin());
+  thrust::copy(rmm::exec_policy(stream), key_it, key_it + rhs.num_points(), rhs_keys.begin());
+  thrust::copy(
+    rmm::exec_policy(stream), rhs.point_begin(), rhs.point_end(), rhs_point_sorted.begin());
 
-    auto rhs_with_keys =
-      thrust::make_zip_iterator(thrust::make_tuple(rhs_keys.begin(), rhs_point_sorted.begin()));
+  auto rhs_with_keys =
+    thrust::make_zip_iterator(thrust::make_tuple(rhs_keys.begin(), rhs_point_sorted.begin()));
 
-    thrust::sort(rmm::exec_policy(stream), rhs_with_keys, rhs_with_keys + rhs.num_points());
+  thrust::sort(rmm::exec_policy(stream), rhs_with_keys, rhs_with_keys + rhs.num_points());
 
-    auto rhs_sorted = multipoint_range{
-      rhs.offsets_begin(), rhs.offsets_end(), rhs_point_sorted.begin(), rhs_point_sorted.end()};
+  auto rhs_sorted = multipoint_range{
+    rhs.offsets_begin(), rhs.offsets_end(), rhs_point_sorted.begin(), rhs_point_sorted.end()};
 
-    detail::zero_data_async(output, output + lhs.size(), stream);
-    auto [tpb, n_blocks] = grid_1d(lhs.num_points());
-    detail::pairwise_multipoint_equals_count_kernel<<<n_blocks, tpb, 0, stream.value()>>>(
-      lhs, rhs_sorted, output);
+  detail::zero_data_async(output, output + lhs.size(), stream);
+  auto [tpb, n_blocks] = grid_1d(lhs.num_points());
+  detail::pairwise_multipoint_equals_count_kernel<<<n_blocks, tpb, 0, stream.value()>>>(
+    lhs, rhs_sorted, output);
 
-    CUSPATIAL_CHECK_CUDA(stream.value());
+  CUSPATIAL_CHECK_CUDA(stream.value());
 
-    return output + lhs.size();
-  }
+  return output + lhs.size();
+}
 
 }  // namespace cuspatial
