@@ -19,7 +19,7 @@
 #include <cuspatial/column/geometry_column_view.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/pairwise_multipoint_equals_count.cuh>
-#include <cuspatial/ranges/multipoint_range.cuh>
+#include <cuspatial/range/multipoint_range.cuh>
 #include <cuspatial/types.hpp>
 
 #include <cudf/column/column_factories.hpp>

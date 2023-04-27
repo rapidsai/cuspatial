@@ -19,11 +19,11 @@
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/utility/zero_data.cuh>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/iterator_factory.cuh>
-#include <cuspatial/experimental/ranges/multipoint_range.cuh>
-#include <cuspatial/experimental/ranges/range.cuh>
+#include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/iterator_factory.cuh>
+#include <cuspatial/range/multipoint_range.cuh>
+#include <cuspatial/range/range.cuh>
 #include <cuspatial/traits.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
