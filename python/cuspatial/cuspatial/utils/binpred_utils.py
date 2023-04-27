@@ -1,6 +1,7 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
 import cupy as cp
+import numpy as np
 
 import cudf
 
@@ -20,6 +21,21 @@ Polygon = ColumnType.POLYGON
 def _false_series(size):
     """Return a Series of False values"""
     return cudf.Series(cp.zeros(size, dtype=cp.bool_))
+
+
+def _true_series(size):
+    """Return a Series of True values"""
+    return cudf.Series(cp.ones(size, dtype=cp.bool_))
+
+
+def _zero_series(size):
+    """Return a Series of zeros"""
+    return cudf.Series(cp.zeros(size, dtype=cp.int32))
+
+
+def _one_series(size):
+    """Return a Series of ones"""
+    return cudf.Series(cp.ones(size, dtype=cp.int32))
 
 
 def _count_results_in_multipoint_geometries(point_indices, point_result):
@@ -161,6 +177,7 @@ def _multipoints_from_polygons(geoseries):
     polygon_offsets = geoseries.polygons.ring_offset.take(
         geoseries.polygons.part_offset.take(geoseries.polygons.geometry_offset)
     )
+    # Drop the endpoint from all polygons
     return cuspatial.GeoSeries.from_multipoints_xy(xy, polygon_offsets)
 
 
@@ -261,3 +278,105 @@ def _is_complex(geoseries):
     if len(geoseries.multipoints.xy) > 0:
         return True
     return False
+
+
+def _open_polygon_rings(geoseries):
+    """Converts a geoseries of polygons into a geoseries of linestrings
+    by opening the rings of each polygon."""
+    x = geoseries.polygons.x
+    y = geoseries.polygons.y
+    parts = geoseries.polygons.part_offset.take(
+        geoseries.polygons.geometry_offset
+    )
+    rings_mask = geoseries.polygons.ring_offset - 1
+    rings_mask[0] = 0
+    mask = _true_series(len(x))
+    mask[rings_mask[1:]] = False
+    x = x[mask]
+    y = y[mask]
+    xy = cudf.DataFrame({"x": x, "y": y}).interleave_columns()
+    rings = geoseries.polygons.ring_offset - cp.arange(len(rings_mask))
+    return cuspatial.GeoSeries.from_linestrings_xy(
+        xy,
+        rings,
+        parts,
+    )
+
+
+def _points_and_lines_to_multipoints(geoseries, offsets):
+    """Converts a geoseries of points and lines into a geoseries of
+    multipoints."""
+    points_mask = geoseries.type == "Point"
+    lines_mask = geoseries.type == "Linestring"
+    if (points_mask + lines_mask).sum() != len(geoseries):
+        raise ValueError("Geoseries must contain only points and lines")
+    points = geoseries[points_mask]
+    lines = geoseries[lines_mask]
+    points_offsets = _zero_series(len(geoseries))
+    points_offsets[points_mask] = 1
+    lines_series = geoseries[lines_mask]
+    lines_sizes = lines_series.sizes
+    xy = _zero_series(len(points.points.xy) + len(lines.lines.xy))
+    sizes = _zero_series(len(geoseries))
+    if (lines_sizes != 0).all():
+        lines_sizes.index = points_offsets[lines_mask].index
+        points_offsets[lines_mask] = lines_series.sizes.values
+        sizes[lines_mask] = lines.sizes.values * 2
+    sizes[points_mask] = 2
+    # TODO Inevitable host device copy
+    points_xy_mask = cp.array(np.repeat(points_mask, sizes.values_host))
+    xy.iloc[points_xy_mask] = points.points.xy.reset_index(drop=True)
+    xy.iloc[~points_xy_mask] = lines.lines.xy.reset_index(drop=True)
+    collected_offsets = cudf.concat(
+        [cudf.Series([0]), sizes.cumsum()]
+    ).reset_index(drop=True)[offsets]
+    result = cuspatial.GeoSeries.from_multipoints_xy(
+        xy, collected_offsets // 2
+    )
+    return result
+
+
+def _linestrings_to_center_point(geoseries):
+    if (geoseries.sizes != 2).any():
+        raise ValueError(
+            "Geoseries must contain only linestrings with two points"
+        )
+    x = geoseries.lines.x
+    y = geoseries.lines.y
+    return cuspatial.GeoSeries.from_points_xy(
+        cudf.DataFrame(
+            {
+                "x": (
+                    x[::2].reset_index(drop=True)
+                    + x[1::2].reset_index(drop=True)
+                )
+                / 2,
+                "y": (
+                    y[::2].reset_index(drop=True)
+                    + y[1::2].reset_index(drop=True)
+                )
+                / 2,
+            }
+        ).interleave_columns()
+    )
+
+
+def _multipoints_is_degenerate(geoseries):
+    """Only tests if the first two points are degenerate."""
+    offsets = geoseries.multipoints.geometry_offset[:-1]
+    sizes_mask = geoseries.sizes > 1
+    x1 = geoseries.multipoints.x[offsets[sizes_mask]]
+    x2 = geoseries.multipoints.x[offsets[sizes_mask] + 1]
+    y1 = geoseries.multipoints.y[offsets[sizes_mask]]
+    y2 = geoseries.multipoints.y[offsets[sizes_mask] + 1]
+    result = _false_series(len(geoseries))
+    is_degenerate = (
+        x1.reset_index(drop=True) == x2.reset_index(drop=True)
+    ) & (y1.reset_index(drop=True) == y2.reset_index(drop=True))
+    result[sizes_mask] = is_degenerate.reset_index(drop=True)
+    return result
+
+
+def _linestrings_is_degenerate(geoseries):
+    multipoints = _multipoints_from_geometry(geoseries)
+    return _multipoints_is_degenerate(multipoints)

@@ -41,6 +41,9 @@ from cuspatial.core.binpreds.binpred_dispatch import (
 from cuspatial.utils.binpred_utils import (
     _linestrings_from_geometry,
     _multipoints_from_geometry,
+    _multipoints_is_degenerate,
+    _points_and_lines_to_multipoints,
+    _zero_series,
 )
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
@@ -190,20 +193,20 @@ class GeoSeries(cudf.Series):
             full_sizes = self.polygons.ring_offset.take(
                 self.polygons.part_offset.take(self.polygons.geometry_offset)
             )
-            return full_sizes[1:] - full_sizes[:-1] - 1
+            return cudf.Series(full_sizes[1:] - full_sizes[:-1])
         elif contains_only_linestrings(self):
             # Not supporting multilinestring yet
             full_sizes = self.lines.part_offset.take(
                 self.lines.geometry_offset
             )
-            return full_sizes[1:] - full_sizes[:-1]
+            return cudf.Series(full_sizes[1:] - full_sizes[:-1])
         elif contains_only_multipoints(self):
             return (
                 self.multipoints.geometry_offset[1:]
                 - self.multipoints.geometry_offset[:-1]
             )
         elif contains_only_points(self):
-            return cp.repeat(cp.array(1), len(self))
+            return cudf.Series(cp.repeat(cp.array(1), len(self)))
         else:
             if len(self) == 0:
                 return cudf.Series([0], dtype="int32")
@@ -370,12 +373,7 @@ class GeoSeries(cudf.Series):
                 return self._sr.iloc[item]
 
             map_df = cudf.DataFrame(
-                {
-                    "map": self._sr.index,
-                    "idx": cp.arange(len(self._sr.index))
-                    if not isinstance(item, Integral)
-                    else 0,
-                }
+                {"map": self._sr.index, "idx": cp.arange(len(self._sr.index))}
             )
             index_df = cudf.DataFrame({"map": item}).reset_index()
             new_index = index_df.merge(
@@ -1405,8 +1403,8 @@ class GeoSeries(cudf.Series):
         rhs = _multipoints_from_geometry(other)
         result = pairwise_multipoint_equals_count(lhs, rhs)
         sizes = (
-            rhs.multipoints.geometry_offset[1:]
-            - rhs.multipoints.geometry_offset[:-1]
+            lhs.multipoints.geometry_offset[1:]
+            - lhs.multipoints.geometry_offset[:-1]
         )
         return result == sizes
 
@@ -1436,13 +1434,17 @@ class GeoSeries(cudf.Series):
     def _basic_intersects_count(self, other):
         """Utility method that returns the number of points in the lhs geometry
         that intersect with the rhs geometry."""
-        result = self._basic_intersects_pli(other)
-        # Flatten result into list of sizes
-        is_offsets = cudf.Series(result[0])
-        is_sizes = is_offsets[1:].reset_index(drop=True) - is_offsets[
-            :-1
-        ].reset_index(drop=True)
-        return is_sizes
+        pli = self._basic_intersects_pli(other)
+        if len(pli[1]) == 0:
+            return _zero_series(len(other))
+        intersections = _points_and_lines_to_multipoints(pli[1], pli[0])
+        sizes = cudf.Series(intersections.sizes)
+        # If the result is degenerate
+        is_degenerate = _multipoints_is_degenerate(intersections)
+        # If all the points in the intersection are in the rhs
+        if len(is_degenerate) > 0:
+            sizes[is_degenerate] = 1
+        return sizes
 
     def _basic_intersects(self, other):
         """Utility method that returns True if any point in the lhs geometry
@@ -1467,21 +1469,34 @@ class GeoSeries(cudf.Series):
         """
         lhs = self
         rhs = _multipoints_from_geometry(other)
-        return lhs.contains_properly(rhs, mode="basic_count")
+        contains = lhs.contains_properly(rhs, mode="basic_count")
+        return contains
 
     def _basic_contains_none(self, other):
         """Utility method that returns True if none of the points in the lhs
         geometry are contained_properly in the rhs geometry."""
         lhs = self
         rhs = _multipoints_from_geometry(other)
-        return lhs.contains_properly(rhs, mode="basic_none")
+        contains = lhs.contains_properly(rhs, mode="basic_none")
+        intersects = lhs._basic_intersects(other)
+        return contains & ~intersects
 
     def _basic_contains_any(self, other):
         """Utility method that returns True if any point in the lhs geometry
         is contained_properly in the rhs geometry."""
         lhs = self
         rhs = _multipoints_from_geometry(other)
-        return lhs.contains_properly(rhs, mode="basic_any")
+        contains = lhs.contains_properly(rhs, mode="basic_any")
+        intersects = lhs._basic_intersects(other)
+        return contains | intersects
+
+    def _basic_contains_properly_any(self, other):
+        """Utility method that returns True if any point in the lhs geometry
+        is contained_properly in the rhs geometry."""
+        lhs = self
+        rhs = _multipoints_from_geometry(other)
+        contains = lhs.contains_properly(rhs, mode="basic_any")
+        return contains
 
     def _basic_contains_all(self, other):
         """Utililty method that returns True if all points in the lhs geometry
@@ -1489,4 +1504,5 @@ class GeoSeries(cudf.Series):
         `.contains_properly call."""
         lhs = self
         rhs = _multipoints_from_geometry(other)
-        return lhs.contains_properly(rhs, mode="basic_all")
+        contains = lhs.contains(rhs, mode="basic_all")
+        return contains

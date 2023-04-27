@@ -49,7 +49,7 @@ class PointLineStringWithin(WithinIntersectsPredicate):
 
 class PointPolygonWithin(ContainsPredicateBase):
     def _preprocess(self, lhs, rhs):
-        return rhs._basic_contains_any(lhs)
+        return rhs.contains_properly(lhs)
 
 
 class LineStringLineStringWithin(IntersectsPredicateBase):

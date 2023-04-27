@@ -2,10 +2,6 @@
 
 from typing import TypeVar
 
-import cupy as cp
-
-import cudf
-
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     ContainsOpResult,
@@ -23,7 +19,6 @@ from cuspatial.utils.binpred_utils import (
     MultiPoint,
     Point,
     Polygon,
-    _false_series,
     _is_complex,
 )
 from cuspatial.utils.column_utils import (
@@ -114,42 +109,6 @@ class ContainsProperlyPredicate(
         op_result = ContainsOpResult(pip_result, preprocessor_result)
         return self._postprocess(lhs, rhs, preprocessor_result, op_result)
 
-    def _return_unprocessed_result(self, lhs, op_result, preprocessor_result):
-        """Return the result of the basic predicate without any
-        postprocessing.
-        """
-        reindex_pip_result = self._reindex_allpairs(lhs, op_result)
-        if len(reindex_pip_result) == 0:
-            if self.config.mode == "basic_count":
-                return cudf.Series(cp.zeros(len(lhs), dtype="int32"))
-            else:
-                return _false_series(len(lhs))
-        # Postprocessing early termination. Basic requests, or allpairs
-        # requests do not do object reconstruction.
-        if self.config.allpairs:
-            return reindex_pip_result
-        elif self.config.mode == "basic_none":
-            final_result = cudf.Series(cp.repeat([True], len(lhs)))
-            final_result.loc[reindex_pip_result["point_index"]] = False
-            return final_result
-        elif self.config.mode == "basic_any":
-            final_result = _false_series(len(lhs))
-            final_result.loc[reindex_pip_result["point_index"]] = True
-            return final_result
-        elif self.config.mode == "basic_all":
-            sizes = (
-                preprocessor_result.point_indices[1:]
-                - preprocessor_result.point_indices[:-1]
-            )
-            result_sizes = reindex_pip_result["polygon_index"].value_counts()
-            final_result = _false_series(
-                len(preprocessor_result.point_indices)
-            )
-            final_result.loc[sizes == result_sizes] = True
-            return final_result
-        elif self.config.mode == "basic_count":
-            return reindex_pip_result["polygon_index"].value_counts()
-
     def _postprocess(self, lhs, rhs, preprocessor_result, op_result):
         """Postprocess the output GeoSeries to ensure that they are of the
         correct type for the predicate.
@@ -183,16 +142,12 @@ class ContainsProperlyPredicate(
             point index and the polygon index for each point in the
             polygon.
         """
-        if self.config.mode != "full" or self.config.allpairs:
-            return self._return_unprocessed_result(
-                lhs, op_result, preprocessor_result
-            )
 
         # for each input pair i: result[i] =  true iff point[i] is
         # contained in at least one polygon of multipolygon[i].
         if _is_complex(rhs):
             return super()._postprocess_multi(
-                lhs, rhs, preprocessor_result, op_result
+                lhs, rhs, preprocessor_result, op_result, mode=self.config.mode
             )
         else:
             return super()._postprocess_points(
