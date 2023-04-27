@@ -5,7 +5,6 @@ from cuspatial.core.binpreds.binpred_interface import (
     ImpossiblePredicate,
     NotImplementedPredicate,
 )
-from cuspatial.core.binpreds.feature_contains import ContainsPredicateBase
 from cuspatial.core.binpreds.feature_equals import EqualsPredicateBase
 from cuspatial.core.binpreds.feature_intersects import (
     IntersectsPredicateBase,
@@ -75,7 +74,7 @@ class PolygonLineStringCovers(BinPred):
         return contains_count + equality >= rhs.sizes
 
 
-class PolygonPolygonCovers(ContainsPredicateBase):
+class PolygonPolygonCovers(BinPred):
     def _preprocess(self, lhs, rhs):
         contains = lhs.contains(rhs)
         return contains

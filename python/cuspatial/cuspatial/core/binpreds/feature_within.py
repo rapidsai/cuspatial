@@ -5,7 +5,6 @@ from cuspatial.core.binpreds.binpred_interface import (
     ImpossiblePredicate,
     NotImplementedPredicate,
 )
-from cuspatial.core.binpreds.feature_equals import EqualsPredicateBase
 from cuspatial.utils.binpred_utils import (
     LineString,
     MultiPoint,
@@ -14,17 +13,9 @@ from cuspatial.utils.binpred_utils import (
 )
 
 
-class WithinPredicateBase(EqualsPredicateBase):
-    """Base class for binary predicates that are defined in terms of a
-    root-level binary predicate. For example, a Point-Point Within
-    predicate is defined in terms of a Point-Point Contains predicate.
-    Used by:
-    (Polygon, Point)
-    (Polygon, MultiPoint)
-    (Polygon, LineString)
-    """
-
-    pass
+class WithinPredicateBase(BinPred):
+    def _preprocess(self, lhs, rhs):
+        return lhs._basic_equals_all(rhs)
 
 
 class WithinIntersectsPredicate(BinPred):
