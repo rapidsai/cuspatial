@@ -40,11 +40,10 @@ class ContainsGeometryProcessor(BinPred):
 
         Returns
         -------
-        result : cudf.Series
-            A cudf.Series of boolean values indicating whether each feature in
-            the right-hand GeoSeries satisfies the requirements of the point-
-            in-polygon basic predicate with its corresponding feature in the
-            left-hand GeoSeries.
+        result : PreprocessorResult
+            A PreprocessorResult object containing the original lhs and rhs,
+            the rhs with only its points, and the indices of the points in
+            the original rhs.
         """
         # RHS conditioning:
         point_indices = None
@@ -63,8 +62,7 @@ class ContainsGeometryProcessor(BinPred):
             geom = rhs.points
         xy_points = geom.xy
 
-        # Arrange into shape for calling point-in-polygon, intersection, or
-        # equals
+        # Arrange into shape for calling point-in-polygon
         point_indices = geom.point_indices()
         from cuspatial.core.geoseries import GeoSeries
 
@@ -123,7 +121,9 @@ class ContainsGeometryProcessor(BinPred):
 
     def _reindex_allpairs(self, lhs, op_result) -> Union[Series, DataFrame]:
         """Prepare the allpairs result of a contains_properly call as
-        the first step of postprocessing.
+        the first step of postprocessing. An allpairs result is reindexed
+        by replacing the polygon index with the original index of the
+        polygon from the lhs.
 
         Parameters
         ----------
