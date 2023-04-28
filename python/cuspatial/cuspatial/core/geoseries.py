@@ -168,7 +168,7 @@ class GeoSeries(cudf.Series):
 
     @property
     def sizes(self):
-        """Returns the size in points of each geometry in the GeoSeries."
+        """Returns the number of points of each geometry in the GeoSeries."
 
         Returns
         -------
