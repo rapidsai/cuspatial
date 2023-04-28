@@ -23,6 +23,8 @@
 #include <cuspatial/detail/utility/floating_point.cuh>
 #include <cuspatial/geometry/polygon_ref.cuh>
 
+#include <thrust/swap.h>
+
 namespace cuspatial {
 namespace detail {
 
@@ -56,9 +58,10 @@ template <typename T, class PolygonRef>
 __device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonRef const& polygon)
 {
   bool point_is_within = false;
-  bool is_colinear     = false;
+  bool point_on_edge   = false;
   printf("here\n");
   for (auto ring : polygon) {
+    bool is_colinear  = false;
     auto last_segment = ring.segment(ring.num_segments() - 1);
 
     auto b       = last_segment.v2;
@@ -88,16 +91,21 @@ __device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonR
       // colinearity test
       T run_to_point = test_point.x - a.x;
       is_colinear    = float_equal(run * rise_to_point, run_to_point * rise);
-      if (is_colinear && a.x > test_point.x != b.x > test_point.x) {
-        printf("Point (%f %f) is on segment (%f %f) -> (%f %f)\n",
-               test_point.x,
-               test_point.y,
-               a.x,
-               a.y,
-               b.x,
-               b.y);
-
-        break;
+      if (is_colinear) {
+        T minx = a.x;
+        T maxx = b.x;
+        if (minx > maxx) thrust::swap(minx, maxx);
+        if (minx <= test_point.x && test_point.x <= maxx) {
+          printf("Point (%f %f) is on segment (%f %f) -> (%f %f)\n",
+                 test_point.x,
+                 test_point.y,
+                 a.x,
+                 a.y,
+                 b.x,
+                 b.y);
+          point_on_edge = true;
+          break;
+        }
       }
 
       y1_flag = a.y > test_point.y;
@@ -120,7 +128,7 @@ __device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonR
       b       = a;
       y0_flag = y1_flag;
     }
-    if (is_colinear) {
+    if (point_on_edge) {
       point_is_within = false;
       break;
     }
