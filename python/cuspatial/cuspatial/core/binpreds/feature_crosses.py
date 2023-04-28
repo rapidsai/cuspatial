@@ -40,7 +40,7 @@ class CrossesByIntersectionPredicate(IntersectsPredicateBase):
 
 class LineStringPolygonCrosses(BinPred):
     def _preprocess(self, lhs, rhs):
-        intersects = rhs._basic_intersects_through(lhs)
+        intersects = rhs._basic_intersects_count(lhs) > 1
         touches = rhs.touches(lhs)
         contains = rhs.contains(lhs)
         return ~touches & intersects & ~contains
