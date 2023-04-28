@@ -1441,12 +1441,6 @@ class GeoSeries(cudf.Series):
         is_sizes = self._basic_intersects_count(other)
         return is_sizes > 0
 
-    def _basic_intersects_through(self, other):
-        """Utility method that returns True if at least two points in the lhs
-        geometry intersect with the rhs geometry."""
-        is_sizes = self._basic_intersects_count(other)
-        return is_sizes > 1
-
     def _basic_contains_count(self, other):
         """Utility method that returns the number of points in the lhs geometry
         that are contained_properly in the rhs geometry.
