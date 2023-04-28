@@ -39,7 +39,7 @@ class ContainsPredicate(ContainsGeometryProcessor):
         self.config.mode = kwargs.get("mode", "full")
 
     def _preprocess(self, lhs, rhs):
-        preprocessor_result = super()._preprocess_multi(lhs, rhs)
+        preprocessor_result = super()._preprocess_multipoint_rhs(lhs, rhs)
         return self._compute_predicate(lhs, rhs, preprocessor_result)
 
     def _intersection_results_for_contains(self, lhs, rhs):

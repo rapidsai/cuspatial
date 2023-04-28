@@ -55,7 +55,7 @@ class ContainsProperlyPredicate(ContainsGeometryProcessor):
         self.config.mode = kwargs.get("mode", "full")
 
     def _preprocess(self, lhs, rhs):
-        preprocessor_result = super()._preprocess_multi(lhs, rhs)
+        preprocessor_result = super()._preprocess_multipoint_rhs(lhs, rhs)
         return self._compute_predicate(lhs, rhs, preprocessor_result)
 
     def _should_use_quadtree(self, lhs):
@@ -95,14 +95,10 @@ class ContainsProperlyPredicate(ContainsGeometryProcessor):
             raise TypeError(
                 "`.contains` can only be called with polygon series."
             )
-        if self._should_use_quadtree(lhs):
-            pip_result = contains_properly(
-                lhs, preprocessor_result.final_rhs, how="quadtree"
-            )
-        else:
-            pip_result = contains_properly(
-                lhs, preprocessor_result.final_rhs, how="byte-limited"
-            )
+        how = "quadtree" if self._should_use_quadtree(lhs) else "byte-limited"
+        pip_result = contains_properly(
+            lhs, preprocessor_result.final_rhs, how=how
+        )
         op_result = ContainsOpResult(pip_result, preprocessor_result)
         return self._postprocess(lhs, rhs, preprocessor_result, op_result)
 
@@ -141,7 +137,7 @@ class ContainsProperlyPredicate(ContainsGeometryProcessor):
         """
 
         if _is_complex(rhs):
-            return super()._postprocess_multi(
+            return super()._postprocess_multipoint_rhs(
                 lhs, rhs, preprocessor_result, op_result, mode=self.config.mode
             )
         else:

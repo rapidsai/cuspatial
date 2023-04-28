@@ -26,6 +26,7 @@ from cudf.core.column.column import as_column
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import ColumnType, GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
+from cuspatial.core.binops.equals_count import pairwise_multipoint_equals_count
 from cuspatial.core.binpreds.binpred_dispatch import (
     CONTAINS_DISPATCH,
     CONTAINS_PROPERLY_DISPATCH,
@@ -168,7 +169,7 @@ class GeoSeries(cudf.Series):
 
     @property
     def sizes(self):
-        """Returns the size in points of each geometry in the GeoSeries."
+        """Returns the number of points of each geometry in the GeoSeries."
 
         Returns
         -------
@@ -210,7 +211,7 @@ class GeoSeries(cudf.Series):
         else:
             if len(self) == 0:
                 return cudf.Series([0], dtype="int32")
-            raise TypeError(
+            raise NotImplementedError(
                 "GeoSeries must contain only Points, MultiPoints, Lines, or "
                 "Polygons to return sizes."
             )
@@ -1383,10 +1384,6 @@ class GeoSeries(cudf.Series):
     def _basic_equals(self, other):
         """Utility method that returns True if any point in the lhs geometry
         is equal to a point in the rhs geometry."""
-        from cuspatial.core.binops.equals_count import (
-            pairwise_multipoint_equals_count,
-        )
-
         lhs = _multipoints_from_geometry(self)
         rhs = _multipoints_from_geometry(other)
         result = pairwise_multipoint_equals_count(lhs, rhs)
@@ -1395,10 +1392,6 @@ class GeoSeries(cudf.Series):
     def _basic_equals_all(self, other):
         """Utility method that returns True if all points in the lhs geometry
         are equal to points in the rhs geometry."""
-        from cuspatial.core.binops.equals_count import (
-            pairwise_multipoint_equals_count,
-        )
-
         lhs = _multipoints_from_geometry(self)
         rhs = _multipoints_from_geometry(other)
         result = pairwise_multipoint_equals_count(lhs, rhs)
@@ -1411,10 +1404,6 @@ class GeoSeries(cudf.Series):
     def _basic_equals_count(self, other):
         """Utility method that returns the number of points in the lhs geometry
         that are equal to a point in the rhs geometry."""
-        from cuspatial.core.binops.equals_count import (
-            pairwise_multipoint_equals_count,
-        )
-
         lhs = _multipoints_from_geometry(self)
         rhs = _multipoints_from_geometry(other)
         result = pairwise_multipoint_equals_count(lhs, rhs)
@@ -1451,12 +1440,6 @@ class GeoSeries(cudf.Series):
         intersects with the rhs geometry."""
         is_sizes = self._basic_intersects_count(other)
         return is_sizes > 0
-
-    def _basic_intersects_through(self, other):
-        """Utility method that returns True if at least two points in the lhs
-        geometry intersect with the rhs geometry."""
-        is_sizes = self._basic_intersects_count(other)
-        return is_sizes > 1
 
     def _basic_contains_count(self, other):
         """Utility method that returns the number of points in the lhs geometry

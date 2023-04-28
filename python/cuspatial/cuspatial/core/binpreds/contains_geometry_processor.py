@@ -1,7 +1,5 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
-from typing import Union
-
 import cupy as cp
 
 import cudf
@@ -26,7 +24,7 @@ from cuspatial.utils.column_utils import (
 
 
 class ContainsGeometryProcessor(BinPred):
-    def _preprocess_multi(self, lhs, rhs):
+    def _preprocess_multipoint_rhs(self, lhs, rhs):
         """Flatten any rhs into only its points xy array. This is necessary
         because the basic predicate for contains, point-in-polygon,
         only accepts points.
@@ -119,7 +117,7 @@ class ContainsGeometryProcessor(BinPred):
             ["polygon_index", "point_index"]
         ]
 
-    def _reindex_allpairs(self, lhs, op_result) -> Union[Series, DataFrame]:
+    def _reindex_allpairs(self, lhs, op_result) -> DataFrame:
         """Prepare the allpairs result of a contains_properly call as
         the first step of postprocessing. An allpairs result is reindexed
         by replacing the polygon index with the original index of the
@@ -159,7 +157,7 @@ class ContainsGeometryProcessor(BinPred):
 
         return allpairs_result
 
-    def _postprocess_multi(
+    def _postprocess_multipoint_rhs(
         self, lhs, rhs, preprocessor_result, op_result, mode
     ):
         """Reconstruct the original geometry from the result of the
@@ -251,8 +249,10 @@ class ContainsGeometryProcessor(BinPred):
         return final_result
 
     def _postprocess_points(self, lhs, rhs, preprocessor_result, op_result):
-        """Reconstruct the original geometry from the result of the
-        contains_properly call. Used when the rhs is naturally points.
+        """Used when the rhs is naturally points. Instead of reconstructing
+        the original geometry, this method applies the `point_index` results
+        to the original rhs points and returns a boolean series reflecting
+        which `point_index`es were found.
         """
         allpairs_result = self._reindex_allpairs(lhs, op_result)
         if self.config.allpairs:
