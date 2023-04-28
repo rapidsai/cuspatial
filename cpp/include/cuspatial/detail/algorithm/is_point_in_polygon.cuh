@@ -57,6 +57,7 @@ __device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonR
 {
   bool point_is_within = false;
   bool is_colinear     = false;
+  printf("here\n");
   for (auto ring : polygon) {
     auto last_segment = ring.segment(ring.num_segments() - 1);
 
@@ -65,6 +66,14 @@ __device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonR
     bool y1_flag;
     auto ring_points = multipoint_ref{ring.point_begin(), ring.point_end()};
     for (vec_2d<T> a : ring_points) {
+      printf("Point (%f %f) segment (%f %f) -> (%f %f)\n",
+             test_point.x,
+             test_point.y,
+             a.x,
+             a.y,
+             b.x,
+             b.y);
+
       // for each line segment, including the segment between the last and first vertex
       T run  = b.x - a.x;
       T rise = b.y - a.y;
@@ -79,7 +88,17 @@ __device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonR
       // colinearity test
       T run_to_point = test_point.x - a.x;
       is_colinear    = float_equal(run * rise_to_point, run_to_point * rise);
-      if (is_colinear) { break; }
+      if (is_colinear && a.x > test_point.x != b.x > test_point.x) {
+        printf("Point (%f %f) is on segment (%f %f) -> (%f %f)\n",
+               test_point.x,
+               test_point.y,
+               a.x,
+               a.y,
+               b.x,
+               b.y);
+
+        break;
+      }
 
       y1_flag = a.y > test_point.y;
       if (y1_flag != y0_flag) {
@@ -87,7 +106,16 @@ __device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonR
         //  test_point.x < (run / rise) * rise_to_point + a.x
         auto lhs = (test_point.x - a.x) * rise;
         auto rhs = run * rise_to_point;
-        if (lhs < rhs != y1_flag) { point_is_within = not point_is_within; }
+        if (lhs < rhs != y1_flag) {
+          printf("Point (%f %f) crosses segment (%f %f) -> (%f %f)",
+                 test_point.x,
+                 test_point.y,
+                 a.x,
+                 a.y,
+                 b.x,
+                 b.y);
+          point_is_within = not point_is_within;
+        }
       }
       b       = a;
       y0_flag = y1_flag;
