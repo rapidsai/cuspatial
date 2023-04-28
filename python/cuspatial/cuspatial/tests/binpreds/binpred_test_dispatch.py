@@ -453,6 +453,7 @@ linestring_linestring_dispatch_list = [
     "linestring-linestring-disjoint",
     "linestring-linestring-same",
     "linestring-linestring-touches",
+    "linestring-linestring-touch-interior",
     "linestring-linestring-crosses",
 ]
 
