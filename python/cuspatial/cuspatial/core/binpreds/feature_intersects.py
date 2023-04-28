@@ -131,7 +131,7 @@ class PolygonLineStringIntersects(BinPred):
         return intersects | contains
 
 
-class PolygonPolygonIntersects(IntersectsPredicateBase):
+class PolygonPolygonIntersects(BinPred):
     def _preprocess(self, lhs, rhs):
         intersects = lhs._basic_intersects(rhs)
         contains_rhs = rhs._basic_contains_any(lhs)
