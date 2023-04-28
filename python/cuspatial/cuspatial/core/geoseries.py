@@ -210,7 +210,7 @@ class GeoSeries(cudf.Series):
         else:
             if len(self) == 0:
                 return cudf.Series([0], dtype="int32")
-            raise TypeError(
+            raise NotImplementedError(
                 "GeoSeries must contain only Points, MultiPoints, Lines, or "
                 "Polygons to return sizes."
             )
