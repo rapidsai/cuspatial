@@ -95,14 +95,10 @@ class ContainsProperlyPredicate(ContainsGeometryProcessor):
             raise TypeError(
                 "`.contains` can only be called with polygon series."
             )
-        if self._should_use_quadtree(lhs):
-            pip_result = contains_properly(
-                lhs, preprocessor_result.final_rhs, how="quadtree"
-            )
-        else:
-            pip_result = contains_properly(
-                lhs, preprocessor_result.final_rhs, how="byte-limited"
-            )
+        how = "quadtree" if self._should_use_quadtree(lhs) else "byte-limited"
+        pip_result = contains_properly(
+            lhs, preprocessor_result.final_rhs, how=how
+        )
         op_result = ContainsOpResult(pip_result, preprocessor_result)
         return self._postprocess(lhs, rhs, preprocessor_result, op_result)
 
