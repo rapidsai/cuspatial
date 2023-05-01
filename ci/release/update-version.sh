@@ -41,12 +41,13 @@ sed_runner 's/release = .*/release = '"'${NEXT_FULL_TAG}'"'/g' docs/source/conf.
 sed_runner 's/'"branch-.*\/RAPIDS.cmake"'/'"branch-${NEXT_SHORT_TAG}\/RAPIDS.cmake"'/g' fetch_rapids.cmake
 sed_runner 's/'"branch-.*\/RAPIDS.cmake"'/'"branch-${NEXT_SHORT_TAG}\/RAPIDS.cmake"'/g' python/cuspatial/CMakeLists.txt
 
-# bump cudf
+# bump rapids libraries
 for FILE in dependencies.yaml conda/environments/*.yaml; do
-  sed_runner "s/cudf=${CURRENT_SHORT_TAG}/cudf=${NEXT_SHORT_TAG}/g" ${FILE};
-  sed_runner "s/rmm=${CURRENT_SHORT_TAG}/rmm=${NEXT_SHORT_TAG}/g" ${FILE};
-  sed_runner "s/libcudf=${CURRENT_SHORT_TAG}/libcudf=${NEXT_SHORT_TAG}/g" ${FILE};
-  sed_runner "s/librmm=${CURRENT_SHORT_TAG}/librmm=${NEXT_SHORT_TAG}/g" ${FILE};
+  sed_runner "/- cudf==/ s/==.*/==${NEXT_SHORT_TAG}\.*/g" ${FILE};
+  sed_runner "/- cuml==/ s/==.*/==${NEXT_SHORT_TAG}\.*/g" ${FILE};
+  sed_runner "/- rmm==/ s/==.*/==${NEXT_SHORT_TAG}\.*/g" ${FILE};
+  sed_runner "/- libcudf==/ s/==.*/==${NEXT_SHORT_TAG}\.*/g" ${FILE};
+  sed_runner "/- librmm==/ s/==.*/==${NEXT_SHORT_TAG}\.*/g" ${FILE};
 done
 
 # Doxyfile update
