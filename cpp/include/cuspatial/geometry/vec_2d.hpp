@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cuspatial/cuda_utils.hpp>
+#include <cuspatial/detail/utility/floating_point.cuh>
 
 #include <algorithm>
 #include <ostream>
@@ -58,7 +59,7 @@ class alignas(2 * sizeof(T)) vec_2d {
    */
   friend bool CUSPATIAL_HOST_DEVICE operator==(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
   {
-    return (lhs.x == rhs.x) && (lhs.y == rhs.y);
+    return detail::float_equal<T>(lhs.x, rhs.x) && detail::float_equal(lhs.y, rhs.y);
   }
 
   /**
