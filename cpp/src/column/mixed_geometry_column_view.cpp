@@ -44,8 +44,15 @@ mixed_geometry_column_view::mixed_geometry_column_view(
   CUSPATIAL_EXPECTS(
     types_buffer.type() == cudf::data_type{cudf::type_to_id<mixed_geometry_type_t>()},
     "types_buffer must have INT8 data type.");
+  CUSPATIAL_EXPECTS(
+    !types_buffer.nullable(), "types_buffer must not be nullable."
+  );
+
   CUSPATIAL_EXPECTS(offsets_buffer.type() == cudf::data_type{cudf::type_to_id<cudf::size_type>()},
                     "offsets_buffer must use cudf's size type.");
+  CUSPATIAL_EXPECTS(
+    !offsets_buffer.nullable(), "offsets_buffer must not be nullable."
+  );
 
   CUSPATIAL_EXPECTS(points_column.collection_type() == collection_type_id::SINGLE &&
                       points_column.geometry_type() == geometry_type_id::POINT,

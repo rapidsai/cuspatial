@@ -37,7 +37,9 @@ namespace cuspatial {
  * The corresponding offset of that row is undefined.
  *
  * @throw cuspatial::logic_error if `types_buffer` data type is not INT8.
+ * @throw cuspatial::logic_error if `types_buffer` is nullable.
  * @throw cuspatial::logic_error if `offsets_buffer` data type is not INT32.
+ * @throw cuspatial::logic_error if `offsets_buffer` is nullable.
  * @throw cuspatial::logic_error if `points_column` is not a `SINGLE` `POINT` geometry column.
  * @throw cuspatial::logic_error if `linestrings_column` is not a `SINGLE` `LINESTRING` geometry
  * column.
