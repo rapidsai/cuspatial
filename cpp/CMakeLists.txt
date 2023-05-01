@@ -124,6 +124,7 @@ add_library(cuspatial
     src/join/quadtree_bbox_filtering.cu
     src/spatial/linestring_bounding_boxes.cu
     src/spatial/polygon_bounding_boxes.cu
+    src/spatial/pairwise_multipoint_equals_count.cu
     src/spatial/point_in_polygon.cu
     src/spatial/points_in_range.cu
     src/spatial/haversine.cu
