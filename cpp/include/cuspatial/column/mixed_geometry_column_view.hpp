@@ -82,4 +82,5 @@ class mixed_geometry_column_view {
   geometry_column_view multipolygons_column;
 };
 
+
 }  // namespace cuspatial
