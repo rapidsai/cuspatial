@@ -41,15 +41,6 @@ sed_runner 's/release = .*/release = '"'${NEXT_FULL_TAG}'"'/g' docs/source/conf.
 sed_runner 's/'"branch-.*\/RAPIDS.cmake"'/'"branch-${NEXT_SHORT_TAG}\/RAPIDS.cmake"'/g' fetch_rapids.cmake
 sed_runner 's/'"branch-.*\/RAPIDS.cmake"'/'"branch-${NEXT_SHORT_TAG}\/RAPIDS.cmake"'/g' python/cuspatial/CMakeLists.txt
 
-# bump rapids libraries
-for FILE in dependencies.yaml conda/environments/*.yaml; do
-  sed_runner "/- cudf==/ s/==.*/==${NEXT_SHORT_TAG}\.*/g" ${FILE};
-  sed_runner "/- cuml==/ s/==.*/==${NEXT_SHORT_TAG}\.*/g" ${FILE};
-  sed_runner "/- rmm==/ s/==.*/==${NEXT_SHORT_TAG}\.*/g" ${FILE};
-  sed_runner "/- libcudf==/ s/==.*/==${NEXT_SHORT_TAG}\.*/g" ${FILE};
-  sed_runner "/- librmm==/ s/==.*/==${NEXT_SHORT_TAG}\.*/g" ${FILE};
-done
-
 # Doxyfile update
 sed_runner "/PROJECT_NUMBER[ ]*=/ s|=.*|= ${NEXT_FULL_TAG}|g" cpp/doxygen/Doxyfile
 sed_runner "/TAGFILES/ s|[0-9]\+.[0-9]\+|${NEXT_SHORT_TAG}|g" cpp/doxygen/Doxyfile
@@ -62,6 +53,16 @@ sed_runner "s/VERSION_NUMBER=\".*/VERSION_NUMBER=\"${NEXT_SHORT_TAG}\"/g" ci/bui
 
 # Need to distutils-normalize the original version
 NEXT_SHORT_TAG_PEP440=$(python -c "from setuptools.extern import packaging; print(packaging.version.Version('${NEXT_SHORT_TAG}'))")
+
+# bump rapids libraries
+for FILE in dependencies.yaml conda/environments/*.yaml; do
+  sed_runner "/- &cudf_conda cudf==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
+  sed_runner "/- cudf==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
+  sed_runner "/- cuml==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
+  sed_runner "/- rmm==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
+  sed_runner "/- libcudf==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
+  sed_runner "/- librmm==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
+done
 
 # Dependency versions in dependencies.yaml
 sed_runner "/-cu[0-9]\{2\}==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}.*/g" dependencies.yaml
