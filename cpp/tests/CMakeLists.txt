@@ -48,8 +48,6 @@ endfunction(ConfigureTest)
 ### test sources ##################################################################################
 ###################################################################################################
 
-# Column-based API
-
 # index
 ConfigureTest(POINT_QUADTREE_TEST
     index/point_quadtree_test.cpp)
@@ -100,7 +98,11 @@ ConfigureTest(LINESTRING_POLYGON_DISTANCE_TEST
 ConfigureTest(POLYGON_DISTANCE_TEST
     spatial/distance/polygon_distance_test.cpp)
 
-#intersection
+# equality
+ConfigureTest(PAIRWISE_MULTIPOINT_EQUALS_COUNT_TEST
+    spatial/equality/pairwise_multipoint_equals_count_test.cpp)
+
+# intersection
 ConfigureTest(LINESTRING_INTERSECTION_TEST
     spatial/intersection/linestring_intersection_test.cpp)
 
@@ -135,8 +137,6 @@ ConfigureTest(UTILITY_TEST
     utility_test/test_multipoint_factory.cu
     utility_test/test_geometry_generators.cu
 )
-
-# Header-only API
 
 # find / intersection util
 ConfigureTest(FIND_TEST_EXP
@@ -209,6 +209,10 @@ ConfigureTest(LINESTRING_DISTANCE_TEST_EXP
 
 ConfigureTest(POLYGON_DISTANCE_TEST_EXP
     spatial/distance/polygon_distance_test.cu)
+
+# equality
+ConfigureTest(PAIRWISE_MULTIPOINT_EQUALS_COUNT_TEST_EXP
+    spatial/equality/pairwise_multipoint_equals_count_test.cu)
 
 # intersection
 ConfigureTest(LINESTRING_INTERSECTION_TEST_EXP
