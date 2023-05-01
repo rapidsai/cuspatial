@@ -48,7 +48,6 @@ __device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonR
   bool point_is_within = false;
   bool point_on_edge   = false;
   for (auto ring : polygon) {
-    bool is_colinear  = false;
     auto last_segment = ring.segment(ring.num_segments() - 1);
 
     auto b       = last_segment.v2;
@@ -66,10 +65,10 @@ __device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonR
       if (float_equal(run, zero) && float_equal(rise, zero)) continue;
 
       T rise_to_point = test_point.y - a.y;
+      T run_to_point  = test_point.x - a.x;
 
-      // colinearity test
-      T run_to_point = test_point.x - a.x;
-      is_colinear    = float_equal(run * rise_to_point, run_to_point * rise);
+      // point-on-edge test
+      bool is_colinear = float_equal(run * rise_to_point, run_to_point * rise);
       if (is_colinear) {
         T minx = a.x;
         T maxx = b.x;
