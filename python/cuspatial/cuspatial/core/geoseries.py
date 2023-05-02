@@ -26,7 +26,6 @@ from cudf.core.column.column import as_column
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import ColumnType, GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
-from cuspatial.core.binops.equals_count import pairwise_multipoint_equals_count
 from cuspatial.core.binpreds.binpred_dispatch import (
     CONTAINS_DISPATCH,
     CONTAINS_PROPERLY_DISPATCH,
@@ -38,13 +37,6 @@ from cuspatial.core.binpreds.binpred_dispatch import (
     OVERLAPS_DISPATCH,
     TOUCHES_DISPATCH,
     WITHIN_DISPATCH,
-)
-from cuspatial.utils.binpred_utils import (
-    _linestrings_from_geometry,
-    _multipoints_from_geometry,
-    _multipoints_is_degenerate,
-    _points_and_lines_to_multipoints,
-    _zero_series,
 )
 from cuspatial.utils.column_utils import (
     contains_only_linestrings,
@@ -179,11 +171,13 @@ class GeoSeries(cudf.Series):
         Notes
         -----
         The size of a geometry is the number of points it contains.
-        The size of a polygon is the number of points in its exterior ring
-        plus the number of points in its interior rings.
-        The size of a multipolygon is the sum of all its polygons.
+        The size of a polygon is the total number of points in all of its
+        rings.
+        The size of a multipolygon is the sum of the sizes of all of its
+        polygons.
         The size of a linestring is the number of points in its single line.
-        The size of a multilinestring is the sum of all its linestrings.
+        The size of a multilinestring is the sum of the sizes of all of its
+        linestrings.
         The size of a multipoint is the number of points in its single point.
         The size of a point is 1.
         """
@@ -1007,9 +1001,9 @@ class GeoSeries(cudf.Series):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
         aligned geometry that contains _other_.
 
-        Compute from a GeoSeries of points and a GeoSeries of polygons which
-        points are contained within the corresponding polygon. Polygon A
-        contains Point B if B is within the interior or on the boundary of A.
+        An object `a` is said to contain `b` if `b`'s `boundary` and
+        `interiors` are within those of `a` and no point of `b` lies in the
+        exterior of `a`.
 
         If `allpairs=False`, the result will be a `Series` of `dtype('bool')`.
         If `allpairs=True`, the result will be a `DataFrame` containing two
@@ -1380,89 +1374,3 @@ class GeoSeries(cudf.Series):
             align=align
         )
         return predicate(self, other)
-
-    def _basic_equals(self, other):
-        """Utility method that returns True if any point in the lhs geometry
-        is equal to a point in the rhs geometry."""
-        lhs = _multipoints_from_geometry(self)
-        rhs = _multipoints_from_geometry(other)
-        result = pairwise_multipoint_equals_count(lhs, rhs)
-        return result > 0
-
-    def _basic_equals_all(self, other):
-        """Utility method that returns True if all points in the lhs geometry
-        are equal to points in the rhs geometry."""
-        lhs = _multipoints_from_geometry(self)
-        rhs = _multipoints_from_geometry(other)
-        result = pairwise_multipoint_equals_count(lhs, rhs)
-        sizes = (
-            lhs.multipoints.geometry_offset[1:]
-            - lhs.multipoints.geometry_offset[:-1]
-        )
-        return result == sizes
-
-    def _basic_equals_count(self, other):
-        """Utility method that returns the number of points in the lhs geometry
-        that are equal to a point in the rhs geometry."""
-        lhs = _multipoints_from_geometry(self)
-        rhs = _multipoints_from_geometry(other)
-        result = pairwise_multipoint_equals_count(lhs, rhs)
-        return result
-
-    def _basic_intersects_pli(self, other):
-        """Utility method that returns the original results of
-        `pairwise_linestring_intersection`."""
-        from cuspatial.core.binops.intersection import (
-            pairwise_linestring_intersection,
-        )
-
-        lhs = _linestrings_from_geometry(self)
-        rhs = _linestrings_from_geometry(other)
-        return pairwise_linestring_intersection(lhs, rhs)
-
-    def _basic_intersects_count(self, other):
-        """Utility method that returns the number of points in the lhs geometry
-        that intersect with the rhs geometry."""
-        pli = self._basic_intersects_pli(other)
-        if len(pli[1]) == 0:
-            return _zero_series(len(other))
-        intersections = _points_and_lines_to_multipoints(pli[1], pli[0])
-        sizes = cudf.Series(intersections.sizes)
-        # If the result is degenerate
-        is_degenerate = _multipoints_is_degenerate(intersections)
-        # If all the points in the intersection are in the rhs
-        if len(is_degenerate) > 0:
-            sizes[is_degenerate] = 1
-        return sizes
-
-    def _basic_intersects(self, other):
-        """Utility method that returns True if any point in the lhs geometry
-        intersects with the rhs geometry."""
-        is_sizes = self._basic_intersects_count(other)
-        return is_sizes > 0
-
-    def _basic_contains_count(self, other):
-        """Utility method that returns the number of points in the lhs geometry
-        that are contained_properly in the rhs geometry.
-        """
-        lhs = self
-        rhs = _multipoints_from_geometry(other)
-        contains = lhs.contains_properly(rhs, mode="basic_count")
-        return contains
-
-    def _basic_contains_any(self, other):
-        """Utility method that returns True if any point in the lhs geometry
-        is contained_properly in the rhs geometry."""
-        lhs = self
-        rhs = _multipoints_from_geometry(other)
-        contains = lhs.contains_properly(rhs, mode="basic_any")
-        intersects = lhs._basic_intersects(other)
-        return contains | intersects
-
-    def _basic_contains_properly_any(self, other):
-        """Utility method that returns True if any point in the lhs geometry
-        is contained_properly in the rhs geometry."""
-        lhs = self
-        rhs = _multipoints_from_geometry(other)
-        contains = lhs.contains_properly(rhs, mode="basic_any")
-        return contains

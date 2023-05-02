@@ -2,6 +2,10 @@
 
 from typing import TypeVar
 
+from cuspatial.core.binpreds.basic_predicates import (
+    _basic_equals_all,
+    _basic_intersects,
+)
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     ContainsOpResult,
@@ -70,12 +74,12 @@ class ContainsProperlyPredicate(ContainsGeometryProcessor):
         -----
         1. Quadtree is always used if user requests `allpairs=True`.
         2. If the number of polygons in the lhs is less than 32, we use the
-           byte-limited algorithm because it is faster and has less memory
+           brute-force algorithm because it is faster and has less memory
            overhead.
         3. If the lhs contains more than 32 polygons, we use the quadtree
            because it does not have a polygon-count limit.
         4. If the lhs contains multipolygons, we use quadtree because the
-           performance between quadtree and byte-limited is similar, but
+           performance between quadtree and brute-force is similar, but
            code complexity would be higher if we did multipolygon
            reconstruction on both code paths.
         """
@@ -95,9 +99,9 @@ class ContainsProperlyPredicate(ContainsGeometryProcessor):
             raise TypeError(
                 "`.contains` can only be called with polygon series."
             )
-        how = "quadtree" if self._should_use_quadtree(lhs) else "byte-limited"
+        use_quadtree = self._should_use_quadtree(lhs)
         pip_result = contains_properly(
-            lhs, preprocessor_result.final_rhs, how=how
+            lhs, preprocessor_result.final_rhs, quadtree=use_quadtree
         )
         op_result = ContainsOpResult(pip_result, preprocessor_result)
         return self._postprocess(lhs, rhs, preprocessor_result, op_result)
@@ -109,8 +113,6 @@ class ContainsProperlyPredicate(ContainsGeometryProcessor):
         Postprocess for contains_properly has to handle multiple input and
         output configurations.
 
-        The input can be a single polygon, a single multipolygon, or a
-        GeoSeries containing a mix of polygons and multipolygons.
 
         The input to postprocess is `point_indices`, which can be either a
         cudf.DataFrame with one row per point and one column per polygon or
@@ -155,12 +157,12 @@ class ContainsProperlyByIntersection(BinPred):
     """
 
     def _preprocess(self, lhs, rhs):
-        return lhs._basic_intersects(rhs)
+        return _basic_intersects(lhs, rhs)
 
 
 class LineStringLineStringContainsProperly(BinPred):
     def _preprocess(self, lhs, rhs):
-        count = lhs._basic_equals_all(rhs)
+        count = _basic_equals_all(lhs, rhs)
         return count
 
 
