@@ -1,5 +1,10 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
+from cuspatial.core.binpreds.basic_predicates import (
+    _basic_equals,
+    _basic_intersects,
+    _basic_intersects_count,
+)
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     ImpossiblePredicate,
@@ -33,14 +38,14 @@ class CrossesPredicateBase(EqualsPredicateBase):
 
 class CrossesByIntersectionPredicate(IntersectsPredicateBase):
     def _compute_predicate(self, lhs, rhs, preprocessor_result):
-        intersects = rhs._basic_intersects(lhs)
-        equals = rhs._basic_equals(lhs)
+        intersects = _basic_intersects(rhs, lhs)
+        equals = _basic_equals(rhs, lhs)
         return intersects & ~equals
 
 
 class LineStringPolygonCrosses(BinPred):
     def _preprocess(self, lhs, rhs):
-        intersects = rhs._basic_intersects_count(lhs) > 1
+        intersects = _basic_intersects_count(rhs, lhs) > 1
         touches = rhs.touches(lhs)
         contains = rhs.contains(lhs)
         return ~touches & intersects & ~contains

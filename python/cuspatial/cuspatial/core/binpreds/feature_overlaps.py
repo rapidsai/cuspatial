@@ -2,6 +2,9 @@
 
 import cudf
 
+from cuspatial.core.binpreds.basic_predicates import (
+    _basic_contains_properly_any,
+)
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     ImpossiblePredicate,
@@ -40,8 +43,8 @@ class PolygonPolygonOverlaps(BinPred):
     def _preprocess(self, lhs, rhs):
         contains_lhs = lhs.contains(rhs)
         contains_rhs = rhs.contains(lhs)
-        contains_properly_lhs = lhs._basic_contains_properly_any(rhs)
-        contains_properly_rhs = rhs._basic_contains_properly_any(lhs)
+        contains_properly_lhs = _basic_contains_properly_any(lhs, rhs)
+        contains_properly_rhs = _basic_contains_properly_any(rhs, lhs)
         return ~(contains_lhs | contains_rhs) & (
             contains_properly_lhs | contains_properly_rhs
         )

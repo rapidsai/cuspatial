@@ -1,5 +1,15 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
+from cuspatial.core.binpreds.basic_predicates import (
+    _basic_contains_count,
+    _basic_contains_properly_any,
+    _basic_equals,
+    _basic_equals_all,
+    _basic_equals_count,
+    _basic_intersects,
+    _basic_intersects_count,
+    _basic_intersects_pli,
+)
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     ImpossiblePredicate,
@@ -30,20 +40,20 @@ class TouchesPredicateBase(ContainsPredicate):
     """
 
     def _preprocess(self, lhs, rhs):
-        equals = lhs._basic_equals(rhs)
+        equals = _basic_equals(lhs, rhs)
         return equals
 
 
 class PointLineStringTouches(BinPred):
     def _preprocess(self, lhs, rhs):
-        return lhs._basic_equals(rhs)
+        return _basic_equals(lhs, rhs)
 
 
 class PointPolygonTouches(ContainsPredicate):
     def _preprocess(self, lhs, rhs):
         # Reverse argument order.
-        equals_all = rhs._basic_equals_all(lhs)
-        touches = rhs._basic_intersects(lhs)
+        equals_all = _basic_equals_all(rhs, lhs)
+        touches = _basic_intersects(rhs, lhs)
         return ~equals_all & touches
 
 
@@ -52,9 +62,9 @@ class LineStringLineStringTouches(BinPred):
         """A and B have at least one point in common, and the common points
         lie in at least one boundary"""
         # Point is equal
-        equals = lhs._basic_equals(rhs)
+        equals = _basic_equals(lhs, rhs)
         # Linestrings are not equal
-        equals_all = lhs._basic_equals_all(rhs)
+        equals_all = _basic_equals_all(lhs, rhs)
         # Linestrings do not cross
         crosses = ~lhs.crosses(rhs)
         return equals & crosses & ~equals_all
@@ -62,24 +72,24 @@ class LineStringLineStringTouches(BinPred):
 
 class LineStringPolygonTouches(BinPred):
     def _preprocess(self, lhs, rhs):
-        pli = lhs._basic_intersects_pli(rhs)
+        pli = _basic_intersects_pli(lhs, rhs)
         if len(pli[1]) == 0:
             return _false_series(len(lhs))
         intersections = _points_and_lines_to_multipoints(pli[1], pli[0])
         # A touch can only occur if the point in the intersection
         # is equal to a point in the linestring, it must
         # terminate in the boundary of the polygon.
-        equals = intersections._basic_equals_count(lhs) > 0
-        intersects = lhs._basic_intersects_count(rhs)
+        equals = _basic_equals_count(intersections, lhs) > 0
+        intersects = _basic_intersects_count(lhs, rhs)
         contains = rhs.contains(lhs)
-        contains_any = rhs._basic_contains_properly_any(lhs)
+        contains_any = _basic_contains_properly_any(rhs, lhs)
         intersects = (intersects == 1) | (intersects == 2)
         return equals & intersects & ~contains & ~contains_any
 
 
 class PolygonPointTouches(BinPred):
     def _preprocess(self, lhs, rhs):
-        intersects = lhs._basic_intersects(rhs)
+        intersects = _basic_intersects(lhs, rhs)
         return intersects
 
 
@@ -90,9 +100,9 @@ class PolygonLineStringTouches(LineStringPolygonTouches):
 
 class PolygonPolygonTouches(BinPred):
     def _preprocess(self, lhs, rhs):
-        contains_lhs_none = lhs._basic_contains_count(rhs) == 0
-        contains_rhs_none = rhs._basic_contains_count(lhs) == 0
-        intersects = lhs._basic_intersects_count(rhs) == 1
+        contains_lhs_none = _basic_contains_count(lhs, rhs) == 0
+        contains_rhs_none = _basic_contains_count(rhs, lhs) == 0
+        intersects = _basic_intersects_count(lhs, rhs) == 1
         return contains_lhs_none & contains_rhs_none & intersects
 
 

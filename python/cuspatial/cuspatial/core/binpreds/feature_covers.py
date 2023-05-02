@@ -1,5 +1,12 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
+from cuspatial.core.binpreds.basic_predicates import (
+    _basic_contains_any,
+    _basic_contains_count,
+    _basic_equals_all,
+    _basic_equals_count,
+    _basic_intersects_pli,
+)
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     ImpossiblePredicate,
@@ -45,32 +52,32 @@ class CoversPredicateBase(EqualsPredicateBase):
 
 class LineStringLineStringCovers(IntersectsPredicateBase):
     def _preprocess(self, lhs, rhs):
-        return rhs._basic_equals_all(lhs)
+        return _basic_equals_all(rhs, lhs)
 
 
 class PolygonPointCovers(BinPred):
     def _preprocess(self, lhs, rhs):
-        return lhs._basic_contains_any(rhs)
+        return _basic_contains_any(lhs, rhs)
 
 
 class PolygonLineStringCovers(BinPred):
     def _preprocess(self, lhs, rhs):
-        contains_count = lhs._basic_contains_count(rhs)
-        pli = lhs._basic_intersects_pli(rhs)
+        contains_count = _basic_contains_count(lhs, rhs)
+        pli = _basic_intersects_pli(lhs, rhs)
         intersections = pli[1]
         equality = _zero_series(len(rhs))
         if len(intersections) == len(rhs):
             # If the result is degenerate
             is_degenerate = _linestrings_is_degenerate(intersections)
             # If all the points in the intersection are in the rhs
-            equality = intersections._basic_equals_count(rhs)
+            equality = _basic_equals_count(intersections, rhs)
             if len(is_degenerate) > 0:
                 equality[is_degenerate] = 1
         elif len(intersections) > 0:
             matching_length_multipoints = _points_and_lines_to_multipoints(
                 intersections, pli[0]
             )
-            equality = matching_length_multipoints._basic_equals_count(rhs)
+            equality = _basic_equals_count(matching_length_multipoints, rhs)
         return contains_count + equality >= rhs.sizes
 
 

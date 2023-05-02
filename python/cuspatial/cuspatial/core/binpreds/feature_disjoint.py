@@ -1,5 +1,9 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
+from cuspatial.core.binpreds.basic_predicates import (
+    _basic_contains_any,
+    _basic_intersects,
+)
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     NotImplementedPredicate,
@@ -26,7 +30,7 @@ class DisjointByWayOfContains(BinPred):
         (Point, Polygon)
         (Polygon, Point)
         """
-        return ~lhs._basic_contains_any(rhs)
+        return ~_basic_contains_any(lhs, rhs)
 
 
 class PointLineStringDisjoint(PointLineStringIntersects):
@@ -39,8 +43,8 @@ class PointLineStringDisjoint(PointLineStringIntersects):
 
 class PointPolygonDisjoint(BinPred):
     def _preprocess(self, lhs, rhs):
-        intersects = lhs._basic_intersects(rhs)
-        contains = lhs._basic_contains_any(rhs)
+        intersects = _basic_intersects(lhs, rhs)
+        contains = _basic_contains_any(lhs, rhs)
         return ~intersects & ~contains
 
 
@@ -60,14 +64,14 @@ class LineStringLineStringDisjoint(IntersectsPredicateBase):
 
 class LineStringPolygonDisjoint(BinPred):
     def _preprocess(self, lhs, rhs):
-        intersects = lhs._basic_intersects(rhs)
-        contains = rhs._basic_contains_any(lhs)
+        intersects = _basic_intersects(lhs, rhs)
+        contains = _basic_contains_any(rhs, lhs)
         return ~intersects & ~contains
 
 
 class PolygonPolygonDisjoint(BinPred):
     def _preprocess(self, lhs, rhs):
-        return ~lhs._basic_contains_any(rhs) & ~rhs._basic_contains_any(lhs)
+        return ~_basic_contains_any(lhs, rhs) & ~_basic_contains_any(rhs, lhs)
 
 
 DispatchDict = {
