@@ -4,6 +4,13 @@ from typing import TypeVar
 
 import cudf
 
+from cuspatial.core.binpreds.basic_predicates import (
+    _basic_contains_count,
+    _basic_equals,
+    _basic_equals_count,
+    _basic_intersects,
+    _basic_intersects_pli,
+)
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     ImpossiblePredicate,
@@ -43,7 +50,7 @@ class ContainsPredicate(ContainsGeometryProcessor):
         return self._compute_predicate(lhs, rhs, preprocessor_result)
 
     def _intersection_results_for_contains(self, lhs, rhs):
-        pli = lhs._basic_intersects_pli(rhs)
+        pli = _basic_intersects_pli(lhs, rhs)
         pli_features = pli[1]
         if len(pli_features) == 0:
             return _zero_series(len(lhs))
@@ -61,12 +68,12 @@ class ContainsPredicate(ContainsGeometryProcessor):
         # 3. It is on the boundary of the lhs
         # This function tests if the point in the rhs is in the boundary
         # of the lhs
-        intersect_equals_count = rhs._basic_equals_count(multipoints)
+        intersect_equals_count = _basic_equals_count(rhs, multipoints)
         return intersect_equals_count
 
     def _compute_polygon_polygon_contains(self, lhs, rhs, preprocessor_result):
         lines_rhs = _open_polygon_rings(rhs)
-        contains = lhs._basic_contains_count(lines_rhs).reset_index(drop=True)
+        contains = _basic_contains_count(lhs, lines_rhs).reset_index(drop=True)
         intersects = self._intersection_results_for_contains(lhs, lines_rhs)
         # A closed polygon has an extra line segment that is not used in
         # counting the number of points. We need to subtract this from the
@@ -79,7 +86,7 @@ class ContainsPredicate(ContainsGeometryProcessor):
     def _compute_polygon_linestring_contains(
         self, lhs, rhs, preprocessor_result
     ):
-        contains = lhs._basic_contains_count(rhs).reset_index(drop=True)
+        contains = _basic_contains_count(lhs, rhs).reset_index(drop=True)
         intersects = self._intersection_results_for_contains(lhs, rhs)
         if (contains == 0).all() and (intersects != 0).all():
             # The hardest case. We need to check if the linestring is
@@ -95,7 +102,7 @@ class ContainsPredicate(ContainsGeometryProcessor):
                 )
                 size_two_results = _false_series(len(lhs))
                 size_two_results[rhs.sizes == 2] = (
-                    lhs._basic_contains_count(center_points) > 0
+                    _basic_contains_count(lhs, center_points) > 0
                 )
                 return size_two_results
             else:
@@ -109,7 +116,7 @@ class ContainsPredicate(ContainsGeometryProcessor):
             # Special case in GeoPandas, points are not contained
             # in the boundary of a polygon, so only return true if
             # the points are contained_properly.
-            contains = lhs._basic_contains_count(rhs).reset_index(drop=True)
+            contains = _basic_contains_count(lhs, rhs).reset_index(drop=True)
             return contains > 0
         elif contains_only_linestrings(rhs):
             return self._compute_polygon_linestring_contains(
@@ -125,19 +132,19 @@ class ContainsPredicate(ContainsGeometryProcessor):
 
 class PointPointContains(BinPred):
     def _preprocess(self, lhs, rhs):
-        return lhs._basic_equals(rhs)
+        return _basic_equals(lhs, rhs)
 
 
 class LineStringPointContains(BinPred):
     def _preprocess(self, lhs, rhs):
-        intersects = lhs._basic_intersects(rhs)
-        equals = lhs._basic_equals(rhs)
+        intersects = _basic_intersects(lhs, rhs)
+        equals = _basic_equals(lhs, rhs)
         return intersects & ~equals
 
 
 class LineStringLineStringContainsPredicate(BinPred):
     def _preprocess(self, lhs, rhs):
-        count = lhs._basic_equals_count(rhs)
+        count = _basic_equals_count(lhs, rhs)
         return count == rhs.sizes
 
 

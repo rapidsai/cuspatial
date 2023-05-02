@@ -182,14 +182,14 @@ class ContainsGeometryProcessor(BinPred):
             in the right-hand GeoSeries is contained by the corresponding
             feature in the left-hand GeoSeries. If `basic_none` is
             specified, `.contains` or .contains_properly` returns the
-            inverse of `full`. If `basic_any` is specified, `.contains` or
-            .contains_properly` returns a boolean series indicating
+            negation of `basic_any`.`. If `basic_any` is specified, `.contains`
+            or `.contains_properly` returns a boolean series indicating
             whether any point in the right-hand GeoSeries is contained by
             the corresponding feature in the left-hand GeoSeries. If the
             `basic_count` option is specified, `.contains` or
-            .contains_properly` returns a series of integers indicating
+            .contains_properly` returns a Series of integers indicating
             the number of points in the right-hand GeoSeries that are
-            contained by the corresponding feature in the left-hand
+            contained by the corresponding feature in the left-hand GeoSeries.
 
         Returns
         -------
