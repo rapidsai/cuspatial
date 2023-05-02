@@ -136,6 +136,7 @@ add_library(cuspatial
     src/spatial/point_linestring_distance.cu
     src/spatial/point_polygon_distance.cu
     src/spatial/linestring_polygon_distance.cu
+    src/spatial/polygon_distance.cu
     src/spatial/point_linestring_nearest_points.cu
     src/spatial/sinusoidal_projection.cu
     src/trajectory/derive_trajectories.cu
