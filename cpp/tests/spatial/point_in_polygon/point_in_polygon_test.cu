@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 
+#include <cuspatial_test/vector_equality.hpp>
+#include <cuspatial_test/vector_factories.cuh>
+
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/point_in_polygon.cuh>
 
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_vector.hpp>
 
 #include <thrust/host_vector.h>
@@ -373,4 +377,35 @@ TYPED_TEST(PointInPolygonTest, SelfClosingLoopRightEdgeMissing)
 
   EXPECT_EQ(expected, got);
   EXPECT_EQ(got.end(), ret);
+}
+
+TYPED_TEST(PointInPolygonTest, ContainsButCollinearWithBoundary)
+{
+  using T = TypeParam;
+
+  auto point   = cuspatial::test::make_multipoints_array<T>({{{0.5, 0.5}}});
+  auto polygon = cuspatial::test::make_multipolygon_array<T>(
+    {0, 1},
+    {0, 1},
+    {0, 9},
+    {{0, 0}, {0, 1}, {1, 1}, {1, 0.5}, {1.5, 0.5}, {1.5, 1}, {2, 1}, {2, 0}, {0, 0}});
+
+  auto point_range   = point.range();
+  auto polygon_range = polygon.range();
+
+  auto res = rmm::device_uvector<int32_t>(1, rmm::cuda_stream_default);
+
+  cuspatial::point_in_polygon(point_range.point_begin(),
+                              point_range.point_end(),
+                              polygon_range.part_offset_begin(),
+                              polygon_range.part_offset_end(),
+                              polygon_range.ring_offset_begin(),
+                              polygon_range.ring_offset_end(),
+                              polygon_range.point_begin(),
+                              polygon_range.point_end(),
+                              res.begin());
+
+  auto expect = cuspatial::test::make_device_vector<int32_t>({0b1});
+
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(res, expect);
 }
