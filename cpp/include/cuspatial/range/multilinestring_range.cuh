@@ -59,12 +59,12 @@ class multilinestring_range {
   using point_t       = iterator_value_type<VecIterator>;
   using element_t     = iterator_vec_base_type<VecIterator>;
 
-  multilinestring_range(GeometryIterator geometry_begin,
-                        GeometryIterator geometry_end,
-                        PartIterator part_begin,
-                        PartIterator part_end,
-                        VecIterator points_begin,
-                        VecIterator points_end);
+  CUSPATIAL_HOST_DEVICE multilinestring_range(GeometryIterator geometry_begin,
+                                              GeometryIterator geometry_end,
+                                              PartIterator part_begin,
+                                              PartIterator part_end,
+                                              VecIterator points_begin,
+                                              VecIterator points_end);
 
   /// Return the number of multilinestrings in the array.
   CUSPATIAL_HOST_DEVICE auto size() { return num_multilinestrings(); }

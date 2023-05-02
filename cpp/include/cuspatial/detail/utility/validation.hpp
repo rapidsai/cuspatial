@@ -35,10 +35,10 @@
  * [2]: https://arrow.apache.org/docs/format/Columnar.html#variable-size-binary-layout
  */
 #define CUSPATIAL_EXPECTS_VALID_LINESTRING_SIZES(num_linestring_points, num_linestring_offsets) \
-  CUSPATIAL_EXPECTS(num_linestring_offsets > 0,                                                 \
-                    "Polygon offsets must contain at least one (1) value");                     \
-  CUSPATIAL_EXPECTS(num_linestring_points >= 2 * (num_linestring_offsets - 1),                  \
-                    "Each linestring must have at least two vertices");
+  CUSPATIAL_HOST_DEVICE_EXPECTS(num_linestring_offsets > 0,                                     \
+                                "Polygon offsets must contain at least one (1) value");         \
+  CUSPATIAL_HOST_DEVICE_EXPECTS(num_linestring_points >= 2 * (num_linestring_offsets - 1),      \
+                                "Each linestring must have at least two vertices");
 
 /**
  * @brief Macro for validating the data array sizes for multilinestrings.
@@ -57,10 +57,10 @@
  * [1]: https://github.com/geoarrow/geoarrow/blob/main/format.md
  * [2]: https://arrow.apache.org/docs/format/Columnar.html#variable-size-binary-layout
  */
-#define CUSPATIAL_EXPECTS_VALID_MULTILINESTRING_SIZES(                              \
-  num_linestring_points, num_multilinestring_offsets, num_linestring_offsets)       \
-  CUSPATIAL_EXPECTS(num_multilinestring_offsets > 0,                                \
-                    "Multilinestring offsets must contain at least one (1) value"); \
+#define CUSPATIAL_EXPECTS_VALID_MULTILINESTRING_SIZES(                                          \
+  num_linestring_points, num_multilinestring_offsets, num_linestring_offsets)                   \
+  CUSPATIAL_HOST_DEVICE_EXPECTS(num_multilinestring_offsets > 0,                                \
+                                "Multilinestring offsets must contain at least one (1) value"); \
   CUSPATIAL_EXPECTS_VALID_LINESTRING_SIZES(num_linestring_points, num_linestring_offsets);
 
 /**
@@ -84,15 +84,16 @@
  * [1]: https://github.com/geoarrow/geoarrow/blob/main/format.md
  * [2]: https://arrow.apache.org/docs/format/Columnar.html#variable-size-binary-layout
  */
-#define CUSPATIAL_EXPECTS_VALID_POLYGON_SIZES(                                                    \
-  num_poly_points, num_poly_offsets, num_poly_ring_offsets)                                       \
-  CUSPATIAL_EXPECTS(num_poly_offsets > 0, "Polygon offsets must contain at least one (1) value"); \
-  CUSPATIAL_EXPECTS(num_poly_ring_offsets > 0,                                                    \
-                    "Polygon ring offsets must contain at least one (1) value");                  \
-  CUSPATIAL_EXPECTS(num_poly_ring_offsets >= num_poly_offsets,                                    \
-                    "Each polygon must have at least one (1) ring");                              \
-  CUSPATIAL_EXPECTS(num_poly_points >= 4 * (num_poly_ring_offsets - 1),                           \
-                    "Each ring must have at least four (4) vertices");
+#define CUSPATIAL_EXPECTS_VALID_POLYGON_SIZES(                                               \
+  num_poly_points, num_poly_offsets, num_poly_ring_offsets)                                  \
+  CUSPATIAL_HOST_DEVICE_EXPECTS(num_poly_offsets > 0,                                        \
+                                "Polygon offsets must contain at least one (1) value");      \
+  CUSPATIAL_HOST_DEVICE_EXPECTS(num_poly_ring_offsets > 0,                                   \
+                                "Polygon ring offsets must contain at least one (1) value"); \
+  CUSPATIAL_HOST_DEVICE_EXPECTS(num_poly_ring_offsets >= num_poly_offsets,                   \
+                                "Each polygon must have at least one (1) ring");             \
+  CUSPATIAL_HOST_DEVICE_EXPECTS(num_poly_points >= 4 * (num_poly_ring_offsets - 1),          \
+                                "Each ring must have at least four (4) vertices");
 
 /**
  * @brief Macro for validating the data array sizes for a multipolygon.
@@ -116,8 +117,8 @@
  * [1]: https://github.com/geoarrow/geoarrow/blob/main/format.md
  * [2]: https://arrow.apache.org/docs/format/Columnar.html#variable-size-binary-layout
  */
-#define CUSPATIAL_EXPECTS_VALID_MULTIPOLYGON_SIZES(                                \
-  num_poly_points, num_multipoly_offsets, num_poly_offsets, num_poly_ring_offsets) \
-  CUSPATIAL_EXPECTS(num_multipoly_offsets > 0,                                     \
-                    "Multipolygon offsets must contain at least one (1) value");   \
+#define CUSPATIAL_EXPECTS_VALID_MULTIPOLYGON_SIZES(                                          \
+  num_poly_points, num_multipoly_offsets, num_poly_offsets, num_poly_ring_offsets)           \
+  CUSPATIAL_HOST_DEVICE_EXPECTS(num_multipoly_offsets > 0,                                   \
+                                "Multipolygon offsets must contain at least one (1) value"); \
   CUSPATIAL_EXPECTS_VALID_POLYGON_SIZES(num_poly_points, num_poly_offsets, num_poly_ring_offsets);
