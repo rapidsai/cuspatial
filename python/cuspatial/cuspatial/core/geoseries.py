@@ -182,7 +182,7 @@ class GeoSeries(cudf.Series):
         The size of a polygon is the total number of points in all of its rings.
         The size of a multipolygon is the sum of the sizes of all of its polygons.
         The size of a linestring is the number of points in its single line.
-        The size of a multilinestring is the sum of all its linestrings.
+        The size of a multilinestring is the sum of the sizes of all of its linestrings.
         The size of a multipoint is the number of points in its single point.
         The size of a point is 1.
         """
