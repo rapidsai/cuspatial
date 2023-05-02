@@ -23,6 +23,8 @@
 #include <cuspatial/detail/utility/floating_point.cuh>
 #include <cuspatial/geometry/polygon_ref.cuh>
 
+#include <thrust/swap.h>
+
 namespace cuspatial {
 namespace detail {
 
@@ -39,24 +41,12 @@ namespace detail {
  * @param polygon polygon to test for point in polygon
  * @return boolean to indicate if point is inside the polygon.
  * `false` if point is on the edge of the polygon.
- *
- * @tparam T type of coordinate
- * @tparam PolygonRef polygon_ref type
- * @param test_point point to test for point in polygon
- * @param polygon polygon to test for point in polygon
- * @return boolean to indicate if point is inside the polygon.
- * `false` if point is on the edge of the polygon.
- *
- * TODO: the ultimate goal of refactoring this as independent function is to remove
- * src/utility/point_in_polygon.cuh and its usage in quadtree_point_in_polygon.cu. It isn't
- * possible today without further work to refactor quadtree_point_in_polygon into header only
- * API.
  */
 template <typename T, class PolygonRef>
 __device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonRef const& polygon)
 {
   bool point_is_within = false;
-  bool is_colinear     = false;
+  bool point_on_edge   = false;
   for (auto ring : polygon) {
     auto last_segment = ring.segment(ring.num_segments() - 1);
 
@@ -75,11 +65,19 @@ __device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonR
       if (float_equal(run, zero) && float_equal(rise, zero)) continue;
 
       T rise_to_point = test_point.y - a.y;
+      T run_to_point  = test_point.x - a.x;
 
-      // colinearity test
-      T run_to_point = test_point.x - a.x;
-      is_colinear    = float_equal(run * rise_to_point, run_to_point * rise);
-      if (is_colinear) { break; }
+      // point-on-edge test
+      bool is_colinear = float_equal(run * rise_to_point, run_to_point * rise);
+      if (is_colinear) {
+        T minx = a.x;
+        T maxx = b.x;
+        if (minx > maxx) thrust::swap(minx, maxx);
+        if (minx <= test_point.x && test_point.x <= maxx) {
+          point_on_edge = true;
+          break;
+        }
+      }
 
       y1_flag = a.y > test_point.y;
       if (y1_flag != y0_flag) {
@@ -92,7 +90,7 @@ __device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonR
       b       = a;
       y0_flag = y1_flag;
     }
-    if (is_colinear) {
+    if (point_on_edge) {
       point_is_within = false;
       break;
     }
