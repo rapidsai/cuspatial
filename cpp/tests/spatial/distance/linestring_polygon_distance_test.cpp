@@ -18,7 +18,7 @@
 #include <cuspatial_test/vector_equality.hpp>
 
 #include <cuspatial/column/geometry_column_view.hpp>
-#include <cuspatial/distance/linestring_polygon_distance.hpp>
+#include <cuspatial/distance.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/types.hpp>

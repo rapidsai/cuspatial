@@ -9,7 +9,7 @@ from cuspatial._lib.cpp.column.geometry_column_view cimport (
 )
 
 
-cdef extern from "cuspatial/linestring_intersection.hpp" \
+cdef extern from "cuspatial/intersection.hpp" \
         namespace "cuspatial" nogil:
 
     struct linestring_intersection_column_result:

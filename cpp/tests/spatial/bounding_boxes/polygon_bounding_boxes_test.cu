@@ -17,10 +17,10 @@
 #include <cuspatial_test/vector_equality.hpp>
 #include <cuspatial_test/vector_factories.cuh>
 
+#include <cuspatial/bounding_boxes.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/box.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
-#include <cuspatial/polygon_bounding_boxes.cuh>
 
 #include <gtest/gtest.h>
 

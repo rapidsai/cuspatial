@@ -22,11 +22,6 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/pairwise_multipoint_equals_count.cuh>
-#include <cuspatial/sinusoidal_projection.cuh>
-
-#include <rmm/device_vector.hpp>
-
-#include <thrust/iterator/transform_iterator.h>
 
 using namespace cuspatial;
 using namespace cuspatial::test;

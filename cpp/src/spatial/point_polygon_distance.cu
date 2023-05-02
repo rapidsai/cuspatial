@@ -29,10 +29,9 @@
 #include <rmm/cuda_stream_view.hpp>
 
 #include <cuspatial/column/geometry_column_view.hpp>
-#include <cuspatial/detail/iterator.hpp>
+#include <cuspatial/distance.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/iterator_factory.cuh>
-#include <cuspatial/point_polygon_distance.cuh>
 #include <cuspatial/range/multipoint_range.cuh>
 #include <cuspatial/range/multipolygon_range.cuh>
 #include <cuspatial/types.hpp>
