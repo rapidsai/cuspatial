@@ -16,8 +16,8 @@
 
 #pragma once
 
+#include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <iomanip>
 #include <rmm/device_uvector.hpp>

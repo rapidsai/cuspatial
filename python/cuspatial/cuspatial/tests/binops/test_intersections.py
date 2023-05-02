@@ -88,9 +88,9 @@ def test_one_pair_with_overlap():
     expect_ids = pd.DataFrame(
         {
             "lhs_linestring_id": [[0]],
-            "lhs_segment_id": [[0]],
+            "lhs_segment_id": [[1]],
             "rhs_linestring_id": [[0]],
-            "rhs_segment_id": [[0]],
+            "rhs_segment_id": [[1]],
         }
     )
 
@@ -122,9 +122,9 @@ def test_two_pairs_with_intersect_and_overlap():
     expect_ids = pd.DataFrame(
         {
             "lhs_linestring_id": [[0], [0, 0]],
-            "lhs_segment_id": [[0], [1, 0]],
+            "lhs_segment_id": [[1], [1, 0]],
             "rhs_linestring_id": [[0], [0, 0]],
-            "rhs_segment_id": [[0], [0, 2]],
+            "rhs_segment_id": [[1], [0, 2]],
         }
     )
 
@@ -156,3 +156,81 @@ def test_one_pair_multilinestring():
     )
 
     run_test(s1, s2, expect_offset, expect_geom, expect_ids)
+
+
+def test_three_pairs_identical_has_ring():
+    lhs = gpd.GeoSeries(
+        [
+            LineString([(0, 0), (1, 1)]),
+            LineString([(0, 0), (1, 1)]),
+            LineString([(0, 0), (1, 1)]),
+        ]
+    )
+    rhs = gpd.GeoSeries(
+        [
+            LineString([(0, 0), (0, 1), (1, 1), (1, 0), (0, 0)]),
+            LineString([(0, 0), (0, 1), (1, 1), (1, 0), (0, 0)]),
+            LineString([(0, 0), (0, 1), (1, 1), (1, 0), (0, 0)]),
+        ]
+    )
+
+    expect_offset = pd.Series([0, 2, 4, 6])
+    expect_geom = gpd.GeoSeries(
+        [
+            Point(0, 0),
+            Point(1, 1),
+            Point(0, 0),
+            Point(1, 1),
+            Point(0, 0),
+            Point(1, 1),
+        ]
+    )
+    expect_ids = pd.DataFrame(
+        {
+            "lhs_linestring_id": [[0, 0], [0, 0], [0, 0]],
+            "lhs_segment_id": [[0, 0], [0, 0], [0, 0]],
+            "rhs_linestring_id": [[0, 0], [0, 0], [0, 0]],
+            "rhs_segment_id": [[0, 1], [0, 1], [0, 1]],
+        }
+    )
+
+    run_test(lhs, rhs, expect_offset, expect_geom, expect_ids)
+
+
+def test_three_pairs_identical_no_ring():
+    lhs = gpd.GeoSeries(
+        [
+            LineString([(0, 0), (1, 1)]),
+            LineString([(0, 0), (1, 1)]),
+            LineString([(0, 0), (1, 1)]),
+        ]
+    )
+    rhs = gpd.GeoSeries(
+        [
+            LineString([(0, 0), (0, 1), (1, 1), (1, 0)]),
+            LineString([(0, 0), (0, 1), (1, 1), (1, 0)]),
+            LineString([(0, 0), (0, 1), (1, 1), (1, 0)]),
+        ]
+    )
+
+    expect_offset = pd.Series([0, 2, 4, 6])
+    expect_geom = gpd.GeoSeries(
+        [
+            Point(0, 0),
+            Point(1, 1),
+            Point(0, 0),
+            Point(1, 1),
+            Point(0, 0),
+            Point(1, 1),
+        ]
+    )
+    expect_ids = pd.DataFrame(
+        {
+            "lhs_linestring_id": [[0, 0], [0, 0], [0, 0]],
+            "lhs_segment_id": [[0, 0], [0, 0], [0, 0]],
+            "rhs_linestring_id": [[0, 0], [0, 0], [0, 0]],
+            "rhs_segment_id": [[0, 1], [0, 1], [0, 1]],
+        }
+    )
+
+    run_test(lhs, rhs, expect_offset, expect_geom, expect_ids)

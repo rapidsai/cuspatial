@@ -13,6 +13,9 @@ from cuspatial._lib.cpp.column.geometry_column_view cimport (
 from cuspatial._lib.cpp.distance.linestring_distance cimport (
     pairwise_linestring_distance as c_pairwise_linestring_distance,
 )
+from cuspatial._lib.cpp.distance.linestring_polygon_distance cimport (
+    pairwise_linestring_polygon_distance as c_pairwise_line_poly_dist,
+)
 from cuspatial._lib.cpp.distance.point_distance cimport (
     pairwise_point_distance as c_pairwise_point_distance,
 )
@@ -142,6 +145,33 @@ def pairwise_point_polygon_distance(
     with nogil:
         c_result = move(c_pairwise_point_polygon_distance(
             c_multipoints.get()[0], c_multipolygons.get()[0]
+        ))
+
+    return Column.from_unique_ptr(move(c_result))
+
+
+def pairwise_linestring_polygon_distance(
+    Column multilinestrings,
+    Column multipolygons
+):
+
+    cdef shared_ptr[geometry_column_view] c_multilinestrings = \
+        make_shared[geometry_column_view](
+            multilinestrings.view(),
+            collection_type_id.MULTI,
+            geometry_type_id.LINESTRING)
+
+    cdef shared_ptr[geometry_column_view] c_multipolygons = \
+        make_shared[geometry_column_view](
+            multipolygons.view(),
+            collection_type_id.MULTI,
+            geometry_type_id.POLYGON)
+
+    cdef unique_ptr[column] c_result
+
+    with nogil:
+        c_result = move(c_pairwise_line_poly_dist(
+            c_multilinestrings.get()[0], c_multipolygons.get()[0]
         ))
 
     return Column.from_unique_ptr(move(c_result))

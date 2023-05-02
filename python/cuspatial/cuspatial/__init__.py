@@ -7,6 +7,7 @@ from .core.spatial import (
     join_quadtree_and_bounding_boxes,
     linestring_bounding_boxes,
     pairwise_linestring_distance,
+    pairwise_linestring_polygon_distance,
     pairwise_point_distance,
     pairwise_point_linestring_distance,
     pairwise_point_linestring_nearest_points,

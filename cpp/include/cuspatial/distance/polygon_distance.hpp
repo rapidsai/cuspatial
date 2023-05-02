@@ -25,12 +25,16 @@
 namespace cuspatial {
 
 /**
- * @brief
+ * @brief Compute pairwise (multi)polygon-to-(multi)polygon Cartesian distance
  *
- * @param lhs
- * @param rhs
- * @param mr
- * @return std::unique_ptr<cudf::column>
+ * Computes the cartesian distance between each pair of the multipolygons.
+ *
+ * @param lhs Geometry column of the multipolygons to compute distance from
+ * @param rhs Geometry column of the multipolygons to compute distance to
+ * @param mr Device memory resource used to allocate the returned column.
+ *
+ * @return Column of distances between each pair of input geometries, same type as input coordinate
+ * types.
  */
 std::unique_ptr<cudf::column> pairwise_polygon_distance(
   geometry_column_view const& lhs,
