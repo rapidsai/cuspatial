@@ -37,6 +37,12 @@ def polygon_bounding_boxes(polygons: GeoSeries):
             the maximum x-coordinate of each bounding box
         maxy : cudf.Series
             the maximum y-coordinate of each bounding box
+
+    Notes
+    -----
+    Has no notion of multipolygons. If a multipolygon is passed, the bounding
+    boxes for each polygon will be computed and returned. The user is
+    responsible for handling the multipolygon case.
     """
 
     column_names = ["minx", "miny", "maxx", "maxy"]
@@ -51,9 +57,7 @@ def polygon_bounding_boxes(polygons: GeoSeries):
     # by combining the geometry offset and parts offset of the multipolygon
     # array.
 
-    poly_offsets = polygons.polygons.part_offset.take(
-        polygons.polygons.geometry_offset
-    )
+    poly_offsets = polygons.polygons.part_offset
     ring_offsets = polygons.polygons.ring_offset
     x = polygons.polygons.x
     y = polygons.polygons.y

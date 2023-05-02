@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cudf/table/table_view.hpp>
 #include <cudf/types.hpp>
 
 #include <rmm/mr/device/per_device_resource.hpp>
@@ -70,15 +71,18 @@ namespace cuspatial {
  * :        2 :  2 :     0 :    :       2 :   :      :
  * +----------+----+-------+    +---------+---+------+
  *
- * returned as concatenation of columns
- * [0 2 4 3 0 2 9 6 0]
+ * Returns:
+ * column: [0 4 2 9 0 6 3 2 0]
+ * table_view: [0 4 2] [9 0 6] [3 2 0]
+ *
  * ```
  *
  * @param[in] xs: x component of points
  * @param[in] ys: y component of points
  * @param[in] space_offsets: beginning index of each space, plus the last space's end offset.
  *
- * @returns Hausdorff distances for each pair of spaces
+ * @returns An owning object of the result of the hausdorff distances.
+ * A table view containing the split view for each input space.
  *
  * @throw cudf::cuda_error if `xs` and `ys` lengths differ
  * @throw cudf::cuda_error if `xs` and `ys` types differ
@@ -87,7 +91,7 @@ namespace cuspatial {
  *
  * @note Hausdorff distances are asymmetrical
  */
-std::unique_ptr<cudf::column> directed_hausdorff_distance(
+std::pair<std::unique_ptr<cudf::column>, cudf::table_view> directed_hausdorff_distance(
   cudf::column_view const& xs,
   cudf::column_view const& ys,
   cudf::column_view const& space_offsets,

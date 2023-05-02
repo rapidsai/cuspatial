@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+#include <cuspatial/derive_trajectories.cuh>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/derive_trajectories.cuh>
-#include <cuspatial/experimental/iterator_factory.cuh>
+#include <cuspatial/iterator_factory.cuh>
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/copying.hpp>

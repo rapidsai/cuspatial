@@ -28,8 +28,7 @@
 
 #include <gtest/gtest.h>
 
-struct DeriveTrajectoriesErrorTest : public cuspatial::test::BaseFixture {
-};
+struct DeriveTrajectoriesErrorTest : public cuspatial::test::BaseFixture {};
 
 TEST_F(DeriveTrajectoriesErrorTest, SizeMismatch)
 {

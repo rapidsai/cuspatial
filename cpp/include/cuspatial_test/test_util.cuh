@@ -16,8 +16,8 @@
 
 #pragma once
 
+#include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <iomanip>
 #include <rmm/device_uvector.hpp>
@@ -93,6 +93,27 @@ void print_device_range(Iter begin,
                         std::string_view post = "\n")
 {
   auto hvec = to_host(begin, end);
+
+  std::cout << pre;
+  std::for_each(hvec.begin(), hvec.end(), [](auto const& x) { std::cout << x << " "; });
+  std::cout << post;
+}
+
+/**
+ * @brief Print a device vector.
+ *
+ * @note Copies the device vector to host before printing.
+ *
+ * @tparam Vector The device vector type
+ * @param vec The device vector to print
+ * @param pre String to print before the device vector
+ * @param post String to print after the device vector
+ */
+template <typename Vector>
+void print_device_vector(Vector const& vec, std::string_view pre = "", std::string_view post = "\n")
+{
+  using T   = typename Vector::value_type;
+  auto hvec = to_host<T>(vec);
 
   std::cout << pre;
   std::for_each(hvec.begin(), hvec.end(), [](auto const& x) { std::cout << x << " "; });

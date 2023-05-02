@@ -18,7 +18,7 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 
 #include <rmm/device_uvector.hpp>
 
@@ -32,6 +32,10 @@
 
 #include <algorithm>
 #include <memory>
+
+namespace cuspatial {
+
+namespace test {
 
 /**
  * @brief Identifies a probability distribution type.
@@ -164,3 +168,7 @@ struct point_generator {
  * @brief LCG pseudo-random engine.
  */
 auto deterministic_engine(unsigned seed) { return thrust::minstd_rand{seed}; }
+
+}  // namespace test
+
+}  // namespace cuspatial

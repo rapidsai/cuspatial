@@ -41,24 +41,28 @@ sed_runner 's/release = .*/release = '"'${NEXT_FULL_TAG}'"'/g' docs/source/conf.
 sed_runner 's/'"branch-.*\/RAPIDS.cmake"'/'"branch-${NEXT_SHORT_TAG}\/RAPIDS.cmake"'/g' fetch_rapids.cmake
 sed_runner 's/'"branch-.*\/RAPIDS.cmake"'/'"branch-${NEXT_SHORT_TAG}\/RAPIDS.cmake"'/g' python/cuspatial/CMakeLists.txt
 
-# bump cudf
-for FILE in dependencies.yaml conda/environments/*.yaml; do
-  sed_runner "s/cudf=${CURRENT_SHORT_TAG}/cudf=${NEXT_SHORT_TAG}/g" ${FILE};
-  sed_runner "s/rmm=${CURRENT_SHORT_TAG}/rmm=${NEXT_SHORT_TAG}/g" ${FILE};
-  sed_runner "s/libcudf=${CURRENT_SHORT_TAG}/libcudf=${NEXT_SHORT_TAG}/g" ${FILE};
-  sed_runner "s/librmm=${CURRENT_SHORT_TAG}/librmm=${NEXT_SHORT_TAG}/g" ${FILE};
-done
-
 # Doxyfile update
 sed_runner "/PROJECT_NUMBER[ ]*=/ s|=.*|= ${NEXT_FULL_TAG}|g" cpp/doxygen/Doxyfile
 sed_runner "/TAGFILES/ s|[0-9]\+.[0-9]\+|${NEXT_SHORT_TAG}|g" cpp/doxygen/Doxyfile
 
+# CI files
 for FILE in .github/workflows/*.yaml; do
   sed_runner "/shared-action-workflows/ s/@.*/@branch-${NEXT_SHORT_TAG}/g" "${FILE}"
 done
+sed_runner "s/VERSION_NUMBER=\".*/VERSION_NUMBER=\"${NEXT_SHORT_TAG}\"/g" ci/build_docs.sh
 
 # Need to distutils-normalize the original version
 NEXT_SHORT_TAG_PEP440=$(python -c "from setuptools.extern import packaging; print(packaging.version.Version('${NEXT_SHORT_TAG}'))")
+
+# bump rapids libraries
+for FILE in dependencies.yaml conda/environments/*.yaml; do
+  sed_runner "/- &cudf_conda cudf==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
+  sed_runner "/- cudf==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
+  sed_runner "/- cuml==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
+  sed_runner "/- rmm==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
+  sed_runner "/- libcudf==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
+  sed_runner "/- librmm==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
+done
 
 # Dependency versions in dependencies.yaml
 sed_runner "/-cu[0-9]\{2\}==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}.*/g" dependencies.yaml

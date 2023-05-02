@@ -10,6 +10,7 @@ and [C++ API reference](https://docs.rapids.ai/api/libcuspatial/stable/).
 :maxdepth: 2
 
 development_environment
+build
 contributing_guide
 library_design
 benchmarking

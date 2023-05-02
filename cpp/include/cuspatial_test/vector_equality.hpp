@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include <cuspatial/experimental/geometry/segment.cuh>
+#include <cuspatial/geometry/segment.cuh>
+#include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <cuspatial_test/test_util.cuh>
 
@@ -145,14 +145,14 @@ inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs)
   using T = typename Vector1::value_type;
   static_assert(std::is_same_v<T, typename Vector2::value_type>, "Value type mismatch.");
 
-  if constexpr (cuspatial::is_vec_2d<T>()) {
+  if constexpr (cuspatial::is_vec_2d<T>) {
     EXPECT_THAT(to_host<T>(lhs), ::testing::Pointwise(vec_2d_matcher(), to_host<T>(rhs)));
   } else if constexpr (std::is_floating_point_v<T>) {
     EXPECT_THAT(to_host<T>(lhs), ::testing::Pointwise(float_matcher(), to_host<T>(rhs)));
   } else if constexpr (std::is_integral_v<T>) {
     EXPECT_THAT(to_host<T>(lhs), ::testing::Pointwise(::testing::Eq(), to_host<T>(rhs)));
   } else if constexpr (cuspatial::is_optional<T>) {
-    if constexpr (cuspatial::is_vec_2d<typename T::value_type>()) {
+    if constexpr (cuspatial::is_vec_2d<typename T::value_type>) {
       EXPECT_THAT(to_host<T>(lhs),
                   ::testing::Pointwise(optional_matcher(vec_2d_matcher()), to_host<T>(rhs)));
     } else if constexpr (std::is_floating_point_v<typename T::value_type>) {
@@ -169,20 +169,21 @@ inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs)
   }
 }
 
-template <typename Vector1, typename Vector2, typename T = typename Vector1::value_type>
-inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs, T abs_error)
+template <typename Vector1, typename Vector2, typename U>
+inline void expect_vector_equivalent(Vector1 const& lhs, Vector2 const& rhs, U abs_error)
 {
+  using T = typename Vector1::value_type;
   static_assert(std::is_same_v<T, typename Vector2::value_type>, "Value type mismatch.");
   static_assert(!std::is_integral_v<T>, "Integral types cannot be compared with an error.");
 
-  if constexpr (cuspatial::is_vec_2d<T>()) {
+  if constexpr (cuspatial::is_vec_2d<T>) {
     EXPECT_THAT(to_host<T>(lhs),
                 ::testing::Pointwise(vec_2d_near_matcher(abs_error), to_host<T>(rhs)));
   } else if constexpr (std::is_floating_point_v<T>) {
     EXPECT_THAT(to_host<T>(lhs),
                 ::testing::Pointwise(float_near_matcher(abs_error), to_host<T>(rhs)));
   } else if constexpr (cuspatial::is_optional<T>) {
-    if constexpr (cuspatial::is_vec_2d<typename T::value_type>()) {
+    if constexpr (cuspatial::is_vec_2d<typename T::value_type>) {
       EXPECT_THAT(to_host<T>(lhs),
                   ::testing::Pointwise(optional_matcher(vec_2d_matcher()), to_host<T>(rhs)));
     } else if constexpr (std::is_floating_point_v<typename T::value_type>) {
@@ -235,6 +236,39 @@ void expect_vec_2d_pair_equivalent(PairVector1 const& expected, PairVector2 cons
   do {                                                        \
     SCOPED_TRACE(" <--  line of failure\n");                  \
     cuspatial::test::expect_vec_2d_pair_equivalent(lhs, rhs); \
+  } while (0)
+
+template <typename Array1, typename Array2>
+void expect_multilinestring_array_equivalent(Array1& lhs, Array2& rhs)
+{
+  auto [lhs_geometry_offset, lhs_part_offset, lhs_coordinates] = lhs.release();
+  auto [rhs_geometry_offset, rhs_part_offset, rhs_coordinates] = rhs.release();
+
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs_geometry_offset, rhs_geometry_offset);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs_part_offset, rhs_part_offset);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs_coordinates, rhs_coordinates);
+}
+
+#define CUSPATIAL_EXPECT_MULTILINESTRING_ARRAY_EQUIVALENT(lhs, rhs)     \
+  do {                                                                  \
+    SCOPED_TRACE(" <--  line of failure\n");                            \
+    cuspatial::test::expect_multilinestring_array_equivalent(lhs, rhs); \
+  } while (0)
+
+template <typename Array1, typename Array2>
+void expect_multipoint_array_equivalent(Array1& lhs, Array2& rhs)
+{
+  auto [lhs_geometry_offset, lhs_coordinates] = lhs.release();
+  auto [rhs_geometry_offset, rhs_coordinates] = rhs.release();
+
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs_geometry_offset, rhs_geometry_offset);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs_coordinates, rhs_coordinates);
+}
+
+#define CUSPATIAL_EXPECT_MULTIPOINT_ARRAY_EQUIVALENT(lhs, rhs)     \
+  do {                                                             \
+    SCOPED_TRACE(" <--  line of failure\n");                       \
+    cuspatial::test::expect_multipoint_array_equivalent(lhs, rhs); \
   } while (0)
 
 #define CUSPATIAL_RUN_TEST(FUNC, ...)        \

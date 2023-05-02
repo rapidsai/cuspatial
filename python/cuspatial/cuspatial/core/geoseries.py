@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2022, NVIDIA CORPORATION
+# Copyright (c) 2020-2023, NVIDIA CORPORATION
 
 from functools import cached_property
 from numbers import Integral
@@ -24,21 +24,30 @@ from cudf._typing import ColumnLike
 from cudf.core.column.column import as_column
 
 import cuspatial.io.pygeoarrow as pygeoarrow
-from cuspatial.core._column.geocolumn import GeoColumn
+from cuspatial.core._column.geocolumn import ColumnType, GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
-from cuspatial.core.binpreds.binpreds import (
-    ContainsProperlyBinpred,
-    IntersectsBinpred,
-    OverlapsBinpred,
-    WithinBinpred,
+from cuspatial.core.binpreds.binpred_dispatch import (
+    CONTAINS_DISPATCH,
+    COVERS_DISPATCH,
+    CROSSES_DISPATCH,
+    DISJOINT_DISPATCH,
+    EQUALS_DISPATCH,
+    INTERSECTS_DISPATCH,
+    OVERLAPS_DISPATCH,
+    WITHIN_DISPATCH,
+)
+from cuspatial.utils.column_utils import (
+    contains_only_linestrings,
+    contains_only_multipoints,
+    contains_only_points,
+    contains_only_polygons,
 )
 
 T = TypeVar("T", bound="GeoSeries")
 
 
 class GeoSeries(cudf.Series):
-    """
-    cuspatial.GeoSeries enables GPU-backed storage and computation of
+    """cuspatial.GeoSeries enables GPU-backed storage and computation of
     shapely-like objects. Our goal is to give feature parity with GeoPandas.
     At this time, only from_geopandas and to_geopandas are directly supported.
     cuspatial GIS, indexing, and trajectory functions depend on the arrays
@@ -97,6 +106,10 @@ class GeoSeries(cudf.Series):
         )
 
     @property
+    def feature_types(self):
+        return self._column._meta.input_types
+
+    @property
     def type(self):
         gpu_types = cudf.Series(self._column._meta.input_types).astype("str")
         result = gpu_types.replace(
@@ -104,12 +117,45 @@ class GeoSeries(cudf.Series):
                 "0": "Point",
                 "1": "MultiPoint",
                 "2": "Linestring",
-                "3": "MultiLinestring",
-                "4": "Polygon",
-                "5": "MultiPolygon",
+                "3": "Polygon",
             }
         )
         return result
+
+    @property
+    def column_type(self):
+        """This is used to determine the type of the GeoColumn.
+        It is a value returning method that produces the same result as
+        the various `contains_only_*` methods, except as an Enum instead
+        of many booleans."""
+        if contains_only_polygons(self):
+            return ColumnType.POLYGON
+        elif contains_only_linestrings(self):
+            return ColumnType.LINESTRING
+        elif contains_only_multipoints(self):
+            return ColumnType.MULTIPOINT
+        elif contains_only_points(self):
+            return ColumnType.POINT
+        else:
+            return ColumnType.MIXED
+
+    @property
+    def point_indices(self):
+        if contains_only_polygons(self):
+            return self.polygons.point_indices()
+        elif contains_only_linestrings(self):
+            return self.lines.point_indices()
+        elif contains_only_multipoints(self):
+            return self.multipoints.point_indices()
+        elif contains_only_points(self):
+            return self.points.point_indices()
+        else:
+            if len(self) == 0:
+                return cudf.Series([0], dtype="int32")
+            raise TypeError(
+                "GeoSeries must contain only Points, MultiPoints, Lines, or "
+                "Polygons to return point indices."
+            )
 
     class GeoColumnAccessor:
         def __init__(self, list_series, meta):
@@ -128,9 +174,11 @@ class GeoSeries(cudf.Series):
 
         @property
         def xy(self):
-            return cudf.Series(
-                self._get_current_features(self._type).leaves().values
-            )
+            features = self._get_current_features(self._type)
+            if hasattr(features, "leaves"):
+                return cudf.Series(features.leaves().values)
+            else:
+                return cudf.Series()
 
         def _get_current_features(self, type):
             # Resample the existing features so that the offsets returned
@@ -150,7 +198,11 @@ class GeoSeries(cudf.Series):
             sizes = offsets[1:] - offsets[:-1]
             return cp.repeat(self._series.index, sizes)
             """
-            return self._series.index
+            return self._meta.input_types.index[self._meta.input_types != -1]
+
+        def column(self):
+            """Return the ListColumn reordered by union offset."""
+            return self._get_current_features(self._type)
 
     class MultiPointGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
@@ -166,7 +218,7 @@ class GeoSeries(cudf.Series):
             # MultiPoint GeoSeries that each individual point is member of.
             offsets = cp.array(self.geometry_offset)
             sizes = offsets[1:] - offsets[:-1]
-            return cp.repeat(self._series.index, sizes)
+            return cp.repeat(self._meta.input_types.index, sizes)
 
     class LineStringGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
@@ -186,9 +238,9 @@ class GeoSeries(cudf.Series):
         def point_indices(self):
             # Return a cupy.ndarray containing the index values from the
             # LineString GeoSeries that each individual point is member of.
-            offsets = self.part_offset.take(self.geometry_offset)
+            offsets = cp.array(self.part_offset)
             sizes = offsets[1:] - offsets[:-1]
-            return cp.repeat(self._series.index, sizes)
+            return cp.repeat(self._meta.input_types.index, sizes)
 
     class PolygonGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
@@ -223,34 +275,26 @@ class GeoSeries(cudf.Series):
 
     @property
     def points(self):
-        """
-        Access the `PointsArray` of the underlying `GeoArrowBuffers`.
-        """
+        """Access the `PointsArray` of the underlying `GeoArrowBuffers`."""
         return self.GeoColumnAccessor(self._column.points, self._column._meta)
 
     @property
     def multipoints(self):
-        """
-        Access the `MultiPointArray` of the underlying `GeoArrowBuffers`.
-        """
+        """Access the `MultiPointArray` of the underlying `GeoArrowBuffers`."""
         return self.MultiPointGeoColumnAccessor(
             self._column.mpoints, self._column._meta
         )
 
     @property
     def lines(self):
-        """
-        Access the `LineArray` of the underlying `GeoArrowBuffers`.
-        """
+        """Access the `LineArray` of the underlying `GeoArrowBuffers`."""
         return self.LineStringGeoColumnAccessor(
             self._column.lines, self._column._meta
         )
 
     @property
     def polygons(self):
-        """
-        Access the `PolygonArray` of the underlying `GeoArrowBuffers`.
-        """
+        """Access the `PolygonArray` of the underlying `GeoArrowBuffers`."""
         return self.PolygonGeoColumnAccessor(
             self._column.polygons, self._column._meta
         )
@@ -260,9 +304,7 @@ class GeoSeries(cudf.Series):
         return self.to_pandas().__repr__()
 
     class GeoSeriesLocIndexer:
-        """
-        Map the index to an integer Series and use that.
-        """
+        """Map the index to an integer Series and use that."""
 
         def __init__(self, _sr):
             self._sr = _sr
@@ -292,9 +334,7 @@ class GeoSeries(cudf.Series):
                 return result
 
     class GeoSeriesILocIndexer:
-
-        """
-        Each row of a GeoSeries is one of the six types: Point, MultiPoint,
+        """Each row of a GeoSeries is one of the six types: Point, MultiPoint,
         LineString, MultiLineString, Polygon, or MultiPolygon.
         """
 
@@ -352,21 +392,16 @@ class GeoSeries(cudf.Series):
 
     @property
     def loc(self):
-        """
-        Not currently supported.
-        """
+        """Not currently supported."""
         return self.GeoSeriesLocIndexer(self)
 
     @property
     def iloc(self):
-        """
-        Return the i-th row of the GeoSeries.
-        """
+        """Return the i-th row of the GeoSeries."""
         return self.GeoSeriesILocIndexer(self)
 
     def to_geopandas(self, nullable=False):
-        """
-        Returns a new GeoPandas GeoSeries object from the coordinates in
+        """Returns a new GeoPandas GeoSeries object from the coordinates in
         the cuspatial GeoSeries.
         """
         if nullable is True:
@@ -379,8 +414,7 @@ class GeoSeries(cudf.Series):
         )
 
     def to_pandas(self):
-        """
-        Treats to_pandas and to_geopandas as the same call, which improves
+        """Treats to_pandas and to_geopandas as the same call, which improves
         compatibility with pandas.
         """
         return self.to_geopandas()
@@ -451,8 +485,7 @@ class GeoSeries(cudf.Series):
             return results
 
     def to_arrow(self):
-        """
-        Convert to a GeoArrow Array.
+        """Convert to a GeoArrow Array.
 
         Returns
         -------
@@ -553,8 +586,7 @@ class GeoSeries(cudf.Series):
         sort: bool = True,
         allow_non_unique: bool = False,
     ) -> T:
-        """
-        The values in the newly aligned columns will not change,
+        """The values in the newly aligned columns will not change,
         only positions in the union offsets and type codes.
         """
         aligned_union_offsets = (
@@ -587,8 +619,7 @@ class GeoSeries(cudf.Series):
 
     @classmethod
     def from_points_xy(cls, points_xy):
-        """
-        Construct a GeoSeries of POINTs from an array of interleaved xy
+        """Construct a GeoSeries of POINTs from an array of interleaved xy
         coordinates.
 
         Parameters
@@ -605,8 +636,7 @@ class GeoSeries(cudf.Series):
 
     @classmethod
     def from_multipoints_xy(cls, multipoints_xy, geometry_offset):
-        """
-        Construct a GeoSeries of MULTIPOINTs from an array of interleaved
+        """Construct a GeoSeries of MULTIPOINTs from an array of interleaved
         xy coordinates.
 
         Parameters
@@ -643,9 +673,8 @@ class GeoSeries(cudf.Series):
     def from_linestrings_xy(
         cls, linestrings_xy, part_offset, geometry_offset
     ) -> T:
-        """
-        Construct a GeoSeries of MULTILINESTRINGs from an array of interleaved
-        xy coordinates.
+        """Construct a GeoSeries of MULTILINESTRINGs from an array of
+        interleaved xy coordinates.
 
         Parameters
         ----------
@@ -689,9 +718,8 @@ class GeoSeries(cudf.Series):
     def from_polygons_xy(
         cls, polygons_xy, ring_offset, part_offset, geometry_offset
     ) -> T:
-        """
-        Construct a GeoSeries of MULTIPOLYGONs from an array of interleaved xy
-        coordinates.
+        """Construct a GeoSeries of MULTIPOLYGONs from an array of
+        interleaved xy coordinates.
 
         Parameters
         ----------
@@ -737,8 +765,7 @@ class GeoSeries(cudf.Series):
         )
 
     def align(self, other):
-        """
-        Align the rows of two GeoSeries using outer join.
+        """Align the rows of two GeoSeries using outer join.
 
         `align` rearranges two GeoSeries so that their indices match.
         If one GeoSeries is longer than the other, the shorter GeoSeries
@@ -851,8 +878,7 @@ class GeoSeries(cudf.Series):
         name=None,
         inplace=False,
     ):
-        """
-        Reset the index of the GeoSeries.
+        """Reset the index of the GeoSeries.
 
         Parameters
         ----------
@@ -922,15 +948,110 @@ class GeoSeries(cudf.Series):
             self.index = cudf_series.index
             return None
 
-    def contains_properly(self, other, align=True):
-        """
-        Returns a `Series` of `dtype('bool')` with value `True` for each
+    def contains_properly(self, other, align=False, allpairs=False):
+        """Returns a `Series` of `dtype('bool')` with value `True` for each
         aligned geometry that contains _other_.
 
         Compute from a GeoSeries of points and a GeoSeries of polygons which
         points are properly contained within the corresponding polygon. Polygon
         A contains Point B properly if B intersects the interior of A but not
         the boundary (or exterior).
+
+        If `allpairs=False`, the result will be a `Series` of `dtype('bool')`.
+        If `allpairs=True`, the result will be a `DataFrame` containing two
+        columns, `point_indices` and `polygon_indices`, each of which is a
+        `Series` of `dtype('int32')`. The `point_indices` `Series` contains
+        the indices of the points in the right GeoSeries, and the
+        `polygon_indices` `Series` contains the indices of the polygons in the
+        left GeoSeries.
+
+        Parameters
+        ----------
+        other
+            a cuspatial.GeoSeries
+        align=True
+            to align the indices before computing .contains or not. If the
+            indices are not aligned, they will be compared based on their
+            implicit row order.
+        allpairs=False
+            True computes the contains for all pairs of geometries
+            between the two GeoSeries. False computes the contains for
+            each geometry in the left GeoSeries against the corresponding
+            geometry in the right GeoSeries. Defaults to False.
+
+        Examples
+        --------
+        Test if a polygon is inside another polygon:
+
+        >>> point = cuspatial.GeoSeries([Point(0.5, 0.5)])
+        >>> polygon = cuspatial.GeoSeries([
+        >>>     Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+        >>> ])
+        >>> print(polygon.contains(point))
+        0    False
+        dtype: bool
+
+        Test whether three points fall within either of two polygons
+        >>> point = cuspatial.GeoSeries([
+        >>>     Point(0, 0),
+        >>>     Point(-1, 0),
+        >>>     Point(-2, 0),
+        >>>     Point(0, 0),
+        >>>     Point(-1, 0),
+        >>>     Point(-2, 0),
+        >>> ])
+        >>> polygon = cuspatial.GeoSeries([
+        >>>     Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+        >>>     Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+        >>>     Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+        >>>     Polygon([[-2, -2], [-2, 2], [2, 2], [-2, -2]]),
+        >>>     Polygon([[-2, -2], [-2, 2], [2, 2], [-2, -2]]),
+        >>>     Polygon([[-2, -2], [-2, 2], [2, 2], [-2, -2]]),
+        >>> ])
+        >>> print(polygon.contains(point))
+        0    False
+        1     True
+        2    False
+        3    False
+        4     True
+        5    False
+        dtype: bool
+
+        Test whether three points fall within either of two polygons using
+        `allpairs` mode:
+        >>> point = cuspatial.GeoSeries([
+        >>>     Point(0, 0),
+        >>>     Point(-1, 0),
+        >>>     Point(-2, 0),
+        >>> ])
+        >>> polygon = cuspatial.GeoSeries([
+        >>>     Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+        >>>     Polygon([[-2, -2], [-2, 2], [2, 2], [-2, -2]]),
+        >>> ])
+        >>> print(polygon.contains(point, allpairs=True))
+        index point_indices  polygon_indices
+        0                 2                1
+
+        Returns
+        -------
+        result : cudf.Series or cudf.DataFrame
+            A Series of boolean values indicating whether each point falls
+            within the corresponding polygon in the input in the case of
+            `allpairs=False`. A DataFrame containing two columns,
+            `point_indices` and `polygon_indices`, each of which is a
+            `Series` of `dtype('int32')` in the case of `allpairs=True`.
+        """
+        predicate = CONTAINS_DISPATCH[(self.column_type, other.column_type)](
+            align=align, allpairs=allpairs
+        )
+        return predicate(self, other)
+
+    def geom_equals(self, other, align=True):
+        """Compute if a GeoSeries of features A is equal to a GeoSeries of
+        features B. Features are equal if their vertices are equal.
+
+        An object is equal to other if its set-theoretic boundary, interior,
+        and exterior coincide with those of the other object.
 
         Parameters
         ----------
@@ -943,77 +1064,65 @@ class GeoSeries(cudf.Series):
 
         Examples
         --------
-        Test if a polygon is inside another polygon:
-
-        >>> point = cuspatial.GeoSeries(
-            [Point(0.5, 0.5)],
-            )
-        >>> polygon = cuspatial.GeoSeries(
-            [
-                Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
-            ]
-        )
-        >>> print(polygon.contains(point))
-        0    False
+        Test if two points are equal:
+        >>> point = cuspatial.GeoSeries([Point(0, 0)])
+        >>> point2 = cuspatial.GeoSeries([Point(0, 0)])
+        >>> print(point.geom_equals(point2))
+        0    True
         dtype: bool
 
-
-        Test whether three points fall within either of two polygons
-
-        >>> point = cuspatial.GeoSeries(
-            [Point(0, 0)],
-            [Point(-1, 0)],
-            [Point(-2, 0)],
-            [Point(0, 0)],
-            [Point(-1, 0)],
-            [Point(-2, 0)],
-            )
-        >>> polygon = cuspatial.GeoSeries(
-            [
-                Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
-                Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
-                Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
-                Polygon([[-2, -2], [-2, 2], [2, 2], [-2, -2]]),
-                Polygon([[-2, -2], [-2, 2], [2, 2], [-2, -2]]),
-                Polygon([[-2, -2], [-2, 2], [2, 2], [-2, -2]]),
-            ]
-        )
-        >>> print(polygon.contains(point))
-        0    False
-        1    False
-        2    False
-        3    False
-        4    False
-        5     True
+        Test if two polygons are equal:
+        >>> polygon = cuspatial.GeoSeries([
+        >>>     Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+        >>> ])
+        >>> polygon2 = cuspatial.GeoSeries([
+        >>>     Polygon([[0, 0], [1, 0], [1, 1], [0, 0]]),
+        >>> ])
+        >>> print(polygon.geom_equals(polygon2))
+        0    True
         dtype: bool
 
-        Note
-        ----
-        poly_ring_offsets must contain only the rings that make up the polygons
-        indexed by poly_offsets. If there are rings in poly_ring_offsets that
-        are not part of the polygons in poly_offsets, results are likely to be
-        incorrect and behavior is undefined.
+        Returns
+        -------
 
-        Note
-        ----
-        Polygons must be closed: the first and last coordinate of each polygon
-        must be the same.
+        result : cudf.Series
+            A Series of boolean values indicating whether each feature in A
+            is equal to the corresponding feature in B.
+        """
+        predicate = EQUALS_DISPATCH[(self.column_type, other.column_type)](
+            align=align
+        )
+        return predicate(self, other)
+
+    def covers(self, other, align=True):
+        """Compute if a GeoSeries of features A covers a second GeoSeries of
+        features B. A covers B if no points on B lie in the exterior of A.
+
+        Parameters
+        ----------
+        other
+            a cuspatial.GeoSeries
+        align=True
+            align the GeoSeries indexes before calling the binpred
 
         Returns
         -------
         result : cudf.Series
-            A Series of boolean values indicating whether each point falls
-            within the corresponding polygon in the input.
-
+            A Series of boolean values indicating whether each feature in the
+            input GeoSeries covers the corresponding feature in the other
+            GeoSeries.
         """
-        return ContainsProperlyBinpred(self, other, align)()
+        predicate = COVERS_DISPATCH[(self.column_type, other.column_type)](
+            align=align
+        )
+        return predicate(self, other)
 
     def intersects(self, other, align=True):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
         aligned geometry that intersects _other_.
 
-        A geometry intersects another geometry if its boundary or interior
-        intersect in any way with the other geometry.
+        An object is said to intersect _other_ if its _boundary_ and
+        _interior_ intersects in any way with those of other.
 
         Parameters
         ----------
@@ -1028,15 +1137,18 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether the geometries of
             each row intersect.
         """
-        return IntersectsBinpred(self, other, align)()
+        predicate = INTERSECTS_DISPATCH[(self.column_type, other.column_type)](
+            align=align
+        )
+        return predicate(self, other)
 
     def within(self, other, align=True):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
         aligned geometry that is within _other_.
 
-        A geometry is within another geometry if at least one of its points is
-        located in the interior of the other geometry and no points are
-        located in the exterior of the other geometry.
+        An object is said to be within other if at least one of its points
+        is located in the interior and no points are located in the exterior
+        of the other.
 
         Parameters
         ----------
@@ -1051,7 +1163,10 @@ class GeoSeries(cudf.Series):
             A Series of boolean values indicating whether each feature falls
             within the corresponding polygon in the input.
         """
-        return WithinBinpred(self, other, align)()
+        predicate = WITHIN_DISPATCH[(self.column_type, other.column_type)](
+            align=align
+        )
+        return predicate(self, other)
 
     def overlaps(self, other, align=True):
         """Returns True for all aligned geometries that overlap other, else
@@ -1074,5 +1189,58 @@ class GeoSeries(cudf.Series):
         result : cudf.Series
             A Series of boolean values indicating whether each geometry
             overlaps the corresponding geometry in the input."""
-        # Overlaps has the same requirement as crosses.
-        return OverlapsBinpred(self, other, align=align)()
+        predicate = OVERLAPS_DISPATCH[(self.column_type, other.column_type)](
+            align=align
+        )
+        return predicate(self, other)
+
+    def crosses(self, other, align=True):
+        """Returns True for all aligned geometries that cross other, else
+        False.
+
+        Geometries cross if they have some but not all interior points in
+        common, have the same dimension, and the intersection of the
+        interiors of the geometries has the dimension of the geometries
+        themselves minus one.
+
+        Parameters
+        ----------
+        other
+            a cuspatial.GeoSeries
+        align=True
+            align the GeoSeries indexes before calling the binpred
+
+        Returns
+        -------
+        result : cudf.Series
+            A Series of boolean values indicating whether each geometry
+            crosses the corresponding geometry in the input."""
+        predicate = CROSSES_DISPATCH[(self.column_type, other.column_type)](
+            align=align
+        )
+        return predicate(self, other)
+
+    def disjoint(self, other, align=True):
+        """Returns True for all aligned geometries that are disjoint from
+        other, else False.
+
+        An object is said to be disjoint to other if its boundary and
+        interior does not intersect at all with those of the other.
+
+        Parameters
+        ----------
+        other
+            a cuspatial.GeoSeries
+        align=True
+            align the GeoSeries indexes before calling the binpred
+
+        Returns
+        -------
+        result : cudf.Series
+            A Series of boolean values indicating whether each pair of
+            corresponding geometries is disjoint.
+        """
+        predicate = DISJOINT_DISPATCH[(self.column_type, other.column_type)](
+            align=align
+        )
+        return predicate(self, other)
