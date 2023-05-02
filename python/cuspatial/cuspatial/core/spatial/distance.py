@@ -579,13 +579,33 @@ def pairwise_polygon_distance(polygons1: GeoSeries, polygons2: GeoSeries):
 
     Notes
     -----
-    The input `GeoSeries` must contain a single type geometry.
-    For example, `polygons1` series cannot contain both points and
-    polygons.
+    `polygons1` and `polygons2` must contain only polygons.
 
     Examples
     --------
-    Compute distance between a point and a polygon:
+    Compute distance between polygons:
+
+    >>> from shapely.geometry import Polygon, MultiPolygon
+    >>> s0 = cuspatial.GeoSeries([
+    ...     Polygon([(0, 0), (1, 0), (1, 1), (0, 1), (0, 0)])])
+    >>> s1 = cuspatial.GeoSeries([
+    ...     Polygon([(2, 2), (3, 2), (3, 3), (2, 2)])])
+    >>> cuspatial.pairwise_polygon_distance(s0, s1)
+    0    1.414214
+    dtype: float64
+
+    Compute distance between multipolygons:
+    >>> s0 = cuspatial.GeoSeries([
+    ...     MultiPolygon([
+    ...         Polygon([(0, 0), (1, 0), (1, 1), (0, 1), (0, 0)]),
+    ...         Polygon([(2, 0), (3, 0), (3, 1), (2, 0)])])])
+    >>> s1 = cuspatial.GeoSeries([
+    ...     MultiPolygon([
+    ...         Polygon([(-1, 0), (-2, 0), (-2, -1), (-1, -1), (-1, 0)]),
+    ...         Polygon([(0, -1), (1, -1), (1, -2), (0, -2), (0, -1)])])])
+    >>> cuspatial.pairwise_polygon_distance(s0, s1)
+    0    1.0
+    dtype: float64
     """
 
     if len(polygons1) != len(polygons2):
@@ -600,7 +620,6 @@ def pairwise_polygon_distance(polygons1: GeoSeries, polygons2: GeoSeries):
     if not contains_only_polygons(polygons2):
         raise ValueError("`polygons2` array must contain only polygons")
 
-    # Handle slicing and aligns in geoseries
     polygon1_column = polygons1.polygons.column()
     polygon2_column = polygons2.polygons.column()
 

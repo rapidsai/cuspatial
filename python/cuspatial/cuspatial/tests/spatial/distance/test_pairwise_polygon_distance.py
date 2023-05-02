@@ -1,3 +1,6 @@
+# Copyright (c) 2023, NVIDIA CORPORATION.
+
+import cupy as cp
 import geopandas as gpd
 import pytest
 from shapely.geometry import MultiPolygon, Polygon
@@ -147,3 +150,40 @@ def test_point_polygon_geoboundaries(naturalearth_lowres):
         cuspatial.GeoSeries(lhs), cuspatial.GeoSeries(rhs)
     )
     assert_series_equal(cudf.Series(expect), got)
+
+
+def test_self_distance(polygon_generator):
+    N = 100
+    polygons = gpd.GeoSeries(polygon_generator(N, 20.0, 5.0))
+    polygons = cuspatial.from_geopandas(polygons)
+    got = cuspatial.pairwise_polygon_distance(polygons, polygons)
+    expect = cudf.Series(cp.zeros((N,)))
+
+    assert_series_equal(got, expect)
+
+
+def test_touching_distance():
+    polygons1 = [Polygon([(0, 0), (1, 1), (1, 0), (0, 0)])]
+    polygons2 = [Polygon([(1, 0.5), (2, 0), (3, 0.5), (1, 0.5)])]
+
+    got = cuspatial.pairwise_polygon_distance(
+        cuspatial.GeoSeries(polygons1), cuspatial.GeoSeries(polygons2)
+    )
+
+    expect = gpd.GeoSeries(polygons1).distance(gpd.GeoSeries(polygons2))
+
+    assert_series_equal(got, cudf.Series(expect))
+
+
+def test_distance_one():
+    polygons1 = [Polygon([(1, 1), (2, 1), (2, 2), (1, 2), (1, 1)])]
+
+    polygons2 = [Polygon([(0, 0), (0, 1), (-1, 1), (-1, 0), (0, 0)])]
+
+    got = cuspatial.pairwise_polygon_distance(
+        cuspatial.GeoSeries(polygons1), cuspatial.GeoSeries(polygons2)
+    )
+
+    expect = gpd.GeoSeries(polygons1).distance(gpd.GeoSeries(polygons2))
+
+    assert_series_equal(got, cudf.Series(expect))
