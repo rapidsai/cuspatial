@@ -171,10 +171,13 @@ class GeoSeries(cudf.Series):
         Notes
         -----
         The size of a geometry is the number of points it contains.
-        The size of a polygon is the total number of points in all of its rings.
-        The size of a multipolygon is the sum of the sizes of all of its polygons.
+        The size of a polygon is the total number of points in all of its
+        rings.
+        The size of a multipolygon is the sum of the sizes of all of its
+        polygons.
         The size of a linestring is the number of points in its single line.
-        The size of a multilinestring is the sum of the sizes of all of its linestrings.
+        The size of a multilinestring is the sum of the sizes of all of its
+        linestrings.
         The size of a multipoint is the number of points in its single point.
         The size of a point is 1.
         """
@@ -998,9 +1001,9 @@ class GeoSeries(cudf.Series):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
         aligned geometry that contains _other_.
 
-        Compute from a GeoSeries of points and a GeoSeries of polygons which
-        points are contained within the corresponding polygon. Polygon A
-        contains Point B if B is within the interior or on the boundary of A.
+        An object `a` is said to contain `b` if `b`'s `boundary` and
+        `interiors` are within those of `a` and no point of `b` lies in the
+        exterior of `a`.
 
         If `allpairs=False`, the result will be a `Series` of `dtype('bool')`.
         If `allpairs=True`, the result will be a `DataFrame` containing two
