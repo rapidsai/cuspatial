@@ -601,12 +601,8 @@ def pairwise_polygon_distance(polygons1: GeoSeries, polygons2: GeoSeries):
         raise ValueError("`polygons2` array must contain only polygons")
 
     # Handle slicing and aligns in geoseries
-    polygon1_column = polygons1._column.polygons._column.take(
-        polygons1._column._meta.union_offsets._column
-    )
-    polygon2_column = polygons2._column.polygons._column.take(
-        polygons2._column._meta.union_offsets._column
-    )
+    polygon1_column = polygons1.polygons.column()
+    polygon2_column = polygons2.polygons.column()
 
     return Series._from_data(
         {None: c_pairwise_polygon_distance(polygon1_column, polygon2_column)}
