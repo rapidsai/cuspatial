@@ -1,3 +1,85 @@
+# cuSpatial 23.04.00 (6 Apr 2023)
+
+## 🚨 Breaking Changes
+
+- Consistently validate polygon inputs for GeoArrow offset format ([#973](https://github.com/rapidsai/cuspatial/pull/973)) [@harrism](https://github.com/harrism)
+- Remove cubic spline interpolation ([#959](https://github.com/rapidsai/cuspatial/pull/959)) [@harrism](https://github.com/harrism)
+- Refactors API to accept GeoSeries input for projection and trajectory functions ([#955](https://github.com/rapidsai/cuspatial/pull/955)) [@isVoid](https://github.com/isVoid)
+- Refactors `filtering.py`, `indexing.py` to Accept GeoSeries ([#938](https://github.com/rapidsai/cuspatial/pull/938)) [@isVoid](https://github.com/isVoid)
+- Refactors `bounding.py` to accept GeoSeries Input ([#934](https://github.com/rapidsai/cuspatial/pull/934)) [@isVoid](https://github.com/isVoid)
+- Remove shapefile reader, conda GDAL dependency, move cmake gdal dependency to cpp tests only ([#932](https://github.com/rapidsai/cuspatial/pull/932)) [@harrism](https://github.com/harrism)
+- Refactor `directed_hausdorff_distance` and `haversine_distance` into `GeoSeries` Interface ([#924](https://github.com/rapidsai/cuspatial/pull/924)) [@isVoid](https://github.com/isVoid)
+
+## 🐛 Bug Fixes
+
+- Bug Fix: point-in-multipolygon reduction using the wrong key-compare functor ([#1043](https://github.com/rapidsai/cuspatial/pull/1043)) [@isVoid](https://github.com/isVoid)
+- Fix quotes in backticks in Developer Guide ([#1034](https://github.com/rapidsai/cuspatial/pull/1034)) [@harrism](https://github.com/harrism)
+- Attempt to Fix Broken C++ Build After `cudftestutil` is Made a Shared Lib ([#996](https://github.com/rapidsai/cuspatial/pull/996)) [@isVoid](https://github.com/isVoid)
+- Consistently validate polygon inputs for GeoArrow offset format ([#973](https://github.com/rapidsai/cuspatial/pull/973)) [@harrism](https://github.com/harrism)
+- Fix OB bug in `linestring_intersection_intermediates.remove_if` Function ([#945](https://github.com/rapidsai/cuspatial/pull/945)) [@isVoid](https://github.com/isVoid)
+- Fix broken `point_indices` methods in `PolygonGeoColumnAccessor` ([#907](https://github.com/rapidsai/cuspatial/pull/907)) [@isVoid](https://github.com/isVoid)
+- Fix multiple bugs in user guide ([#906](https://github.com/rapidsai/cuspatial/pull/906)) [@isVoid](https://github.com/isVoid)
+- `_from_point_xy` improvements ([#905](https://github.com/rapidsai/cuspatial/pull/905)) [@isVoid](https://github.com/isVoid)
+- Add `valid_count` and `has_nulls` to GeoColumn ([#894](https://github.com/rapidsai/cuspatial/pull/894)) [@thomcom](https://github.com/thomcom)
+
+## 📖 Documentation
+
+- : Fix linestring link in readme ([#1003](https://github.com/rapidsai/cuspatial/pull/1003)) [@jarmak-nv](https://github.com/jarmak-nv)
+- : Move build instructions to dev guide ([#999](https://github.com/rapidsai/cuspatial/pull/999)) [@jarmak-nv](https://github.com/jarmak-nv)
+- Add `pairwise_linestring_intersection` example in user guide ([#989](https://github.com/rapidsai/cuspatial/pull/989)) [@isVoid](https://github.com/isVoid)
+- Update cuSpatial Readme ([#977](https://github.com/rapidsai/cuspatial/pull/977)) [@jarmak-nv](https://github.com/jarmak-nv)
+- Add ZipCode Counting Notebook ([#919](https://github.com/rapidsai/cuspatial/pull/919)) [@isVoid](https://github.com/isVoid)
+
+## 🚀 New Features
+
+- Add segment Iterators, test multi*_range and miscellaneous lazy iterator additions ([#1026](https://github.com/rapidsai/cuspatial/pull/1026)) [@isVoid](https://github.com/isVoid)
+- Add Header Only API for Linestring-Polygon Distance ([#1011](https://github.com/rapidsai/cuspatial/pull/1011)) [@isVoid](https://github.com/isVoid)
+- Add `geometry_generator` factory for programmatic generation of geometry arrays ([#998](https://github.com/rapidsai/cuspatial/pull/998)) [@isVoid](https://github.com/isVoid)
+- Add python API `pairwise_point_polygon_distance` ([#988](https://github.com/rapidsai/cuspatial/pull/988)) [@isVoid](https://github.com/isVoid)
+- Add column API for `pairwise_point_polygon_distance` ([#984](https://github.com/rapidsai/cuspatial/pull/984)) [@isVoid](https://github.com/isVoid)
+- Add Header-Only `point_polygon_distance`, add non-owning polygon objects ([#976](https://github.com/rapidsai/cuspatial/pull/976)) [@isVoid](https://github.com/isVoid)
+- Remove cubic spline interpolation ([#959](https://github.com/rapidsai/cuspatial/pull/959)) [@harrism](https://github.com/harrism)
+- Remove shapefile reader, conda GDAL dependency, move cmake gdal dependency to cpp tests only ([#932](https://github.com/rapidsai/cuspatial/pull/932)) [@harrism](https://github.com/harrism)
+- Add `from_linestrings_xy` and `from_polygons_xy` ([#928](https://github.com/rapidsai/cuspatial/pull/928)) [@thomcom](https://github.com/thomcom)
+- Implement `geom_equals` and binary predicates that depend only on it. ([#926](https://github.com/rapidsai/cuspatial/pull/926)) [@thomcom](https://github.com/thomcom)
+- Add `apply_boolean_mask` Feature ([#918](https://github.com/rapidsai/cuspatial/pull/918)) [@isVoid](https://github.com/isVoid)
+- Add C++ Column API and Python API for `pairwise_linestring_intersection` ([#862](https://github.com/rapidsai/cuspatial/pull/862)) [@isVoid](https://github.com/isVoid)
+
+## 🛠️ Improvements
+
+- Refactor spatial join tests ([#1019](https://github.com/rapidsai/cuspatial/pull/1019)) [@harrism](https://github.com/harrism)
+- Reduce gtest times ([#1018](https://github.com/rapidsai/cuspatial/pull/1018)) [@harrism](https://github.com/harrism)
+- Intersection only predicates ([#1016](https://github.com/rapidsai/cuspatial/pull/1016)) [@thomcom](https://github.com/thomcom)
+- Updated binpred architecture ([#1009](https://github.com/rapidsai/cuspatial/pull/1009)) [@thomcom](https://github.com/thomcom)
+- Add `dependency-file-generator` as `pre-commit` hook ([#1008](https://github.com/rapidsai/cuspatial/pull/1008)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Header-only quadtree_point_to_nearest_linestring ([#1005](https://github.com/rapidsai/cuspatial/pull/1005)) [@harrism](https://github.com/harrism)
+- Add codespell as a linter ([#992](https://github.com/rapidsai/cuspatial/pull/992)) [@bdice](https://github.com/bdice)
+- Pass `AWS_SESSION_TOKEN` and `SCCACHE_S3_USE_SSL` vars to conda build ([#982](https://github.com/rapidsai/cuspatial/pull/982)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Header-only `quadtree_point_in_polygon` ([#979](https://github.com/rapidsai/cuspatial/pull/979)) [@harrism](https://github.com/harrism)
+- Update aarch64 to GCC 11 ([#978](https://github.com/rapidsai/cuspatial/pull/978)) [@bdice](https://github.com/bdice)
+- Remove GDAL dependency in quadtree spatial join tests. ([#974](https://github.com/rapidsai/cuspatial/pull/974)) [@harrism](https://github.com/harrism)
+- Enable discussions ([#966](https://github.com/rapidsai/cuspatial/pull/966)) [@jarmak-nv](https://github.com/jarmak-nv)
+- Fix docs build to be `pydata-sphinx-theme=0.13.0` compatible ([#964](https://github.com/rapidsai/cuspatial/pull/964)) [@galipremsagar](https://github.com/galipremsagar)
+- Update `.gitignore` for `ops-codeowners` ([#963](https://github.com/rapidsai/cuspatial/pull/963)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Update to GCC 11 ([#961](https://github.com/rapidsai/cuspatial/pull/961)) [@bdice](https://github.com/bdice)
+- Add cuspatial devcontainers ([#960](https://github.com/rapidsai/cuspatial/pull/960)) [@trxcllnt](https://github.com/trxcllnt)
+- Make docs builds less verbose ([#956](https://github.com/rapidsai/cuspatial/pull/956)) [@AyodeAwe](https://github.com/AyodeAwe)
+- Refactors API to accept GeoSeries input for projection and trajectory functions ([#955](https://github.com/rapidsai/cuspatial/pull/955)) [@isVoid](https://github.com/isVoid)
+- Update Notebook with GeoSeries Usage and Add Notebook Tests ([#953](https://github.com/rapidsai/cuspatial/pull/953)) [@isVoid](https://github.com/isVoid)
+- Refactor functions in `join.py` to accept GeoSeries Input ([#948](https://github.com/rapidsai/cuspatial/pull/948)) [@isVoid](https://github.com/isVoid)
+- Skip docs job in nightly runs ([#944](https://github.com/rapidsai/cuspatial/pull/944)) [@AyodeAwe](https://github.com/AyodeAwe)
+- Refactors `filtering.py`, `indexing.py` to Accept GeoSeries ([#938](https://github.com/rapidsai/cuspatial/pull/938)) [@isVoid](https://github.com/isVoid)
+- Refactors `bounding.py` to accept GeoSeries Input ([#934](https://github.com/rapidsai/cuspatial/pull/934)) [@isVoid](https://github.com/isVoid)
+- Remove dead code from ContainsProperlyBinpred paths. ([#933](https://github.com/rapidsai/cuspatial/pull/933)) [@thomcom](https://github.com/thomcom)
+- Refactor `directed_hausdorff_distance` and `haversine_distance` into `GeoSeries` Interface ([#924](https://github.com/rapidsai/cuspatial/pull/924)) [@isVoid](https://github.com/isVoid)
+- Reduce error handling verbosity in CI tests scripts ([#912](https://github.com/rapidsai/cuspatial/pull/912)) [@AjayThorve](https://github.com/AjayThorve)
+- Use quadtree for `.contains_properly` ([#910](https://github.com/rapidsai/cuspatial/pull/910)) [@thomcom](https://github.com/thomcom)
+- Update shared workflow branches ([#909](https://github.com/rapidsai/cuspatial/pull/909)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Remove gpuCI scripts. ([#904](https://github.com/rapidsai/cuspatial/pull/904)) [@bdice](https://github.com/bdice)
+- Allow initialization of a `GeoDataFrame` using a `cudf.DataFrame` ([#895](https://github.com/rapidsai/cuspatial/pull/895)) [@thomcom](https://github.com/thomcom)
+- Move date to build string in `conda` recipe ([#882](https://github.com/rapidsai/cuspatial/pull/882)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Add docs build job ([#868](https://github.com/rapidsai/cuspatial/pull/868)) [@AyodeAwe](https://github.com/AyodeAwe)
+
 # cuSpatial 23.02.00 (9 Feb 2023)
 
 ## 🚨 Breaking Changes
