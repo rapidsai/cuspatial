@@ -109,6 +109,8 @@ rapids_cpm_init()
 # find or add cuDF
 include(cmake/thirdparty/CUSPATIAL_GetCUDF.cmake)
 
+if (USE_NVTX)
+
 rapids_cpm_find(
     NVTX3 3.1.0
     GLOBAL_TARGETS nvtx3-cpp
@@ -118,7 +120,11 @@ rapids_cpm_find(
         GITHUB_REPOSITORY NVIDIA/NVTX
         GIT_TAG v3.1.0-c-cpp
         GIT_SHALLOW TRUE
+        DOWNLOAD_ONLY TRUE
 )
+include(nvtxImportedTargets.cmake)
+
+endif()
 
 # find or install GoogleTest
 if (CUSPATIAL_BUILD_TESTS)
