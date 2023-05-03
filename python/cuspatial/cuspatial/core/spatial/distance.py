@@ -132,7 +132,7 @@ def haversine_distance(p1: GeoSeries, p2: GeoSeries):
 
 
 def pairwise_point_distance(points1: GeoSeries, points2: GeoSeries):
-    """Compute shortest distance between pairs of points and multipoints
+    """Compute distance between (multi)points-(multi)points pairs
 
     Currently `points1` and `points2` must contain either only points or
     multipoints. Mixing points and multipoints in the same series is
@@ -200,7 +200,7 @@ def pairwise_point_distance(points1: GeoSeries, points2: GeoSeries):
 def pairwise_linestring_distance(
     multilinestrings1: GeoSeries, multilinestrings2: GeoSeries
 ):
-    """Compute shortest distance between pairs of linestrings
+    """Compute distance between (multi)linestring-(multi)linestring pairs
 
     The shortest distance between two linestrings is defined as the shortest
     distance between all pairs of segments of the two linestrings. If any of
@@ -267,7 +267,7 @@ def pairwise_linestring_distance(
 def pairwise_point_linestring_distance(
     points: GeoSeries, linestrings: GeoSeries
 ):
-    """Compute distance between pairs of (multi)points and (multi)linestrings
+    """Compute distance between (multi)points-(multi)linestrings pairs
 
     The distance between a (multi)point and a (multi)linestring
     is defined as the shortest distance between every point in the
@@ -385,7 +385,7 @@ def pairwise_point_linestring_distance(
 
 
 def pairwise_point_polygon_distance(points: GeoSeries, polygons: GeoSeries):
-    """Compute distance between pairs of (multi)points and (multi)polygons
+    """Compute distance between (multi)points-(multi)polygons pairs
 
     The distance between a (multi)point and a (multi)polygon
     is defined as the shortest distance between every point in the
@@ -478,7 +478,7 @@ def pairwise_point_polygon_distance(points: GeoSeries, polygons: GeoSeries):
 def pairwise_linestring_polygon_distance(
     linestrings: GeoSeries, polygons: GeoSeries
 ):
-    """Compute distance between pairs of (multi)linestrings and (multi)polygons
+    """Compute distance between (multi)linestrings-(multi)polygons pairs.
 
     The distance between a (multi)linestrings and a (multi)polygon
     is defined as the shortest distance between every segment in the
@@ -557,11 +557,12 @@ def pairwise_linestring_polygon_distance(
 
 
 def pairwise_polygon_distance(polygons1: GeoSeries, polygons2: GeoSeries):
-    """Compute distance between pairs of (multi)polygons and (multi)polygons
-    The distance between a (multi)polygon and a (multi)polygon
-    is defined as the shortest distance between every edge of the
-    (multi)polygon pair. If the multipolygon and multipolygon intersects,
-    the distance is 0.
+    """Compute distance between (multi)polygon-(multi)polygon pairs.
+
+    The distance between two (multi)polygons is defined as the shortest
+    distance between any edge of the first (multi)polygon and any edge
+    of the second (multi)polygon. If two (multi)polygons intersect, the
+    distance is 0.
 
     This algorithm computes distance pairwise. The ith row in the result is
     the distance between the ith (multi)polygon in `polygons1` and the ith
