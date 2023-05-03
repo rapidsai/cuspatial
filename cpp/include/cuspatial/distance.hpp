@@ -129,12 +129,17 @@ std::pair<std::unique_ptr<cudf::column>, cudf::table_view> directed_hausdorff_di
 /**
  * @brief Compute pairwise (multi)point-to-(multi)point Euclidean distance
  *
- * Computes the Euclidean distance between each pair of the multipoints. If input is
- * a single point column, the offset of the column should be std::nullopt.
+ * The distance between a pair of multipoints is the shortest Euclidean distance
+ * between any pair of points in the two multipoints.
  *
- * @param points1 First column of (multi)points to compute distances from.
- * @param points2 Second column of (multi)points to compute distances to.
+ * @param points1 First column of (multi)points to compute distances
+ * @param points2 Second column of (multi)points to compute distances
  * @return Column of distances between each pair of input points
+ *
+ * @throw cuspatial::logic_error if `multipoints1` and `multipoints2` sizes differ
+ * @throw cuspatial::logic_error if either `multipoints1` or `multipoints2` is not a multipoint
+ * column
+ * @throw cuspatial::logic_error if `multipoints1` and `multipoints2` coordinate types differ
  */
 std::unique_ptr<cudf::column> pairwise_point_distance(
   geometry_column_view const& multipoints1,
@@ -142,82 +147,25 @@ std::unique_ptr<cudf::column> pairwise_point_distance(
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
- * @brief Compute distance between pairs of points and linestrings
+ * @brief Compute pairwise (multi)points-to-(multi)linestrings Euclidean distance
  *
- * The distance between a point and a linestring is defined as the minimum distance
- * between the point and any segment of the linestring. For each input point, this
- * function returns the distance between the point and the corresponding linestring.
+ * The distance between a point and a linestring is defined as the minimum Euclidean distance
+ * between the point and any segment of the linestring.
  *
- * The following example contains 2 pairs of points and linestrings.
- * ```
- * First pair:
- * Point: (0, 0)
- * Linestring: (0, 1) -> (1, 0) -> (2, 0)
- *
- * Second pair:
- * Point: (1, 1)
- * Linestring: (0, 0) -> (1, 1) -> (2, 0) -> (3, 0) -> (3, 1)
- *
- * The input of the above example is:
- * multipoint_geometry_offsets: nullopt
- * points_xy: {0, 1, 0, 1}
- * multilinestring_geometry_offsets: nullopt
- * linestring_part_offsets: {0, 3, 8}
- * linestring_xy: {0, 1, 1, 0, 2, 0, 0, 0, 1, 1, 2, 0, 3, 0, 3, 1}
- *
- * Result: {sqrt(2)/2, 0}
- * ```
- *
- * The following example contains 3 pairs of MultiPoint and MultiLinestring.
- * ```
- * First pair:
- * MultiPoint: (0, 1)
- * MultiLinestring: (0, -1) -> (-2, -3), (-4, -5) -> (-5, -6)
- *
- * Second pair:
- * MultiPoint: (2, 3), (4, 5)
- * MultiLinestring: (7, 8) -> (8, 9)
- *
- * Third pair:
- * MultiPoint: (6, 7), (8, 9)
- * MultiLinestring: (9, 10) -> (10, 11)
-
- * The input of the above example is:
- * multipoint_geometry_offsets: {0, 1, 3, 5}
- * points_xy: {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
- * multilinestring_geometry_offsets: {0, 2, 3, 5}
- * linestring_part_offsets: {0, 2, 4, 6, 8}
- * linestring_points_xy: {0, -1, -2, -3, -4, -5, -5, -6, 7, 8, 8, 9, 9, 10, 10 ,11}
- *
- * Result: {2.0, 4.24264, 1.41421}
- * ```
- *
- * @param multipoint_geometry_offsets Beginning and ending indices to each geometry in the
- * multi-point
- * @param points_xy Interleaved x, y-coordinates of points
- * @param multilinestring_geometry_offsets Beginning and ending indices to each geometry in the
- * multi-linestring
- * @param linestring_part_offsets Beginning and ending indices for each linestring in the point
- * array. Because the coordinates are interleaved, the actual starting position for the coordinate
- * of linestring `i` is `2*linestring_part_offsets[i]`.
- * @param linestring_points_xy Interleaved x, y-coordinates of linestring points.
+ * @param multipoints Column of multipoints to compute distances
+ * @param multilinestrings Column of multilinestrings to compute distances
  * @param mr Device memory resource used to allocate the returned column.
- * @return A column containing the distance between each pair of corresponding points and
- * linestrings.
+ * @return A column containing the distance between each pair of input (multi)points and
+ * (multi)linestrings
  *
- * @note Any optional geometry indices, if is `nullopt`, implies the underlying geometry contains
- * only one component. Otherwise, it contains multiple components.
- *
- * @throws cuspatial::logic_error if the number of (multi)points and (multi)linestrings do not
- * match.
- * @throws cuspatial::logic_error if the any of the point arrays have mismatched types.
+ * @throw cuspatial::logic_error if `multipoints` and `multilinestrings` sizes differ
+ * @throw cuspatial::logic_error if `multipoints` is not a multipoints column or `multilinestrings`
+ * is not a multilinestrings column
+ * @throw cuspatial::logic_error if `multipoints1` and `multipoints2` coordinate types differ
  */
 std::unique_ptr<cudf::column> pairwise_point_linestring_distance(
-  std::optional<cudf::device_span<cudf::size_type const>> multipoint_geometry_offsets,
-  cudf::column_view const& points_xy,
-  std::optional<cudf::device_span<cudf::size_type const>> multilinestring_geometry_offsets,
-  cudf::device_span<cudf::size_type const> linestring_part_offsets,
-  cudf::column_view const& linestring_points_xy,
+  geometry_column_view const& multipoints,
+  geometry_column_view const& multilinestrings,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
