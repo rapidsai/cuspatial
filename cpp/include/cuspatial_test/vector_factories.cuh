@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include <cuspatial_test/test_util.cuh>
 
 #include <cuspatial/geometry/vec_2d.hpp>

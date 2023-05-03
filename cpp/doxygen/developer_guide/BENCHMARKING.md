@@ -15,9 +15,9 @@ benchmarks in `cpp/benchmarks` to understand the options.
 ## Directory and File Naming
 
 The naming of unit benchmark directories and source files should be consistent with the feature
-being benchmarked. For example, the benchmarks for APIs in `point_in_polygon.hpp` should live in
-`cpp/benchmarks/point_in_polygon.cu`. Each feature (or set of related features) should have its own
-benchmark source file named `<feature>{.cu,cpp}`. 
+being benchmarked. For example, the benchmarks for APIs in `distance.hpp` should live in
+`cpp/benchmarks/distance/`. Each feature (or set of related features) should have its own
+benchmark source file named `<feature>{.cu,cpp}`.
 
 ## CUDA Asynchrony and benchmark accuracy
 
@@ -45,7 +45,6 @@ reaches its saturation bottleneck, whether that bottleneck is bandwidth or compu
 sets larger than this point is generally not helpful, except in specific cases where doing so
 exercises different code and can therefore uncover regressions that smaller benchmarks will not
 (this should be rare).
-
 
 Generally we should benchmark public APIs. Benchmarking detail functions and/or internal utilities
 should only be done if detecting regressions in them would be sufficiently difficult to do from
