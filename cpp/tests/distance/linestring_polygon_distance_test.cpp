@@ -41,7 +41,7 @@ using namespace cudf;
 using namespace cudf::test;
 
 template <typename T>
-struct PairwiseLinestringPolygonDistanceTest : CommonGeometryColumnFixture<T> {
+struct PairwiseLinestringPolygonDistanceTest : EmptyGeometryColumnFixture<T> {
   void run_single(geometry_column_view linestrings,
                   geometry_column_view polygons,
                   std::initializer_list<T> expected)
@@ -51,9 +51,9 @@ struct PairwiseLinestringPolygonDistanceTest : CommonGeometryColumnFixture<T> {
   }
 };
 
-struct PairwiseLinestringPolygonDistanceTestUntyped : testing::Test {
-  rmm::cuda_stream_view stream() { return cudf::get_default_stream(); }
-};
+struct PairwiseLinestringPolygonDistanceFailOnSizeTest : EmptyAndOneGeometryColumnFixture {};
+
+struct PairwiseLinestringPolygonDistanceFailOnTypeTest : EmptyGeometryColumnFixtureMultipleTypes {};
 
 using TestTypes = ::testing::Types<float, double>;
 
@@ -80,48 +80,24 @@ TYPED_TEST(PairwiseLinestringPolygonDistanceTest, MultiToMultiEmpty)
     this->run_single, this->empty_multilinestring(), this->empty_multipolygon(), {});
 };
 
-TEST_F(PairwiseLinestringPolygonDistanceTestUntyped, SizeMismatch)
+TEST_F(PairwiseLinestringPolygonDistanceFailOnSizeTest, SizeMismatch)
 {
-  auto [ptype, linestrings] =
-    make_linestring_column<float>({0, 1, 2}, {0, 1, 2}, {0.0, 0.0, 1.0, 1.0}, this->stream());
-
-  auto [polytype, polygons] =
-    make_polygon_column<float>({0, 1}, {0, 1}, {0, 4}, {1, 1, 1, 2, 2, 2, 1, 1}, this->stream());
-
-  auto linestrings_view =
-    geometry_column_view(linestrings->view(), ptype, geometry_type_id::LINESTRING);
-  auto polygons_view = geometry_column_view(polygons->view(), polytype, geometry_type_id::POLYGON);
-
-  EXPECT_THROW(pairwise_linestring_polygon_distance(linestrings_view, polygons_view),
+  EXPECT_THROW(pairwise_linestring_polygon_distance(this->empty_linestring(), this->one_polygon()),
                cuspatial::logic_error);
 };
 
-TEST_F(PairwiseLinestringPolygonDistanceTestUntyped, TypeMismatch)
+TEST_F(PairwiseLinestringPolygonDistanceFailOnTypeTest, CoordinateTypeMismatch)
 {
-  auto [ptype, linestrings] =
-    make_linestring_column<double>({0, 1}, {0, 1}, {0.0, 0.0}, this->stream());
-
-  auto [polytype, polygons] =
-    make_polygon_column<float>({0, 1}, {0, 1}, {0, 4}, {1, 1, 1, 2, 2, 2, 1, 1}, this->stream());
-
-  auto linestrings_view =
-    geometry_column_view(linestrings->view(), ptype, geometry_type_id::LINESTRING);
-  auto polygons_view = geometry_column_view(polygons->view(), polytype, geometry_type_id::POLYGON);
-
-  EXPECT_THROW(pairwise_linestring_polygon_distance(linestrings_view, polygons_view),
-               cuspatial::logic_error);
+  EXPECT_THROW(
+    pairwise_linestring_polygon_distance(EmptyGeometryColumnBase<float>::empty_linestring(),
+                                         EmptyGeometryColumnBase<double>::empty_polygon()),
+    cuspatial::logic_error);
 };
 
-TEST_F(PairwiseLinestringPolygonDistanceTestUntyped, WrongGeometryType)
+TEST_F(PairwiseLinestringPolygonDistanceFailOnTypeTest, WrongGeometryType)
 {
-  auto [ptype, points] = make_point_column<double>({0, 1}, {0.0, 0.0}, this->stream());
-
-  auto [polytype, polygons] =
-    make_polygon_column<float>({0, 1}, {0, 1}, {0, 4}, {1, 1, 1, 2, 2, 2, 1, 1}, this->stream());
-
-  auto points_view   = geometry_column_view(points->view(), ptype, geometry_type_id::POINT);
-  auto polygons_view = geometry_column_view(polygons->view(), polytype, geometry_type_id::POLYGON);
-
-  EXPECT_THROW(pairwise_linestring_polygon_distance(points_view, polygons_view),
-               cuspatial::logic_error);
+  EXPECT_THROW(
+    pairwise_linestring_polygon_distance(EmptyGeometryColumnBase<float>::empty_point(),
+                                         EmptyGeometryColumnBase<float>::empty_polygon()),
+    cuspatial::logic_error);
 };
