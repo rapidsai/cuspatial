@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
+#include <cuspatial/bounding_boxes.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/linestring_bounding_box.hpp>
 
 #include <cudf/table/table.hpp>
 #include <cudf/table/table_view.hpp>

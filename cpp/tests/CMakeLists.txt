@@ -48,8 +48,6 @@ endfunction(ConfigureTest)
 ### test sources ##################################################################################
 ###################################################################################################
 
-# Column-based API
-
 # index
 ConfigureTest(POINT_QUADTREE_TEST
     index/point_quadtree_test.cpp)
@@ -91,13 +89,20 @@ ConfigureTest(POINT_LINESTRING_DISTANCE_TEST
 ConfigureTest(LINESTRING_DISTANCE_TEST
     spatial/distance/linestring_distance_test.cpp)
 
-ConfigureTest(LINESTRING_POLYGON_DISTANCE_TEST
-    spatial/distance/linestring_polygon_distance_test.cpp)
-
 ConfigureTest(POINT_POLYGON_DISTANCE_TEST
     spatial/distance/point_polygon_distance_test.cpp)
 
-#intersection
+ConfigureTest(LINESTRING_POLYGON_DISTANCE_TEST
+    spatial/distance/linestring_polygon_distance_test.cpp)
+
+ConfigureTest(POLYGON_DISTANCE_TEST
+    spatial/distance/polygon_distance_test.cpp)
+
+# equality
+ConfigureTest(PAIRWISE_MULTIPOINT_EQUALS_COUNT_TEST
+    spatial/equality/pairwise_multipoint_equals_count_test.cpp)
+
+# intersection
 ConfigureTest(LINESTRING_INTERSECTION_TEST
     spatial/intersection/linestring_intersection_test.cpp)
 
@@ -113,8 +118,8 @@ ConfigureTest(PAIRWISE_POINT_IN_POLYGON_TEST
     spatial/point_in_polygon/pairwise_point_in_polygon_test.cpp)
 
 # points in range
-ConfigureTest(SPATIAL_WINDOW_POINT_TEST
-    spatial/points_in_range/spatial_window_test.cpp)
+ConfigureTest(POINTS_IN_RANGE_TEST
+    spatial/points_in_range/points_in_range_test.cpp)
 
 # trajectory
 ConfigureTest(TRAJECTORY_DISTANCES_AND_SPEEDS_TEST
@@ -132,8 +137,6 @@ ConfigureTest(UTILITY_TEST
     utility_test/test_multipoint_factory.cu
     utility_test/test_geometry_generators.cu
 )
-
-# Header-only API
 
 # find / intersection util
 ConfigureTest(FIND_TEST_EXP
@@ -206,6 +209,10 @@ ConfigureTest(LINESTRING_DISTANCE_TEST_EXP
 
 ConfigureTest(POLYGON_DISTANCE_TEST_EXP
     spatial/distance/polygon_distance_test.cu)
+
+# equality
+ConfigureTest(PAIRWISE_MULTIPOINT_EQUALS_COUNT_TEST_EXP
+    spatial/equality/pairwise_multipoint_equals_count_test.cu)
 
 # intersection
 ConfigureTest(LINESTRING_INTERSECTION_TEST_EXP

@@ -27,8 +27,12 @@
 namespace cuspatial {
 
 /**
+ * @addtogroup ranges
+ * @{
+ */
+
+/**
  * @brief Non-owning range-based interface to multipolygon data
- * @ingroup ranges
  *
  * Provides a range-based interface to contiguous storage of multipolygon data, to make it easier
  * to access and iterate over multipolygons, polygons, rings and points.
@@ -211,7 +215,6 @@ class multipolygon_range {
 };
 
 /**
- * @ingroup ranges
  * @brief Create a range object of multipolygon from cuspatial::geometry_column_view.
  * Specialization for polygons column.
  *
@@ -245,7 +248,6 @@ auto make_multipolygon_range(GeometryColumnView const& polygons_column)
 }
 
 /**
- * @ingroup ranges
  * @brief Create a range object of multipolygon from cuspatial::geometry_column_view.
  * Specialization for multipolygons column.
  *
@@ -277,6 +279,10 @@ auto make_multipolygon_range(GeometryColumnView const& polygons_column)
                             points_it,
                             points_it + points_xy.size() / 2);
 };
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial
 

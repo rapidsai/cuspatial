@@ -24,7 +24,7 @@
 #include <cuspatial/column/geometry_column_view.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
-#include <cuspatial/linestring_intersection.hpp>
+#include <cuspatial/intersection.hpp>
 #include <cuspatial/types.hpp>
 
 #include <cudf/column/column_factories.hpp>

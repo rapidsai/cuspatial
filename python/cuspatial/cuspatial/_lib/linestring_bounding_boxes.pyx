@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2022, NVIDIA CORPORATION.
+# Copyright (c) 2020-2023, NVIDIA CORPORATION.
 
 from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
@@ -8,7 +8,7 @@ from cudf._lib.cpp.column.column_view cimport column_view
 from cudf._lib.cpp.table.table cimport table
 from cudf._lib.utils cimport columns_from_unique_ptr
 
-from cuspatial._lib.cpp.linestring_bounding_box cimport (
+from cuspatial._lib.cpp.linestring_bounding_boxes cimport (
     linestring_bounding_boxes as cpp_linestring_bounding_boxes,
 )
 

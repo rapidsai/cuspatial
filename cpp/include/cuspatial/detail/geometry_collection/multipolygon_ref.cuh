@@ -1,9 +1,9 @@
 #pragma once
 
 #include <cuspatial/cuda_utils.hpp>
-#include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/geometry/linestring_ref.cuh>
 #include <cuspatial/geometry/polygon_ref.cuh>
+#include <cuspatial/iterator_factory.cuh>
 
 #include <thrust/iterator/transform_iterator.h>
 

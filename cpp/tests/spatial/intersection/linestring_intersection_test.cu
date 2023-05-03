@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,10 @@
 #include <cuspatial_test/vector_equality.hpp>
 #include <cuspatial_test/vector_factories.cuh>
 
-#include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/intersection.cuh>
 #include <cuspatial/iterator_factory.cuh>
-#include <cuspatial/linestring_intersection.cuh>
 #include <cuspatial/traits.hpp>
 
 #include <cudf/column/column.hpp>
@@ -271,6 +270,28 @@ TYPED_TEST(LinestringIntersectionTest, SingletoSingleOnePair)
 
   auto expected = make_linestring_intersection_result<T, index_t, types_t>(
     {0, 1}, {0}, {0}, {P{0.5, 0.5}}, {}, {0}, {0}, {0}, {0}, this->stream(), this->mr());
+
+  CUSPATIAL_RUN_TEST(this->template run_single_test<index_t>,
+                     multilinestrings1.range(),
+                     multilinestrings2.range(),
+                     expected);
+}
+
+TYPED_TEST(LinestringIntersectionTest, OnePairWithRings)
+{
+  using T = TypeParam;
+  using P = vec_2d<T>;
+
+  using index_t = typename linestring_intersection_result<T, std::size_t>::index_t;
+  using types_t = typename linestring_intersection_result<T, std::size_t>::types_t;
+
+  auto multilinestrings1 = make_multilinestring_array<T>({0, 1}, {0, 2}, {{-1, 0}, {0, 0}});
+
+  auto multilinestrings2 =
+    make_multilinestring_array<T>({0, 1}, {0, 5}, {{0, 0}, {0, 1}, {1, 1}, {1, 0}, {0, 0}});
+
+  auto expected = make_linestring_intersection_result<T, index_t, types_t>(
+    {0, 1}, {0}, {0}, {P{0.0, 0.0}}, {}, {0}, {0}, {0}, {0}, this->stream(), this->mr());
 
   CUSPATIAL_RUN_TEST(this->template run_single_test<index_t>,
                      multilinestrings1.range(),
