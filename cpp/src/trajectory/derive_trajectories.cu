@@ -15,8 +15,8 @@
  */
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/derive_trajectories.cuh>
-#include <cuspatial/experimental/iterator_factory.cuh>
+#include <cuspatial/iterator_factory.cuh>
+#include <cuspatial/trajectory.cuh>
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/copying.hpp>

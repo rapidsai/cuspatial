@@ -56,8 +56,8 @@ dependencies:
           - cxx-compiler
           - gmock=1.10.0
           - gtest=1.10.0
-          - libcudf=23.06
-          - librmm=23.06
+          - libcudf==23.6.*
+          - librmm==23.6.*
           - ninja
     specific:
       - output_types: conda
@@ -94,7 +94,7 @@ dependencies:
           - setuptools
       - output_types: conda
         packages:
-          - &cudf_conda cudf=23.06
+          - &cudf_conda cudf==23.6.*
     specific:
       - output_types: conda
         matrices:
@@ -170,18 +170,17 @@ dependencies:
     common:
       - output_types: [conda, requirements]
         packages:
+          - cuml==23.6.*
           - ipython
+          - ipywidgets
           - notebook
-          - shapely
           - pydeck
+          - shapely
+          - scikit-image
   py_version:
     specific:
       - output_types: conda
         matrices:
-          - matrix:
-              py: "3.8"
-            packages:
-              - python=3.8
           - matrix:
               py: "3.9"
             packages:
@@ -192,7 +191,7 @@ dependencies:
               - python=3.10
           - matrix:
             packages:
-              - python>=3.8,<3.11
+              - python>=3.9,<3.11
   run_python:
     common:
       - output_types: [conda, requirements]
@@ -201,7 +200,7 @@ dependencies:
       - output_types: conda
         packages:
           - *cudf_conda
-          - rmm=23.06
+          - rmm==23.6.*
     specific:
       - output_types: requirements
         matrices:

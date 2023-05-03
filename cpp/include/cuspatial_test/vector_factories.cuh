@@ -16,12 +16,12 @@
 
 #include <cuspatial_test/test_util.cuh>
 
-#include <cuspatial/experimental/ranges/multilinestring_range.cuh>
-#include <cuspatial/experimental/ranges/multipoint_range.cuh>
-#include <cuspatial/experimental/ranges/multipolygon_range.cuh>
-#include <cuspatial/experimental/ranges/range.cuh>
+#include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/range/multilinestring_range.cuh>
+#include <cuspatial/range/multipoint_range.cuh>
+#include <cuspatial/range/multipolygon_range.cuh>
+#include <cuspatial/range/range.cuh>
 #include <cuspatial/traits.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
@@ -240,11 +240,42 @@ class multilinestring_array {
                                  _coordinate_array.end());
   }
 
+  auto release()
+  {
+    return std::tuple{std::move(_geometry_offset_array),
+                      std::move(_part_offset_array),
+                      std::move(_coordinate_array)};
+  }
+
  protected:
   GeometryArray _geometry_offset_array;
   PartArray _part_offset_array;
   CoordinateArray _coordinate_array;
 };
+
+/**
+ * @brief Construct an owning object of a multilinestring array from ranges
+ *
+ * @param geometry_inl Range of geometry offsets
+ * @param part_inl Range of part offsets
+ * @param coord_inl Ramge of coordinate
+ * @return multilinestring array object
+ */
+template <typename IndexRangeA,
+          typename IndexRangeB,
+          typename CoordRange,
+          typename IndexType = typename IndexRangeB::value_type>
+auto make_multilinestring_array(IndexRangeA geometry_inl,
+                                IndexRangeB part_inl,
+                                CoordRange coord_inl)
+{
+  using CoordType         = typename CoordRange::value_type;
+  using DeviceIndexVector = thrust::device_vector<IndexType>;
+  using DeviceCoordVector = thrust::device_vector<CoordType>;
+
+  return multilinestring_array<DeviceIndexVector, DeviceIndexVector, DeviceCoordVector>(
+    make_device_vector(geometry_inl), make_device_vector(part_inl), make_device_vector(coord_inl));
+}
 
 /**
  * @brief Construct an owning object of a multilinestring array from initializer lists
@@ -309,6 +340,16 @@ class multipoint_array {
   GeometryArray _geometry_offsets;
   CoordinateArray _coordinates;
 };
+
+/**
+ * @brief Factory method to construct multipoint array from ranges of geometry offsets and
+ * coordinates
+ */
+template <typename GeometryRange, typename CoordRange>
+auto make_multipoints_array(GeometryRange geometry_inl, CoordRange coordinates_inl)
+{
+  return multipoint_array{make_device_vector(geometry_inl), make_device_vector(coordinates_inl)};
+}
 
 /**
  * @brief Factory method to construct multipoint array from initializer list of multipoints.

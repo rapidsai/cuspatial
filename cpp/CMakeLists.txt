@@ -134,11 +134,11 @@ add_library(cuspatial
     src/join/quadtree_point_in_polygon.cu
     src/join/quadtree_point_to_nearest_linestring.cu
     src/join/quadtree_bbox_filtering.cu
-    src/spatial/polygon_bounding_box.cu
-    src/spatial/linestring_bounding_box.cu
+    src/spatial/linestring_bounding_boxes.cu
+    src/spatial/polygon_bounding_boxes.cu
+    src/spatial/pairwise_multipoint_equals_count.cu
     src/spatial/point_in_polygon.cu
-    src/spatial/pairwise_point_in_polygon.cu
-    src/spatial_window/spatial_window.cu
+    src/spatial/points_in_range.cu
     src/spatial/haversine.cu
     src/spatial/hausdorff.cu
     src/spatial/linestring_distance.cu
@@ -147,6 +147,7 @@ add_library(cuspatial
     src/spatial/point_linestring_distance.cu
     src/spatial/point_polygon_distance.cu
     src/spatial/linestring_polygon_distance.cu
+    src/spatial/polygon_distance.cu
     src/spatial/point_linestring_nearest_points.cu
     src/spatial/sinusoidal_projection.cu
     src/trajectory/derive_trajectories.cu

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 
@@ -66,7 +68,9 @@ class BaseFixture : public RMMResourceMixin, public ::testing::Test {};
  * class MyTest : public cuspatial::test::BaseFixtureWithParam {};
  *
  * TEST_P(MyTest, TestParamterGet) {
- *  auto [a, b, c] = GetParam();
+ *  auto a = std::get<0>(GetParam());
+ *  auto b = std::get<1>(GetParam());
+ *  auto c = std::get<2>(GetParam());
  *  ...
  * }
  *

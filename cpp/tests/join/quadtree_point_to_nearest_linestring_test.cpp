@@ -15,11 +15,11 @@
  */
 
 #include <cudf/column/column.hpp>
+#include <cuspatial/bounding_boxes.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/linestring_bounding_box.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/point_quadtree.hpp>
 #include <cuspatial/spatial_join.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <cudf/table/table.hpp>
 #include <cudf/table/table_view.hpp>

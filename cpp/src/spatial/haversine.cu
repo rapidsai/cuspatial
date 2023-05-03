@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,9 @@
  */
 
 #include <cuspatial/constants.hpp>
+#include <cuspatial/distance.cuh>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/haversine.cuh>
-#include <cuspatial/experimental/iterator_factory.cuh>
+#include <cuspatial/iterator_factory.cuh>
 
 #include <cudf/column/column.hpp>
 #include <cudf/column/column_view.hpp>

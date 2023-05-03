@@ -15,9 +15,9 @@
  */
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/iterator_factory.cuh>
-#include <cuspatial/experimental/point_in_polygon.cuh>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/iterator_factory.cuh>
+#include <cuspatial/point_in_polygon.cuh>
 
 #include <cudf/column/column.hpp>
 #include <cudf/column/column_factories.hpp>
@@ -52,6 +52,7 @@ struct point_in_polygon_functor {
                                            cudf::column_view const& poly_ring_offsets,
                                            cudf::column_view const& poly_points_x,
                                            cudf::column_view const& poly_points_y,
+                                           bool pairwise,
                                            rmm::cuda_stream_view stream,
                                            rmm::mr::device_memory_resource* mr)
   {
@@ -71,16 +72,30 @@ struct point_in_polygon_functor {
       cuspatial::make_vec_2d_iterator(poly_points_x.begin<T>(), poly_points_y.begin<T>());
     auto results_begin = results->mutable_view().begin<int32_t>();
 
-    cuspatial::point_in_polygon(points_begin,
-                                points_begin + test_points_x.size(),
-                                polygon_offsets_begin,
-                                polygon_offsets_begin + poly_offsets.size(),
-                                ring_offsets_begin,
-                                ring_offsets_begin + poly_ring_offsets.size(),
-                                polygon_points_begin,
-                                polygon_points_begin + poly_points_x.size(),
-                                results_begin,
-                                stream);
+    if (pairwise) {
+      cuspatial::pairwise_point_in_polygon(points_begin,
+                                           points_begin + test_points_x.size(),
+                                           polygon_offsets_begin,
+                                           polygon_offsets_begin + poly_offsets.size(),
+                                           ring_offsets_begin,
+                                           ring_offsets_begin + poly_ring_offsets.size(),
+                                           polygon_points_begin,
+                                           polygon_points_begin + poly_points_x.size(),
+                                           results_begin,
+                                           stream);
+
+    } else {
+      cuspatial::point_in_polygon(points_begin,
+                                  points_begin + test_points_x.size(),
+                                  polygon_offsets_begin,
+                                  polygon_offsets_begin + poly_offsets.size(),
+                                  ring_offsets_begin,
+                                  ring_offsets_begin + poly_ring_offsets.size(),
+                                  polygon_points_begin,
+                                  polygon_points_begin + poly_points_x.size(),
+                                  results_begin,
+                                  stream);
+    }
 
     return results;
   }
@@ -97,29 +112,8 @@ std::unique_ptr<cudf::column> point_in_polygon(cudf::column_view const& test_poi
                                                cudf::column_view const& poly_ring_offsets,
                                                cudf::column_view const& poly_points_x,
                                                cudf::column_view const& poly_points_y,
+                                               bool pairwise,
                                                rmm::cuda_stream_view stream,
-                                               rmm::mr::device_memory_resource* mr)
-{
-  return cudf::type_dispatcher(test_points_x.type(),
-                               point_in_polygon_functor(),
-                               test_points_x,
-                               test_points_y,
-                               poly_offsets,
-                               poly_ring_offsets,
-                               poly_points_x,
-                               poly_points_y,
-                               stream,
-                               mr);
-}
-
-}  // namespace detail
-
-std::unique_ptr<cudf::column> point_in_polygon(cudf::column_view const& test_points_x,
-                                               cudf::column_view const& test_points_y,
-                                               cudf::column_view const& poly_offsets,
-                                               cudf::column_view const& poly_ring_offsets,
-                                               cudf::column_view const& poly_points_x,
-                                               cudf::column_view const& poly_points_y,
                                                rmm::mr::device_memory_resource* mr)
 {
   CUSPATIAL_EXPECTS(
@@ -137,12 +131,60 @@ std::unique_ptr<cudf::column> point_in_polygon(cudf::column_view const& test_poi
   CUSPATIAL_EXPECTS(not poly_points_x.has_nulls() && not poly_points_y.has_nulls(),
                     "Polygon points must not contain nulls");
 
+  if (pairwise) {
+    CUSPATIAL_EXPECTS(test_points_x.size() == std::max(poly_offsets.size() - 1, 0),
+                      "Must pass in the same number of points as polygons.");
+  }
+
+  return cudf::type_dispatcher(test_points_x.type(),
+                               point_in_polygon_functor(),
+                               test_points_x,
+                               test_points_y,
+                               poly_offsets,
+                               poly_ring_offsets,
+                               poly_points_x,
+                               poly_points_y,
+                               pairwise,
+                               stream,
+                               mr);
+}
+
+}  // namespace detail
+
+std::unique_ptr<cudf::column> point_in_polygon(cudf::column_view const& test_points_x,
+                                               cudf::column_view const& test_points_y,
+                                               cudf::column_view const& poly_offsets,
+                                               cudf::column_view const& poly_ring_offsets,
+                                               cudf::column_view const& poly_points_x,
+                                               cudf::column_view const& poly_points_y,
+                                               rmm::mr::device_memory_resource* mr)
+{
   return cuspatial::detail::point_in_polygon(test_points_x,
                                              test_points_y,
                                              poly_offsets,
                                              poly_ring_offsets,
                                              poly_points_x,
                                              poly_points_y,
+                                             false,
+                                             rmm::cuda_stream_default,
+                                             mr);
+}
+
+std::unique_ptr<cudf::column> pairwise_point_in_polygon(cudf::column_view const& test_points_x,
+                                                        cudf::column_view const& test_points_y,
+                                                        cudf::column_view const& poly_offsets,
+                                                        cudf::column_view const& poly_ring_offsets,
+                                                        cudf::column_view const& poly_points_x,
+                                                        cudf::column_view const& poly_points_y,
+                                                        rmm::mr::device_memory_resource* mr)
+{
+  return cuspatial::detail::point_in_polygon(test_points_x,
+                                             test_points_y,
+                                             poly_offsets,
+                                             poly_ring_offsets,
+                                             poly_points_x,
+                                             poly_points_y,
+                                             true,
                                              rmm::cuda_stream_default,
                                              mr);
 }

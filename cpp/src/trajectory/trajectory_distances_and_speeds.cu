@@ -15,8 +15,8 @@
  */
 
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/iterator_factory.cuh>
-#include <cuspatial/experimental/trajectory_distances_and_speeds.cuh>
+#include <cuspatial/iterator_factory.cuh>
+#include <cuspatial/trajectory.cuh>
 #include <cuspatial/trajectory.hpp>
 
 #include <cudf/column/column_device_view.cuh>

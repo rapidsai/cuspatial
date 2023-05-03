@@ -26,21 +26,24 @@ and the main iterator and container types supported by algorithms.  Here are som
 
 ## Header-only and Column-based API tests
 
-libcuspatial currently has two C++ APIs: the column-based API uses libcudf data structures as 
-input and output. These tests live in `cpp/tests/` and can use libcudf features for constructing
-columns and tables. The header-only API does not depend on libcudf at all and so tests of these
-APIs should not include any libcudf headers. These tests currently live in `cpp/tests/experimental`.
+libcuspatial currently has two C++ APIs: the column-based API uses libcudf data structures as
+input and output. These tests can use libcudf features for constructing columns and tables. The
+header-only API does not depend on libcudf at all and so tests of these APIs should not include any
+libcudf headers. Header-only and column-based API tests are located together in `cuspatial/tests`,
+however header-only API tests are `.cu` files and column-based API files are `.cpp` files.
 
-Generally, we test algorithms and business logic in the header-only API's unit tests. 
-Column-based API tests should only cover specifics of the column-based API, such as type 
-handling, input validation, and exceptions that are only thrown by that API.
+Generally, we test algorithms and business logic in the header-only API's unit tests.
+Column-based API tests should only cover specifics of the column-based API, such as type
+handling, input validation, and exceptions that are only thrown by that API. Column-based API tests
+typically also tests empty imputs, to ensure that empty column inputs result in empty column output
+rather than throwing exceptions.
 
 ## Directory and File Naming
 
 The naming of unit test directories and source files should be consistent with the feature being
-tested. For example, the tests for APIs in `point_in_polygon.hpp` should live in 
+tested. For example, the tests for APIs in `point_in_polygon.hpp` should live in
 `cuspatial/cpp/tests/point_in_polygon_test.cpp`. Each feature (or set of related features) should
-have its own test source file named `<feature>_test.cu/cpp`. 
+have its own test source file named `<feature>_test.cu/cpp`.
 
 In the interest of improving compile time, whenever possible, test source files should be `.cpp`
 files because `nvcc` is slower than `gcc` in compiling host code. Note that `thrust::device_vector`
@@ -52,7 +55,7 @@ Testing header-only APIs requires CUDA compilation so should be done in `.cu` fi
 
 ## Base Fixture
 
-All libcuspatial unit tests should make use of a GTest 
+All libcuspatial unit tests should make use of a GTest
 ["Test Fixture"](https://github.com/google/googletest/blob/master/docs/primer.md#test-fixtures-using-the-same-data-configuration-for-multiple-tests-same-data-multiple-tests).
 Even if the fixture is empty, it should inherit from the base fixture `cuspatial::test::BaseFixture`
 found in `cpp/tests/base_fixture.hpp`. This ensures that RMM is properly initialized and
@@ -65,7 +68,7 @@ Example:
 
 ## Typed Tests
 
-In general, libcuspatial features must work across all supported types (for cuspatial this 
+In general, libcuspatial features must work across all supported types (for cuspatial this
 typically just means `float` and `double`). In order to automate the process of running
 the same tests across multiple types, we use GTest's
 [Typed Tests](https://github.com/google/googletest/blob/master/docs/advanced.md#typed-tests).
@@ -91,10 +94,10 @@ list defined in `TestTypes` (`float, double`).
 ## Utilities
 
 libcuspatial test utilities include `cuspatial::test::expect_vector_equivalent()` in
-`cpp/tests/utility/vector_equality()`. This function compares two containers using Google Test's 
+`cpp/tests/utility/vector_equality()`. This function compares two containers using Google Test's
 approximate matching for floating-point values. It can handle vectors of `cuspatial::vec_2d<T>`,
-where `T` is `float` or `double`. It automatically copies data in device containers to host 
-containers before comparing, so you can pass it one host and one device vector, for example. 
+where `T` is `float` or `double`. It automatically copies data in device containers to host
+containers before comparing, so you can pass it one host and one device vector, for example.
 
 Example:
 
