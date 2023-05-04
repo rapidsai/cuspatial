@@ -34,10 +34,8 @@ GeoSeries = TypeVar("GeoSeries")
 
 class ContainsProperlyPredicate(ContainsGeometryProcessor):
     def __init__(self, **kwargs):
-        """Base class for binary predicates that are defined in terms of a
-        `contains` basic predicate. This class implements the logic that
-        underlies `polygon.contains` primarily, and is implemented for many
-        cases.
+        """Base class for binary predicates that are defined in terms of
+        `contains_properly`.
 
         Subclasses are selected using the `DispatchDict` located at the end
         of this file.
