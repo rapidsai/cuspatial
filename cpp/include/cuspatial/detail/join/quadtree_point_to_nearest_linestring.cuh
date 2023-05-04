@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include <cuspatial/detail/algorithm/point_linestring_distance.cuh>
 #include <cuspatial/detail/join/get_quad_and_local_point_indices.cuh>
 #include <cuspatial/detail/utility/zero_data.cuh>

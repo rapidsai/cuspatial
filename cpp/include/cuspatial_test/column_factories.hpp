@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include <cuspatial/types.hpp>
 
 #include <cudf/column/column_factories.hpp>

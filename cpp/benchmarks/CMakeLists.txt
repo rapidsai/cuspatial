@@ -76,15 +76,12 @@ endfunction()
 ### benchmark sources #############################################################################
 ###################################################################################################
 
-###################################################################################################
-# - hausdorff benchmark ---------------------------------------------------------------------------
-
 ConfigureBench(HAUSDORFF_BENCH
-    hausdorff_benchmark.cpp)
+    distance/hausdorff_benchmark.cpp)
 
 ConfigureNVBench(DISTANCES_BENCH
-    pairwise_linestring_distance.cu
-    pairwise_point_polygon_distance.cu)
+    distance/pairwise_point_polygon_distance.cu
+    distance/pairwise_linestring_distance.cu)
 
 ConfigureNVBench(POINTS_IN_RANGE_BENCH
     points_in_range.cu)
@@ -93,7 +90,13 @@ ConfigureNVBench(POINT_IN_POLYGON_BENCH
     point_in_polygon.cu)
 
 ConfigureNVBench(QUADTREE_ON_POINTS_BENCH
-    quadtree_on_points.cu)
+    indexing/quadtree_on_points.cu)
+
+ConfigureNVBench(POINT_IN_POLYGON_BENCH
+    point_in_polygon/point_in_polygon.cu)
+
+ConfigureNVBench(POINTS_IN_RANGE_BENCH
+    points_in_range/points_in_range.cu)
 
 ConfigureNVBench(FLOATING_POINT_EQUALITY_BENCH
-    floating_point_equality.cu)
+    utility/floating_point_equality.cu)
