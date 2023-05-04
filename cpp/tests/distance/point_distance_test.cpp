@@ -18,13 +18,6 @@
 
 #include <cuspatial/distance.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/geometry/vec_2d.hpp>
-
-#include <cudf_test/column_utilities.hpp>
-#include <cudf_test/column_wrapper.hpp>
-
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
 
 #include <optional>
 
@@ -43,28 +36,28 @@ TYPED_TEST_CASE(PairwisePointDistanceTest, TestTypes);
 
 TYPED_TEST(PairwisePointDistanceTest, SingleToSingleEmpty)
 {
-  auto got = pairwise_point_distance(this->empty_point(), this->empty_point());
+  auto got    = pairwise_point_distance(this->empty_point(), this->empty_point());
   auto expect = fixed_width_column_wrapper<TypeParam>{};
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect, *got);
 }
 
 TYPED_TEST(PairwisePointDistanceTest, SingleToMultiEmpty)
 {
-  auto got = pairwise_point_distance(this->empty_point(), this->empty_multipoint());
+  auto got    = pairwise_point_distance(this->empty_point(), this->empty_multipoint());
   auto expect = fixed_width_column_wrapper<TypeParam>{};
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect, *got);
 }
 
 TYPED_TEST(PairwisePointDistanceTest, MultiToSingleEmpty)
 {
-  auto got = pairwise_point_distance(this->empty_point(), this->empty_multipoint());
+  auto got    = pairwise_point_distance(this->empty_point(), this->empty_multipoint());
   auto expect = fixed_width_column_wrapper<TypeParam>{};
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect, *got);
 }
 
 TYPED_TEST(PairwisePointDistanceTest, MultiToMultiEmpty)
 {
-  auto got = pairwise_point_distance(this->empty_multipoint(), this->empty_multipoint());
+  auto got    = pairwise_point_distance(this->empty_multipoint(), this->empty_multipoint());
   auto expect = fixed_width_column_wrapper<TypeParam>{};
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect, *got);
 }
@@ -73,19 +66,28 @@ struct PairwisePointDistanceFailOnSizeTest : public EmptyAndOneGeometryColumnFix
 
 TEST_F(PairwisePointDistanceFailOnSizeTest, SizeMismatch)
 {
-  EXPECT_THROW(pairwise_point_distance(this->empty_point(), this->one_point()), cuspatial::logic_error);
+  EXPECT_THROW(pairwise_point_distance(this->empty_point(), this->one_point()),
+               cuspatial::logic_error);
 }
 
 TEST_F(PairwisePointDistanceFailOnSizeTest, SizeMismatch2)
 {
-  EXPECT_THROW(pairwise_point_distance(this->one_point(), this->empty_multipoint()), cuspatial::logic_error);
+  EXPECT_THROW(pairwise_point_distance(this->one_point(), this->empty_multipoint()),
+               cuspatial::logic_error);
 }
 
-struct PairwisePointDistanceFailOnTypeTest : public EmptyGeometryColumnFixtureMultipleTypes{};
+struct PairwisePointDistanceFailOnTypeTest : public EmptyGeometryColumnFixtureMultipleTypes {};
 
-TEST_F(PairwisePointDistanceFailOnTypeTest, TypeMismatch)
+TEST_F(PairwisePointDistanceFailOnTypeTest, CoordinateTypeMismatch)
 {
-  EXPECT_THROW(pairwise_point_distance(
-    EmptyGeometryColumnBase<float>::empty_point(), EmptyGeometryColumnBase<double>::empty_point()
-  ), cuspatial::logic_error);
+  EXPECT_THROW(pairwise_point_distance(EmptyGeometryColumnBase<float>::empty_point(),
+                                       EmptyGeometryColumnBase<double>::empty_point()),
+               cuspatial::logic_error);
+}
+
+TEST_F(PairwisePointDistanceFailOnTypeTest, GeometryTypeMismatch)
+{
+  EXPECT_THROW(pairwise_point_distance(EmptyGeometryColumnBase<float>::empty_point(),
+                                       EmptyGeometryColumnBase<float>::empty_polygon()),
+               cuspatial::logic_error);
 }
