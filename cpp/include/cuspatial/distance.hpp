@@ -184,8 +184,7 @@ std::unique_ptr<cudf::column> pairwise_point_linestring_distance(
  * @throw cuspatial::logic_error if `multipoints` and `multipolygons` sizes differ
  * @throw cuspatial::logic_error if `multipoints` is not a point column and `multipolygons` is not a
  * polygon column.
- * @throw cuspatial::logic_error if `multipoints` and `multipolygons` has different coordinate
- * types.
+ * @throw cuspatial::logic_error if `multipoints` and `multipolygons` coordinate types differ
  */
 
 std::unique_ptr<cudf::column> pairwise_point_polygon_distance(
@@ -208,8 +207,7 @@ std::unique_ptr<cudf::column> pairwise_point_polygon_distance(
  * @throw cuspatial::logic_error if `multilinestrings1` and `multilinestrings2` sizes differ
  * @throw cuspatial::logic_error if either `multilinestrings1` or `multilinestrings2` is not a
  * linestring column.
- * @throw cuspatial::logic_error if `multipoints` and `multipolygons` has different coordinate
- * types.
+ * @throw cuspatial::logic_error if `multilinestrings1` and `multilinestrings2` coordinate types
  */
 std::unique_ptr<cudf::column> pairwise_linestring_distance(
   geometry_column_view const& multilinestrings1,
@@ -217,7 +215,12 @@ std::unique_ptr<cudf::column> pairwise_linestring_distance(
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
- * @brief Compute pairwise (multi)linestring-to-(multi)polygon Cartesian distance
+ * @brief Compute pairwise (multi)linestring-to-(multi)polygon Euclidean distance
+ *
+ * The distance between a pair of (multi)linestring and (multipolygon) is the shortest Euclidean
+ * distance between any pair of segments in the multilinestring and edges in the multipolygon. If
+ * any of the segments intersects, or if any linestring is contained in any polygon, the distance is
+ * 0.
  *
  * @param multilinestrings Geometry column of multilinestrings
  * @param multipolygons Geometry column of multipolygons
@@ -225,33 +228,34 @@ std::unique_ptr<cudf::column> pairwise_linestring_distance(
  * @return Column of distances between each pair of input geometries, same type as input coordinate
  * types.
  *
- * @throw cuspatial::logic_error if `multilinestrings` and `multipolygons` have different coordinate
- * types.
- * @throw cuspatial::logic_error if `multilinestrings` is not a linestring column and
+ * @throw cuspatial::logic_error if `multilinestrings` and `multipolygons` sizes differ
+ * @throw cuspatial::logic_error if either `multilinestrings` is not a linestrings column or
  * `multipolygons` is not a polygon column.
- * @throw cuspatial::logic_error if input column sizes mismatch.
+ * @throw cuspatial::logic_error if `multilinestrings` and `multipolygons` has different coordinate
+ * types.
  */
-
 std::unique_ptr<cudf::column> pairwise_linestring_polygon_distance(
   geometry_column_view const& multilinestrings,
   geometry_column_view const& multipolygons,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
- * @brief Compute pairwise (multi)polygon-to-(multi)polygon Cartesian distance
+ * @brief Compute pairwise (multi)polygon-to-(multi)polygon Euclidean distance
  *
- * Computes the cartesian distance between each pair of the multipolygons.
+ * The distance between a pair of (multi)polygon and (multi)polygon is the shortest Euclidean
+ * distance between any pair of edges in the multipolygons. If any edges intersects, or if any
+ * polygon is contained in any other polygon, the distance is 0.
  *
- * @param lhs Geometry column of the multipolygons to compute distance from
- * @param rhs Geometry column of the multipolygons to compute distance to
+ * @param multipolygons1 Geometry column of the multipolygons to compute distance from
+ * @param multipolygons2 Geometry column of the multipolygons to compute distance to
  * @param mr Device memory resource used to allocate the returned column.
  *
  * @return Column of distances between each pair of input geometries, same type as input coordinate
  * types.
  */
 std::unique_ptr<cudf::column> pairwise_polygon_distance(
-  geometry_column_view const& lhs,
-  geometry_column_view const& rhs,
+  geometry_column_view const& multipolygons1,
+  geometry_column_view const& multipolygons2,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
