@@ -89,6 +89,20 @@ struct pairwise_linestring_polygon_distance {
                                            rmm::cuda_stream_view stream,
                                            rmm::mr::device_memory_resource* mr)
   {
+
+
+  CUSPATIAL_EXPECTS(multilinestrings.geometry_type() == geometry_type_id::LINESTRING &&
+                      multipolygons.geometry_type() == geometry_type_id::POLYGON,
+                    "Unexpected input geometry types.");
+
+
+  CUSPATIAL_EXPECTS(multilinestrings.coordinate_type() == multipolygons.coordinate_type(),
+                      "Inputs must have the same coordinate type.");
+
+
+  CUSPATIAL_EXPECTS(multilinestrings.size() == multipolygons.size(),
+                      "Inputs must have the same number of rows.");
+
     return cudf::type_dispatcher(
       multilinestrings.coordinate_type(),
       pairwise_linestring_polygon_distance_impl<is_multi_linestring, is_multi_polygon>{},
@@ -106,13 +120,6 @@ std::unique_ptr<cudf::column> pairwise_linestring_polygon_distance(
   geometry_column_view const& multipolygons,
   rmm::mr::device_memory_resource* mr)
 {
-  CUSPATIAL_EXPECTS(multilinestrings.geometry_type() == geometry_type_id::LINESTRING &&
-                      multipolygons.geometry_type() == geometry_type_id::POLYGON,
-                    "Unexpected input geometry types.");
-
-  CUSPATIAL_EXPECTS(multilinestrings.coordinate_type() == multipolygons.coordinate_type(),
-                    "Input geometries must have the same coordinate data types.");
-
   return multi_geometry_double_dispatch<detail::pairwise_linestring_polygon_distance>(
     multilinestrings.collection_type(),
     multipolygons.collection_type(),

@@ -74,6 +74,8 @@ struct pairwise_point_distance_functor {
                         multipoints2.geometry_type() == geometry_type_id::POINT,
                       "Unexpected input geometry types.");
 
+    CUSPATIAL_EXPECTS(multipoints1.coordinate_type() == multipoints2.coordinate_type(), "Input coordinates must have the same floating point type.");
+
     CUSPATIAL_EXPECTS(multipoints1.size() == multipoints2.size(),
                       "Inputs should have the same number of geometries.");
 

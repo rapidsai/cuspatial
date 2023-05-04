@@ -85,6 +85,8 @@ struct pairwise_point_linestring_distance_functor {
                         multilinestrings.geometry_type() == geometry_type_id::LINESTRING,
                       "Unexpected input geometry types.");
 
+    CUSPATIAL_EXPECTS(multipoints.coordinate_type() == multilinestrings.coordinate_type(), "Inputs must have the same coordinate type.");
+
     CUSPATIAL_EXPECTS(multipoints.size() == multilinestrings.size(),
                       "Inputs should have the same number of geometries.");
 
