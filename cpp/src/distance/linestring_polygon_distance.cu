@@ -89,18 +89,14 @@ struct pairwise_linestring_polygon_distance {
                                            rmm::cuda_stream_view stream,
                                            rmm::mr::device_memory_resource* mr)
   {
+    CUSPATIAL_EXPECTS(multilinestrings.geometry_type() == geometry_type_id::LINESTRING &&
+                        multipolygons.geometry_type() == geometry_type_id::POLYGON,
+                      "Unexpected input geometry types.");
 
-
-  CUSPATIAL_EXPECTS(multilinestrings.geometry_type() == geometry_type_id::LINESTRING &&
-                      multipolygons.geometry_type() == geometry_type_id::POLYGON,
-                    "Unexpected input geometry types.");
-
-
-  CUSPATIAL_EXPECTS(multilinestrings.coordinate_type() == multipolygons.coordinate_type(),
+    CUSPATIAL_EXPECTS(multilinestrings.coordinate_type() == multipolygons.coordinate_type(),
                       "Inputs must have the same coordinate type.");
 
-
-  CUSPATIAL_EXPECTS(multilinestrings.size() == multipolygons.size(),
+    CUSPATIAL_EXPECTS(multilinestrings.size() == multipolygons.size(),
                       "Inputs must have the same number of rows.");
 
     return cudf::type_dispatcher(
