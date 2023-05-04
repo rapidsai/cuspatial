@@ -1,3 +1,5 @@
+# Copyright (c) 2023, NVIDIA CORPORATION.
+
 from shapely.geometry import LineString
 
 import cudf

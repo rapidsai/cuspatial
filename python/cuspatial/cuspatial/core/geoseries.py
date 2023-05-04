@@ -1001,13 +1001,13 @@ class GeoSeries(cudf.Series):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
         aligned geometry that contains _other_.
 
-        An object `a` is said to contain `b` if `b`'s `boundary` and
-        `interiors` are within those of `a` and no point of `b` lies in the
-        exterior of `a`.
+        An object a is said to contain b if b's boundary and
+        interiors are within those of a and no point of b lies in the
+        exterior of a.
 
         If `allpairs=False`, the result will be a `Series` of `dtype('bool')`.
         If `allpairs=True`, the result will be a `DataFrame` containing two
-        columns, `point_indices` and `polygon_indices`, each of which is a
+        columns, `point_indices` a`nd `polygon_indices`, each of which is a
         `Series` of `dtype('int32')`. The `point_indices` `Series` contains
         the indices of the points in the right GeoSeries, and the
         `polygon_indices` `Series` contains the indices of the polygons in the
@@ -1032,7 +1032,8 @@ class GeoSeries(cudf.Series):
             the indices of the points in the right GeoSeries, and the
             `polygon_indices` `Series` contains the indices of the polygons in
             the left GeoSeries. Excludes boundary points.
-        mode : str, default "full"
+        mode : str, default "full" or "basic_none", "basic_any",
+            "basic_all", or "basic_count".
             If "full", the result will be a `Series` of `dtype('bool')` with
             value `True` for each aligned geometry that contains _other_.
             If "intersects", the result will be a `Series` of `dtype('bool')`
@@ -1355,8 +1356,8 @@ class GeoSeries(cudf.Series):
         """Returns True for all aligned geometries that touch other, else
         False.
 
-        Geometries touch if they have at least one point in common, but their
-        interiors do not intersect.
+        Geometries touch if they have any coincident edges or share any
+        vertices, and their interiors do not intersect.
 
         Parameters
         ----------

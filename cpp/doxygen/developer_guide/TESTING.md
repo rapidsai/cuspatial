@@ -41,9 +41,8 @@ rather than throwing exceptions.
 ## Directory and File Naming
 
 The naming of unit test directories and source files should be consistent with the feature being
-tested. For example, the tests for APIs in `point_in_polygon.hpp` should live in
-`cuspatial/cpp/tests/point_in_polygon_test.cpp`. Each feature (or set of related features) should
-have its own test source file named `<feature>_test.cu/cpp`.
+tested. For example, the tests for APIs in `distance.hpp` should live in files in
+`cuspatial/cpp/tests/distance/`.
 
 In the interest of improving compile time, whenever possible, test source files should be `.cpp`
 files because `nvcc` is slower than `gcc` in compiling host code. Note that `thrust::device_vector`

@@ -1,4 +1,4 @@
-# Copyright (c) 2020, NVIDIA CORPORATION.
+# Copyright (c) 2020-2023, NVIDIA CORPORATION.
 
 from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport pair
@@ -8,7 +8,7 @@ from cudf._lib.cpp.column.column_view cimport column_view
 from cudf._lib.cpp.table.table_view cimport table_view
 
 
-cdef extern from "cuspatial/distance/hausdorff.hpp" \
+cdef extern from "cuspatial/distance.hpp" \
         namespace "cuspatial" nogil:
 
     cdef pair[unique_ptr[column], table_view] directed_hausdorff_distance(

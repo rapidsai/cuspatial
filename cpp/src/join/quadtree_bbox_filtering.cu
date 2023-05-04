@@ -17,8 +17,8 @@
 #include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/spatial_join.cuh>
 
-#include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
+#include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/spatial_join.hpp>
 
 #include <cudf/column/column.hpp>
