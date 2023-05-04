@@ -1356,7 +1356,8 @@ class GeoSeries(cudf.Series):
         """Returns True for all aligned geometries that touch other, else
         False.
 
-        Geometries touch if they have any coincident edges or share any vertices, and their interiors do not intersect.
+        Geometries touch if they have any coincident edges or share any
+        vertices, and their interiors do not intersect.
 
         Parameters
         ----------
