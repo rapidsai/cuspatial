@@ -17,7 +17,7 @@
 #pragma once
 
 #include <cuspatial/cuda_utils.hpp>
-#include <cuspatial/detail/iterator.hpp>
+#include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/traits.hpp>
 
 #include <thrust/distance.h>

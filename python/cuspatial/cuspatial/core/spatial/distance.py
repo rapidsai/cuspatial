@@ -12,6 +12,7 @@ from cuspatial._lib.distance import (
     pairwise_point_distance as cpp_pairwise_point_distance,
     pairwise_point_linestring_distance as c_pairwise_point_linestring_distance,
     pairwise_point_polygon_distance as c_pairwise_point_polygon_distance,
+    pairwise_polygon_distance as c_pairwise_polygon_distance,
 )
 from cuspatial._lib.hausdorff import (
     directed_hausdorff_distance as cpp_directed_hausdorff_distance,
@@ -131,7 +132,7 @@ def haversine_distance(p1: GeoSeries, p2: GeoSeries):
 
 
 def pairwise_point_distance(points1: GeoSeries, points2: GeoSeries):
-    """Compute shortest distance between pairs of points and multipoints
+    """Compute distance between (multi)points-(multi)points pairs
 
     Currently `points1` and `points2` must contain either only points or
     multipoints. Mixing points and multipoints in the same series is
@@ -199,7 +200,7 @@ def pairwise_point_distance(points1: GeoSeries, points2: GeoSeries):
 def pairwise_linestring_distance(
     multilinestrings1: GeoSeries, multilinestrings2: GeoSeries
 ):
-    """Compute shortest distance between pairs of linestrings
+    """Compute distance between (multi)linestring-(multi)linestring pairs
 
     The shortest distance between two linestrings is defined as the shortest
     distance between all pairs of segments of the two linestrings. If any of
@@ -266,7 +267,7 @@ def pairwise_linestring_distance(
 def pairwise_point_linestring_distance(
     points: GeoSeries, linestrings: GeoSeries
 ):
-    """Compute distance between pairs of (multi)points and (multi)linestrings
+    """Compute distance between (multi)points-(multi)linestrings pairs
 
     The distance between a (multi)point and a (multi)linestring
     is defined as the shortest distance between every point in the
@@ -384,7 +385,7 @@ def pairwise_point_linestring_distance(
 
 
 def pairwise_point_polygon_distance(points: GeoSeries, polygons: GeoSeries):
-    """Compute distance between pairs of (multi)points and (multi)polygons
+    """Compute distance between (multi)points-(multi)polygons pairs
 
     The distance between a (multi)point and a (multi)polygon
     is defined as the shortest distance between every point in the
@@ -477,7 +478,7 @@ def pairwise_point_polygon_distance(points: GeoSeries, polygons: GeoSeries):
 def pairwise_linestring_polygon_distance(
     linestrings: GeoSeries, polygons: GeoSeries
 ):
-    """Compute distance between pairs of (multi)linestrings and (multi)polygons
+    """Compute distance between (multi)linestrings-(multi)polygons pairs.
 
     The distance between a (multi)linestrings and a (multi)polygon
     is defined as the shortest distance between every segment in the
@@ -552,6 +553,79 @@ def pairwise_linestring_polygon_distance(
 
     return Series._from_data(
         {None: c_pairwise_line_poly_dist(linestrings_column, polygon_column)}
+    )
+
+
+def pairwise_polygon_distance(polygons1: GeoSeries, polygons2: GeoSeries):
+    """Compute distance between (multi)polygon-(multi)polygon pairs.
+
+    The distance between two (multi)polygons is defined as the shortest
+    distance between any edge of the first (multi)polygon and any edge
+    of the second (multi)polygon. If two (multi)polygons intersect, the
+    distance is 0.
+
+    This algorithm computes distance pairwise. The ith row in the result is
+    the distance between the ith (multi)polygon in `polygons1` and the ith
+    (multi)polygon in `polygons2`.
+
+    Parameters
+    ----------
+    polygons1 : GeoSeries
+        The (multi)polygons to compute the distance from.
+    polygons2 : GeoSeries
+        The (multi)polygons to compute the distance from.
+    Returns
+    -------
+    distance : cudf.Series
+
+    Notes
+    -----
+    `polygons1` and `polygons2` must contain only polygons.
+
+    Examples
+    --------
+    Compute distance between polygons:
+
+    >>> from shapely.geometry import Polygon, MultiPolygon
+    >>> s0 = cuspatial.GeoSeries([
+    ...     Polygon([(0, 0), (1, 0), (1, 1), (0, 1), (0, 0)])])
+    >>> s1 = cuspatial.GeoSeries([
+    ...     Polygon([(2, 2), (3, 2), (3, 3), (2, 2)])])
+    >>> cuspatial.pairwise_polygon_distance(s0, s1)
+    0    1.414214
+    dtype: float64
+
+    Compute distance between multipolygons:
+    >>> s0 = cuspatial.GeoSeries([
+    ...     MultiPolygon([
+    ...         Polygon([(0, 0), (1, 0), (1, 1), (0, 1), (0, 0)]),
+    ...         Polygon([(2, 0), (3, 0), (3, 1), (2, 0)])])])
+    >>> s1 = cuspatial.GeoSeries([
+    ...     MultiPolygon([
+    ...         Polygon([(-1, 0), (-2, 0), (-2, -1), (-1, -1), (-1, 0)]),
+    ...         Polygon([(0, -1), (1, -1), (1, -2), (0, -2), (0, -1)])])])
+    >>> cuspatial.pairwise_polygon_distance(s0, s1)
+    0    1.0
+    dtype: float64
+    """
+
+    if len(polygons1) != len(polygons2):
+        raise ValueError("Unmatched input geoseries length.")
+
+    if len(polygons1) == 0:
+        return cudf.Series(dtype=polygons1.lines.xy.dtype)
+
+    if not contains_only_polygons(polygons1):
+        raise ValueError("`polygons1` array must contain only polygons")
+
+    if not contains_only_polygons(polygons2):
+        raise ValueError("`polygons2` array must contain only polygons")
+
+    polygon1_column = polygons1.polygons.column()
+    polygon2_column = polygons2.polygons.column()
+
+    return Series._from_data(
+        {None: c_pairwise_polygon_distance(polygon1_column, polygon2_column)}
     )
 
 

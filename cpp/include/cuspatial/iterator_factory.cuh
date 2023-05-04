@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/box.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
@@ -24,6 +23,7 @@
 
 #include <thrust/binary_search.h>
 #include <thrust/detail/raw_reference_cast.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
@@ -35,6 +35,17 @@
 
 namespace cuspatial {
 namespace detail {
+
+/**
+ * @internal
+ * @brief Helper to create a `transform_iterator` that transforms sequential values.
+ */
+template <typename IndexType, typename UnaryFunction>
+inline CUSPATIAL_HOST_DEVICE auto make_counting_transform_iterator(IndexType start, UnaryFunction f)
+{
+  return thrust::make_transform_iterator(thrust::make_counting_iterator(start), f);
+}
+
 /**
  * @internal
  * @brief Helper to convert a tuple of elements into a `vec_2d`

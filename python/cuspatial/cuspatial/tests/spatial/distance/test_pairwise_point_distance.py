@@ -1,3 +1,5 @@
+# Copyright (c) 2023, NVIDIA CORPORATION.
+
 import geopandas as gpd
 import pytest
 from pandas.testing import assert_series_equal
