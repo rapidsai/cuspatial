@@ -348,9 +348,14 @@ class multipoint_array {
  * coordinates
  */
 template <typename GeometryRange, typename CoordRange>
-auto make_multipoints_array(GeometryRange geometry_inl, CoordRange coordinates_inl)
+auto make_multipoint_array(GeometryRange geometry_inl, CoordRange coordinates_inl)
 {
-  return multipoint_array{make_device_vector(geometry_inl), make_device_vector(coordinates_inl)};
+  using IndexType = typename GeometryRange::value_type;
+  using CoordType         = typename CoordRange::value_type;
+  using DeviceIndexVector = thrust::device_vector<IndexType>;
+  using DeviceCoordVector = thrust::device_vector<CoordType>;
+
+  return multipoint_array<DeviceIndexVector, DeviceCoordVector>{make_device_vector(geometry_inl), make_device_vector(coordinates_inl)};
 }
 
 /**
