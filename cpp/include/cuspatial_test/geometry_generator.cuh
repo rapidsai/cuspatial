@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include <cuspatial_test/vector_factories.cuh>
 
 #include <cuspatial/cuda_utils.hpp>
