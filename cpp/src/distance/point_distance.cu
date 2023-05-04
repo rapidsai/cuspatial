@@ -48,7 +48,7 @@ struct pairwise_point_distance_impl {
       cudf::data_type{cudf::type_to_id<T>()}, size, cudf::mask_state::UNALLOCATED, stream, mr);
 
     auto lhs = make_multipoint_range<lhs_is_multipoint, T, cudf::size_type>(multipoints1);
-    auto rhs = make_multipoint_range<lhs_is_multipoint, T, cudf::size_type>(multipoints2);
+    auto rhs = make_multipoint_range<rhs_is_multipoint, T, cudf::size_type>(multipoints2);
 
     pairwise_point_distance(lhs, rhs, distances->mutable_view().begin<T>(), stream);
 
@@ -74,7 +74,8 @@ struct pairwise_point_distance_functor {
                         multipoints2.geometry_type() == geometry_type_id::POINT,
                       "Unexpected input geometry types.");
 
-    CUSPATIAL_EXPECTS(multipoints1.coordinate_type() == multipoints2.coordinate_type(), "Input coordinates must have the same floating point type.");
+    CUSPATIAL_EXPECTS(multipoints1.coordinate_type() == multipoints2.coordinate_type(),
+                      "Input coordinates must have the same floating point type.");
 
     CUSPATIAL_EXPECTS(multipoints1.size() == multipoints2.size(),
                       "Inputs should have the same number of geometries.");
