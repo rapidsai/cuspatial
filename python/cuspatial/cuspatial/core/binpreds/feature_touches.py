@@ -26,27 +26,24 @@ from cuspatial.utils.binpred_utils import (
 
 
 class TouchesPredicateBase(ContainsPredicate):
-    """Base class for binary predicates that use the contains predicate
-    to implement the touches predicate. For example, a Point-Polygon
-    Touches predicate is defined in terms of a Point-Polygon Contains
-    predicate.
+    """
+    If any point is shared between the following geometry types, they touch:
 
     Used by:
-    (Point, Polygon)
-    (Polygon, Point)
+    (Point, MultiPoint)
+    (Point, LineString)
+    (MultiPoint, Point)
+    (MultiPoint, MultiPoint)
+    (MultiPoint, LineString)
+    (MultiPoint, Polygon)
+    (LineString, Point)
+    (LineString, MultiPoint)
     (Polygon, MultiPoint)
-    (Polygon, LineString)
-    (Polygon, Polygon)
     """
 
     def _preprocess(self, lhs, rhs):
         equals = _basic_equals(lhs, rhs)
         return equals
-
-
-class PointLineStringTouches(BinPred):
-    def _preprocess(self, lhs, rhs):
-        return _basic_equals(lhs, rhs)
 
 
 class PointPolygonTouches(ContainsPredicate):
@@ -66,8 +63,8 @@ class LineStringLineStringTouches(BinPred):
         # Linestrings are not equal
         equals_all = _basic_equals_all(lhs, rhs)
         # Linestrings do not cross
-        crosses = ~lhs.crosses(rhs)
-        return equals & crosses & ~equals_all
+        crosses = lhs.crosses(rhs)
+        return equals & ~crosses & ~equals_all
 
 
 class LineStringPolygonTouches(BinPred):
@@ -77,13 +74,13 @@ class LineStringPolygonTouches(BinPred):
             return _false_series(len(lhs))
         intersections = _points_and_lines_to_multipoints(pli[1], pli[0])
         # A touch can only occur if the point in the intersection
-        # is equal to a point in the linestring, it must
+        # is equal to a point in the linestring: it must
         # terminate in the boundary of the polygon.
         equals = _basic_equals_count(intersections, lhs) > 0
         intersects = _basic_intersects_count(lhs, rhs)
+        intersects = (intersects == 1) | (intersects == 2)
         contains = rhs.contains(lhs)
         contains_any = _basic_contains_properly_any(rhs, lhs)
-        intersects = (intersects == 1) | (intersects == 2)
         return equals & intersects & ~contains & ~contains_any
 
 
@@ -109,7 +106,7 @@ class PolygonPolygonTouches(BinPred):
 DispatchDict = {
     (Point, Point): ImpossiblePredicate,
     (Point, MultiPoint): TouchesPredicateBase,
-    (Point, LineString): PointLineStringTouches,
+    (Point, LineString): TouchesPredicateBase,
     (Point, Polygon): PointPolygonTouches,
     (MultiPoint, Point): TouchesPredicateBase,
     (MultiPoint, MultiPoint): TouchesPredicateBase,

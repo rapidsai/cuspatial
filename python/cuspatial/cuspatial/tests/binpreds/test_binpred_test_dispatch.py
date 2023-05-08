@@ -1,26 +1,9 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
 import os
-from functools import wraps
 
 import pandas as pd
-import pytest
 from binpred_test_dispatch import predicate, simple_test  # noqa: F401
-
-
-def xfail_on_exception(func):
-    """Decorator function that xfails a test if an exception is throw
-    by the test function. Will be removed when all tests are passing."""
-
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            pytest.xfail(f"Xfailling due to an exception: {e}")
-
-    return wrapper
-
 
 # In the below file, all failing tests are recorded with visualizations.
 LOG_DISPATCHED_PREDICATES = os.environ.get("LOG_DISPATCHED_PREDICATES", False)
@@ -28,7 +11,6 @@ if LOG_DISPATCHED_PREDICATES:
     out_file = open("test_binpred_test_dispatch.log", "w")
 
 
-# @xfail_on_exception  # TODO: Remove when all tests are passing
 def test_simple_features(
     predicate,  # noqa: F811
     simple_test,  # noqa: F811
