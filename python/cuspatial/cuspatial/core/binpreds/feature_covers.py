@@ -14,7 +14,6 @@ from cuspatial.core.binpreds.binpred_interface import (
 )
 from cuspatial.core.binpreds.feature_equals import EqualsPredicateBase
 from cuspatial.core.binpreds.feature_intersects import (
-    IntersectsPredicateBase,
     LineStringPointIntersects,
 )
 from cuspatial.utils.binpred_utils import (
@@ -50,7 +49,7 @@ class CoversPredicateBase(EqualsPredicateBase):
     pass
 
 
-class LineStringLineStringCovers(IntersectsPredicateBase):
+class LineStringLineStringCovers(BinPred):
     def _preprocess(self, lhs, rhs):
         return _basic_equals_all(rhs, lhs)
 
