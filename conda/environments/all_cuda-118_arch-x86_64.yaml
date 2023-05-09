@@ -16,8 +16,8 @@ dependencies:
 - doxygen
 - gcc_linux-64=11.*
 - geopandas>=0.11.0
-- gmock>=1.13.0.*
-- gtest>=1.13.0.*
+- gmock>=1.13.0
+- gtest>=1.13.0
 - ipython
 - ipywidgets
 - libcudf==23.6.*
