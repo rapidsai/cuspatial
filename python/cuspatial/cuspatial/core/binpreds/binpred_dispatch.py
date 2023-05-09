@@ -11,6 +11,9 @@ functionality easier.
 from cuspatial.core.binpreds.feature_contains import (  # NOQA F401
     DispatchDict as CONTAINS_DISPATCH,
 )
+from cuspatial.core.binpreds.feature_contains_properly import (  # NOQA F401
+    DispatchDict as CONTAINS_PROPERLY_DISPATCH,
+)
 from cuspatial.core.binpreds.feature_covers import (  # NOQA F401
     DispatchDict as COVERS_DISPATCH,
 )

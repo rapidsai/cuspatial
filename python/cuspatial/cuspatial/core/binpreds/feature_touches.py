@@ -4,7 +4,7 @@ from cuspatial.core.binpreds.binpred_interface import (
     ImpossiblePredicate,
     NotImplementedPredicate,
 )
-from cuspatial.core.binpreds.feature_contains import ContainsPredicateBase
+from cuspatial.core.binpreds.feature_contains import ContainsPredicate
 from cuspatial.utils.binpred_utils import (
     LineString,
     MultiPoint,
@@ -13,7 +13,7 @@ from cuspatial.utils.binpred_utils import (
 )
 
 
-class TouchesPredicateBase(ContainsPredicateBase):
+class TouchesPredicateBase(ContainsPredicate):
     """Base class for binary predicates that use the contains predicate
     to implement the touches predicate. For example, a Point-Polygon
     Touches predicate is defined in terms of a Point-Polygon Contains
