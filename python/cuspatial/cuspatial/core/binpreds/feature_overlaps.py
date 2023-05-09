@@ -6,7 +6,7 @@ from cuspatial.core.binpreds.binpred_interface import (
     ImpossiblePredicate,
     NotImplementedPredicate,
 )
-from cuspatial.core.binpreds.feature_contains import ContainsPredicateBase
+from cuspatial.core.binpreds.feature_contains import ContainsPredicate
 from cuspatial.core.binpreds.feature_equals import EqualsPredicateBase
 from cuspatial.utils.binpred_utils import (
     LineString,
@@ -36,7 +36,7 @@ class OverlapsPredicateBase(EqualsPredicateBase):
     pass
 
 
-class PolygonPointOverlaps(ContainsPredicateBase):
+class PolygonPointOverlaps(ContainsPredicate):
     def _postprocess(self, lhs, rhs, op_result):
         if not has_same_geometry(lhs, rhs) or len(op_result.point_result) == 0:
             return _false_series(len(lhs))
