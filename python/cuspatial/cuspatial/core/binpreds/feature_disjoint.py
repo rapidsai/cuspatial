@@ -8,10 +8,7 @@ from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     NotImplementedPredicate,
 )
-from cuspatial.core.binpreds.feature_intersects import (
-    IntersectsPredicateBase,
-    PointLineStringIntersects,
-)
+from cuspatial.core.binpreds.feature_intersects import IntersectsPredicateBase
 from cuspatial.utils.binpred_utils import (
     LineString,
     MultiPoint,
@@ -33,12 +30,12 @@ class DisjointByWayOfContains(BinPred):
         return ~_basic_contains_any(lhs, rhs)
 
 
-class PointLineStringDisjoint(PointLineStringIntersects):
-    def _postprocess(self, lhs, rhs, op_result):
+class PointLineStringDisjoint(BinPred):
+    def _preprocess(self, lhs, rhs):
         """Disjoint is the opposite of intersects, so just implement intersects
         and then negate the result."""
-        result = super()._postprocess(lhs, rhs, op_result)
-        return ~result
+        intersects = _basic_intersects(lhs, rhs)
+        return ~intersects
 
 
 class PointPolygonDisjoint(BinPred):
