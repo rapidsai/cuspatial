@@ -59,6 +59,7 @@ dependencies:
           - libcudf==23.6.*
           - librmm==23.6.*
           - ninja
+          - proj
     specific:
       - output_types: conda
         matrices:
