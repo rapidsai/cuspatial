@@ -98,7 +98,7 @@ class EmptyGeometryColumnBase {
 };
 
 /**
- * @brief Test Fixture that initializes one geometry columns.
+ * @brief Test Fixture that initializes one geometry column.
  *
  * @tparam T Type of the coordinates
  */

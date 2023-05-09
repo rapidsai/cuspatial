@@ -127,9 +127,9 @@ std::pair<std::unique_ptr<cudf::column>, cudf::table_view> directed_hausdorff_di
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
- * @brief Compute pairwise (multi)point-to-(multi)point Euclidean distance
+ * @brief Compute pairwise (multi)point-to-(multi)point Cartesian distance
  *
- * The distance between a pair of multipoints is the shortest Euclidean distance
+ * The distance between a pair of multipoints is the shortest Cartesian distance
  * between any pair of points in the two multipoints.
  *
  * @param points1 First column of (multi)points to compute distances
@@ -147,9 +147,9 @@ std::unique_ptr<cudf::column> pairwise_point_distance(
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
- * @brief Compute pairwise (multi)points-to-(multi)linestrings Euclidean distance
+ * @brief Compute pairwise (multi)points-to-(multi)linestrings Cartesian distance
  *
- * The distance between a point and a linestring is defined as the minimum Euclidean distance
+ * The distance between a point and a linestring is defined as the minimum Cartesian distance
  * between the point and any segment of the linestring.
  *
  * @param multipoints Column of multipoints to compute distances
@@ -169,9 +169,9 @@ std::unique_ptr<cudf::column> pairwise_point_linestring_distance(
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
- * @brief Compute pairwise (multi)point-to-(multi)polygon Euclidean distance
+ * @brief Compute pairwise (multi)point-to-(multi)polygon Cartesian distance
  *
- * The distance between a point and a polygon is defined as the minimum Euclidean distance between
+ * The distance between a point and a polygon is defined as the minimum Cartesian distance between
  * the point and any segment of the polygon. If the any point of the multipoint is contained in the
  * polygon, the distance is 0.
  *
@@ -193,9 +193,9 @@ std::unique_ptr<cudf::column> pairwise_point_polygon_distance(
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
- * @brief Compute pairwise (multi)linestring-to-(multi)linestring Euclidean distance
+ * @brief Compute pairwise (multi)linestring-to-(multi)linestring Cartesian distance
  *
- * The distance between a pair of multilinestrings is the shortest Euclidean distance
+ * The distance between a pair of multilinestrings is the shortest Cartesian distance
  * between any pair of segments in the two multilinestrings. If any of the segments intersects,
  * the distance is 0.
  *
@@ -215,9 +215,9 @@ std::unique_ptr<cudf::column> pairwise_linestring_distance(
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
- * @brief Compute pairwise (multi)linestring-to-(multi)polygon Euclidean distance
+ * @brief Compute pairwise (multi)linestring-to-(multi)polygon Cartesian distance
  *
- * The distance between a pair of (multi)linestring and (multipolygon) is the shortest Euclidean
+ * The distance between a pair of (multi)linestring and (multipolygon) is the shortest Cartesian
  * distance between any pair of segments in the multilinestring and edges in the multipolygon. If
  * any of the segments intersects, or if any linestring is contained in any polygon, the distance is
  * 0.
@@ -240,9 +240,9 @@ std::unique_ptr<cudf::column> pairwise_linestring_polygon_distance(
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
- * @brief Compute pairwise (multi)polygon-to-(multi)polygon Euclidean distance
+ * @brief Compute pairwise (multi)polygon-to-(multi)polygon Cartesian distance
  *
- * The distance between a pair of (multi)polygon and (multi)polygon is the shortest Euclidean
+ * The distance between a pair of (multi)polygon and (multi)polygon is the shortest Cartesian
  * distance between any pair of edges in the multipolygons. If any edges intersects, or if any
  * polygon is contained in any other polygon, the distance is 0.
  *
