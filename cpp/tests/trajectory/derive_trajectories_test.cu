@@ -35,6 +35,26 @@
 #include <gtest/gtest.h>
 
 #include <cstdint>
+#include <iostream>
+
+namespace std {
+
+// Required by gtest EXPECT_EQ test suite to compile.
+// Since `time_point` is an alias on
+// std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>,
+// according to ADL rules for templates, only the inner most enclosing namespaces,
+// and associated namespaces of the template arguments are added to search. In this
+// case, only `std` namespace is searched.
+//
+// [1]: https://en.cppreference.com/w/cpp/language/adl
+std::ostream& operator<<(std::ostream& os, cuspatial::test::time_point const& tp)
+{
+  // Output the time point in the desired format
+  os << tp.time_since_epoch().count() << "ms";
+  return os;
+}
+
+}  // namespace std
 
 template <typename T>
 struct DeriveTrajectoriesTest : public ::testing::Test {};
