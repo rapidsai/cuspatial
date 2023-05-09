@@ -30,6 +30,7 @@
 
 #include <gtest/gtest.h>
 
+#include <iostream>
 #include <optional>
 
 using namespace cuspatial;
@@ -38,6 +39,21 @@ using namespace cuspatial::test;
 
 template <typename T>
 using optional_vec2d = thrust::optional<vec_2d<T>>;
+
+namespace cuspatial {
+
+// Required by gtest test suite to compile
+// Need to be defined within cuspatial namespace for ADL.
+template <typename T>
+std::ostream& operator<<(std::ostream& os, thrust::optional<vec_2d<T>> const& opt)
+{
+  if (opt.has_value())
+    return os << opt.value();
+  else
+    return os << "null";
+}
+
+}  // namespace cuspatial
 
 template <typename T>
 struct SegmentIntersectionTest : public BaseFixture {};
