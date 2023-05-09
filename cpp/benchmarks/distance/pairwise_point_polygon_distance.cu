@@ -19,8 +19,8 @@
 
 #include <cuspatial_test/geometry_generator.cuh>
 
-#include <cuspatial/experimental/point_polygon_distance.cuh>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/distance.cuh>
+#include <cuspatial/geometry/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>

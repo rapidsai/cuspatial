@@ -27,7 +27,6 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/iterator_factory.cuh>
-#include <cuspatial/range/range.cuh>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
@@ -90,8 +89,6 @@ OutputIt pairwise_point_polygon_distance(MultiPointRange multipoints,
                                          OutputIt distances_first,
                                          rmm::cuda_stream_view stream)
 {
-  CUSPATIAL_FUNC_RANGE();
-
   using T       = typename MultiPointRange::element_t;
   using index_t = typename MultiPointRange::index_t;
 
