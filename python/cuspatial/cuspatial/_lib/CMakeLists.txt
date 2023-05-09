@@ -19,13 +19,13 @@ set(cython_sources
     intersection.pyx
     nearest_points.pyx
     point_in_polygon.pyx
+    points_in_range.pyx
     pairwise_point_in_polygon.pyx
     polygon_bounding_boxes.pyx
     linestring_bounding_boxes.pyx
     quadtree.pyx
     spatial.pyx
     spatial_join.pyx
-    spatial_window.pyx
     trajectory.pyx
     types.pyx
     utils.pyx

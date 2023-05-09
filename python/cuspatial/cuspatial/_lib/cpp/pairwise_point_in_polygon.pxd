@@ -1,11 +1,11 @@
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.
 
 from libcpp.memory cimport unique_ptr
 
 from cudf._lib.column cimport column, column_view
 
 
-cdef extern from "cuspatial/pairwise_point_in_polygon.hpp" \
+cdef extern from "cuspatial/point_in_polygon.hpp" \
         namespace "cuspatial" nogil:
     cdef unique_ptr[column] pairwise_point_in_polygon(
         const column_view & test_points_x,

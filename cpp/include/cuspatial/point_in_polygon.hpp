@@ -81,6 +81,55 @@ std::unique_ptr<cudf::column> point_in_polygon(
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
+ * @brief Given (point, polygon pairs), tests whether the point of each pair is inside the polygon
+ * of the pair.
+ *
+ * Tests that each point is or is not inside of the polygon in the corresponding index.
+ * Polygons are a collection of one or more * rings. Rings are a collection of three or more
+ * vertices.
+ *
+ * @param[in] test_points_x:     x-coordinates of points to test
+ * @param[in] test_points_y:     y-coordinates of points to test
+ * @param[in] poly_offsets:      beginning index of the first ring in each polygon
+ * @param[in] poly_ring_offsets: beginning index of the first point in each ring
+ * @param[in] poly_points_x:     x-coordinates of polygon points
+ * @param[in] poly_points_y:     y-coordinates of polygon points
+ *
+ * @returns A column of booleans for each point/polygon pair.
+ *
+ * @note Direction of rings does not matter.
+ * @note Supports open or closed polygon formats.
+ * @note This algorithm supports the ESRI shapefile format, but assumes all polygons are "clean" (as
+ * defined by the format), and does _not_ verify whether the input adheres to the shapefile format.
+ * @note Overlapping rings negate each other. This behavior is not limited to a single negation,
+ * allowing for "islands" within the same polygon.
+ * @note `poly_ring_offsets` must contain only the rings that make up the polygons indexed by
+ * `poly_offsets`. If there are rings in `poly_ring_offsets` that are not part of the polygons in
+ * `poly_offsets`, results are likely to be incorrect and behavior is undefined.
+ *
+ * ```
+ *   poly w/two rings         poly w/four rings
+ * +-----------+          +------------------------+
+ * :███████████:          :████████████████████████:
+ * :███████████:          :██+------------------+██:
+ * :██████+----:------+   :██:  +----+  +----+  :██:
+ * :██████:    :██████:   :██:  :████:  :████:  :██:
+ * +------;----+██████:   :██:  :----:  :----:  :██:
+ *        :███████████:   :██+------------------+██:
+ *        :███████████:   :████████████████████████:
+ *        +-----------+   +------------------------+
+ * ```
+ */
+std::unique_ptr<cudf::column> pairwise_point_in_polygon(
+  cudf::column_view const& test_points_x,
+  cudf::column_view const& test_points_y,
+  cudf::column_view const& poly_offsets,
+  cudf::column_view const& poly_ring_offsets,
+  cudf::column_view const& poly_points_x,
+  cudf::column_view const& poly_points_y,
+  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+
+/**
  * @} // end of doxygen group
  */
 

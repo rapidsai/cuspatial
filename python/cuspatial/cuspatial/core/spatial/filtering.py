@@ -3,7 +3,7 @@
 from cudf import DataFrame
 from cudf.core.column import as_column
 
-from cuspatial._lib import spatial_window
+from cuspatial._lib import points_in_range
 from cuspatial.core.geoseries import GeoSeries
 from cuspatial.utils.column_utils import contains_only_points
 
@@ -52,8 +52,6 @@ def points_in_spatial_window(points: GeoSeries, min_x, max_x, min_y, max_y):
     ys = as_column(points.points.y)
 
     res_xy = DataFrame._from_data(
-        *spatial_window.points_in_spatial_window(
-            min_x, max_x, min_y, max_y, xs, ys
-        )
+        *points_in_range.points_in_range(min_x, max_x, min_y, max_y, xs, ys)
     ).interleave_columns()
     return GeoSeries.from_points_xy(res_xy)

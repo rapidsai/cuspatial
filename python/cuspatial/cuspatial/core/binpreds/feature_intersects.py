@@ -5,15 +5,17 @@ import cupy as cp
 
 import cudf
 
-import cuspatial
 from cuspatial.core.binops.intersection import pairwise_linestring_intersection
+from cuspatial.core.binpreds.basic_predicates import (
+    _basic_contains_any,
+    _basic_intersects,
+)
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     IntersectsOpResult,
     NotImplementedPredicate,
     PreprocessorResult,
 )
-from cuspatial.core.binpreds.feature_contains import ContainsPredicateBase
 from cuspatial.core.binpreds.feature_equals import EqualsPredicateBase
 from cuspatial.utils.binpred_utils import (
     LineString,
@@ -21,6 +23,7 @@ from cuspatial.utils.binpred_utils import (
     Point,
     Polygon,
     _false_series,
+    _linestrings_from_geometry,
 )
 
 
@@ -74,18 +77,6 @@ class IntersectsPredicateBase(BinPred):
         ].reset_index(drop=True)
         return cp.arange(len(lhs))[is_sizes > 0]
 
-    def _linestrings_from_polygons(self, geoseries):
-        xy = geoseries.polygons.xy
-        parts = geoseries.polygons.part_offset.take(
-            geoseries.polygons.geometry_offset
-        )
-        rings = geoseries.polygons.ring_offset
-        return cuspatial.GeoSeries.from_linestrings_xy(
-            xy,
-            rings,
-            parts,
-        )
-
     def _postprocess(self, lhs, rhs, op_result):
         """Postprocess the output GeoSeries to ensure that they are of the
         correct type for the predicate."""
@@ -100,36 +91,25 @@ class IntersectsByEquals(EqualsPredicateBase):
     pass
 
 
-class PointPolygonIntersects(ContainsPredicateBase):
+class PolygonPointIntersects(BinPred):
     def _preprocess(self, lhs, rhs):
-        """Swap LHS and RHS and call the normal contains processing."""
-        self.lhs = rhs
-        self.rhs = lhs
-        return super()._preprocess(rhs, lhs)
+        contains = _basic_contains_any(lhs, rhs)
+        intersects = _basic_intersects(lhs, rhs)
+        return contains | intersects
+
+
+class PointPolygonIntersects(BinPred):
+    def _preprocess(self, lhs, rhs):
+        contains = _basic_contains_any(rhs, lhs)
+        intersects = _basic_intersects(rhs, lhs)
+        return contains | intersects
 
 
 class LineStringPointIntersects(IntersectsPredicateBase):
     def _preprocess(self, lhs, rhs):
         """Convert rhs to linestrings by making a linestring that has
         the same start and end point."""
-        x = cp.repeat(rhs.points.x, 2)
-        y = cp.repeat(rhs.points.y, 2)
-        xy = cudf.DataFrame({"x": x, "y": y}).interleave_columns()
-        parts = cp.arange((len(lhs) + 1)) * 2
-        geometries = cp.arange(len(lhs) + 1)
-        ls_rhs = cuspatial.GeoSeries.from_linestrings_xy(xy, parts, geometries)
-        return self._compute_predicate(
-            lhs, ls_rhs, PreprocessorResult(lhs, ls_rhs)
-        )
-
-
-class LineStringMultiPointIntersects(IntersectsPredicateBase):
-    def _preprocess(self, lhs, rhs):
-        """Convert rhs to linestrings."""
-        xy = rhs.multipoints.xy
-        parts = rhs.multipoints.geometry_offset
-        geometries = cp.arange(len(lhs) + 1)
-        ls_rhs = cuspatial.GeoSeries.from_linestrings_xy(xy, parts, geometries)
+        ls_rhs = _linestrings_from_geometry(rhs)
         return self._compute_predicate(
             lhs, ls_rhs, PreprocessorResult(lhs, ls_rhs)
         )
@@ -141,18 +121,27 @@ class PointLineStringIntersects(LineStringPointIntersects):
         return super()._preprocess(rhs, lhs)
 
 
-class LineStringPointIntersects(IntersectsPredicateBase):
+class LineStringPolygonIntersects(BinPred):
     def _preprocess(self, lhs, rhs):
-        """Convert rhs to linestrings."""
-        x = cp.repeat(rhs.points.x, 2)
-        y = cp.repeat(rhs.points.y, 2)
-        xy = cudf.DataFrame({"x": x, "y": y}).interleave_columns()
-        parts = cp.arange((len(lhs) + 1)) * 2
-        geometries = cp.arange(len(lhs) + 1)
-        ls_rhs = cuspatial.GeoSeries.from_linestrings_xy(xy, parts, geometries)
-        return self._compute_predicate(
-            lhs, ls_rhs, PreprocessorResult(lhs, ls_rhs)
-        )
+        intersects = _basic_intersects(lhs, rhs)
+        contains = _basic_contains_any(rhs, lhs)
+        return intersects | contains
+
+
+class PolygonLineStringIntersects(BinPred):
+    def _preprocess(self, lhs, rhs):
+        intersects = _basic_intersects(lhs, rhs)
+        contains = _basic_contains_any(lhs, rhs)
+        return intersects | contains
+
+
+class PolygonPolygonIntersects(BinPred):
+    def _preprocess(self, lhs, rhs):
+        intersects = _basic_intersects(lhs, rhs)
+        contains_rhs = _basic_contains_any(rhs, lhs)
+        contains_lhs = _basic_contains_any(lhs, rhs)
+
+        return intersects | contains_rhs | contains_lhs
 
 
 """ Type dispatch dictionary for intersects binary predicates. """
@@ -166,11 +155,11 @@ DispatchDict = {
     (MultiPoint, LineString): NotImplementedPredicate,
     (MultiPoint, Polygon): NotImplementedPredicate,
     (LineString, Point): LineStringPointIntersects,
-    (LineString, MultiPoint): LineStringMultiPointIntersects,
+    (LineString, MultiPoint): LineStringPointIntersects,
     (LineString, LineString): IntersectsPredicateBase,
-    (LineString, Polygon): NotImplementedPredicate,
-    (Polygon, Point): NotImplementedPredicate,
+    (LineString, Polygon): LineStringPolygonIntersects,
+    (Polygon, Point): PolygonPointIntersects,
     (Polygon, MultiPoint): NotImplementedPredicate,
-    (Polygon, LineString): NotImplementedPredicate,
-    (Polygon, Polygon): NotImplementedPredicate,
+    (Polygon, LineString): PolygonLineStringIntersects,
+    (Polygon, Polygon): PolygonPolygonIntersects,
 }

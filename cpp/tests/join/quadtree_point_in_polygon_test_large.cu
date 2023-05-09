@@ -20,10 +20,10 @@
 #include <cuspatial_test/vector_equality.hpp>
 #include <cuspatial_test/vector_factories.cuh>
 
+#include <cuspatial/bounding_boxes.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/box.hpp>
 #include <cuspatial/point_in_polygon.cuh>
-#include <cuspatial/polygon_bounding_boxes.cuh>
 #include <cuspatial/spatial_join.cuh>
 
 #include <rmm/cuda_stream_view.hpp>

@@ -1,11 +1,11 @@
-# Copyright (c) 2019-2020, NVIDIA CORPORATION.
+# Copyright (c) 2019-2023, NVIDIA CORPORATION.
 
 from libcpp.memory cimport unique_ptr
 
 from cudf._lib.column cimport column, column_view
 
 
-cdef extern from "cuspatial/distance/haversine.hpp" \
+cdef extern from "cuspatial/distance.hpp" \
         namespace "cuspatial" nogil:
     cdef unique_ptr[column] haversine_distance(
         const column_view& a_lon,
