@@ -108,7 +108,6 @@ include(cmake/Modules/ConfigureCUDA.cmake)
 rapids_cpm_init()
 # find or add cuDF
 include(cmake/thirdparty/CUSPATIAL_GetCUDF.cmake)
-
 # find or install GoogleTest
 if (CUSPATIAL_BUILD_TESTS)
     include(cmake/thirdparty/get_gtest.cmake)
@@ -274,6 +273,7 @@ rapids_export(
   DOCUMENTATION doc_string
 )
 
+
 ################################################################################################
 # - build export -------------------------------------------------------------------------------
 
@@ -284,6 +284,7 @@ rapids_export(
   NAMESPACE cuspatial::
   DOCUMENTATION doc_string
 )
+
 
 # ##################################################################################################
 # * build documentation ----------------------------------------------------------------------------
