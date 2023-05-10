@@ -61,7 +61,7 @@ struct PairwisePointPolygonDistanceTest : public ::testing::Test {
                   std::vector<vec_2d<T>> const& multipolygon_coordinates,
                   std::initializer_list<T> expected)
   {
-    auto d_multipoints   = make_multipoint_array(multipoints);
+    auto d_multipoints   = make_multipoints_array(multipoints);
     auto d_multipolygons = make_multipolygon_array(
       range{multipolygon_geometry_offsets.begin(), multipolygon_geometry_offsets.end()},
       range{multipolygon_part_offsets.begin(), multipolygon_part_offsets.end()},

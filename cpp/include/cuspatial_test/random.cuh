@@ -154,21 +154,14 @@ struct value_generator {
 template <typename T, typename Generator>
 struct point_generator {
   using Cart2D = cuspatial::vec_2d<T>;
-  value_generator<T, Generator> vgenx;
-  value_generator<T, Generator> vgeny;
+  value_generator<T, Generator> vgen;
 
-  point_generator(vec_2d<T> lower_left,
-                  vec_2d<T> upper_right,
-                  thrust::minstd_rand& engine_x,
-                  thrust::minstd_rand& engine_y,
-                  Generator gen_x,
-                  Generator gen_y)
-    : vgenx(lower_left.x, upper_right.x, engine_x, gen_x),
-      vgeny(lower_left.y, upper_right.y, engine_y, gen_y)
+  point_generator(T lower_bound, T upper_bound, thrust::minstd_rand& engine, Generator gen)
+    : vgen(lower_bound, upper_bound, engine, gen)
   {
   }
 
-  __device__ Cart2D operator()(size_t n) { return {vgenx(n), vgeny(n)}; }
+  __device__ Cart2D operator()(size_t n) { return {vgen(n), vgen(n)}; }
 };
 
 /**

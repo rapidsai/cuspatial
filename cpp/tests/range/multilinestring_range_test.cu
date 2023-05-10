@@ -128,7 +128,7 @@ struct MultilinestringRangeTest : public BaseFixture {
     thrust::device_vector<vec_2d<T>> got_coordinates(multipoint_range.point_begin(),
                                                      multipoint_range.point_end());
 
-    auto expected_multipoint = make_multipoint_array(expected);
+    auto expected_multipoint = make_multipoints_array(expected);
     auto expected_range      = expected_multipoint.range();
 
     thrust::device_vector<std::size_t> expected_geometry_offset(expected_range.offsets_begin(),

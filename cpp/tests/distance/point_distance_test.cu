@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#include <cuspatial_test/random.cuh>
 #include <cuspatial_test/vector_equality.hpp>
+
+#include <cuspatial_test/random.cuh>
 
 #include <cuspatial/distance.cuh>
 #include <cuspatial/error.hpp>
@@ -58,8 +59,7 @@ struct PairwisePointDistanceTest : public ::testing::Test {
   {
     auto engine  = cuspatial::test::deterministic_engine(0);
     auto uniform = cuspatial::test::make_normal_dist<T>(0.0, 1.0);
-    auto pgen    = cuspatial::test::point_generator(
-      vec_2d<T>{0.0, 0.0}, vec_2d<T>{1.0, 1.0}, engine, engine, uniform, uniform);
+    auto pgen    = cuspatial::test::point_generator(T{0.0}, T{1.0}, engine, uniform);
     rmm::device_vector<vec_2d<T>> points(num_points);
     auto counting_iter = thrust::make_counting_iterator(seed);
     thrust::transform(

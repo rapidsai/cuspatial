@@ -20,7 +20,6 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/algorithm/is_point_in_polygon.cuh>
-#include <cuspatial/detail/nvtx/ranges.hpp>
 #include <cuspatial/detail/utility/device_atomics.cuh>
 #include <cuspatial/detail/utility/linestring.cuh>
 #include <cuspatial/detail/utility/zero_data.cuh>
@@ -90,8 +89,6 @@ OutputIt pairwise_point_polygon_distance(MultiPointRange multipoints,
                                          OutputIt distances_first,
                                          rmm::cuda_stream_view stream)
 {
-  CUSPATIAL_FUNC_RANGE();
-
   using T       = typename MultiPointRange::element_t;
   using index_t = typename MultiPointRange::index_t;
 

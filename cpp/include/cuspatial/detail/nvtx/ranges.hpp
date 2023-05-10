@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,20 @@
 
 #pragma once
 
-#include <nvtx3/nvtx3.hpp>
+#include "nvtx3.hpp"
 
 namespace cuspatial {
 /**
- * @brief Tag type for libcuspatial's NVTX domain.
+ * @brief Tag type for libcudf's NVTX domain.
  */
 struct libcuspatial_domain {
-  static constexpr char const* name{"libcuspatial"};  ///< Name of the libcuspatial domain
+  static constexpr char const* name{"libcuspatial"};  ///< Name of the libcudf domain
 };
+
+/**
+ * @brief Alias for an NVTX range in the libcudf domain.
+ */
+using thread_range = ::nvtx3::domain_thread_range<libcudf_domain>;
 
 }  // namespace cuspatial
 

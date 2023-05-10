@@ -41,7 +41,7 @@ struct FindPointOnSegmentTest : public BaseFixture {
                   std::initializer_list<segment<T>> segments,
                   std::initializer_list<uint8_t> expected_flags)
   {
-    auto d_multipoints = make_multipoint_array(multipoints);
+    auto d_multipoints = make_multipoints_array(multipoints);
 
     auto d_segment_offsets = make_device_vector<IndexType>(segment_offsets);
     auto d_segments        = make_device_vector<segment<T>>(segments);

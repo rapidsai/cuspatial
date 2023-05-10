@@ -32,8 +32,8 @@ struct PairwiseMultipointEqualsCountTest : public BaseFixture {
                   std::initializer_list<std::initializer_list<vec_2d<T>>> rhs_coordinates,
                   std::initializer_list<uint32_t> expected)
   {
-    auto larray = make_multipoint_array(lhs_coordinates);
-    auto rarray = make_multipoint_array(rhs_coordinates);
+    auto larray = make_multipoints_array(lhs_coordinates);
+    auto rarray = make_multipoints_array(rhs_coordinates);
 
     auto lhs = larray.range();
     auto rhs = rarray.range();
