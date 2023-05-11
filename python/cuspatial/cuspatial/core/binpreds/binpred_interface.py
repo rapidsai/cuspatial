@@ -22,13 +22,18 @@ class BinPredConfig:
         Whether to compute the binary predicate between all pairs of
         features in the left-hand and right-hand GeoSeries. Defaults to
         False. Only available with the contains predicate.
+    mode: str
+        The mode to use when computing the binary predicate. Defaults to
+        "full". Only available with the contains predicate and used
+        for internal operations.
     """
 
     def __init__(self, **kwargs):
         self.align = kwargs.get("align", True)
+        self.kwargs = kwargs
 
     def __repr__(self):
-        return f"BinpredConfig(align={self.align}, allpairs={self.allpairs})"
+        return f"BinPredConfig(align={self.align}, kwargs={self.kwargs})"
 
     def __str__(self):
         return self.__repr__()
@@ -68,7 +73,7 @@ class PreprocessorResult:
 
     def __repr__(self):
         return f"PreprocessorResult(lhs={self.lhs}, rhs={self.rhs}, \
-        points={self.points}, point_indices={self.point_indices})"
+        points={self.final_rhs}, point_indices={self.point_indices})"
 
     def __str__(self):
         return self.__repr__()
@@ -85,31 +90,31 @@ class ContainsOpResult(OpResult):
 
     Parameters
     ----------
-    result : cudf.DataFrame
+    pip_result : cudf.DataFrame
         A cudf.DataFrame containing two columns: "polygon_index" and
         Point_index". The "polygon_index" column contains the index of
         the polygon that contains each point. The "point_index" column
         contains the index of each point that is contained by a polygon.
-    points : GeoSeries
-        A GeoSeries of points.
-    point_indices : cudf.Series
-        A cudf.Series of indices that map each point in `points` to its
-        corresponding feature in the right-hand GeoSeries.
+    intersection_result: Tuple (optional)
+        A tuple containing the result of the intersection operation
+        between the left-hand GeoSeries and the right-hand GeoSeries.
+        Used in .contains_properly.
     """
 
     def __init__(
         self,
-        result: Series,
-        points: "GeoSeries" = None,
-        point_indices: Series = None,
+        pip_result: Series,
+        preprocessor_result: PreprocessorResult,
+        intersection_result: Tuple = None,
     ):
-        self.result = result
-        self.points = points
-        self.point_indices = point_indices
+        self.pip_result = pip_result
+        self.preprocessor_result = preprocessor_result
+        self.intersection_result = intersection_result
 
     def __repr__(self):
-        return f"OpResult(result={self.result}, points={self.points}, \
-        point_indices={self.point_indices})"
+        return f"OpResult(pip_result={self.pip_result},\n \
+        preprocessor_result={self.preprocessor_result},\n \
+        intersection_result={self.intersection_result})\n"
 
     def __str__(self):
         return self.__repr__()

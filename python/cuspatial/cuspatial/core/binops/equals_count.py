@@ -5,11 +5,10 @@ import cudf
 from cuspatial._lib.pairwise_multipoint_equals_count import (
     pairwise_multipoint_equals_count as c_pairwise_multipoint_equals_count,
 )
-from cuspatial.core.geoseries import GeoSeries
 from cuspatial.utils.column_utils import contains_only_multipoints
 
 
-def pairwise_multipoint_equals_count(lhs: GeoSeries, rhs: GeoSeries):
+def pairwise_multipoint_equals_count(lhs, rhs):
     """Compute the number of points in each multipoint in the lhs that exist
     in the corresponding multipoint in the rhs.
 

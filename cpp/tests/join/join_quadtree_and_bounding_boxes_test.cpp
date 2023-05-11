@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+#include <cuspatial/bounding_boxes.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/point_quadtree.hpp>
-#include <cuspatial/polygon_bounding_box.hpp>
 #include <cuspatial/spatial_join.hpp>
 
 #include <cudf/table/table.hpp>
