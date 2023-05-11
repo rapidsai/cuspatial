@@ -49,7 +49,7 @@ struct offset_pair_to_count_functor {
 /**
  * @brief Convert counts of points to counts of segments in a linestring.
  *
- * A Multilinestring is composed of a series of Linestrings. Each Linestring is composed of a
+ * A Multilinestring is composed of a series of Linestrings. Each Linestring is composed of a series of
  * segments. The number of segments in a multilinestring is the number of points in the
  * multilinestring minus the number of linestrings.
  *

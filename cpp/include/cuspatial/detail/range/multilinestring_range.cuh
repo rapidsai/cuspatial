@@ -30,6 +30,7 @@
 #include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/range/multipoint_range.cuh>
 #include <cuspatial/traits.hpp>
+#include <cuspatial/detail/method/segment_method.cuh>
 
 #include <thrust/iterator/permutation_iterator.h>
 
@@ -279,6 +280,14 @@ multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_end(
 {
   return segment_begin() + num_segments();
 }
+
+template <typename GeometryIterator, typename PartIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_methods(rmm::cuda_stream_view stream)
+{
+  return segment_method{*this, stream};
+}
+
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto

@@ -23,6 +23,8 @@
 #include <cuspatial/traits.hpp>
 #include <cuspatial/types.hpp>
 
+#include <rmm/cuda_stream_view.hpp>
+
 #include <thrust/pair.h>
 
 namespace cuspatial {
@@ -171,6 +173,9 @@ class multilinestring_range {
 
   /// Returns an iterator to the end of the segment
   CUSPATIAL_HOST_DEVICE auto segment_end();
+
+  /// Returns an iterator to the end of the segment
+  CUSPATIAL_HOST_DEVICE auto segment_methods(rmm::cuda_stream_view);
 
   /// Returns the `multilinestring_idx`th multilinestring in the range.
   template <typename IndexType>
