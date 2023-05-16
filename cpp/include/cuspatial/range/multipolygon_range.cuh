@@ -16,13 +16,17 @@
 
 #pragma once
 
-#include <thrust/pair.h>
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/range/enumerate_range.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/types.hpp>
+
+#include <rmm/cuda_stream_view.hpp>
+
+#include <thrust/pair.h>
+
 
 namespace cuspatial {
 
@@ -117,6 +121,12 @@ class multipolygon_range {
   /// Return the iterator to the one past the last point in the range.
   CUSPATIAL_HOST_DEVICE auto point_end();
 
+  /// Return the iterator to the first geometry offset in the range.
+  CUSPATIAL_HOST_DEVICE auto geometry_offsets_begin() { return _part_begin; }
+
+  /// Return the iterator to the one past the last geometry offset in the range.
+  CUSPATIAL_HOST_DEVICE auto geometry_offsets_end() { return _part_end; }
+
   /// Return the iterator to the first part offset in the range.
   CUSPATIAL_HOST_DEVICE auto part_offset_begin() { return _part_begin; }
 
@@ -185,6 +195,8 @@ class multipolygon_range {
 
   /// Returns an iterator to the end of the segment
   CUSPATIAL_HOST_DEVICE auto segment_end();
+
+  CUSPATIAL_HOST_DEVICE auto segment_methods(rmm::cuda_stream_view);
 
   /// Range Casting
 
