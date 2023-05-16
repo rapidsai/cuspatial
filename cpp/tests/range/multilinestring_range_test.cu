@@ -48,6 +48,26 @@ struct MultilinestringRangeTest : public BaseFixture {
     CUSPATIAL_EXPECT_VEC2D_PAIRS_EQUIVALENT(d_expected, got);
   }
 
+  void run_segment_test_with_method_single(std::initializer_list<std::size_t> geometry_offset,
+                               std::initializer_list<std::size_t> part_offset,
+                               std::initializer_list<vec_2d<T>> coordinates,
+                               std::initializer_list<segment<T>> expected)
+  {
+    auto multilinestring_array =
+      make_multilinestring_array(geometry_offset, part_offset, coordinates);
+    auto rng = multilinestring_array.range();
+    auto segment_methods = rng.segment_methods(stream());
+    auto segment_view = segment_methods.view();
+
+    rmm::device_uvector<segment<T>> got(segment_view.num_segments(), stream());
+    thrust::copy(rmm::exec_policy(stream()), segment_view.segment_begin(), segment_view.segment_end(), got.begin());
+
+    auto d_expected = thrust::device_vector<segment<T>>(expected.begin(), expected.end());
+    CUSPATIAL_EXPECT_VEC2D_PAIRS_EQUIVALENT(d_expected, got);
+  }
+
+
+
   void run_multilinestring_point_count_test(std::initializer_list<std::size_t> geometry_offset,
                                             std::initializer_list<std::size_t> part_offset,
                                             std::initializer_list<vec_2d<T>> coordinates,
@@ -244,14 +264,14 @@ TYPED_TEST(MultilinestringRangeTest, SegmentIteratorManyPairTest)
 }
 
 /// FIXME: Currently, segment iterator doesn't handle empty linestrings.
-TYPED_TEST(MultilinestringRangeTest, DISABLED_SegmentIteratorWithEmptyLineTest)
+TYPED_TEST(MultilinestringRangeTest, SegmentIteratorWithEmptyLineTest)
 {
   using T = TypeParam;
   using P = vec_2d<T>;
   using S = segment<T>;
 
   CUSPATIAL_RUN_TEST(
-    this->run_segment_test_single,
+    this->run_segment_test_with_method_single,
     {0, 1, 2, 3},
     {0, 3, 3, 6},
     {P{0, 0}, P{1, 1}, P{2, 2}, P{10, 10}, P{11, 11}, P{12, 12}},
@@ -295,13 +315,13 @@ TYPED_TEST(MultilinestringRangeTest, MultilinestringSegmentCountTest)
 }
 
 // FIXME: contains empty linestring
-TYPED_TEST(MultilinestringRangeTest, DISABLED_MultilinestringSegmentCountTest2)
+TYPED_TEST(MultilinestringRangeTest, MultilinestringSegmentCountTest2)
 {
   using T = TypeParam;
   using P = vec_2d<T>;
   using S = segment<T>;
 
-  CUSPATIAL_RUN_TEST(this->run_multilinestring_segment_count_test,
+  CUSPATIAL_RUN_TEST(this->run_multilinestring_segment_method_count_test,
                      {0, 1, 3},
                      {0, 3, 3, 6},
                      {P{0, 0}, P{1, 1}, P{2, 2}, P{10, 10}, P{11, 11}, P{12, 12}},

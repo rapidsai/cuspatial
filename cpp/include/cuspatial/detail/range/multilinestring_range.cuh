@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "thrust/iterator/counting_iterator.h"
 #include <thrust/binary_search.h>
 #include <thrust/distance.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -271,7 +272,7 @@ multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_begi
   return detail::make_counting_transform_iterator(
     0,
     detail::to_valid_segment_functor{
-      this->segment_offset_begin(), this->segment_offset_end(), _point_begin});
+      this->segment_offset_begin(), this->segment_offset_end(), thrust::make_counting_iterator(0), _point_begin});
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
@@ -288,12 +289,12 @@ multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_meth
   return segment_method{*this, stream};
 }
 
-
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto
 multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_offset_begin()
 {
-  return detail::make_counting_transform_iterator(0, detail::to_distance_iterator{_part_begin});
+  return detail::make_counting_transform_iterator(0, detail::to_segment_offset_iterator{
+    _part_begin, thrust::make_counting_iterator(0)});
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>

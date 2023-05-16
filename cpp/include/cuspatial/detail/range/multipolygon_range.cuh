@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "thrust/iterator/counting_iterator.h"
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/functors.cuh>
 #include <cuspatial/detail/utility/validation.hpp>
@@ -397,7 +398,7 @@ multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::s
   return detail::make_counting_transform_iterator(
     0,
     detail::to_valid_segment_functor{
-      this->subtracted_ring_begin(), this->subtracted_ring_end(), _point_begin});
+      this->subtracted_ring_begin(), this->subtracted_ring_end(), thrust::make_counting_iterator(0), _point_begin});
 }
 
 template <typename GeometryIterator,
@@ -418,7 +419,8 @@ CUSPATIAL_HOST_DEVICE auto
 multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
   subtracted_ring_begin()
 {
-  return detail::make_counting_transform_iterator(0, detail::to_distance_iterator{_ring_begin});
+  return detail::make_counting_transform_iterator(0, detail::to_segment_offset_iterator{
+    _ring_begin, thrust::make_counting_iterator(0)});
 }
 
 template <typename GeometryIterator,

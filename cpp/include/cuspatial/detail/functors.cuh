@@ -75,8 +75,12 @@ struct point_count_to_segment_count_functor {
 };
 
 /**
- * @brief Given an offset iterator it, returns an iterator of the distance between it and an input
- * index i
+ * @brief Given an offset iterator it that partitions a point range, return an offset iterator that
+ * partitions the segment range made from the same point range.
+ *
+ * One partition to a point range introduces one invalid segment, except empty partitions.
+ * Therefore, the offsets that partitions the segment range is the offset that partitions the point
+ * range subtracts the number of *non-empty* point partitions that precedes the current point range.
  *
  * @tparam OffsetIterator Iterator type to the offset
  *
@@ -87,20 +91,21 @@ struct point_count_to_segment_count_functor {
  *
  * Used to create iterator to segment offsets, such as `segment_offset_begin`.
  */
-template <typename OffsetIterator>
-struct to_distance_iterator {
-  OffsetIterator begin;
+template <typename OffsetIterator, typename CountIterator>
+struct to_segment_offset_iterator {
+  OffsetIterator point_partition_begin;
+  CountIterator non_empty_partitions_begin;
 
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto operator()(IndexType i)
   {
-    return begin[i] - i;
+    return point_partition_begin[i] - non_empty_partitions_begin[i];
   }
 };
 
 /// Deduction guide for to_distance_iterator
-template <typename OffsetIterator>
-to_distance_iterator(OffsetIterator) -> to_distance_iterator<OffsetIterator>;
+template <typename OffsetIterator, typename CountIterator>
+to_segment_offset_iterator(OffsetIterator, CountIterator) -> to_segment_offset_iterator<OffsetIterator, CountIterator>;
 
 /**
  * @brief Return a segment from the a partitioned range of points
@@ -114,29 +119,30 @@ to_distance_iterator(OffsetIterator) -> to_distance_iterator<OffsetIterator>;
  * @tparam OffsetIterator the iterator type indicating partitions of the point range.
  * @tparam CoordinateIterator the iterator type to the point range.
  */
-template <typename OffsetIterator, typename CoordinateIterator>
+template <typename OffsetIterator, typename CountIterator, typename CoordinateIterator>
 struct to_valid_segment_functor {
   using element_t = iterator_vec_base_type<CoordinateIterator>;
 
-  OffsetIterator begin;
-  OffsetIterator end;
+  OffsetIterator segment_offset_begin;
+  OffsetIterator segment_offset_end;
+  CountIterator non_empty_partitions_begin;
   CoordinateIterator point_begin;
 
   template <typename IndexType>
-  CUSPATIAL_HOST_DEVICE segment<element_t> operator()(IndexType i)
+  CUSPATIAL_HOST_DEVICE segment<element_t> operator()(IndexType sid)
   {
-    auto kit = thrust::upper_bound(thrust::seq, begin, end, i);
-    auto k   = thrust::distance(begin, kit);
-    auto pid = i + k - 1;
+    auto kit = thrust::upper_bound(thrust::seq, segment_offset_begin, segment_offset_end, sid);
+    auto k   = thrust::distance(segment_offset_begin, kit);
+    auto pid = non_empty_partitions_begin[sid] + k - 1;
 
     return segment<element_t>{point_begin[pid], point_begin[pid + 1]};
   }
 };
 
 /// Deduction guide for to_valid_segment_functor
-template <typename OffsetIterator, typename CoordinateIterator>
-to_valid_segment_functor(OffsetIterator, OffsetIterator, CoordinateIterator)
-  -> to_valid_segment_functor<OffsetIterator, CoordinateIterator>;
+template <typename OffsetIterator, typename CountIterator, typename CoordinateIterator>
+to_valid_segment_functor(OffsetIterator, OffsetIterator, CountIterator, CoordinateIterator)
+  -> to_valid_segment_functor<OffsetIterator, CountIterator, CoordinateIterator>;
 
 }  // namespace detail
 }  // namespace cuspatial
