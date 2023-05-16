@@ -100,6 +100,32 @@ struct MultipolygonRangeTest : public BaseFixture {
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(got, d_expected);
   }
 
+  void run_multipolygon_segment_method_count_single(
+    std::initializer_list<std::size_t> geometry_offset,
+    std::initializer_list<std::size_t> part_offset,
+    std::initializer_list<std::size_t> ring_offset,
+    std::initializer_list<vec_2d<T>> coordinates,
+    std::initializer_list<std::size_t> expected_segment_counts)
+  {
+    auto multipolygon_array =
+      make_multipolygon_array(geometry_offset, part_offset, ring_offset, coordinates);
+    auto rng = multipolygon_array.range();
+    auto segment_methods = rng.segment_methods(stream());
+    auto segment_view = segment_methods.view();
+
+    auto got = rmm::device_uvector<std::size_t>(rng.num_multipolygons(), stream());
+
+    thrust::copy(rmm::exec_policy(stream()),
+                 segment_view.segment_count_begin(),
+                 segment_view.segment_count_end(),
+                 got.begin());
+
+    auto d_expected = thrust::device_vector<std::size_t>(expected_segment_counts.begin(),
+                                                         expected_segment_counts.end());
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(got, d_expected);
+  }
+
   void test_multipolygon_as_multilinestring(
     std::initializer_list<std::size_t> multipolygon_geometry_offset,
     std::initializer_list<std::size_t> multipolygon_part_offset,
@@ -346,15 +372,18 @@ TYPED_TEST(MultipolygonRangeTest, MultipolygonSegmentCount4)
 }
 
 // FIXME: multipolygon constructor doesn't allow empty rings, should it?
-TYPED_TEST(MultipolygonRangeTest, DISABLED_MultipolygonSegmentCount_ConatainsEmptyRing)
+TYPED_TEST(MultipolygonRangeTest, MultipolygonSegmentCount_ConatainsEmptyRing)
 {
-  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_count_single,
+  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_method_count_single,
                      {0, 2, 3},
                      {0, 2, 3, 4},
-                     {0, 4, 4, 8, 12},
+                     {0, 7, 7, 11, 18},
                      {{0, 0},
                       {1, 0},
                       {1, 1},
+                      {0.5, 1.5},
+                      {0, 1.0},
+                      {0.5, 0.5},
                       {0, 0},
                       {0.2, 0.2},
                       {0.2, 0.3},
@@ -363,8 +392,11 @@ TYPED_TEST(MultipolygonRangeTest, DISABLED_MultipolygonSegmentCount_ConatainsEmp
                       {0, 0},
                       {1, 0},
                       {1, 1},
+                      {0.5, 1.5},
+                      {0, 1.0},
+                      {0.5, 0.5},
                       {0, 0}},
-                     {6, 3});
+                     {9, 6});
 }
 
 // FIXME: multipolygon constructor doesn't allow empty rings, should it?
