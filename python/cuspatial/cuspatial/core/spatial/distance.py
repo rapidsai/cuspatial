@@ -1,12 +1,12 @@
 # Copyright (c) 2022-2023, NVIDIA CORPORATION.
 
-from typing import Tuple
-
 import cudf
 from cudf import DataFrame, Series
 from cudf.core.column import as_column
 
 from cuspatial._lib.distance import (
+    directed_hausdorff_distance as cpp_directed_hausdorff_distance,
+    haversine_distance as cpp_haversine_distance,
     pairwise_linestring_distance as cpp_pairwise_linestring_distance,
     pairwise_linestring_polygon_distance as c_pairwise_line_poly_dist,
     pairwise_point_distance as cpp_pairwise_point_distance,
@@ -14,10 +14,6 @@ from cuspatial._lib.distance import (
     pairwise_point_polygon_distance as c_pairwise_point_polygon_distance,
     pairwise_polygon_distance as c_pairwise_polygon_distance,
 )
-from cuspatial._lib.hausdorff import (
-    directed_hausdorff_distance as cpp_directed_hausdorff_distance,
-)
-from cuspatial._lib.spatial import haversine_distance as cpp_haversine_distance
 from cuspatial._lib.types import CollectionType
 from cuspatial.core.geoseries import GeoSeries
 from cuspatial.utils.column_utils import (
@@ -176,6 +172,7 @@ def pairwise_point_distance(points1: GeoSeries, points2: GeoSeries):
         raise ValueError("`points1` array must contain only points")
     if not contains_only_points(points2):
         raise ValueError("`points2` array must contain only points")
+
     if (len(points1.points.xy) > 0 and len(points1.multipoints.xy) > 0) or (
         len(points2.points.xy) > 0 and len(points2.multipoints.xy) > 0
     ):
@@ -183,15 +180,22 @@ def pairwise_point_distance(points1: GeoSeries, points2: GeoSeries):
             "Mixing point and multipoint geometries is not supported"
         )
 
-    points1_xy, points1_geometry_offsets = _flatten_point_series(points1)
-    points2_xy, points2_geometry_offsets = _flatten_point_series(points2)
+    (
+        lhs_column,
+        lhs_point_collection_type,
+    ) = _extract_point_column_and_collection_type(points1)
+    (
+        rhs_column,
+        rhs_point_collection_type,
+    ) = _extract_point_column_and_collection_type(points2)
+
     return Series._from_data(
         {
             None: cpp_pairwise_point_distance(
-                points1_xy,
-                points2_xy,
-                points1_geometry_offsets,
-                points2_geometry_offsets,
+                lhs_point_collection_type,
+                rhs_point_collection_type,
+                lhs_column,
+                rhs_column,
             )
         }
     )
@@ -250,15 +254,22 @@ def pairwise_linestring_distance(
     if len(multilinestrings1) == 0:
         return cudf.Series(dtype="float64")
 
+    if not contains_only_linestrings(
+        multilinestrings1
+    ) or not contains_only_linestrings(multilinestrings2):
+        raise ValueError(
+            "`multilinestrings1` and `multilinestrings2` must contain only "
+            "linestrings"
+        )
+
+    if len(multilinestrings1) == 0:
+        return cudf.Series(dtype="float64")
+
     return Series._from_data(
         {
             None: cpp_pairwise_linestring_distance(
-                as_column(multilinestrings1.lines.part_offset),
-                as_column(multilinestrings1.lines.xy),
-                as_column(multilinestrings2.lines.part_offset),
-                as_column(multilinestrings2.lines.xy),
-                as_column(multilinestrings1.lines.geometry_offset),
-                as_column(multilinestrings2.lines.geometry_offset),
+                multilinestrings1.lines.column(),
+                multilinestrings2.lines.column(),
             )
         }
     )
@@ -369,16 +380,17 @@ def pairwise_point_linestring_distance(
             "Mixing point and multipoint geometries is not supported"
         )
 
-    point_xy_col, points_geometry_offset = _flatten_point_series(points)
+    (
+        point_column,
+        point_collection_type,
+    ) = _extract_point_column_and_collection_type(points)
 
     return Series._from_data(
         {
             None: c_pairwise_point_linestring_distance(
-                point_xy_col,
-                as_column(linestrings.lines.part_offset),
-                linestrings.lines.xy._column,
-                points_geometry_offset,
-                as_column(linestrings.lines.geometry_offset),
+                point_collection_type,
+                point_column,
+                linestrings.lines.column(),
             )
         }
     )
@@ -452,18 +464,10 @@ def pairwise_point_polygon_distance(points: GeoSeries, polygons: GeoSeries):
             "Mixing point and multipoint geometries is not supported"
         )
 
-    point_collection_type = (
-        CollectionType.SINGLE
-        if len(points.points.xy > 0)
-        else CollectionType.MULTI
-    )
-
-    # Handle slicing in geoseries
-    if point_collection_type == CollectionType.SINGLE:
-        points_column = points.points.column()
-    else:
-        points_column = points.multipoints.column()
-
+    (
+        points_column,
+        point_collection_type,
+    ) = _extract_point_column_and_collection_type(points)
     polygon_column = polygons.polygons.column()
 
     return Series._from_data(
@@ -629,15 +633,15 @@ def pairwise_polygon_distance(polygons1: GeoSeries, polygons2: GeoSeries):
     )
 
 
-def _flatten_point_series(
-    points: GeoSeries,
-) -> Tuple[
-    cudf.core.column.column.ColumnBase, cudf.core.column.column.ColumnBase
-]:
-    """Given a geoseries of (multi)points, extract the offset and x/y column"""
-    if len(points.points.xy) > 0:
-        return points.points.xy._column, None
-    return (
-        points.multipoints.xy._column,
-        as_column(points.multipoints.geometry_offset),
+def _extract_point_column_and_collection_type(s: GeoSeries):
+    """Given a GeoSeries that contains only points or multipoints, return
+    the point or multipoint column and the collection type of the GeoSeries.
+    """
+    point_collection_type = (
+        CollectionType.SINGLE if len(s.points.xy > 0) else CollectionType.MULTI
     )
+
+    if point_collection_type == CollectionType.SINGLE:
+        return s.points.column(), point_collection_type
+    else:
+        return s.multipoints.column(), point_collection_type
