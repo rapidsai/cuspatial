@@ -28,6 +28,7 @@
 #include <cuspatial/range/multipoint_range.cuh>
 #include <cuspatial/traits.hpp>
 
+#include <rmm/cuda_stream_view.hpp>
 #include <thrust/binary_search.h>
 #include <thrust/distance.h>
 #include <thrust/iterator/permutation_iterator.h>
@@ -431,6 +432,16 @@ CUSPATIAL_HOST_DEVICE auto
 multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::subtracted_ring_end()
 {
   return subtracted_ring_begin() + thrust::distance(_ring_begin, _ring_end);
+}
+
+template <typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+CUSPATIAL_HOST_DEVICE auto
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::segment_methods(rmm::cuda_stream_view stream){
+    auto multilinestring_range = this->as_multilinestring_range();
+    return segment_method{multilinestring_range, stream};
 }
 
 template <typename GeometryIterator,

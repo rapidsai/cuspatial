@@ -62,7 +62,7 @@ using index_t = iterator_value_type<typename ParentRange::part_it_t>;
 public:
     // segment_methods is always internal use, thus memory consumed is always temporary,
     // therefore always use default device memory resource.
-    segment_method(ParentRange parent_range, rmm::cuda_stream_view stream) : 
+    segment_method(ParentRange parent_range, rmm::cuda_stream_view stream) :
         _range(parent_range),
         _non_empty_geometry_prefix_sum(0, stream) {
 
@@ -71,18 +71,15 @@ public:
             thrust::make_zip_iterator(offset_range.begin(), thrust::next(offset_range.begin())),
             offset_pair_to_count_functor{});
 
-        // Preemptive test: does the given range contain any empty ring/linestring?
-        _contains_empty_geom = thrust::any_of(
-            rmm::exec_policy(stream),
-            count_begin,
-            count_begin + _range.num_linestrings(), 
-            equals<index_t, 0>{}
-        );
+        // // Preemptive test: does the given range contain any empty ring/linestring?
+        // _contains_empty_geom = thrust::any_of(
+        //     rmm::exec_policy(stream),
+        //     count_begin,
+        //     count_begin + _range.num_linestrings(),
+        //     equals<index_t, 0>{}
+        // );
 
-        std::cout << std::boolalpha << "contains empty geometry: " << _contains_empty_geom << std::endl;
-
-        if (_contains_empty_geom)
-        {
+        // std::cout << std::boolalpha << "contains empty geometry: " << _contains_empty_geom << std::endl;
 
             auto count_greater_than_zero = thrust::make_transform_iterator(
                 count_begin,
@@ -102,7 +99,7 @@ public:
             _non_empty_geometry_prefix_sum.resize(
                 _range.num_multilinestrings() + 1, stream
             );
-            
+
             auto key_begin = make_geometry_id_iterator<index_t>(
                 _range.geometry_offsets_begin(),
                 _range.geometry_offsets_end()
@@ -125,7 +122,7 @@ public:
             thrust::reduce_by_key(
                 rmm::exec_policy(stream),
                 key_begin,
-                key_begin + _range.num_linestrings(), 
+                key_begin + _range.num_linestrings(),
                 count_greater_than_zero,
                 thrust::make_discard_iterator(),
                 thrust::next(_non_empty_geometry_prefix_sum.begin()),
@@ -147,9 +144,6 @@ public:
             _num_segments = _range.num_points() - _non_empty_geometry_prefix_sum.element(
                 _non_empty_geometry_prefix_sum.size() - 1, stream
             );
-        } else {
-            _num_segments = _range.num_points() - _range.num_multilinestrings();
-        }
 
         test::print_device_vector(
             _non_empty_geometry_prefix_sum,

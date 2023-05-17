@@ -372,7 +372,7 @@ TYPED_TEST(MultipolygonRangeTest, MultipolygonSegmentCount4)
 }
 
 // FIXME: multipolygon constructor doesn't allow empty rings, should it?
-TYPED_TEST(MultipolygonRangeTest, MultipolygonSegmentCount_ConatainsEmptyRing)
+TYPED_TEST(MultipolygonRangeTest, MultipolygonSegmentCount_ContainsEmptyRing)
 {
   CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_method_count_single,
                      {0, 2, 3},
@@ -400,11 +400,11 @@ TYPED_TEST(MultipolygonRangeTest, MultipolygonSegmentCount_ConatainsEmptyRing)
 }
 
 // FIXME: multipolygon constructor doesn't allow empty rings, should it?
-TYPED_TEST(MultipolygonRangeTest, DISABLED_MultipolygonSegmentCount_ConatainsEmptyPart)
+TYPED_TEST(MultipolygonRangeTest, MultipolygonSegmentCount_ContainsEmptyPart)
 {
-  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_count_single,
+  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_method_count_single,
                      {0, 3, 4},
-                     {0, 2, 2, 3, 4},
+                     {0, 1, 1, 2, 3},
                      {0, 4, 8, 12},
                      {{0, 0},
                       {1, 0},

@@ -56,7 +56,6 @@ class segment_method_view {
 
   auto segment_count_begin()
   {
-    auto num_geoms        = _range.num_multilinestrings();
     auto num_points_begin = _range.multilinestring_point_count_begin();
     auto n_point_linestring_pair_it =
       thrust::make_zip_iterator(num_points_begin, this->non_empty_linestring_count_begin());
@@ -65,7 +64,9 @@ class segment_method_view {
                                            point_count_to_segment_count_functor{});
   }
 
-  auto segment_count_end() { return thrust::next(this->segment_count_begin(), _num_segments); }
+  auto segment_count_end() {
+    std::cout << "num multilinestrings: " << _range.num_multilinestrings() << std::endl;
+    return thrust::next(this->segment_count_begin(), _range.num_multilinestrings()); }
 
   index_t num_segments() { return _num_segments; }
 
