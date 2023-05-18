@@ -18,7 +18,7 @@
 
 #include <cuspatial_test/test_util.cuh>
 
-#include "segment_method_view.cuh"
+#include "range/multilinestring_segment_range.cuh"
 
 #include <cuspatial/detail/functors.cuh>
 #include <cuspatial/detail/utility/zero_data.cuh>
@@ -46,18 +46,17 @@ struct greater_than_zero_functor {
 
 // Optimization: for range that does not contain any empty linestrings,
 // The _non_empty_linestring_prefix_sum can be initailized with counting_iterator.
-template <typename ParentRange>
-class segment_method {
-  using index_t = iterator_value_type<typename ParentRange::part_it_t>;
+template <typename MultilinestringRange>
+class multilinestring_segment {
+  using index_t = iterator_value_type<typename MultilinestringRange::part_it_t>;
 
  public:
   // segment_methods is always internal use, thus memory consumed is always temporary,
   // therefore always use default device memory resource.
-  segment_method(ParentRange parent_range, rmm::cuda_stream_view stream)
-    : _range(parent_range),
-      _non_empty_linestring_prefix_sum(parent_range.num_linestrings() + 1, stream)
+  multilinestring_segment(MultilinestringRange parent, rmm::cuda_stream_view stream)
+    : _parent(parent), _non_empty_linestring_prefix_sum(parent.num_linestrings() + 1, stream)
   {
-    auto offset_range = range(_range.part_offset_begin(), _range.part_offset_end());
+    auto offset_range = ::cuspatial::range{_parent.part_offset_begin(), _parent.part_offset_end()};
     auto count_begin  = thrust::make_transform_iterator(
       thrust::make_zip_iterator(offset_range.begin(), thrust::next(offset_range.begin())),
       offset_pair_to_count_functor{});
@@ -70,23 +69,23 @@ class segment_method {
 
     thrust::inclusive_scan(rmm::exec_policy(stream),
                            count_greater_than_zero,
-                           count_greater_than_zero + parent_range.num_linestrings(),
+                           count_greater_than_zero + _parent.num_linestrings(),
                            thrust::next(_non_empty_linestring_prefix_sum.begin()));
 
-    _num_segments = _range.num_points() - _non_empty_linestring_prefix_sum.element(
-                                            _non_empty_linestring_prefix_sum.size() - 1, stream);
+    _num_segments = _parent.num_points() - _non_empty_linestring_prefix_sum.element(
+                                             _non_empty_linestring_prefix_sum.size() - 1, stream);
   }
 
   auto view()
   {
-    auto index_range =
-      range(_non_empty_linestring_prefix_sum.begin(), _non_empty_linestring_prefix_sum.end());
-    return segment_method_view<ParentRange, decltype(index_range)>{
-      _range, index_range, _num_segments};
+    auto index_range = ::cuspatial::range{_non_empty_linestring_prefix_sum.begin(),
+                                          _non_empty_linestring_prefix_sum.end()};
+    return multilinestring_segment_range<MultilinestringRange, decltype(index_range)>{
+      _parent, index_range, _num_segments};
   }
 
  private:
-  ParentRange _range;
+  MultilinestringRange _parent;
   index_t _num_segments;
   rmm::device_uvector<index_t> _non_empty_linestring_prefix_sum;
 };

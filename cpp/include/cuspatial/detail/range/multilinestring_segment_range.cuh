@@ -34,14 +34,14 @@ namespace cuspatial {
 namespace detail {
 
 template <typename ParentRange, typename IndexRange>
-class segment_method_view {
+class multilinestring_segment_range {
   using index_t = typename IndexRange::value_type;
 
  public:
-  segment_method_view(ParentRange range,
-                      IndexRange non_empty_geometry_prefix_sum,
-                      index_t num_segments)
-    : _range(range),
+  multilinestring_segment_range(ParentRange parent,
+                                IndexRange non_empty_geometry_prefix_sum,
+                                index_t num_segments)
+    : _parent(parent),
       _non_empty_geometry_prefix_sum(non_empty_geometry_prefix_sum),
       _num_segments(num_segments)
   {
@@ -49,23 +49,23 @@ class segment_method_view {
 
   CUSPATIAL_HOST_DEVICE index_t num_segments() { return _num_segments; }
 
-  CUSPATIAL_HOST_DEVICE auto segment_offset_begin()
+  CUSPATIAL_HOST_DEVICE auto offset_begin()
   {
     return make_counting_transform_iterator(
       0,
-      to_segment_offset_iterator{_range.part_offset_begin(),
+      to_segment_offset_iterator{_parent.part_offset_begin(),
                                  _non_empty_geometry_prefix_sum.begin()});
   }
 
-  CUSPATIAL_HOST_DEVICE auto segment_offset_end()
+  CUSPATIAL_HOST_DEVICE auto offset_end()
   {
-    return segment_offset_begin() + _non_empty_geometry_prefix_sum.size();
+    return offset_begin() + _non_empty_geometry_prefix_sum.size();
   }
 
-  CUSPATIAL_HOST_DEVICE auto segment_count_begin()
+  CUSPATIAL_HOST_DEVICE auto count_begin()
   {
     auto permuted_offsets_it =
-      thrust::make_permutation_iterator(segment_offset_begin(), _range.geometry_offsets_begin());
+      thrust::make_permutation_iterator(offset_begin(), _parent.geometry_offsets_begin());
 
     auto zipped_offset_it =
       thrust::make_zip_iterator(permuted_offsets_it, thrust::next(permuted_offsets_it));
@@ -73,39 +73,29 @@ class segment_method_view {
     return thrust::make_transform_iterator(zipped_offset_it, offset_pair_to_count_functor{});
   }
 
-  CUSPATIAL_HOST_DEVICE auto segment_count_end()
-  {
-    return segment_count_begin() + _range.num_multilinestrings();
-  }
+  CUSPATIAL_HOST_DEVICE auto count_end() { return count_begin() + _parent.num_multilinestrings(); }
 
-  CUSPATIAL_HOST_DEVICE auto segment_begin()
+  CUSPATIAL_HOST_DEVICE auto begin()
   {
     return make_counting_transform_iterator(
       0,
-      to_valid_segment_functor{segment_offset_begin(),
-                               segment_offset_end(),
+      to_valid_segment_functor{offset_begin(),
+                               offset_end(),
                                _non_empty_geometry_prefix_sum.begin(),
-                               _range.point_begin()});
+                               _parent.point_begin()});
   }
 
-  CUSPATIAL_HOST_DEVICE auto segment_end() { return segment_begin() + _num_segments; }
+  CUSPATIAL_HOST_DEVICE auto end() { return begin() + _num_segments; }
 
  private:
-  ParentRange _range;
+  ParentRange _parent;
   IndexRange _non_empty_geometry_prefix_sum;
   index_t _num_segments;
-
-  CUSPATIAL_HOST_DEVICE auto _non_empty_linestring_count_begin()
-  {
-    auto begin        = _non_empty_geometry_prefix_sum.begin();
-    auto paired_begin = thrust::make_zip_iterator(begin, thrust::next(begin));
-    return thrust::make_transform_iterator(paired_begin, offset_pair_to_count_functor{});
-  }
 };
 
 template <typename ParentRange, typename IndexRange>
-segment_method_view(ParentRange, IndexRange, typename IndexRange::value_type, bool)
-  -> segment_method_view<ParentRange, IndexRange>;
+multilinestring_segment_range(ParentRange, IndexRange, typename IndexRange::value_type, bool)
+  -> multilinestring_segment_range<ParentRange, IndexRange>;
 
 }  // namespace detail
 

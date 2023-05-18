@@ -25,7 +25,7 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/functors.cuh>
-#include <cuspatial/detail/method/segment_method.cuh>
+#include <cuspatial/detail/multilinestring_segment.cuh>
 #include <cuspatial/detail/utility/validation.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/geometry_collection/multilinestring_ref.cuh>
@@ -242,10 +242,10 @@ CUSPATIAL_HOST_DEVICE auto multilinestring_range<GeometryIterator, PartIterator,
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
-auto multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_methods(
+auto multilinestring_range<GeometryIterator, PartIterator, VecIterator>::_segments(
   rmm::cuda_stream_view stream)
 {
-  return segment_method{*this, stream};
+  return multilinestring_segment{*this, stream};
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>

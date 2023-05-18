@@ -93,8 +93,7 @@ pairwise_linestring_polygon_distance_kernel(MultiLinestringRange multilinestring
     }
 
     // Retrieve the number of segments in multilinestrings[geometry_id]
-    auto num_segment_this_multilinestring =
-      multilinestring_segments.segment_count_begin()[geometry_id];
+    auto num_segment_this_multilinestring = multilinestring_segments.count_begin()[geometry_id];
     // The segment id from the multilinestring this thread is computing (local_id + global_offset)
     auto multilinestring_segment_id =
       local_idx % num_segment_this_multilinestring + multilinestrings_segment_offsets[geometry_id];
@@ -102,8 +101,8 @@ pairwise_linestring_polygon_distance_kernel(MultiLinestringRange multilinestring
     auto multipolygon_segment_id =
       local_idx / num_segment_this_multilinestring + multipolygons_segment_offsets[geometry_id];
 
-    auto [a, b] = multilinestring_segments.segment_begin()[multilinestring_segment_id];
-    auto [c, d] = multipolygon_segments.segment_begin()[multipolygon_segment_id];
+    auto [a, b] = multilinestring_segments.begin()[multilinestring_segment_id];
+    auto [c, d] = multipolygon_segments.begin()[multipolygon_segment_id];
 
     atomicMin(&distances[geometry_id], sqrt(squared_segment_distance(a, b, c, d)));
   }
@@ -130,14 +129,14 @@ OutputIt pairwise_linestring_polygon_distance(MultiLinestringRange multilinestri
   auto multipoint_intersects = point_polygon_intersects(multipoints, multipolygons, stream);
 
   // Make views to the segments in the multilinestring
-  auto multilinestring_segments            = multilinestrings.segment_methods(stream);
+  auto multilinestring_segments            = multilinestrings._segments(stream);
   auto multilinestring_segments_range      = multilinestring_segments.view();
-  auto multilinestring_segment_count_begin = multilinestring_segments_range.segment_count_begin();
+  auto multilinestring_segment_count_begin = multilinestring_segments_range.count_begin();
 
   // Make views to the segments in the multilinestring
-  auto multipolygon_segments            = multipolygons.segment_methods(stream);
+  auto multipolygon_segments            = multipolygons._segments(stream);
   auto multipolygon_segments_range      = multipolygon_segments.view();
-  auto multipolygon_segment_count_begin = multipolygon_segments_range.segment_count_begin();
+  auto multipolygon_segment_count_begin = multipolygon_segments_range.count_begin();
 
   // Compute the "boundary" of threads. Threads are partitioned based on the number of linestrings
   // times the number of polygons in a multipoint-multipolygon pair.

@@ -56,20 +56,13 @@ struct MultilinestringRangeTest : public BaseFixture {
   {
     auto multilinestring_array =
       make_multilinestring_array(geometry_offset, part_offset, coordinates);
-    auto rng             = multilinestring_array.range();
-    auto segment_methods = rng.segment_methods(stream());
-    auto segment_view    = segment_methods.view();
+    auto rng            = multilinestring_array.range();
+    auto segments       = rng._segments(stream());
+    auto segments_range = segments.view();
 
-    auto segment_offsets = thrust::device_vector<std::size_t>(segment_view.segment_offset_begin(),
-                                                              segment_view.segment_offset_end());
-
-    test::print_device_vector(segment_offsets, "segment_offsets: ");
-
-    rmm::device_uvector<segment<T>> got(segment_view.num_segments(), stream());
-    thrust::copy(rmm::exec_policy(stream()),
-                 segment_view.segment_begin(),
-                 segment_view.segment_end(),
-                 got.begin());
+    rmm::device_uvector<segment<T>> got(segments_range.num_segments(), stream());
+    thrust::copy(
+      rmm::exec_policy(stream()), segments_range.begin(), segments_range.end(), got.begin());
 
     auto d_expected = thrust::device_vector<segment<T>>(expected.begin(), expected.end());
     CUSPATIAL_EXPECT_VEC2D_PAIRS_EQUIVALENT(d_expected, got);
@@ -104,16 +97,16 @@ struct MultilinestringRangeTest : public BaseFixture {
   {
     auto multilinestring_array =
       make_multilinestring_array(geometry_offset, part_offset, coordinates);
-    auto rng                                  = multilinestring_array.range();
-    auto multilinestring_with_segment_methods = rng.segment_methods(stream());
-    auto methods_view                         = multilinestring_with_segment_methods.view();
+    auto rng            = multilinestring_array.range();
+    auto segments       = rng._segments(stream());
+    auto segments_range = segments.view();
 
     auto d_expected = thrust::device_vector<std::size_t>(expected.begin(), expected.end());
 
     rmm::device_uvector<std::size_t> got(rng.num_multilinestrings(), stream());
     thrust::copy(rmm::exec_policy(stream()),
-                 methods_view.segment_count_begin(),
-                 methods_view.segment_count_end(),
+                 segments_range.count_begin(),
+                 segments_range.count_end(),
                  got.begin());
 
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected, got);

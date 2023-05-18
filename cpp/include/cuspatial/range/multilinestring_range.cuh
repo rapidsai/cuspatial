@@ -159,10 +159,9 @@ class multilinestring_range {
   /// Returns an iterator to the counts of points per multilinestring
   CUSPATIAL_HOST_DEVICE auto multilinestring_linestring_count_end();
 
-  /// Constructs a segment methods object, can only be constructed on host.
-  /// To use segment methods on device, create a `segment_methods_view`
-  /// See: `segment_methods::view`
-  auto segment_methods(rmm::cuda_stream_view);
+  /// @internal
+  /// Constructs a multilinestring_segment object, can only be constructed on host.
+  auto _segments(rmm::cuda_stream_view);
 
   /// Returns the `multilinestring_idx`th multilinestring in the range.
   template <typename IndexType>

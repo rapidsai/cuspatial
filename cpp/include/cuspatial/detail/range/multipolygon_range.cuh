@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "thrust/iterator/counting_iterator.h"
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/functors.cuh>
+#include <cuspatial/detail/multilinestring_segment.cuh>
 #include <cuspatial/detail/utility/validation.hpp>
 #include <cuspatial/geometry/segment.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
@@ -29,8 +29,10 @@
 #include <cuspatial/traits.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
+
 #include <thrust/binary_search.h>
 #include <thrust/distance.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/pair.h>
@@ -379,11 +381,11 @@ template <typename GeometryIterator,
           typename PartIterator,
           typename RingIterator,
           typename VecIterator>
-auto multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::segment_methods(
+auto multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::_segments(
   rmm::cuda_stream_view stream)
 {
   auto multilinestring_range = this->as_multilinestring_range();
-  return segment_method{multilinestring_range, stream};
+  return multilinestring_segment{multilinestring_range, stream};
 }
 
 template <typename GeometryIterator,

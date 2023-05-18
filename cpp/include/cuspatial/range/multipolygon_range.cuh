@@ -180,7 +180,7 @@ class multipolygon_range {
   /// Returns the one past the iterator to the number of rings of the last multipolygon
   CUSPATIAL_HOST_DEVICE auto multipolygon_ring_count_end();
 
-  auto segment_methods(rmm::cuda_stream_view);
+  auto _segments(rmm::cuda_stream_view);
 
   /// Range Casting
 

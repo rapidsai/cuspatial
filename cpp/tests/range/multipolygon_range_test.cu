@@ -42,16 +42,14 @@ struct MultipolygonRangeTest : public BaseFixture {
   {
     auto multipolygon_array =
       make_multipolygon_array(geometry_offset, part_offset, ring_offset, coordinates);
-    auto rng             = multipolygon_array.range();
-    auto segment_methods = rng.segment_methods(stream());
-    auto segment_view    = segment_methods.view();
+    auto rng           = multipolygon_array.range();
+    auto segments      = rng._segments(stream());
+    auto segment_range = segments.view();
 
-    auto got = rmm::device_uvector<segment<T>>(segment_view.num_segments(), stream());
+    auto got = rmm::device_uvector<segment<T>>(segment_range.num_segments(), stream());
 
-    thrust::copy(rmm::exec_policy(stream()),
-                 segment_view.segment_begin(),
-                 segment_view.segment_end(),
-                 got.begin());
+    thrust::copy(
+      rmm::exec_policy(stream()), segment_range.begin(), segment_range.end(), got.begin());
 
     auto d_expected = thrust::device_vector<segment<T>>(expected.begin(), expected.end());
 
@@ -91,15 +89,15 @@ struct MultipolygonRangeTest : public BaseFixture {
   {
     auto multipolygon_array =
       make_multipolygon_array(geometry_offset, part_offset, ring_offset, coordinates);
-    auto rng             = multipolygon_array.range();
-    auto segment_methods = rng.segment_methods(stream());
-    auto segment_view    = segment_methods.view();
+    auto rng           = multipolygon_array.range();
+    auto segments      = rng._segments(stream());
+    auto segment_range = segments.view();
 
     auto got = rmm::device_uvector<std::size_t>(rng.num_multipolygons(), stream());
 
     thrust::copy(rmm::exec_policy(stream()),
-                 segment_view.segment_count_begin(),
-                 segment_view.segment_count_end(),
+                 segment_range.count_begin(),
+                 segment_range.count_end(),
                  got.begin());
 
     auto d_expected = thrust::device_vector<std::size_t>(expected_segment_counts.begin(),
