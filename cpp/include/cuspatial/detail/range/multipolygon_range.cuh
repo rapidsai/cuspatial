@@ -161,16 +161,6 @@ template <typename GeometryIterator,
           typename RingIterator,
           typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto
-multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::num_segments()
-{
-  return num_points() - num_rings();
-}
-
-template <typename GeometryIterator,
-          typename PartIterator,
-          typename RingIterator,
-          typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto
 multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::multipolygon_begin()
 {
   return detail::make_counting_transform_iterator(

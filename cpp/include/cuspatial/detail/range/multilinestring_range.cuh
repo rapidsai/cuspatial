@@ -119,13 +119,6 @@ multilinestring_range<GeometryIterator, PartIterator, VecIterator>::num_points()
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto
-multilinestring_range<GeometryIterator, PartIterator, VecIterator>::num_segments()
-{
-  return num_points() - num_linestrings();
-}
-
-template <typename GeometryIterator, typename PartIterator, typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto
 multilinestring_range<GeometryIterator, PartIterator, VecIterator>::multilinestring_begin()
 {
   return detail::make_counting_transform_iterator(
