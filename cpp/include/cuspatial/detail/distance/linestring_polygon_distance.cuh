@@ -92,10 +92,6 @@ pairwise_linestring_polygon_distance_kernel(MultiLinestringRange multilinestring
       continue;
     }
 
-    printf("geometry_id: %d\n", static_cast<int>(geometry_id));
-    printf("segment_count_range size: %d\n",
-           static_cast<int>(thrust::distance(multilinestring_segments.segment_count_begin(),
-                                             multilinestring_segments.segment_count_end())));
     // Retrieve the number of segments in multilinestrings[geometry_id]
     auto num_segment_this_multilinestring =
       multilinestring_segments.segment_count_begin()[geometry_id];
@@ -106,12 +102,7 @@ pairwise_linestring_polygon_distance_kernel(MultiLinestringRange multilinestring
     auto multipolygon_segment_id =
       local_idx / num_segment_this_multilinestring + multipolygons_segment_offsets[geometry_id];
 
-    printf("multilinestring_segment_id: %d\n", static_cast<int>(multilinestring_segment_id));
-    printf("num segments: %d\n",
-           static_cast<int>(thrust::distance(multilinestring_segments.segment_begin(),
-                                             multilinestring_segments.segment_end())));
     auto [a, b] = multilinestring_segments.segment_begin()[multilinestring_segment_id];
-    printf("Here!\n");
     auto [c, d] = multipolygon_segments.segment_begin()[multipolygon_segment_id];
 
     atomicMin(&distances[geometry_id], sqrt(squared_segment_distance(a, b, c, d)));

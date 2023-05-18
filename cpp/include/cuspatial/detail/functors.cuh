@@ -138,11 +138,6 @@ struct to_valid_segment_functor {
     auto preceding_non_empty_linestrings = non_empty_partitions_begin[geometry_id];
     auto pid                             = sid + preceding_non_empty_linestrings;
 
-    printf("sid: %d geometry_id: %d pid: %d\n",
-           static_cast<int>(sid),
-           static_cast<int>(geometry_id),
-           static_cast<int>(pid));
-
     return segment<element_t>{point_begin[pid], point_begin[pid + 1]};
   }
 };
