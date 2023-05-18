@@ -39,16 +39,13 @@
 namespace cuspatial {
 namespace detail {
 
-template <typename IndexType, IndexType value>
-struct equals {
-  __device__ bool operator()(IndexType x) const { return x == value; }
-};
-
 template <typename IndexType>
 struct greater_than_zero_functor {
   __device__ IndexType operator()(IndexType x) const { return x > 0; }
 };
 
+// Optimization: for range that does not contain any empty linestrings,
+// The _non_empty_linestring_prefix_sum can be initailized with counting_iterator.
 template <typename ParentRange>
 class segment_method {
   using index_t = iterator_value_type<typename ParentRange::part_it_t>;
@@ -65,46 +62,11 @@ class segment_method {
       thrust::make_zip_iterator(offset_range.begin(), thrust::next(offset_range.begin())),
       offset_pair_to_count_functor{});
 
-    // // Preemptive test: does the given range contain any empty ring/linestring?
-    // _contains_empty_geom = thrust::any_of(
-    //     rmm::exec_policy(stream),
-    //     count_begin,
-    //     count_begin + _range.num_linestrings(),
-    //     equals<index_t, 0>{}
-    // );
-
-    // std::cout << std::boolalpha << "contains empty geometry: " << _contains_empty_geom <<
-    // std::endl;
-
     auto count_greater_than_zero =
       thrust::make_transform_iterator(count_begin, greater_than_zero_functor<index_t>{});
 
-    {
-      thrust::device_vector<index_t> count_greater_than_zero_truth(
-        count_greater_than_zero, count_greater_than_zero + _range.num_linestrings());
-
-      test::print_device_vector(count_greater_than_zero_truth, "count_greater_than_zero_truth: ");
-    }
-
-    // Compute the number of empty linestrings
-    // auto key_begin = make_geometry_id_iterator<index_t>(_range.geometry_offsets_begin(),
-    //                                                     _range.geometry_offsets_end());
-    // {
-    //   thrust::device_vector<index_t> key_truth(key_begin, key_begin + _range.num_linestrings());
-
-    //   test::print_device_vector(key_truth, "key_truth: ");
-    // }
-
     zero_data_async(
       _non_empty_linestring_prefix_sum.begin(), _non_empty_linestring_prefix_sum.end(), stream);
-    // thrust::reduce_by_key(rmm::exec_policy(stream),
-    //                       key_begin,
-    //                       key_begin + _range.num_linestrings(),
-    //                       count_greater_than_zero,
-    //                       thrust::make_discard_iterator(),
-    //                       thrust::next(_non_empty_linestring_prefix_sum.begin()),
-    //                       thrust::equal_to<index_t>{},
-    //                       thrust::plus<index_t>{});
 
     thrust::inclusive_scan(rmm::exec_policy(stream),
                            count_greater_than_zero,
@@ -113,8 +75,6 @@ class segment_method {
 
     _num_segments = _range.num_points() - _non_empty_linestring_prefix_sum.element(
                                             _non_empty_linestring_prefix_sum.size() - 1, stream);
-
-    test::print_device_vector(_non_empty_linestring_prefix_sum, "non_empty_geometry_prefix_sum: ");
   }
 
   auto view()
@@ -122,12 +82,11 @@ class segment_method {
     auto index_range =
       range(_non_empty_linestring_prefix_sum.begin(), _non_empty_linestring_prefix_sum.end());
     return segment_method_view<ParentRange, decltype(index_range)>{
-      _range, index_range, _num_segments, _contains_empty_geom};
+      _range, index_range, _num_segments};
   }
 
  private:
   ParentRange _range;
-  bool _contains_empty_geom;
   index_t _num_segments;
   rmm::device_uvector<index_t> _non_empty_linestring_prefix_sum;
 };

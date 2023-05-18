@@ -25,13 +25,13 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/functors.cuh>
+#include <cuspatial/detail/method/segment_method.cuh>
 #include <cuspatial/detail/utility/validation.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/geometry_collection/multilinestring_ref.cuh>
 #include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/range/multipoint_range.cuh>
 #include <cuspatial/traits.hpp>
-#include <cuspatial/detail/method/segment_method.cuh>
 
 #include <thrust/iterator/permutation_iterator.h>
 
@@ -249,42 +249,10 @@ CUSPATIAL_HOST_DEVICE auto multilinestring_range<GeometryIterator, PartIterator,
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto
-multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_begin()
-{
-  return detail::make_counting_transform_iterator(
-    0,
-    detail::to_valid_segment_functor{
-      this->segment_offset_begin(), this->segment_offset_end(), thrust::make_counting_iterator(0), _point_begin});
-}
-
-template <typename GeometryIterator, typename PartIterator, typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto
-multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_end()
-{
-  return segment_begin() + num_segments();
-}
-
-template <typename GeometryIterator, typename PartIterator, typename VecIterator>
-auto
-multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_methods(rmm::cuda_stream_view stream)
+auto multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_methods(
+  rmm::cuda_stream_view stream)
 {
   return segment_method{*this, stream};
-}
-
-template <typename GeometryIterator, typename PartIterator, typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto
-multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_offset_begin()
-{
-  return detail::make_counting_transform_iterator(0, detail::to_segment_offset_iterator{
-    _part_begin, thrust::make_counting_iterator(0)});
-}
-
-template <typename GeometryIterator, typename PartIterator, typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto
-multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_offset_end()
-{
-  return segment_offset_begin() + thrust::distance(_part_begin, _part_end);
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>

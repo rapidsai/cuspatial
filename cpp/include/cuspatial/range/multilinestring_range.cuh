@@ -162,12 +162,6 @@ class multilinestring_range {
   /// Returns an iterator to the counts of points per multilinestring
   CUSPATIAL_HOST_DEVICE auto multilinestring_linestring_count_end();
 
-  /// Returns an iterator to the start of the segment
-  CUSPATIAL_HOST_DEVICE auto segment_begin();
-
-  /// Returns an iterator to the end of the segment
-  CUSPATIAL_HOST_DEVICE auto segment_end();
-
   /// Constructs a segment methods object, can only be constructed on host.
   /// To use segment methods on device, create a `segment_methods_view`
   /// See: `segment_methods::view`
@@ -198,9 +192,6 @@ class multilinestring_range {
   PartIterator _part_end;
   VecIterator _point_begin;
   VecIterator _point_end;
-
-  CUSPATIAL_HOST_DEVICE auto segment_offset_begin();
-  CUSPATIAL_HOST_DEVICE auto segment_offset_end();
 
  private:
   /// @internal

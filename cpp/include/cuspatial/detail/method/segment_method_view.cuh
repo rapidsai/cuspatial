@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "thrust/iterator/permutation_iterator.h"
 #include <cuspatial_test/test_util.cuh>
 
 #include <cuspatial/cuda_utils.hpp>
@@ -28,6 +27,7 @@
 #include <rmm/mr/device/per_device_resource.hpp>
 
 #include <thrust/device_vector.h>
+#include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
 namespace cuspatial {
@@ -40,31 +40,12 @@ class segment_method_view {
  public:
   segment_method_view(ParentRange range,
                       IndexRange non_empty_geometry_prefix_sum,
-                      index_t num_segments,
-                      bool contains_empty_ring)
+                      index_t num_segments)
     : _range(range),
       _non_empty_geometry_prefix_sum(non_empty_geometry_prefix_sum),
-      _num_segments(num_segments),
-      _contains_empty_ring(contains_empty_ring)
+      _num_segments(num_segments)
   {
-    thrust::device_vector<index_t> soffsets(segment_offset_begin(), segment_offset_end());
-    test::print_device_vector(soffsets, "Segment offsets: ");
   }
-
-  // CUSPATIAL_HOST_DEVICE auto segment_count_begin()
-  // {
-  //   auto num_points_begin = _range.multilinestring_point_count_begin();
-  //   auto n_point_linestring_pair_it =
-  //     thrust::make_zip_iterator(num_points_begin, this->_non_empty_linestring_count_begin());
-
-  //   return thrust::make_transform_iterator(n_point_linestring_pair_it,
-  //                                          point_count_to_segment_count_functor{});
-  // }
-
-  // CUSPATIAL_HOST_DEVICE auto segment_count_end()
-  // {
-  //   return thrust::next(this->segment_count_begin(), _range.num_multilinestrings());
-  // }
 
   CUSPATIAL_HOST_DEVICE index_t num_segments() { return _num_segments; }
 
@@ -113,7 +94,6 @@ class segment_method_view {
   ParentRange _range;
   IndexRange _non_empty_geometry_prefix_sum;
   index_t _num_segments;
-  bool _contains_empty_ring;
 
   CUSPATIAL_HOST_DEVICE auto _non_empty_linestring_count_begin()
   {
