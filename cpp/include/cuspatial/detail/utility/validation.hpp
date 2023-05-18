@@ -23,13 +23,15 @@
  *
  * Raises an exception if any of the following are false:
  *  - The number of linestring offsets is greater than zero.
- *  - There are at least two vertices per linestring offset.
  *
  * Linestrings follow [GeoArrow data layout][1]. Offsets arrays have one more element than the
  * number of items in the array. The last offset is always the sum of the previous offset and the
  * size of that element. For example the last value in the linestring offsets array is the
  * last linestring offset plus one. See [Arrow Variable-Size Binary layout](2). Note that an
  * empty list still has one offset: {0}.
+ *
+ * The following is not explicitly checked in this macro, but is always assumed in cuspatial:
+ * 1. LineString can contain zero or two or more vertices.
  *
  * [1]: https://github.com/geoarrow/geoarrow/blob/main/format.md
  * [2]: https://arrow.apache.org/docs/format/Columnar.html#variable-size-binary-layout
@@ -44,7 +46,6 @@
  * Raises an exception if any of the following are false:
  *  - The number of multilinestring offsets is greater than zero.
  *  - The number of linestring offsets is greater than zero.
- *  - There are at least two vertices per linestring offset.
  *
  * Multilinestrings follow [GeoArrow data layout][1]. Offsets arrays have one more element than the
  * number of items in the array. The last offset is always the sum of the previous offset and the
@@ -76,18 +77,18 @@
  *
  * The following are not explicitly checked in this macro, but is always assumed in cuspatial:
  *
- * 1. Polygon can contain zero (0) or more rings. A polygon with zero rings is an empty polygon.
- * 2. Rings are assumed to be closed (closed means the first and last vertices of each ring are equal).
- * Rings can also be empty. Therefore each ring must contain zero (0) or four (4) or more coordinates.
+ * 1. Polygon can contain zero or more rings. A polygon with zero rings is an empty polygon.
+ * 2. Rings are assumed to be closed (closed means the first and last vertices of each ring are
+ * equal). Rings can also be empty. Therefore each ring must contain zero or four or more vertices.
  *
  * [1]: https://github.com/geoarrow/geoarrow/blob/main/format.md
  * [2]: https://arrow.apache.org/docs/format/Columnar.html#variable-size-binary-layout
  */
-#define CUSPATIAL_EXPECTS_VALID_POLYGON_SIZES(                                               \
-  num_poly_points, num_poly_offsets, num_poly_ring_offsets)                                  \
-  CUSPATIAL_HOST_DEVICE_EXPECTS(num_poly_offsets > 0,                                        \
-                                "Polygon offsets must contain at least one (1) value");      \
-  CUSPATIAL_HOST_DEVICE_EXPECTS(num_poly_ring_offsets > 0,                                   \
+#define CUSPATIAL_EXPECTS_VALID_POLYGON_SIZES(                                          \
+  num_poly_points, num_poly_offsets, num_poly_ring_offsets)                             \
+  CUSPATIAL_HOST_DEVICE_EXPECTS(num_poly_offsets > 0,                                   \
+                                "Polygon offsets must contain at least one (1) value"); \
+  CUSPATIAL_HOST_DEVICE_EXPECTS(num_poly_ring_offsets > 0,                              \
                                 "Polygon ring offsets must contain at least one (1) value");
 
 /**
@@ -106,9 +107,10 @@
  *
  * The following are not explicitly checked in this macro, but is always assumed in cuspatial:
  *
- * 1. Polygon can contain zero (0) or more rings. A polygon with zero rings is an empty polygon.
- * 2. Rings are assumed to be closed (closed means the first and last vertices of each ring are equal).
- * Rings can also be empty. Therefore each ring must contain zero (0) or four (4) or more coordinates.
+ * 1. Polygon can contain zero or more rings. A polygon with zero rings is an empty polygon.
+ * 2. Rings are assumed to be closed (closed means the first and last vertices of each ring are
+ * equal). Rings can also be empty. Therefore each ring must contain zero or four or more
+ * coordinates.
  *
  * [1]: https://github.com/geoarrow/geoarrow/blob/main/format.md
  * [2]: https://arrow.apache.org/docs/format/Columnar.html#variable-size-binary-layout
