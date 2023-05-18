@@ -49,8 +49,8 @@ struct offset_pair_to_count_functor {
 /**
  * @brief Convert counts of points to counts of segments in a linestring.
  *
- * A Multilinestring is composed of a series of Linestrings. Each Linestring is composed of a series of
- * segments. The number of segments in a multilinestring is the number of points in the
+ * A Multilinestring is composed of a series of Linestrings. Each Linestring is composed of a series
+ * of segments. The number of segments in a multilinestring is the number of points in the
  * multilinestring minus the number of linestrings.
  *
  * Caveats: This has a strong assumption that the Multilinestring does not contain empty
@@ -105,7 +105,8 @@ struct to_segment_offset_iterator {
 
 /// Deduction guide for to_distance_iterator
 template <typename OffsetIterator, typename CountIterator>
-to_segment_offset_iterator(OffsetIterator, CountIterator) -> to_segment_offset_iterator<OffsetIterator, CountIterator>;
+to_segment_offset_iterator(OffsetIterator, CountIterator)
+  -> to_segment_offset_iterator<OffsetIterator, CountIterator>;
 
 /**
  * @brief Return a segment from the a partitioned range of points
@@ -131,9 +132,16 @@ struct to_valid_segment_functor {
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE segment<element_t> operator()(IndexType sid)
   {
-    auto kit = thrust::upper_bound(thrust::seq, segment_offset_begin, segment_offset_end, sid);
-    auto k   = thrust::distance(segment_offset_begin, kit);
-    auto pid = non_empty_partitions_begin[sid] + k - 1;
+    auto kit =
+      thrust::prev(thrust::upper_bound(thrust::seq, segment_offset_begin, segment_offset_end, sid));
+    auto geometry_id                     = thrust::distance(segment_offset_begin, kit);
+    auto preceding_non_empty_linestrings = non_empty_partitions_begin[geometry_id];
+    auto pid                             = sid + preceding_non_empty_linestrings;
+
+    printf("sid: %d geometry_id: %d pid: %d\n",
+           static_cast<int>(sid),
+           static_cast<int>(geometry_id),
+           static_cast<int>(pid));
 
     return segment<element_t>{point_begin[pid], point_begin[pid + 1]};
   }

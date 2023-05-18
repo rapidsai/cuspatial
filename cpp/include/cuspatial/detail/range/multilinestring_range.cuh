@@ -235,23 +235,6 @@ CUSPATIAL_HOST_DEVICE auto multilinestring_range<GeometryIterator, PartIterator,
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto multilinestring_range<GeometryIterator, PartIterator, VecIterator>::
-  multilinestring_segment_count_begin()
-{
-  auto n_point_linestring_pair_it = thrust::make_zip_iterator(
-    multilinestring_point_count_begin(), multilinestring_linestring_count_begin());
-  return thrust::make_transform_iterator(n_point_linestring_pair_it,
-                                         detail::point_count_to_segment_count_functor{});
-}
-
-template <typename GeometryIterator, typename PartIterator, typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto multilinestring_range<GeometryIterator, PartIterator, VecIterator>::
-  multilinestring_segment_count_end()
-{
-  return multilinestring_segment_count_begin() + num_multilinestrings();
-}
-
-template <typename GeometryIterator, typename PartIterator, typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto multilinestring_range<GeometryIterator, PartIterator, VecIterator>::
   multilinestring_linestring_count_begin()
 {
   auto paired_it = thrust::make_zip_iterator(_geometry_begin, thrust::next(_geometry_begin));
@@ -283,7 +266,7 @@ multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_end(
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto
+auto
 multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_methods(rmm::cuda_stream_view stream)
 {
   return segment_method{*this, stream};

@@ -156,12 +156,6 @@ class multilinestring_range {
   /// Returns an iterator to the counts of segments per multilinestring
   CUSPATIAL_HOST_DEVICE auto multilinestring_point_count_end();
 
-  /// Returns an iterator to the counts of segments per multilinestring
-  CUSPATIAL_HOST_DEVICE auto multilinestring_segment_count_begin();
-
-  /// Returns an iterator to the counts of points per multilinestring
-  CUSPATIAL_HOST_DEVICE auto multilinestring_segment_count_end();
-
   /// Returns an iterator to the counts of points per multilinestring
   CUSPATIAL_HOST_DEVICE auto multilinestring_linestring_count_begin();
 
@@ -174,8 +168,10 @@ class multilinestring_range {
   /// Returns an iterator to the end of the segment
   CUSPATIAL_HOST_DEVICE auto segment_end();
 
-  /// Returns an iterator to the end of the segment
-  CUSPATIAL_HOST_DEVICE auto segment_methods(rmm::cuda_stream_view);
+  /// Constructs a segment methods object, can only be constructed on host.
+  /// To use segment methods on device, create a `segment_methods_view`
+  /// See: `segment_methods::view`
+  auto segment_methods(rmm::cuda_stream_view);
 
   /// Returns the `multilinestring_idx`th multilinestring in the range.
   template <typename IndexType>

@@ -60,12 +60,16 @@ namespace detail {
  * @param distances Output range of distances, pre-filled with std::numerical_limits<T>::max()
  */
 template <typename MultiLinestringRange,
+          typename MultiLinestringSegmentRange,
           typename MultiPolygonRange,
+          typename MultiPolygonSegmentRange,
           typename IndexRange,
           typename OutputIt>
 void __global__
 pairwise_linestring_polygon_distance_kernel(MultiLinestringRange multilinestrings,
+                                            MultiLinestringSegmentRange multilinestring_segments,
                                             MultiPolygonRange multipolygons,
+                                            MultiPolygonSegmentRange multipolygon_segments,
                                             IndexRange thread_bounds,
                                             IndexRange multilinestrings_segment_offsets,
                                             IndexRange multipolygons_segment_offsets,
@@ -88,9 +92,13 @@ pairwise_linestring_polygon_distance_kernel(MultiLinestringRange multilinestring
       continue;
     }
 
+    printf("geometry_id: %d\n", static_cast<int>(geometry_id));
+    printf("segment_count_range size: %d\n",
+           static_cast<int>(thrust::distance(multilinestring_segments.segment_count_begin(),
+                                             multilinestring_segments.segment_count_end())));
     // Retrieve the number of segments in multilinestrings[geometry_id]
     auto num_segment_this_multilinestring =
-      multilinestrings.multilinestring_segment_count_begin()[geometry_id];
+      multilinestring_segments.segment_count_begin()[geometry_id];
     // The segment id from the multilinestring this thread is computing (local_id + global_offset)
     auto multilinestring_segment_id =
       local_idx % num_segment_this_multilinestring + multilinestrings_segment_offsets[geometry_id];
@@ -98,8 +106,13 @@ pairwise_linestring_polygon_distance_kernel(MultiLinestringRange multilinestring
     auto multipolygon_segment_id =
       local_idx / num_segment_this_multilinestring + multipolygons_segment_offsets[geometry_id];
 
-    auto [a, b] = multilinestrings.segment_begin()[multilinestring_segment_id];
-    auto [c, d] = multipolygons.segment_begin()[multipolygon_segment_id];
+    printf("multilinestring_segment_id: %d\n", static_cast<int>(multilinestring_segment_id));
+    printf("num segments: %d\n",
+           static_cast<int>(thrust::distance(multilinestring_segments.segment_begin(),
+                                             multilinestring_segments.segment_end())));
+    auto [a, b] = multilinestring_segments.segment_begin()[multilinestring_segment_id];
+    printf("Here!\n");
+    auto [c, d] = multipolygon_segments.segment_begin()[multipolygon_segment_id];
 
     atomicMin(&distances[geometry_id], sqrt(squared_segment_distance(a, b, c, d)));
   }
@@ -125,12 +138,22 @@ OutputIt pairwise_linestring_polygon_distance(MultiLinestringRange multilinestri
   auto multipoints           = multilinestrings.as_multipoint_range();
   auto multipoint_intersects = point_polygon_intersects(multipoints, multipolygons, stream);
 
+  // Make views to the segments in the multilinestring
+  auto multilinestring_segments            = multilinestrings.segment_methods(stream);
+  auto multilinestring_segments_range      = multilinestring_segments.view();
+  auto multilinestring_segment_count_begin = multilinestring_segments_range.segment_count_begin();
+
+  // Make views to the segments in the multilinestring
+  auto multipolygon_segments            = multipolygons.segment_methods(stream);
+  auto multipolygon_segments_range      = multipolygon_segments.view();
+  auto multipolygon_segment_count_begin = multipolygon_segments_range.segment_count_begin();
+
   // Compute the "boundary" of threads. Threads are partitioned based on the number of linestrings
   // times the number of polygons in a multipoint-multipolygon pair.
-  auto segment_count_product_it = thrust::make_transform_iterator(
-    thrust::make_zip_iterator(multilinestrings.multilinestring_segment_count_begin(),
-                              multipolygons.multipolygon_segment_count_begin()),
-    thrust::make_zip_function(thrust::multiplies<index_t>{}));
+  auto segment_count_product_it =
+    thrust::make_transform_iterator(thrust::make_zip_iterator(multilinestring_segment_count_begin,
+                                                              multipolygon_segment_count_begin),
+                                    thrust::make_zip_function(thrust::multiplies<index_t>{}));
 
   // Computes the "thread boundary" of each pair. This array partitions the thread range by
   // geometries. E.g. threadIdx within [thread_bounds[i], thread_bounds[i+1]) computes distances of
@@ -154,17 +177,16 @@ OutputIt pairwise_linestring_polygon_distance(MultiLinestringRange multilinestri
   detail::zero_data_async(
     multipolygon_segment_offsets.begin(), multipolygon_segment_offsets.end(), stream);
 
-  thrust::inclusive_scan(rmm::exec_policy(stream),
-                         multilinestrings.multilinestring_segment_count_begin(),
-                         multilinestrings.multilinestring_segment_count_begin() +
-                           multilinestrings.num_multilinestrings(),
-                         thrust::next(multilinestring_segment_offsets.begin()));
-
   thrust::inclusive_scan(
     rmm::exec_policy(stream),
-    multipolygons.multipolygon_segment_count_begin(),
-    multipolygons.multipolygon_segment_count_begin() + multipolygons.num_multipolygons(),
-    thrust::next(multipolygon_segment_offsets.begin()));
+    multilinestring_segment_count_begin,
+    multilinestring_segment_count_begin + multilinestrings.num_multilinestrings(),
+    thrust::next(multilinestring_segment_offsets.begin()));
+
+  thrust::inclusive_scan(rmm::exec_policy(stream),
+                         multipolygon_segment_count_begin,
+                         multipolygon_segment_count_begin + multipolygons.num_multipolygons(),
+                         thrust::next(multipolygon_segment_offsets.begin()));
 
   // Initialize output range
   thrust::fill(rmm::exec_policy(stream),
@@ -177,7 +199,9 @@ OutputIt pairwise_linestring_polygon_distance(MultiLinestringRange multilinestri
 
   detail::pairwise_linestring_polygon_distance_kernel<<<num_blocks, tpb, 0, stream.value()>>>(
     multilinestrings,
+    multilinestring_segments_range,
     multipolygons,
+    multipolygon_segments_range,
     range{thread_bounds.begin(), thread_bounds.end()},
     range{multilinestring_segment_offsets.begin(), multilinestring_segment_offsets.end()},
     range{multipolygon_segment_offsets.begin(), multipolygon_segment_offsets.end()},

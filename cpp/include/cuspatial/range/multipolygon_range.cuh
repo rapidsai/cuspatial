@@ -16,7 +16,6 @@
 
 #pragma once
 
-
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/range/enumerate_range.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
@@ -26,7 +25,6 @@
 #include <rmm/cuda_stream_view.hpp>
 
 #include <thrust/pair.h>
-
 
 namespace cuspatial {
 
@@ -185,18 +183,7 @@ class multipolygon_range {
   /// Returns the one past the iterator to the number of rings of the last multipolygon
   CUSPATIAL_HOST_DEVICE auto multipolygon_ring_count_end();
 
-  /// Returns an iterator to the number of segments of the first multipolygon
-  CUSPATIAL_HOST_DEVICE auto multipolygon_segment_count_begin();
-  /// Returns the one past the iterator to the number of segments of the last multipolygon
-  CUSPATIAL_HOST_DEVICE auto multipolygon_segment_count_end();
-
-  /// Returns an iterator to the start of the segment
-  CUSPATIAL_HOST_DEVICE auto segment_begin();
-
-  /// Returns an iterator to the end of the segment
-  CUSPATIAL_HOST_DEVICE auto segment_end();
-
-  CUSPATIAL_HOST_DEVICE auto segment_methods(rmm::cuda_stream_view);
+  auto segment_methods(rmm::cuda_stream_view);
 
   /// Range Casting
 
