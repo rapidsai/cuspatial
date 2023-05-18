@@ -16,8 +16,10 @@
 
 #pragma once
 
+#include "thrust/iterator/permutation_iterator.h"
 #include <cuspatial_test/test_util.cuh>
 
+#include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/functors.cuh>
 #include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/traits.hpp>
@@ -45,32 +47,28 @@ class segment_method_view {
       _num_segments(num_segments),
       _contains_empty_ring(contains_empty_ring)
   {
+    thrust::device_vector<index_t> soffsets(segment_offset_begin(), segment_offset_end());
+    test::print_device_vector(soffsets, "Segment offsets: ");
   }
 
-  auto non_empty_linestring_count_begin()
-  {
-    auto begin        = _non_empty_geometry_prefix_sum.begin();
-    auto paired_begin = thrust::make_zip_iterator(begin, thrust::next(begin));
-    return thrust::make_transform_iterator(paired_begin, offset_pair_to_count_functor{});
-  }
+  // CUSPATIAL_HOST_DEVICE auto segment_count_begin()
+  // {
+  //   auto num_points_begin = _range.multilinestring_point_count_begin();
+  //   auto n_point_linestring_pair_it =
+  //     thrust::make_zip_iterator(num_points_begin, this->_non_empty_linestring_count_begin());
 
-  auto segment_count_begin()
-  {
-    auto num_points_begin = _range.multilinestring_point_count_begin();
-    auto n_point_linestring_pair_it =
-      thrust::make_zip_iterator(num_points_begin, this->non_empty_linestring_count_begin());
+  //   return thrust::make_transform_iterator(n_point_linestring_pair_it,
+  //                                          point_count_to_segment_count_functor{});
+  // }
 
-    return thrust::make_transform_iterator(n_point_linestring_pair_it,
-                                           point_count_to_segment_count_functor{});
-  }
+  // CUSPATIAL_HOST_DEVICE auto segment_count_end()
+  // {
+  //   return thrust::next(this->segment_count_begin(), _range.num_multilinestrings());
+  // }
 
-  auto segment_count_end() {
-    std::cout << "num multilinestrings: " << _range.num_multilinestrings() << std::endl;
-    return thrust::next(this->segment_count_begin(), _range.num_multilinestrings()); }
+  CUSPATIAL_HOST_DEVICE index_t num_segments() { return _num_segments; }
 
-  index_t num_segments() { return _num_segments; }
-
-  auto segment_offset_begin()
+  CUSPATIAL_HOST_DEVICE auto segment_offset_begin()
   {
     return make_counting_transform_iterator(
       0,
@@ -78,9 +76,28 @@ class segment_method_view {
                                  _non_empty_geometry_prefix_sum.begin()});
   }
 
-  auto segment_offset_end() { return segment_offset_begin() + num_segments(); }
+  CUSPATIAL_HOST_DEVICE auto segment_offset_end()
+  {
+    return segment_offset_begin() + _non_empty_geometry_prefix_sum.size();
+  }
 
-  auto segment_begin()
+  CUSPATIAL_HOST_DEVICE auto segment_count_begin()
+  {
+    auto permuted_offsets_it =
+      thrust::make_permutation_iterator(segment_offset_begin(), _range.geometry_offsets_begin());
+
+    auto zipped_offset_it =
+      thrust::make_zip_iterator(permuted_offsets_it, thrust::next(permuted_offsets_it));
+
+    return thrust::make_transform_iterator(zipped_offset_it, offset_pair_to_count_functor{});
+  }
+
+  CUSPATIAL_HOST_DEVICE auto segment_count_end()
+  {
+    return segment_count_begin() + _range.num_multilinestrings();
+  }
+
+  CUSPATIAL_HOST_DEVICE auto segment_begin()
   {
     return make_counting_transform_iterator(
       0,
@@ -90,13 +107,20 @@ class segment_method_view {
                                _range.point_begin()});
   }
 
-  auto segment_end() { return segment_begin() + _num_segments; }
+  CUSPATIAL_HOST_DEVICE auto segment_end() { return segment_begin() + _num_segments; }
 
  private:
   ParentRange _range;
   IndexRange _non_empty_geometry_prefix_sum;
   index_t _num_segments;
   bool _contains_empty_ring;
+
+  CUSPATIAL_HOST_DEVICE auto _non_empty_linestring_count_begin()
+  {
+    auto begin        = _non_empty_geometry_prefix_sum.begin();
+    auto paired_begin = thrust::make_zip_iterator(begin, thrust::next(begin));
+    return thrust::make_transform_iterator(paired_begin, offset_pair_to_count_functor{});
+  }
 };
 
 template <typename ParentRange, typename IndexRange>
