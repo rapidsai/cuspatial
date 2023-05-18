@@ -6,7 +6,7 @@ import cudf
 
 from cuspatial.core.binpreds.basic_predicates import (
     _basic_contains_count,
-    _basic_equals,
+    _basic_equals_any,
     _basic_equals_count,
     _basic_intersects,
     _basic_intersects_pli,
@@ -132,13 +132,13 @@ class ContainsPredicate(ContainsGeometryProcessor):
 
 class PointPointContains(BinPred):
     def _preprocess(self, lhs, rhs):
-        return _basic_equals(lhs, rhs)
+        return _basic_equals_any(lhs, rhs)
 
 
 class LineStringPointContains(BinPred):
     def _preprocess(self, lhs, rhs):
         intersects = _basic_intersects(lhs, rhs)
-        equals = _basic_equals(lhs, rhs)
+        equals = _basic_equals_any(lhs, rhs)
         return intersects & ~equals
 
 

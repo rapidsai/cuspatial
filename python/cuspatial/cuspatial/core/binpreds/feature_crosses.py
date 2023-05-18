@@ -1,9 +1,9 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
 from cuspatial.core.binpreds.basic_predicates import (
-    _basic_equals,
-    _basic_intersects,
+    _basic_equals_count,
     _basic_intersects_count,
+    _basic_intersects_pli,
 )
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
@@ -17,6 +17,7 @@ from cuspatial.utils.binpred_utils import (
     Point,
     Polygon,
     _false_series,
+    _points_and_lines_to_multipoints,
 )
 
 
@@ -36,10 +37,17 @@ class CrossesPredicateBase(EqualsPredicateBase):
     pass
 
 
-class CrossesByIntersectionPredicate(IntersectsPredicateBase):
+class LineStringLineStringCrosses(IntersectsPredicateBase):
     def _compute_predicate(self, lhs, rhs, preprocessor_result):
-        intersects = _basic_intersects(rhs, lhs)
-        equals = _basic_equals(rhs, lhs)
+        # A linestring crosses another linestring iff
+        # they intersect, and none of the points of the
+        # intersection are in the boundary of the other
+        pli = _basic_intersects_pli(rhs, lhs)
+        intersections = _points_and_lines_to_multipoints(pli[1], pli[0])
+        equals = (_basic_equals_count(intersections, lhs) > 0) | (
+            _basic_equals_count(intersections, rhs) > 0
+        )
+        intersects = _basic_intersects_count(rhs, lhs) > 0
         return intersects & ~equals
 
 
@@ -73,7 +81,7 @@ DispatchDict = {
     (MultiPoint, Polygon): ImpossiblePredicate,
     (LineString, Point): ImpossiblePredicate,
     (LineString, MultiPoint): ImpossiblePredicate,
-    (LineString, LineString): CrossesByIntersectionPredicate,
+    (LineString, LineString): LineStringLineStringCrosses,
     (LineString, Polygon): LineStringPolygonCrosses,
     (Polygon, Point): CrossesPredicateBase,
     (Polygon, MultiPoint): CrossesPredicateBase,

@@ -3,8 +3,8 @@
 from cuspatial.core.binpreds.basic_predicates import (
     _basic_contains_count,
     _basic_contains_properly_any,
-    _basic_equals,
     _basic_equals_all,
+    _basic_equals_any,
     _basic_equals_count,
     _basic_intersects,
     _basic_intersects_count,
@@ -42,7 +42,7 @@ class TouchesPredicateBase(ContainsPredicate):
     """
 
     def _preprocess(self, lhs, rhs):
-        equals = _basic_equals(lhs, rhs)
+        equals = _basic_equals_any(lhs, rhs)
         return equals
 
 
@@ -58,13 +58,12 @@ class LineStringLineStringTouches(BinPred):
     def _preprocess(self, lhs, rhs):
         """A and B have at least one point in common, and the common points
         lie in at least one boundary"""
-        # Point is equal
-        equals = _basic_equals(lhs, rhs)
         # Linestrings are not equal
         equals_all = _basic_equals_all(lhs, rhs)
         # Linestrings do not cross
         crosses = lhs.crosses(rhs)
-        return equals & ~crosses & ~equals_all
+        intersects = lhs.intersects(rhs)
+        return intersects & ~crosses & ~equals_all
 
 
 class LineStringPolygonTouches(BinPred):

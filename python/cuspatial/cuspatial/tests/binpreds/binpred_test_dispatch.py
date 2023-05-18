@@ -138,6 +138,17 @@ features = {
         LineString([(0.0, 0.0), (1.0, 0.0)]),
         LineString([(0.5, 0.0), (0.5, 1.0)]),
     ),
+    "linestring-linestring-touch-edge-twice": (
+        """
+        x
+       x
+      / \
+     x---x
+    x
+    """,
+        LineString([(0.0, 0.0), (1.0, 1.0), (2.0, 2.0)]),
+        LineString([(0.25, 0.25), (1.0, 0.0), (0.5, 0.5)]),
+    ),
     "linestring-linestring-crosses": (
         """
       x
@@ -454,6 +465,8 @@ linestring_linestring_dispatch_list = [
     "linestring-linestring-same",
     "linestring-linestring-touches",
     "linestring-linestring-touch-interior",
+    "linestring-linestring-touch-edge",
+    "linestring-linestring-touch-edge-twice",
     "linestring-linestring-crosses",
 ]
 
