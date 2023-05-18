@@ -417,8 +417,3 @@ def _multipoints_is_degenerate(geoseries):
     ) & (y1.reset_index(drop=True) == y2.reset_index(drop=True))
     result[sizes_mask] = is_degenerate.reset_index(drop=True)
     return result
-
-
-def _linestrings_is_degenerate(geoseries):
-    multipoints = _multipoints_from_geometry(geoseries)
-    return _multipoints_is_degenerate(multipoints)

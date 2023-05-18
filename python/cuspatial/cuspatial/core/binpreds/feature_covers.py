@@ -20,7 +20,6 @@ from cuspatial.utils.binpred_utils import (
     MultiPoint,
     Point,
     Polygon,
-    _linestrings_is_degenerate,
     _points_and_lines_to_multipoints,
     _zero_series,
 )
@@ -66,23 +65,24 @@ class PolygonPointCovers(BinPred):
 
 class PolygonLineStringCovers(BinPred):
     def _preprocess(self, lhs, rhs):
+        # A polygon covers a linestring if all of the points in the linestring
+        # are in the interior or exterior of the polygon. This differs from
+        # a polygon that contains a linestring in that some point of the
+        # linestring must be in the interior of the polygon.
+        # Count the number of points from rhs in the interior of lhs
         contains_count = _basic_contains_count(lhs, rhs)
+        # Now count the number of points from rhs in the boundary of lhs
         pli = _basic_intersects_pli(lhs, rhs)
         intersections = pli[1]
+        # There may be no intersection, so start with _zero_series
         equality = _zero_series(len(rhs))
-        if len(intersections) == len(rhs):
-            # If the result is degenerate
-            is_degenerate = _linestrings_is_degenerate(intersections)
-            # If all the points in the intersection are in the rhs
-            equality = _basic_equals_count(intersections, rhs)
-            if len(is_degenerate) > 0:
-                equality[is_degenerate] = 1
-        elif len(intersections) > 0:
+        if len(intersections) > 0:
             matching_length_multipoints = _points_and_lines_to_multipoints(
                 intersections, pli[0]
             )
             equality = _basic_equals_count(matching_length_multipoints, rhs)
-        return contains_count + equality >= rhs.sizes
+        covers = contains_count + equality >= rhs.sizes
+        return covers
 
 
 class PolygonPolygonCovers(BinPred):
