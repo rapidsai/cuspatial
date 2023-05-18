@@ -1,5 +1,9 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
+import cupy as cp
+
+import cudf
+
 from cuspatial.core.binpreds.basic_predicates import (
     _basic_contains_count,
     _basic_contains_properly_any,
@@ -58,12 +62,38 @@ class LineStringLineStringTouches(BinPred):
     def _preprocess(self, lhs, rhs):
         """A and B have at least one point in common, and the common points
         lie in at least one boundary"""
-        # Linestrings are not equal
-        equals_all = _basic_equals_all(lhs, rhs)
-        # Linestrings do not cross
-        crosses = lhs.crosses(rhs)
-        intersects = lhs.intersects(rhs)
-        return intersects & ~crosses & ~equals_all
+
+        # First compute pli which will contain points for line crossings and
+        # linestrings for overlapping segments.
+        pli = _basic_intersects_pli(lhs, rhs)
+        offsets = cudf.Series(pli[0])
+        pli_geometry_count = offsets[1:].reset_index(drop=True) - offsets[
+            :-1
+        ].reset_index(drop=True)
+        indices = (
+            cudf.Series(cp.arange(len(pli_geometry_count)))
+            .repeat(pli_geometry_count)
+            .reset_index(drop=True)
+        )
+
+        # In order to be a touch, all of the intersecting geometries
+        # for a particular row must be points.
+        pli_types = pli[1]._column._meta.input_types
+        point_intersection = _false_series(len(lhs))
+        only_points_in_intersection = (
+            pli_types.groupby(indices).sum().sort_index() == 0
+        )
+        point_intersection.iloc[
+            only_points_in_intersection.index
+        ] = only_points_in_intersection
+
+        # Finally, we need to check if the points in the intersection
+        # are equal to endpoints of either linestring.
+        points = _points_and_lines_to_multipoints(pli[1], pli[0])
+        equals_lhs = _basic_equals_count(points, lhs) > 0
+        equals_rhs = _basic_equals_count(points, rhs) > 0
+        touches = point_intersection & (equals_lhs | equals_rhs)
+        return touches
 
 
 class LineStringPolygonTouches(BinPred):

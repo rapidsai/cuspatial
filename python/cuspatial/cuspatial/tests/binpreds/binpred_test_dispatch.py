@@ -105,6 +105,17 @@ features = {
         LineString([(0.0, 0.0), (1.0, 0.0)]),
         LineString([(0.0, 0.0), (1.0, 0.0)]),
     ),
+    "linestring-linestring-covers": (
+        """
+        x
+       x
+      /
+     x
+    x
+    """,
+        LineString([(0.0, 0.0), (1.0, 1.0)]),
+        LineString([(0.25, 0.25), (0.5, 0.5)]),
+    ),
     "linestring-linestring-touches": (
         """
     x
@@ -142,7 +153,7 @@ features = {
         """
         x
        x
-      / \
+      / \\
      x---x
     x
     """,
@@ -476,6 +487,7 @@ point_polygon_dispatch_list = [
 linestring_linestring_dispatch_list = [
     "linestring-linestring-disjoint",
     "linestring-linestring-same",
+    "linestring-linestring-covers",
     "linestring-linestring-touches",
     "linestring-linestring-touch-interior",
     "linestring-linestring-touch-edge",

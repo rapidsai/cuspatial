@@ -3,7 +3,6 @@
 from cuspatial.core.binpreds.basic_predicates import (
     _basic_contains_any,
     _basic_contains_count,
-    _basic_equals_all,
     _basic_equals_count,
     _basic_intersects_pli,
 )
@@ -51,7 +50,13 @@ class CoversPredicateBase(EqualsPredicateBase):
 
 class LineStringLineStringCovers(BinPred):
     def _preprocess(self, lhs, rhs):
-        return _basic_equals_all(rhs, lhs)
+        # A linestring A covers another linestring B iff
+        # no point in B is outside of A.
+        pli = _basic_intersects_pli(lhs, rhs)
+        points = _points_and_lines_to_multipoints(pli[1], pli[0])
+        # Every point in B must be in the intersection
+        equals = _basic_equals_count(rhs, points) == rhs.sizes
+        return equals
 
 
 class PolygonPointCovers(BinPred):

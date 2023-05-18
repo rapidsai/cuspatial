@@ -44,9 +44,8 @@ class PointPolygonWithin(BinPred):
 
 class LineStringLineStringWithin(BinPred):
     def _preprocess(self, lhs, rhs):
-        intersects = _basic_intersects(rhs, lhs)
-        equals = _basic_equals_all(rhs, lhs)
-        return intersects & equals
+        contains = rhs.contains(lhs)
+        return contains
 
 
 class LineStringPolygonWithin(BinPred):
