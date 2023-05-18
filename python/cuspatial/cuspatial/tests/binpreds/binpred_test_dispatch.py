@@ -369,6 +369,19 @@ features = {
         Polygon([(0.0, 1.0), (0.0, 2.0), (1.0, 2.0)]),
         point_polygon,
     ),
+    "polygon-polygon-overlap-inside-edge": (
+        """
+          x
+         /|
+    x---x |
+    \\ /  |
+      x   |
+     /    |
+    x-----x
+    """,
+        Polygon([(0, 0), (1, 0), (1, 1), (0, 0)]),
+        Polygon([(0.25, 0.25), (0.5, 0.5), (0, 0.5), (0.25, 0.25)]),
+    ),
     "polygon-polygon-point-inside": (
         """
       x---x
@@ -488,6 +501,7 @@ polygon_polygon_dispatch_list = [
     "polygon-polygon-touch-point",
     "polygon-polygon-touch-edge",
     "polygon-polygon-overlap-edge",
+    "polygon-polygon-overlap-inside-edge",
     "polygon-polygon-point-inside",
     "polygon-polygon-point-outside",
     "polygon-polygon-in-out-point",

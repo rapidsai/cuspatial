@@ -98,8 +98,9 @@ class PolygonPolygonTouches(BinPred):
     def _preprocess(self, lhs, rhs):
         contains_lhs_none = _basic_contains_count(lhs, rhs) == 0
         contains_rhs_none = _basic_contains_count(rhs, lhs) == 0
-        intersects = _basic_intersects_count(lhs, rhs) == 1
-        return contains_lhs_none & contains_rhs_none & intersects
+        equals = lhs.geom_equals(rhs)
+        intersects = _basic_intersects_count(lhs, rhs) > 0
+        return ~equals & contains_lhs_none & contains_rhs_none & intersects
 
 
 DispatchDict = {
