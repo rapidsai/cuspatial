@@ -49,6 +49,8 @@ OutputIt pairwise_point_distance(MultiPointArrayViewA multipoints1,
   CUSPATIAL_EXPECTS(multipoints1.size() == multipoints2.size(),
                     "Inputs should have the same number of multipoints.");
 
+  if (multipoints1.size() == 0) return distances_first;
+
   return thrust::transform(rmm::exec_policy(stream),
                            multipoints1.multipoint_begin(),
                            multipoints1.multipoint_end(),
