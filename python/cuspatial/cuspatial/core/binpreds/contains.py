@@ -69,7 +69,7 @@ def _quadtree_contains_properly(points, polygons):
     return polygons_and_points
 
 
-def _byte_limited_contains_properly(points, polygons):
+def _brute_force_contains_properly(points, polygons):
     """Compute from a series of points and a series of polygons which points
     are properly contained within the corresponding polygon. Polygon A contains
     Point B properly if B intersects the interior of A but not the boundary (or
@@ -115,14 +115,14 @@ def _byte_limited_contains_properly(points, polygons):
     return final_result
 
 
-def contains_properly(polygons, points, how="quadtree"):
-    if "quadtree" == how:
+def contains_properly(polygons, points, quadtree=True):
+    if quadtree:
         return _quadtree_contains_properly(points, polygons)
-    elif "byte-limited" == how:
+    else:
         # Use stack to convert the result to the same shape as quadtree's
         # result, name the columns appropriately, and return the
         # two-column DataFrame.
-        bitmask_result = _byte_limited_contains_properly(points, polygons)
+        bitmask_result = _brute_force_contains_properly(points, polygons)
         quadtree_shaped_result = bitmask_result.stack().reset_index()
         quadtree_shaped_result.columns = [
             "point_index",
@@ -136,7 +136,3 @@ def contains_properly(polygons, points, how="quadtree"):
             drop=True
         )
         return result
-    else:
-        raise NotImplementedError(
-            "contains_properly only supports 'quadtree' and 'byte_limited'"
-        )
