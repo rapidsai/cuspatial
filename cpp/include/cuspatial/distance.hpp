@@ -129,116 +129,62 @@ std::pair<std::unique_ptr<cudf::column>, cudf::table_view> directed_hausdorff_di
 /**
  * @brief Compute pairwise (multi)point-to-(multi)point Cartesian distance
  *
- * Computes the cartesian distance between each pair of the multipoints. If input is
- * a single point column, the offset of the column should be std::nullopt.
+ * The distance between a pair of multipoints is the shortest Cartesian distance
+ * between any pair of points in the two multipoints.
  *
- * @param points1_xy Column of xy-coordinates of the first point in each pair
- * @param multipoints1_offset Index to the first point of each multipoint in points1_xy
- * @param points2_xy Column of xy-coordinates of the second point in each pair
- * @param multipoints2_offset Index to the second point of each multipoint in points2_xy
+ * @param points1 First column of (multi)points to compute distances
+ * @param points2 Second column of (multi)points to compute distances
  * @return Column of distances between each pair of input points
+ *
+ * @throw cuspatial::logic_error if `multipoints1` and `multipoints2` sizes differ
+ * @throw cuspatial::logic_error if either `multipoints1` or `multipoints2` is not a multipoint
+ * column
+ * @throw cuspatial::logic_error if `multipoints1` and `multipoints2` coordinate types differ
  */
-
 std::unique_ptr<cudf::column> pairwise_point_distance(
-  std::optional<cudf::device_span<cudf::size_type const>> multipoints1_offset,
-  cudf::column_view const& points1_xy,
-  std::optional<cudf::device_span<cudf::size_type const>> multipoints2_offset,
-  cudf::column_view const& points2_xy,
+  geometry_column_view const& multipoints1,
+  geometry_column_view const& multipoints2,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
- * @brief Compute distance between pairs of points and linestrings
+ * @brief Compute pairwise (multi)points-to-(multi)linestrings Cartesian distance
  *
- * The distance between a point and a linestring is defined as the minimum distance
- * between the point and any segment of the linestring. For each input point, this
- * function returns the distance between the point and the corresponding linestring.
+ * The distance between a point and a linestring is defined as the minimum Cartesian distance
+ * between the point and any segment of the linestring.
  *
- * The following example contains 2 pairs of points and linestrings.
- * ```
- * First pair:
- * Point: (0, 0)
- * Linestring: (0, 1) -> (1, 0) -> (2, 0)
- *
- * Second pair:
- * Point: (1, 1)
- * Linestring: (0, 0) -> (1, 1) -> (2, 0) -> (3, 0) -> (3, 1)
- *
- * The input of the above example is:
- * multipoint_geometry_offsets: nullopt
- * points_xy: {0, 1, 0, 1}
- * multilinestring_geometry_offsets: nullopt
- * linestring_part_offsets: {0, 3, 8}
- * linestring_xy: {0, 1, 1, 0, 2, 0, 0, 0, 1, 1, 2, 0, 3, 0, 3, 1}
- *
- * Result: {sqrt(2)/2, 0}
- * ```
- *
- * The following example contains 3 pairs of MultiPoint and MultiLinestring.
- * ```
- * First pair:
- * MultiPoint: (0, 1)
- * MultiLinestring: (0, -1) -> (-2, -3), (-4, -5) -> (-5, -6)
- *
- * Second pair:
- * MultiPoint: (2, 3), (4, 5)
- * MultiLinestring: (7, 8) -> (8, 9)
- *
- * Third pair:
- * MultiPoint: (6, 7), (8, 9)
- * MultiLinestring: (9, 10) -> (10, 11)
-
- * The input of the above example is:
- * multipoint_geometry_offsets: {0, 1, 3, 5}
- * points_xy: {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
- * multilinestring_geometry_offsets: {0, 2, 3, 5}
- * linestring_part_offsets: {0, 2, 4, 6, 8}
- * linestring_points_xy: {0, -1, -2, -3, -4, -5, -5, -6, 7, 8, 8, 9, 9, 10, 10 ,11}
- *
- * Result: {2.0, 4.24264, 1.41421}
- * ```
- *
- * @param multipoint_geometry_offsets Beginning and ending indices to each geometry in the
- * multi-point
- * @param points_xy Interleaved x, y-coordinates of points
- * @param multilinestring_geometry_offsets Beginning and ending indices to each geometry in the
- * multi-linestring
- * @param linestring_part_offsets Beginning and ending indices for each linestring in the point
- * array. Because the coordinates are interleaved, the actual starting position for the coordinate
- * of linestring `i` is `2*linestring_part_offsets[i]`.
- * @param linestring_points_xy Interleaved x, y-coordinates of linestring points.
+ * @param multipoints Column of multipoints to compute distances
+ * @param multilinestrings Column of multilinestrings to compute distances
  * @param mr Device memory resource used to allocate the returned column.
- * @return A column containing the distance between each pair of corresponding points and
- * linestrings.
+ * @return A column containing the distance between each pair of input (multi)points and
+ * (multi)linestrings
  *
- * @note Any optional geometry indices, if is `nullopt`, implies the underlying geometry contains
- * only one component. Otherwise, it contains multiple components.
- *
- * @throws cuspatial::logic_error if the number of (multi)points and (multi)linestrings do not
- * match.
- * @throws cuspatial::logic_error if the any of the point arrays have mismatched types.
+ * @throw cuspatial::logic_error if `multipoints` and `multilinestrings` sizes differ
+ * @throw cuspatial::logic_error if `multipoints` is not a multipoints column or `multilinestrings`
+ * is not a multilinestrings column
+ * @throw cuspatial::logic_error if `multipoints` and `multilinestrings` coordinate types differ
  */
 std::unique_ptr<cudf::column> pairwise_point_linestring_distance(
-  std::optional<cudf::device_span<cudf::size_type const>> multipoint_geometry_offsets,
-  cudf::column_view const& points_xy,
-  std::optional<cudf::device_span<cudf::size_type const>> multilinestring_geometry_offsets,
-  cudf::device_span<cudf::size_type const> linestring_part_offsets,
-  cudf::column_view const& linestring_points_xy,
+  geometry_column_view const& multipoints,
+  geometry_column_view const& multilinestrings,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
  * @brief Compute pairwise (multi)point-to-(multi)polygon Cartesian distance
  *
+ * The distance between a point and a polygon is defined as the minimum Cartesian distance between
+ * the point and any segment of the polygon. If the any point of the multipoint is contained in the
+ * polygon, the distance is 0.
+ *
  * @param multipoints Geometry column of multipoints
  * @param multipolygons Geometry column of multipolygons
  * @param mr Device memory resource used to allocate the returned column.
- * @return Column of distances between each pair of input geometries, same type as input coordinate
- * types.
+ * @return A column containing the distance between each pair of input (multi)points and
+ * (multi)polygons
  *
- * @throw cuspatial::logic_error if `multipoints` and `multipolygons` has different coordinate
- * types.
+ * @throw cuspatial::logic_error if `multipoints` and `multipolygons` sizes differ
  * @throw cuspatial::logic_error if `multipoints` is not a point column and `multipolygons` is not a
  * polygon column.
- * @throw cuspatial::logic_error if input column sizes mismatch.
+ * @throw cuspatial::logic_error if `multipoints` and `multipolygons` coordinate types differ
  */
 
 std::unique_ptr<cudf::column> pairwise_point_polygon_distance(
@@ -247,102 +193,34 @@ std::unique_ptr<cudf::column> pairwise_point_polygon_distance(
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
- * @brief Compute shortest distance between pairs of linestrings
+ * @brief Compute pairwise (multi)linestring-to-(multi)linestring Cartesian distance
  *
- * The shortest distance between two linestrings is defined as the shortest distance
- * between all pairs of segments of the two linestrings. If any of the segments intersect,
- * the distance is 0. The shortest distance between two multilinestrings is defined as the
- * the shortest distance between all pairs of linestrings of the two multilinestrings.
+ * The distance between a pair of multilinestrings is the shortest Cartesian distance
+ * between any pair of segments in the two multilinestrings. If any of the segments intersects,
+ * the distance is 0.
  *
- * The following example contains 4 pairs of linestrings. The first array is a single linestring
- * array and the second array is a multilinestring array.
- * ```
- * First pair:
- * (0, 1) -> (1, 0) -> (-1, 0)
- * {(1, 1) -> (2, 1) -> (2, 0) -> (3, 0)}
- *
- *     |
- *     *   #---#
- *     | \     |
- * ----O---*---#---#
- *     | /
- *     *
- *     |
- *
- * The shortest distance between the two linestrings is the distance
- * from point (1, 1) to segment (0, 1) -> (1, 0), which is sqrt(2)/2.
- *
- * Second pair:
- *
- * (0, 0) -> (0, 1)
- * {(1, 0) -> (1, 1) -> (1, 2), (1, -1) -> (1, -2) -> (1, -3)}
- *
- * The linestrings in the pairs are parallel. Their distance is 1 (point (0, 0) to point (1, 0)).
- *
- * Third pair:
- *
- * (0, 0) -> (2, 2) -> (-2, 0)
- * {(2, 0) -> (0, 2), (0, 2) -> (-2, 0)}
- *
- * The linestrings in the pairs intersect, so their distance is 0.
- *
- * Forth pair:
- *
- * (2, 2) -> (-2, -2)
- * {(1, 1) -> (5, 5) -> (10, 0), (-1, -1) -> (-5, -5) -> (-10, 0)}
- *
- * These linestrings contain colinear and overlapping sections, so
- * their distance is 0.
- *
- * The input of above example is:
- * multilinestring1_geometry_offsets: nullopt
- * linestring1_part_offsets:  {0, 3, 5, 8, 10}
- * linestring1_points_xy:
- * {0, 1, 1, 0, -1, 0, 0, 0, 0, 1, 0, 0, 2, 2, -2, 0, 2, 2, -2, -2}
- *
- * multilinestring2_geometry_offsets: {0, 1, 3, 5, 7}
- * linestring2_offsets:  {0, 4, 7, 10, 12, 14, 17, 20}
- * linestring2_points_xy: {1, 1, 2, 1, 2, 0, 3, 0, 1, 0, 1, 1, 1, 2, 1, -1, 1, -2, 1, -3, 2, 0, 0,
- * 2, 0, 2, -2, 0, 1, 1, 5, 5, 10, 0, -1, -1, -5, -5, -10, 0}
- *
- * Result: {sqrt(2.0)/2, 1, 0, 0}
- * ```
- *
- * @param multilinestring1_geometry_offsets Beginning and ending indices to each multilinestring in
- * the first multilinestring array.
- * @param linestring1_part_offsets Beginning and ending indices for each linestring in the point
- * array. Because the coordinates are interleaved, the actual starting position for the coordinate
- * of linestring `i` is `2*linestring_part_offsets[i]`.
- * @param linestring1_points_xy Interleaved x, y-coordinates of linestring points.
- * @param multilinestring2_geometry_offsets Beginning and ending indices to each multilinestring in
- * the second multilinestring array.
- * @param linestring2_part_offsets Beginning and ending indices for each linestring in the point
- * array. Because the coordinates are interleaved, the actual starting position for the coordinate
- * of linestring `i` is `2*linestring_part_offsets[i]`.
- * @param linestring2_points_xy Interleaved x, y-coordinates of linestring points.
+ * @param multilinestrings1 First column of multilinestrings to compute distances
+ * @param multilinestrings2 Second column of multilinestrings to compute distances
  * @param mr Device memory resource used to allocate the returned column's device memory
- * @return A column of shortest distances between each pair of (multi)linestrings
+ * @return A column containing the distance between each pair of input (multi)linestrings
  *
- * @note If `multilinestring_geometry_offset` is std::nullopt, the input is a single linestring
- * array.
- * @note If any of the linestring contains less than 2 points, the behavior is undefined.
- *
- * @throw cuspatial::logic_error if `linestring1_offsets.size() != linestring2_offsets.size()`
- * @throw cuspatial::logic_error if any of the point arrays have mismatched types.
- * @throw cuspatial::logic_error if any linestring has fewer than 2 points.
- *
+ * @throw cuspatial::logic_error if `multilinestrings1` and `multilinestrings2` sizes differ
+ * @throw cuspatial::logic_error if either `multilinestrings1` or `multilinestrings2` is not a
+ * linestring column.
+ * @throw cuspatial::logic_error if `multilinestrings1` and `multilinestrings2` coordinate types
  */
 std::unique_ptr<cudf::column> pairwise_linestring_distance(
-  std::optional<cudf::device_span<cudf::size_type const>> multilinestring1_geometry_offsets,
-  cudf::device_span<cudf::size_type const> linestring1_part_offsets,
-  cudf::column_view const& linestring1_points_xy,
-  std::optional<cudf::device_span<cudf::size_type const>> multilinestring2_geometry_offsets,
-  cudf::device_span<cudf::size_type const> linestring2_part_offsets,
-  cudf::column_view const& linestring2_points_xy,
+  geometry_column_view const& multilinestrings1,
+  geometry_column_view const& multilinestrings2,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
  * @brief Compute pairwise (multi)linestring-to-(multi)polygon Cartesian distance
+ *
+ * The distance between a pair of (multi)linestring and (multipolygon) is the shortest Cartesian
+ * distance between any pair of segments in the multilinestring and edges in the multipolygon. If
+ * any of the segments intersects, or if any linestring is contained in any polygon, the distance is
+ * 0.
  *
  * @param multilinestrings Geometry column of multilinestrings
  * @param multipolygons Geometry column of multipolygons
@@ -350,13 +228,12 @@ std::unique_ptr<cudf::column> pairwise_linestring_distance(
  * @return Column of distances between each pair of input geometries, same type as input coordinate
  * types.
  *
- * @throw cuspatial::logic_error if `multilinestrings` and `multipolygons` have different coordinate
- * types.
- * @throw cuspatial::logic_error if `multilinestrings` is not a linestring column and
+ * @throw cuspatial::logic_error if `multilinestrings` and `multipolygons` sizes differ
+ * @throw cuspatial::logic_error if either `multilinestrings` is not a linestrings column or
  * `multipolygons` is not a polygon column.
- * @throw cuspatial::logic_error if input column sizes mismatch.
+ * @throw cuspatial::logic_error if `multilinestrings` and `multipolygons` has different coordinate
+ * types.
  */
-
 std::unique_ptr<cudf::column> pairwise_linestring_polygon_distance(
   geometry_column_view const& multilinestrings,
   geometry_column_view const& multipolygons,
@@ -365,18 +242,20 @@ std::unique_ptr<cudf::column> pairwise_linestring_polygon_distance(
 /**
  * @brief Compute pairwise (multi)polygon-to-(multi)polygon Cartesian distance
  *
- * Computes the cartesian distance between each pair of the multipolygons.
+ * The distance between a pair of (multi)polygon and (multi)polygon is the shortest Cartesian
+ * distance between any pair of edges in the multipolygons. If any edges intersects, or if any
+ * polygon is contained in any other polygon, the distance is 0.
  *
- * @param lhs Geometry column of the multipolygons to compute distance from
- * @param rhs Geometry column of the multipolygons to compute distance to
+ * @param multipolygons1 Geometry column of the multipolygons to compute distance from
+ * @param multipolygons2 Geometry column of the multipolygons to compute distance to
  * @param mr Device memory resource used to allocate the returned column.
  *
  * @return Column of distances between each pair of input geometries, same type as input coordinate
  * types.
  */
 std::unique_ptr<cudf::column> pairwise_polygon_distance(
-  geometry_column_view const& lhs,
-  geometry_column_view const& rhs,
+  geometry_column_view const& multipolygons1,
+  geometry_column_view const& multipolygons2,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
 
 /**
