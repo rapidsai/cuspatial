@@ -16,13 +16,6 @@
 
 #pragma once
 
-#include "thrust/iterator/counting_iterator.h"
-#include <thrust/binary_search.h>
-#include <thrust/distance.h>
-#include <thrust/iterator/transform_iterator.h>
-#include <thrust/iterator/zip_iterator.h>
-#include <thrust/pair.h>
-
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/functors.cuh>
 #include <cuspatial/detail/multilinestring_segment.cuh>
@@ -33,7 +26,13 @@
 #include <cuspatial/range/multipoint_range.cuh>
 #include <cuspatial/traits.hpp>
 
+#include <thrust/binary_search.h>
+#include <thrust/distance.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/pair.h>
 
 #include <iterator>
 #include <optional>
