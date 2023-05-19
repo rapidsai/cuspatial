@@ -160,7 +160,8 @@ class multilinestring_range {
   CUSPATIAL_HOST_DEVICE auto multilinestring_linestring_count_end();
 
   /// @internal
-  /// Constructs a multilinestring_segment object, can only be constructed on host.
+  /// Returns the owning class that provides views into the segments of the multilinestring range
+  /// Can only be constructed on host
   auto _segments(rmm::cuda_stream_view);
 
   /// Returns the `multilinestring_idx`th multilinestring in the range.

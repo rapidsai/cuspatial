@@ -39,23 +39,6 @@ struct MultilinestringRangeTest : public BaseFixture {
   {
     auto multilinestring_array =
       make_multilinestring_array(geometry_offset, part_offset, coordinates);
-
-    auto rng = multilinestring_array.range();
-
-    rmm::device_uvector<segment<T>> got(rng.num_segments(), stream());
-    thrust::copy(rmm::exec_policy(stream()), rng.segment_begin(), rng.segment_end(), got.begin());
-
-    auto d_expected = thrust::device_vector<segment<T>>(expected.begin(), expected.end());
-    CUSPATIAL_EXPECT_VEC2D_PAIRS_EQUIVALENT(d_expected, got);
-  }
-
-  void run_segment_test_with_method_single(std::initializer_list<std::size_t> geometry_offset,
-                                           std::initializer_list<std::size_t> part_offset,
-                                           std::initializer_list<vec_2d<T>> coordinates,
-                                           std::initializer_list<segment<T>> expected)
-  {
-    auto multilinestring_array =
-      make_multilinestring_array(geometry_offset, part_offset, coordinates);
     auto rng            = multilinestring_array.range();
     auto segments       = rng._segments(stream());
     auto segments_range = segments.view();
@@ -89,11 +72,10 @@ struct MultilinestringRangeTest : public BaseFixture {
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected, got);
   }
 
-  void run_multilinestring_segment_method_count_test(
-    std::initializer_list<std::size_t> geometry_offset,
-    std::initializer_list<std::size_t> part_offset,
-    std::initializer_list<vec_2d<T>> coordinates,
-    std::initializer_list<std::size_t> expected)
+  void run_multilinestring_segment_count_test(std::initializer_list<std::size_t> geometry_offset,
+                                              std::initializer_list<std::size_t> part_offset,
+                                              std::initializer_list<vec_2d<T>> coordinates,
+                                              std::initializer_list<std::size_t> expected)
   {
     auto multilinestring_array =
       make_multilinestring_array(geometry_offset, part_offset, coordinates);
@@ -196,11 +178,8 @@ TYPED_TEST(MultilinestringRangeTest, SegmentIteratorOneSegmentTest)
   using P = vec_2d<T>;
   using S = segment<T>;
 
-  CUSPATIAL_RUN_TEST(this->run_segment_test_with_method_single,
-                     {0, 1},
-                     {0, 2},
-                     {P{0, 0}, P{1, 1}},
-                     {S{P{0, 0}, P{1, 1}}});
+  CUSPATIAL_RUN_TEST(
+    this->run_segment_test_single, {0, 1}, {0, 2}, {P{0, 0}, P{1, 1}}, {S{P{0, 0}, P{1, 1}}});
 }
 
 TYPED_TEST(MultilinestringRangeTest, SegmentIteratorTwoSegmentTest)
@@ -209,7 +188,7 @@ TYPED_TEST(MultilinestringRangeTest, SegmentIteratorTwoSegmentTest)
   using P = vec_2d<T>;
   using S = segment<T>;
 
-  CUSPATIAL_RUN_TEST(this->run_segment_test_with_method_single,
+  CUSPATIAL_RUN_TEST(this->run_segment_test_single,
                      {0, 2},
                      {0, 2, 4},
                      {P{0, 0}, P{1, 1}, P{2, 2}, P{3, 3}},
@@ -222,7 +201,7 @@ TYPED_TEST(MultilinestringRangeTest, SegmentIteratorTwoSegmentTest2)
   using P = vec_2d<T>;
   using S = segment<T>;
 
-  CUSPATIAL_RUN_TEST(this->run_segment_test_with_method_single,
+  CUSPATIAL_RUN_TEST(this->run_segment_test_single,
                      {0, 1, 2},
                      {0, 2, 4},
                      {P{0, 0}, P{1, 1}, P{0, 0}, P{1, 1}},
@@ -235,7 +214,7 @@ TYPED_TEST(MultilinestringRangeTest, SegmentIteratorManyPairTest)
   using P = vec_2d<T>;
   using S = segment<T>;
 
-  CUSPATIAL_RUN_TEST(this->run_segment_test_with_method_single,
+  CUSPATIAL_RUN_TEST(this->run_segment_test_single,
                      {0, 1, 2, 3},
                      {0, 6, 11, 14},
                      {
@@ -279,7 +258,7 @@ TYPED_TEST(MultilinestringRangeTest, SegmentIteratorWithEmptyLineTest)
   using S = segment<T>;
 
   CUSPATIAL_RUN_TEST(
-    this->run_segment_test_with_method_single,
+    this->run_segment_test_single,
     {0, 1, 2, 3},
     {0, 3, 3, 6},
     {P{0, 0}, P{1, 1}, P{2, 2}, P{10, 10}, P{11, 11}, P{12, 12}},
@@ -293,7 +272,7 @@ TYPED_TEST(MultilinestringRangeTest, SegmentIteratorWithEmptyMultiLineStringTest
   using S = segment<T>;
 
   CUSPATIAL_RUN_TEST(
-    this->run_segment_test_with_method_single,
+    this->run_segment_test_single,
     {0, 1, 1, 2},
     {0, 3, 6},
     {P{0, 0}, P{1, 1}, P{2, 2}, P{10, 10}, P{11, 11}, P{12, 12}},
@@ -306,7 +285,7 @@ TYPED_TEST(MultilinestringRangeTest, SegmentIteratorWithEmptyMultiLineStringTest
   using P = vec_2d<T>;
   using S = segment<T>;
 
-  CUSPATIAL_RUN_TEST(this->run_segment_test_with_method_single,
+  CUSPATIAL_RUN_TEST(this->run_segment_test_single,
 
                      {0, 1, 1, 2},
                      {0, 4, 7},
@@ -350,11 +329,8 @@ TYPED_TEST(MultilinestringRangeTest, MultilinestringSegmentCountTest)
   using P = vec_2d<T>;
   using S = segment<T>;
 
-  CUSPATIAL_RUN_TEST(this->run_multilinestring_segment_method_count_test,
-                     {0, 1},
-                     {0, 3},
-                     {P{0, 0}, P{1, 1}, P{2, 2}},
-                     {2});
+  CUSPATIAL_RUN_TEST(
+    this->run_multilinestring_segment_count_test, {0, 1}, {0, 3}, {P{0, 0}, P{1, 1}, P{2, 2}}, {2});
 }
 
 TYPED_TEST(MultilinestringRangeTest, MultilinestringSegmentCountTest2)
@@ -363,7 +339,7 @@ TYPED_TEST(MultilinestringRangeTest, MultilinestringSegmentCountTest2)
   using P = vec_2d<T>;
   using S = segment<T>;
 
-  CUSPATIAL_RUN_TEST(this->run_multilinestring_segment_method_count_test,
+  CUSPATIAL_RUN_TEST(this->run_multilinestring_segment_count_test,
                      {0, 1, 3},
                      {0, 3, 3, 6},
                      {P{0, 0}, P{1, 1}, P{2, 2}, P{10, 10}, P{11, 11}, P{12, 12}},
@@ -376,7 +352,7 @@ TYPED_TEST(MultilinestringRangeTest, MultilinestringSegmentCountTest3)
   using P = vec_2d<T>;
   using S = segment<T>;
 
-  CUSPATIAL_RUN_TEST(this->run_multilinestring_segment_method_count_test,
+  CUSPATIAL_RUN_TEST(this->run_multilinestring_segment_count_test,
                      {0, 1, 2},
                      {0, 3, 6},
                      {P{0, 0}, P{1, 1}, P{2, 2}, P{10, 10}, P{11, 11}, P{12, 12}},
@@ -389,7 +365,7 @@ TYPED_TEST(MultilinestringRangeTest, MultilinestringSegmentCountTest4)
   using P = vec_2d<T>;
   using S = segment<T>;
 
-  CUSPATIAL_RUN_TEST(this->run_multilinestring_segment_method_count_test,
+  CUSPATIAL_RUN_TEST(this->run_multilinestring_segment_count_test,
                      {0, 1, 3},
                      {0, 3, 5, 7},
                      {P{0, 0}, P{1, 1}, P{2, 2}, P{10, 10}, P{11, 11}, P{20, 20}, P{21, 21}},
@@ -403,7 +379,7 @@ TYPED_TEST(MultilinestringRangeTest, MultilinestringSegmentCountTest5)
   using P = vec_2d<T>;
   using S = segment<T>;
 
-  CUSPATIAL_RUN_TEST(this->run_multilinestring_segment_method_count_test,
+  CUSPATIAL_RUN_TEST(this->run_multilinestring_segment_count_test,
                      {0, 1, 2, 3},
                      {0, 3, 3, 6},
                      {P{0, 0}, P{1, 1}, P{2, 2}, P{10, 10}, P{11, 11}, P{12, 12}},
@@ -417,7 +393,7 @@ TYPED_TEST(MultilinestringRangeTest, MultilinestringSegmentCountTest6)
   using P = vec_2d<T>;
   using S = segment<T>;
 
-  CUSPATIAL_RUN_TEST(this->run_multilinestring_segment_method_count_test,
+  CUSPATIAL_RUN_TEST(this->run_multilinestring_segment_count_test,
                      {0, 1, 1, 2},
                      {0, 3, 6},
                      {P{0, 0}, P{1, 1}, P{2, 2}, P{10, 10}, P{11, 11}, P{12, 12}},
@@ -431,7 +407,7 @@ TYPED_TEST(MultilinestringRangeTest, MultilinestringSegmentCountTest7)
   using P = vec_2d<T>;
   using S = segment<T>;
 
-  CUSPATIAL_RUN_TEST(this->run_multilinestring_segment_method_count_test,
+  CUSPATIAL_RUN_TEST(this->run_multilinestring_segment_count_test,
                      {0, 1, 1, 2},
                      {0, 4, 7},
                      {P{0, 0}, P{1, 1}, P{2, 2}, P{3, 3}, P{10, 10}, P{11, 11}, P{12, 12}},

@@ -359,28 +359,6 @@ template <typename GeometryIterator,
           typename PartIterator,
           typename RingIterator,
           typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto
-multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
-  subtracted_ring_begin()
-{
-  return detail::make_counting_transform_iterator(
-    0, detail::to_segment_offset_iterator{_ring_begin, thrust::make_counting_iterator(0)});
-}
-
-template <typename GeometryIterator,
-          typename PartIterator,
-          typename RingIterator,
-          typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto
-multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::subtracted_ring_end()
-{
-  return subtracted_ring_begin() + thrust::distance(_ring_begin, _ring_end);
-}
-
-template <typename GeometryIterator,
-          typename PartIterator,
-          typename RingIterator,
-          typename VecIterator>
 auto multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::_segments(
   rmm::cuda_stream_view stream)
 {
