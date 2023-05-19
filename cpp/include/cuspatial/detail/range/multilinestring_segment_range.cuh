@@ -142,10 +142,10 @@ to_valid_segment_functor(OffsetIterator, OffsetIterator, CountIterator, Coordina
  * pid:       0 1 2 3 4 5
  * ```
  *
- * Notice that if we "skip" the segment index by a few steps, it can correctly find the correponding
- * point index of the starting point of the segment. For example:
- *  skipping sid==0 (AB) by 0 steps, finds the starting point of A (pid==0)
- *  skipping sid==2 (XY) by 1 step, finds the starting point of X (pid==3)
+ * Notice that if we "skip" the segment index by a few steps, it can correctly find the
+ * corresponding point index of the starting point of the segment. For example: skipping sid==0 (AB)
+ * by 0 steps, finds the starting point of A (pid==0) skipping sid==2 (XY) by 1 step, finds the
+ * starting point of X (pid==3)
  *
  * Intuitively, the *steps to skip* equals the number of linestrings that precedes the linestring
  * that the current segment is in. This is because every linestring adds an "invalid" segment to the
