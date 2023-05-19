@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <cuspatial_test/test_util.cuh>
-
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/functors.cuh>
 #include <cuspatial/iterator_factory.cuh>
@@ -49,38 +47,36 @@ class multilinestring_segment_range {
 
   CUSPATIAL_HOST_DEVICE index_t num_segments() { return _num_segments; }
 
-  CUSPATIAL_HOST_DEVICE auto offset_begin()
+  CUSPATIAL_HOST_DEVICE auto multigeometry_offset_begin()
   {
-    return make_counting_transform_iterator(
-      0,
-      to_segment_offset_iterator{_parent.part_offset_begin(),
-                                 _non_empty_geometry_prefix_sum.begin()});
+    return thrust::make_permutation_iterator(_per_linestring_offset_begin(),
+                                             _parent.geometry_offsets_begin());
   }
 
-  CUSPATIAL_HOST_DEVICE auto offset_end()
+  CUSPATIAL_HOST_DEVICE auto multigeometry_offset_end()
   {
-    return offset_begin() + _non_empty_geometry_prefix_sum.size();
+    return multigeometry_offset_begin() + _parent.num_multilinestrings() + 1;
   }
 
-  CUSPATIAL_HOST_DEVICE auto count_begin()
+  CUSPATIAL_HOST_DEVICE auto multigeometry_count_begin()
   {
-    auto permuted_offsets_it =
-      thrust::make_permutation_iterator(offset_begin(), _parent.geometry_offsets_begin());
-
-    auto zipped_offset_it =
-      thrust::make_zip_iterator(permuted_offsets_it, thrust::next(permuted_offsets_it));
+    auto zipped_offset_it = thrust::make_zip_iterator(multigeometry_offset_begin(),
+                                                      thrust::next(multigeometry_offset_begin()));
 
     return thrust::make_transform_iterator(zipped_offset_it, offset_pair_to_count_functor{});
   }
 
-  CUSPATIAL_HOST_DEVICE auto count_end() { return count_begin() + _parent.num_multilinestrings(); }
+  CUSPATIAL_HOST_DEVICE auto multigeometry_count_end()
+  {
+    return multigeometry_count_begin() + _parent.num_multilinestrings();
+  }
 
   CUSPATIAL_HOST_DEVICE auto begin()
   {
     return make_counting_transform_iterator(
       0,
-      to_valid_segment_functor{offset_begin(),
-                               offset_end(),
+      to_valid_segment_functor{_per_linestring_offset_begin(),
+                               _per_linestring_offset_end(),
                                _non_empty_geometry_prefix_sum.begin(),
                                _parent.point_begin()});
   }
@@ -91,6 +87,19 @@ class multilinestring_segment_range {
   ParentRange _parent;
   IndexRange _non_empty_geometry_prefix_sum;
   index_t _num_segments;
+
+  CUSPATIAL_HOST_DEVICE auto _per_linestring_offset_begin()
+  {
+    return make_counting_transform_iterator(
+      0,
+      to_segment_offset_iterator{_parent.part_offset_begin(),
+                                 _non_empty_geometry_prefix_sum.begin()});
+  }
+
+  CUSPATIAL_HOST_DEVICE auto _per_linestring_offset_end()
+  {
+    return _per_linestring_offset_begin() + _non_empty_geometry_prefix_sum.size();
+  }
 };
 
 template <typename ParentRange, typename IndexRange>

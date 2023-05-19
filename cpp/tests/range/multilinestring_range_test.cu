@@ -105,8 +105,31 @@ struct MultilinestringRangeTest : public BaseFixture {
 
     rmm::device_uvector<std::size_t> got(rng.num_multilinestrings(), stream());
     thrust::copy(rmm::exec_policy(stream()),
-                 segments_range.count_begin(),
-                 segments_range.count_end(),
+                 segments_range.multigeometry_count_begin(),
+                 segments_range.multigeometry_count_end(),
+                 got.begin());
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected, got);
+  }
+
+  void run_multilinestring_segment_offset_test(std::initializer_list<std::size_t> geometry_offset,
+                                               std::initializer_list<std::size_t> part_offset,
+                                               std::initializer_list<vec_2d<T>> coordinates,
+                                               std::initializer_list<std::size_t> expected)
+  {
+    auto multilinestring_array =
+      make_multilinestring_array(geometry_offset, part_offset, coordinates);
+    auto rng            = multilinestring_array.range();
+    auto segments       = rng._segments(stream());
+    auto segments_range = segments.view();
+
+    auto d_expected = thrust::device_vector<std::size_t>(expected.begin(), expected.end());
+
+    rmm::device_uvector<std::size_t> got(rng.num_multilinestrings() + 1, stream());
+
+    thrust::copy(rmm::exec_policy(stream()),
+                 segments_range.multigeometry_offset_begin(),
+                 segments_range.multigeometry_offset_end(),
                  got.begin());
 
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected, got);
@@ -263,6 +286,38 @@ TYPED_TEST(MultilinestringRangeTest, SegmentIteratorWithEmptyLineTest)
     {S{P{0, 0}, P{1, 1}}, S{P{1, 1}, P{2, 2}}, S{P{10, 10}, P{11, 11}}, S{P{11, 11}, P{12, 12}}});
 }
 
+TYPED_TEST(MultilinestringRangeTest, SegmentIteratorWithEmptyMultiLineStringTest)
+{
+  using T = TypeParam;
+  using P = vec_2d<T>;
+  using S = segment<T>;
+
+  CUSPATIAL_RUN_TEST(
+    this->run_segment_test_with_method_single,
+    {0, 1, 1, 2},
+    {0, 3, 6},
+    {P{0, 0}, P{1, 1}, P{2, 2}, P{10, 10}, P{11, 11}, P{12, 12}},
+    {S{P{0, 0}, P{1, 1}}, S{P{1, 1}, P{2, 2}}, S{P{10, 10}, P{11, 11}}, S{P{11, 11}, P{12, 12}}});
+}
+
+TYPED_TEST(MultilinestringRangeTest, SegmentIteratorWithEmptyMultiLineStringTest2)
+{
+  using T = TypeParam;
+  using P = vec_2d<T>;
+  using S = segment<T>;
+
+  CUSPATIAL_RUN_TEST(this->run_segment_test_with_method_single,
+
+                     {0, 1, 1, 2},
+                     {0, 4, 7},
+                     {P{0, 0}, P{1, 1}, P{2, 2}, P{3, 3}, P{10, 10}, P{11, 11}, P{12, 12}},
+                     {S{P{0, 0}, P{1, 1}},
+                      S{P{1, 1}, P{2, 2}},
+                      S{P{2, 2}, P{3, 3}},
+                      S{P{10, 10}, P{11, 11}},
+                      S{P{11, 11}, P{12, 12}}});
+}
+
 TYPED_TEST(MultilinestringRangeTest, PerMultilinestringCountTest)
 {
   using T = TypeParam;
@@ -341,7 +396,7 @@ TYPED_TEST(MultilinestringRangeTest, MultilinestringSegmentCountTest4)
                      {2, 2});
 }
 
-// FIXME: contains empty linestring
+// contains empty linestring
 TYPED_TEST(MultilinestringRangeTest, MultilinestringSegmentCountTest5)
 {
   using T = TypeParam;
@@ -353,6 +408,48 @@ TYPED_TEST(MultilinestringRangeTest, MultilinestringSegmentCountTest5)
                      {0, 3, 3, 6},
                      {P{0, 0}, P{1, 1}, P{2, 2}, P{10, 10}, P{11, 11}, P{12, 12}},
                      {2, 0, 2});
+}
+
+// contains empty multilinestring
+TYPED_TEST(MultilinestringRangeTest, MultilinestringSegmentCountTest6)
+{
+  using T = TypeParam;
+  using P = vec_2d<T>;
+  using S = segment<T>;
+
+  CUSPATIAL_RUN_TEST(this->run_multilinestring_segment_method_count_test,
+                     {0, 1, 1, 2},
+                     {0, 3, 6},
+                     {P{0, 0}, P{1, 1}, P{2, 2}, P{10, 10}, P{11, 11}, P{12, 12}},
+                     {2, 0, 2});
+}
+
+// contains empty multilinestring
+TYPED_TEST(MultilinestringRangeTest, MultilinestringSegmentCountTest7)
+{
+  using T = TypeParam;
+  using P = vec_2d<T>;
+  using S = segment<T>;
+
+  CUSPATIAL_RUN_TEST(this->run_multilinestring_segment_method_count_test,
+                     {0, 1, 1, 2},
+                     {0, 4, 7},
+                     {P{0, 0}, P{1, 1}, P{2, 2}, P{3, 3}, P{10, 10}, P{11, 11}, P{12, 12}},
+                     {3, 0, 2});
+}
+
+// contains empty multilinestring
+TYPED_TEST(MultilinestringRangeTest, MultilinestringSegmentOffsetTest)
+{
+  using T = TypeParam;
+  using P = vec_2d<T>;
+  using S = segment<T>;
+
+  CUSPATIAL_RUN_TEST(this->run_multilinestring_segment_offset_test,
+                     {0, 1, 1, 2},
+                     {0, 4, 7},
+                     {P{0, 0}, P{1, 1}, P{2, 2}, P{3, 3}, P{10, 10}, P{11, 11}, P{12, 12}},
+                     {0, 3, 3, 5});
 }
 
 TYPED_TEST(MultilinestringRangeTest, MultilinestringLinestringCountTest)

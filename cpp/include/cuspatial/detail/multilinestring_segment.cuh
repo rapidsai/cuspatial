@@ -16,11 +16,8 @@
 
 #pragma once
 
-#include <cuspatial_test/test_util.cuh>
-
-#include "range/multilinestring_segment_range.cuh"
-
 #include <cuspatial/detail/functors.cuh>
+#include <cuspatial/detail/range/multilinestring_segment_range.cuh>
 #include <cuspatial/detail/utility/zero_data.cuh>
 #include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/range/range.cuh>
