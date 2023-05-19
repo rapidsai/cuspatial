@@ -49,6 +49,8 @@ if(NOT cuspatial_FOUND)
 
     # Statically link cudart if building wheels
     set(CUDA_STATIC_RUNTIME ON)
+    set(CUSPATIAL_USE_CUDF_STATIC ON)
+    set(CUSPATIAL_EXCLUDE_CUDF_FROM_ALL ON)
 
     # Always build wheels against the pyarrow libarrow.
     set(USE_LIBARROW_FROM_PYARROW ON)
@@ -70,8 +72,9 @@ if(NOT cuspatial_FOUND)
 
   if(CUSPATIAL_BUILD_WHEELS)
     include(cmake/Modules/WheelHelpers.cmake)
+    get_target_property(_nvcomp_link_libs nvcomp::nvcomp INTERFACE_LINK_LIBRARIES)
     # Ensure all the shared objects we need at runtime are in the wheel
-    add_target_libs_to_wheel(LIB_DIR cuspatial TARGETS arrow_shared)
+    add_target_libs_to_wheel(LIB_DIR cuspatial TARGETS arrow_shared nvcomp::nvcomp ${_nvcomp_link_libs})
   endif()
 
   # Since there are multiple subpackages of cuspatial._lib that require access to libcuspatial, we place the

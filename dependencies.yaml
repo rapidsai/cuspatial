@@ -31,7 +31,7 @@ files:
       - notebooks
       - py_version
   checks:
-    output: none
+    output: requirements
     includes:
       - develop
       - py_version
@@ -41,6 +41,32 @@ files:
       - cudatoolkit
       - docs
       - py_version
+  py_build:
+    output: [requirements, pyproject]
+    pyproject_dir: python/cuspatial
+    requirements_dir: python/cuspatial
+    extras:
+      table: build-system
+    includes:
+      - build_cpp
+      - build_python
+  py_run:
+    output: [requirements, pyproject]
+    pyproject_dir: python/cuspatial
+    requirements_dir: python/cuspatial
+    extras:
+      table: project
+    includes:
+      - run_python
+  py_test:
+    output: [requirements, pyproject]
+    pyproject_dir: python/cuspatial
+    requirements_dir: python/cuspatial
+    extras:
+      table: project.optional-dependencies
+      key: test
+    includes:
+      - test_python
 channels:
   - rapidsai
   - rapidsai-nightly
@@ -90,11 +116,17 @@ dependencies:
         packages:
           - *cmake_ver
           - cython>=0.29,<0.30
-          - scikit-build>=0.13.1
+          - scikit-build>=0.13.1,<0.17.2
           - setuptools
       - output_types: conda
-        packages:
+        packages: &build_python_packages_conda
           - &cudf_conda cudf==23.6.*
+          - &rmm_conda rmm==23.6.*
+      - output_types: requirements
+        packages:
+          # pip recognizes the index as a global option for the requirements.txt file
+          # This index is needed for cudf and rmm.
+          - --extra-index-url=https://pypi.nvidia.com
     specific:
       - output_types: conda
         matrices:
@@ -108,32 +140,16 @@ dependencies:
             packages:
               - *gcc_aarch64
               - *sysroot_aarch64
-      - output_types: requirements
+      - output_types: [requirements, pyproject]
         matrices:
-          - matrix:
-              cuda: "11.8"
-            packages:
-              - --extra-index-url=https://pypi.nvidia.com
-              - rmm-cu11==23.6.*
-              - cudf-cu11==23.6.*
-          - matrix:
-              cuda: "11.5"
-            packages:
-              - --extra-index-url=https://pypi.nvidia.com
-              - rmm-cu11==23.6.*
-              - cudf-cu11==23.6.*
-          - matrix:
-              cuda: "11.4"
-            packages:
-              - --extra-index-url=https://pypi.nvidia.com
-              - rmm-cu11==23.6.*
-              - cudf-cu11==23.6.*
-          - matrix:
-              cuda: "11.2"
-            packages:
-              - --extra-index-url=https://pypi.nvidia.com
-              - rmm-cu11==23.6.*
-              - cudf-cu11==23.6.*
+          - matrix: {cuda: "11.8"}
+            packages: &build_python_packages_cu11
+              - &cudf_cu11 cudf-cu11==23.6.*
+              - &rmm_cu11 rmm-cu11==23.6.*
+          - {matrix: {cuda: "11.5"}, packages: *build_python_packages_cu11}
+          - {matrix: {cuda: "11.4"}, packages: *build_python_packages_cu11}
+          - {matrix: {cuda: "11.2"}, packages: *build_python_packages_cu11}
+          - {matrix: null, packages: [*cudf_conda, *rmm_conda] }
   cudatoolkit:
     specific:
       - output_types: conda
@@ -161,7 +177,7 @@ dependencies:
           - pre-commit
   docs:
     common:
-      - output_types: [conda]
+      - output_types: [conda, requirements]
         packages:
           - doxygen
           - ipython
@@ -172,15 +188,27 @@ dependencies:
           - sphinx<6
   notebooks:
     common:
-      - output_types: [conda, requirements]
+      - output_types: [conda, requirements, pyproject]
         packages:
-          - cuml==23.6.*
           - ipython
           - ipywidgets
           - notebook
           - pydeck
           - shapely
           - scikit-image
+      - output_types: conda
+        packages:
+          - &cuml_conda cuml==23.6.*
+    specific:
+      - output_types: [requirements, pyproject]
+        matrices:
+          - {matrix: null, packages: [*cuml_conda]}
+          - matrix: {cuda: "11.8"}
+            packages: &notebooks_packages_cu11
+              - &cuml_cu11 cuml-cu11==23.6.*
+          - {matrix: {cuda: "11.5"}, packages: *notebooks_packages_cu11}
+          - {matrix: {cuda: "11.4"}, packages: *notebooks_packages_cu11}
+          - {matrix: {cuda: "11.2"}, packages: *notebooks_packages_cu11}
   py_version:
     specific:
       - output_types: conda
@@ -198,43 +226,32 @@ dependencies:
               - python>=3.9,<3.11
   run_python:
     common:
-      - output_types: [conda, requirements]
+      - output_types: [conda, requirements, pyproject]
         packages:
           - geopandas>=0.11.0
       - output_types: conda
         packages:
           - *cudf_conda
-          - rmm==23.6.*
-    specific:
+          - *rmm_conda
       - output_types: requirements
+        packages:
+          # pip recognizes the index as a global option for the requirements.txt file
+          # This index is needed for cudf and rmm.
+          - --extra-index-url=https://pypi.nvidia.com
+    specific:
+      - output_types: [requirements, pyproject]
         matrices:
-          - matrix:
-              cuda: "11.8"
-            packages:
-              - --extra-index-url=https://pypi.nvidia.com
-              - rmm-cu11==23.6.*
+          - matrix: {cuda: "11.8"}
+            packages: &run_python_packages_cu11
               - cudf-cu11==23.6.*
-          - matrix:
-              cuda: "11.5"
-            packages:
-              - --extra-index-url=https://pypi.nvidia.com
               - rmm-cu11==23.6.*
-              - cudf-cu11==23.6.*
-          - matrix:
-              cuda: "11.4"
-            packages:
-              - --extra-index-url=https://pypi.nvidia.com
-              - rmm-cu11==23.6.*
-              - cudf-cu11==23.6.*
-          - matrix:
-              cuda: "11.2"
-            packages:
-              - --extra-index-url=https://pypi.nvidia.com
-              - rmm-cu11==23.6.*
-              - cudf-cu11==23.6.*
+          - {matrix: {cuda: "11.5"}, packages: *run_python_packages_cu11}
+          - {matrix: {cuda: "11.4"}, packages: *run_python_packages_cu11}
+          - {matrix: {cuda: "11.2"}, packages: *run_python_packages_cu11}
+          - {matrix: null, packages: [*cudf_conda, *rmm_conda]}
   test_python:
     common:
-      - output_types: [conda, requirements]
+      - output_types: [conda, requirements, pyproject]
         packages:
           - pytest
           - pytest-cov
