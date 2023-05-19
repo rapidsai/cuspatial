@@ -42,10 +42,10 @@ namespace detail {
  * set to nullopt, no distance computation will be bypassed.
  */
 template <class MultiLinestringRange1, class MultiLinestringRange2, class OutputIt>
-__global__ void linestring_distance(MultiLinestringRange1 multilinestrings1,
-                                    MultiLinestringRange2 multilinestrings2,
-                                    thrust::optional<uint8_t*> intersects,
-                                    OutputIt distances_first)
+__global__ void linestring_distance_multilinestring_loop(MultiLinestringRange1 multilinestrings1,
+                                                         MultiLinestringRange2 multilinestrings2,
+                                                         thrust::optional<uint8_t*> intersects,
+                                                         OutputIt distances_first)
 {
   using T = typename MultiLinestringRange1::element_t;
 
@@ -68,6 +68,31 @@ __global__ void linestring_distance(MultiLinestringRange1 multilinestrings1,
         min_distance_squared = min(min_distance_squared, squared_segment_distance(a, b, c, d));
       }
     }
+    atomicMin(&distances_first[geometry_idx], static_cast<T>(sqrt(min_distance_squared)));
+  }
+}
+
+/**
+ * @internal
+ * @brief The kernel to compute (multi)linestring to (multi)linestring distance
+ *
+ * Load balanced kernel to compute distances between one pair of segments from the multilinestring
+ * and multilinestring.
+ *
+ * `intersects` is an optional pointer to a boolean range where the `i`th element indicates the
+ * `i`th output should be set to 0 and bypass distance computation. This argument is optional, if
+ * set to nullopt, no distance computation will be bypassed.
+ */
+template <class MultiLinestringRange1, class MultiLinestringRange2, class OutputIt>
+__global__ void linestring_distance_load_balanced(MultiLinestringRange1 multilinestrings1,
+                                                  MultiLinestringRange2 multilinestrings2,
+                                                  thrust::optional<uint8_t*> intersects,
+                                                  OutputIt distances_first)
+{
+  using T = typename MultiLinestringRange1::element_t;
+
+  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < multilinestrings1.num_points();
+       idx += gridDim.x * blockDim.x) {
     atomicMin(&distances_first[geometry_idx], static_cast<T>(sqrt(min_distance_squared)));
   }
 }
