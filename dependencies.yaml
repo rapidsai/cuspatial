@@ -56,8 +56,8 @@ dependencies:
           - cxx-compiler
           - gmock>=1.13.0
           - gtest>=1.13.0
-          - libcudf==23.6.*
-          - librmm==23.6.*
+          - libcudf==23.8.*
+          - librmm==23.8.*
           - ninja
     specific:
       - output_types: conda
@@ -94,7 +94,7 @@ dependencies:
           - setuptools
       - output_types: conda
         packages:
-          - &cudf_conda cudf==23.6.*
+          - &cudf_conda cudf==23.8.*
     specific:
       - output_types: conda
         matrices:
@@ -114,22 +114,22 @@ dependencies:
               cuda: "11.8"
             packages:
               - "--extra-index-url=https://pypi.nvidia.com"
-              - cudf-cu11==23.6.*
+              - cudf-cu11==23.8.*
           - matrix:
               cuda: "11.5"
             packages:
               - "--extra-index-url=https://pypi.nvidia.com"
-              - cudf-cu11==23.6.*
+              - cudf-cu11==23.8.*
           - matrix:
               cuda: "11.4"
             packages:
               - "--extra-index-url=https://pypi.nvidia.com"
-              - cudf-cu11==23.6.*
+              - cudf-cu11==23.8.*
           - matrix:
               cuda: "11.2"
             packages:
               - "--extra-index-url=https://pypi.nvidia.com"
-              - cudf-cu11==23.6.*
+              - cudf-cu11==23.8.*
   cudatoolkit:
     specific:
       - output_types: conda
@@ -170,7 +170,7 @@ dependencies:
     common:
       - output_types: [conda, requirements]
         packages:
-          - cuml==23.6.*
+          - cuml==23.8.*
           - ipython
           - ipywidgets
           - notebook
@@ -200,7 +200,7 @@ dependencies:
       - output_types: conda
         packages:
           - *cudf_conda
-          - rmm==23.6.*
+          - rmm==23.8.*
     specific:
       - output_types: requirements
         matrices:
@@ -208,22 +208,22 @@ dependencies:
               cuda: "11.8"
             packages:
               - "--extra-index-url=https://pypi.nvidia.com"
-              - rmm-cu11==23.6.*
+              - rmm-cu11==23.8.*
           - matrix:
               cuda: "11.5"
             packages:
               - "--extra-index-url=https://pypi.nvidia.com"
-              - rmm-cu11==23.6.*
+              - rmm-cu11==23.8.*
           - matrix:
               cuda: "11.4"
             packages:
               - "--extra-index-url=https://pypi.nvidia.com"
-              - rmm-cu11==23.6.*
+              - rmm-cu11==23.8.*
           - matrix:
               cuda: "11.2"
             packages:
               - "--extra-index-url=https://pypi.nvidia.com"
-              - rmm-cu11==23.6.*
+              - rmm-cu11==23.8.*
   test_python:
     common:
       - output_types: [conda, requirements]
