@@ -42,10 +42,15 @@ else()
 endif()
 
 if(NOT cuspatial_FOUND)
+  set(BUILD_TESTS OFF)
+  set(BUILD_BENCHMARKS OFF)
   set(_exclude_from_all "")
   if(CUSPATIAL_BUILD_WHEELS)
-    set(BUILD_TESTS OFF)
-    set(BUILD_BENCHMARKS OFF)
+
+    # We don't build C++ tests when building wheels, so we can also omit the test util and shrink
+    # the wheel by avoiding embedding GTest.
+    set(CUDF_BUILD_TESTUTIL OFF)
+    set(CUDF_BUILD_STREAMS_TEST_UTIL OFF)
 
     # Statically link cudart if building wheels
     set(CUDA_STATIC_RUNTIME ON)
@@ -54,11 +59,6 @@ if(NOT cuspatial_FOUND)
 
     # Always build wheels against the pyarrow libarrow.
     set(USE_LIBARROW_FROM_PYARROW ON)
-
-    # We don't build C++ tests when building wheels, so we can also omit the test util and shrink
-    # the wheel by avoiding embedding GTest.
-    set(CUDF_BUILD_TESTUTIL OFF)
-    set(CUDF_BUILD_STREAMS_TEST_UTIL OFF)
 
     # Need to set this so all the nvcomp targets are global, not only nvcomp::nvcomp
     # https://cmake.org/cmake/help/latest/variable/CMAKE_FIND_PACKAGE_TARGETS_GLOBAL.html#variable:CMAKE_FIND_PACKAGE_TARGETS_GLOBAL
@@ -70,17 +70,18 @@ if(NOT cuspatial_FOUND)
 
   add_subdirectory(../../cpp cuspatial-cpp ${_exclude_from_all})
 
+  set(cython_lib_dir cuspatial)
+
   if(CUSPATIAL_BUILD_WHEELS)
     include(cmake/Modules/WheelHelpers.cmake)
     get_target_property(_nvcomp_link_libs nvcomp::nvcomp INTERFACE_LINK_LIBRARIES)
     # Ensure all the shared objects we need at runtime are in the wheel
-    add_target_libs_to_wheel(LIB_DIR cuspatial TARGETS arrow_shared nvcomp::nvcomp ${_nvcomp_link_libs})
+    add_target_libs_to_wheel(LIB_DIR ${cython_lib_dir} TARGETS arrow_shared nvcomp::nvcomp ${_nvcomp_link_libs})
   endif()
 
   # Since there are multiple subpackages of cuspatial._lib that require access to libcuspatial, we place the
   # library in the cuspatial directory as a single source of truth and modify the other rpaths
   # appropriately.
-  set(cython_lib_dir cuspatial)
   install(TARGETS cuspatial DESTINATION ${cython_lib_dir})
 endif()
 
