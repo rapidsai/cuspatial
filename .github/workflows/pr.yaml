@@ -19,6 +19,8 @@ jobs:
       - conda-python-tests
       - conda-notebook-tests
       - docs-build
+      - wheel-build
+      - wheel-tests
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/pr-builder.yaml@branch-23.06
   checks:
@@ -70,3 +72,21 @@ jobs:
       arch: "amd64"
       container_image: "rapidsai/ci:latest"
       run_script: "ci/build_docs.sh"
+  wheel-build:
+    needs: checks
+    secrets: inherit
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux-build.yml@branch-23.06
+    with:
+      build_type: pull-request
+      package-dir: python
+      package-name: cuspatial
+      skbuild-configure-options: "-DCUSPATIAL_BUILD_WHEELS=ON"
+  wheel-tests:
+    needs: wheel-build
+    secrets: inherit
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux-test.yml@branch-23.06
+    with:
+      build_type: pull-request
+      package-name: cuspatial
+      test-unittest: "python -m pytest ./python/cuspatial/cuspatial/tests"
+      test-smoketest: "python ./ci/wheel_smoke_test.py"
