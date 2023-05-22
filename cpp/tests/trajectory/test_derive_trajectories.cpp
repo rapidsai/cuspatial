@@ -143,7 +143,7 @@ TEST_F(DeriveTrajectoriesErrorTest, Nulls)
     auto nulls = rmm::device_uvector<int>(1000, rmm::cuda_stream_default);
     cudaMemsetAsync(nulls.data(), 0xcccc, nulls.size(), rmm::cuda_stream_default.value());
     auto nulls_buffer = nulls.release();
-    id.set_null_mask(nulls_buffer, 8000);
+    id.set_null_mask(nulls_buffer, 4000);
     EXPECT_THROW(cuspatial::derive_trajectories(id, xs, ys, ts, this->mr()),
                  cuspatial::logic_error);
   }
