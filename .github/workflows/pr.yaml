@@ -88,5 +88,5 @@ jobs:
     with:
       build_type: pull-request
       package-name: cuspatial
-      test-unittest: "python -m pytest ./python/cuspatial/cuspatial/tests"
       test-smoketest: "python ./ci/wheel_smoke_test.py"
+      test-unittest: "python -m pytest -n 8 ./python/cuspatial/cuspatial/tests"
