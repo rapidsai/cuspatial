@@ -17,7 +17,7 @@
 function(find_and_configure_cudf)
 
     if(TARGET cudf::cudf)
-        return()
+      return()
     endif()
 
     set(oneValueArgs VERSION GIT_REPO GIT_TAG USE_CUDF_STATIC EXCLUDE_FROM_ALL PER_THREAD_DEFAULT_STREAM)
@@ -54,7 +54,9 @@ function(find_and_configure_cudf)
                 "CUDF_USE_PER_THREAD_DEFAULT_STREAM ${PKG_PER_THREAD_DEFAULT_STREAM}"
     )
 
-    set_property(TARGET cudf PROPERTY SYSTEM TRUE)
+    if(TARGET cudf)
+      set_property(TARGET cudf PROPERTY SYSTEM TRUE)
+    endif()
 endfunction()
 
 set(CUSPATIAL_MIN_VERSION_cudf "${CUSPATIAL_VERSION_MAJOR}.${CUSPATIAL_VERSION_MINOR}")
