@@ -36,7 +36,7 @@ function(find_and_configure_cudf)
         set(BUILD_SHARED OFF)
     endif()
 
-    rapids_cpm_find(cudf ${PKG_VERSION} ${cudf_components}
+    rapids_cpm_find(cudf ${PKG_VERSION}
       GLOBAL_TARGETS ${global_targets}
       BUILD_EXPORT_SET cuspatial-exports
       INSTALL_EXPORT_SET cuspatial-exports
@@ -46,6 +46,7 @@ function(find_and_configure_cudf)
         GIT_SHALLOW      TRUE
         SOURCE_SUBDIR    cpp
         EXCLUDE_FROM_ALL ${PKG_EXCLUDE_FROM_ALL}
+        FIND_PACKAGE_ARGUMENTS "${cudf_components}"
         OPTIONS "BUILD_TESTS OFF"
                 "BUILD_BENCHMARKS OFF"
                 "BUILD_SHARED_LIBS ${BUILD_SHARED}"
