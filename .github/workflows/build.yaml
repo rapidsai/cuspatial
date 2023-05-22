@@ -72,7 +72,7 @@ jobs:
       sha: ${{ inputs.sha }}
       date: ${{ inputs.date }}
       package-name: cuspatial
-      package-dir: python
+      package-dir: python/cuspatial
       skbuild-configure-options: "-DCUSPATIAL_BUILD_WHEELS=ON"
   wheel-publish:
     needs: wheel-build
