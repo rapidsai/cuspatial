@@ -17,7 +17,7 @@
 #pragma once
 
 #include <cuspatial/cuda_utils.hpp>
-#include <cuspatial/detail/functors.cuh>
+#include <cuspatial/geometry/segment.cuh>
 #include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/traits.hpp>
 
@@ -211,10 +211,7 @@ class multilinestring_segment_range {
   /// multipolygon
   CUSPATIAL_HOST_DEVICE auto multigeometry_count_begin()
   {
-    auto zipped_offset_it = thrust::make_zip_iterator(multigeometry_offset_begin(),
-                                                      thrust::next(multigeometry_offset_begin()));
-
-    return thrust::make_transform_iterator(zipped_offset_it, offset_pair_to_count_functor{});
+    return make_element_count_iterator(multigeometry_offset_begin());
   }
 
   /// Returns end iterator to the range of the number of segments per multilinestring of

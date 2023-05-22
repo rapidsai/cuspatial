@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <cuspatial/detail/functors.cuh>
 #include <cuspatial/detail/range/multilinestring_segment_range.cuh>
 #include <cuspatial/detail/utility/zero_data.cuh>
 #include <cuspatial/iterator_factory.cuh>

@@ -17,7 +17,6 @@
 #pragma once
 
 #include <cuspatial/cuda_utils.hpp>
-#include <cuspatial/detail/functors.cuh>
 #include <cuspatial/detail/multilinestring_segment.cuh>
 #include <cuspatial/detail/utility/validation.hpp>
 #include <cuspatial/geometry/segment.cuh>
@@ -269,11 +268,7 @@ multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
   auto multipolygon_point_offset_it = thrust::make_permutation_iterator(
     _ring_begin, thrust::make_permutation_iterator(_part_begin, _geometry_begin));
 
-  auto point_offset_pair_it = thrust::make_zip_iterator(multipolygon_point_offset_it,
-                                                        thrust::next(multipolygon_point_offset_it));
-
-  return thrust::make_transform_iterator(point_offset_pair_it,
-                                         detail::offset_pair_to_count_functor{});
+  return make_element_count_iterator(multipolygon_point_offset_it);
 }
 
 template <typename GeometryIterator,
@@ -298,11 +293,7 @@ multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
   auto multipolygon_ring_offset_it =
     thrust::make_permutation_iterator(_part_begin, _geometry_begin);
 
-  auto ring_offset_pair_it = thrust::make_zip_iterator(multipolygon_ring_offset_it,
-                                                       thrust::next(multipolygon_ring_offset_it));
-
-  return thrust::make_transform_iterator(ring_offset_pair_it,
-                                         detail::offset_pair_to_count_functor{});
+  return make_element_count_iterator(multipolygon_ring_offset_it);
 }
 
 template <typename GeometryIterator,

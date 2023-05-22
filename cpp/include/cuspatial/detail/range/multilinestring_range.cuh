@@ -17,7 +17,6 @@
 #pragma once
 
 #include <cuspatial/cuda_utils.hpp>
-#include <cuspatial/detail/functors.cuh>
 #include <cuspatial/detail/multilinestring_segment.cuh>
 #include <cuspatial/detail/utility/validation.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
@@ -213,9 +212,7 @@ CUSPATIAL_HOST_DEVICE auto multilinestring_range<GeometryIterator, PartIterator,
   multilinestring_point_count_begin()
 {
   auto multilinestring_offset_it = thrust::make_permutation_iterator(_part_begin, _geometry_begin);
-  auto paired_it =
-    thrust::make_zip_iterator(multilinestring_offset_it, thrust::next(multilinestring_offset_it));
-  return thrust::make_transform_iterator(paired_it, detail::offset_pair_to_count_functor{});
+  return make_element_count_iterator(multilinestring_offset_it);
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
@@ -229,8 +226,7 @@ template <typename GeometryIterator, typename PartIterator, typename VecIterator
 CUSPATIAL_HOST_DEVICE auto multilinestring_range<GeometryIterator, PartIterator, VecIterator>::
   multilinestring_linestring_count_begin()
 {
-  auto paired_it = thrust::make_zip_iterator(_geometry_begin, thrust::next(_geometry_begin));
-  return thrust::make_transform_iterator(paired_it, detail::offset_pair_to_count_functor{});
+  return make_element_count_iterator(_geometry_begin);
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
