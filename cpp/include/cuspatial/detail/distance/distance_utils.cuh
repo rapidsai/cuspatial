@@ -29,6 +29,7 @@
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/logical.h>
 #include <thrust/tabulate.h>
+#include <thrust/zip_function.h>
 
 namespace cuspatial {
 namespace detail {
@@ -113,6 +114,46 @@ rmm::device_uvector<uint8_t> point_polygon_intersects(MultiPointRange multipoint
                         thrust::logical_or<uint8_t>());
 
   return multipoint_intersects;
+}
+
+/**
+ * @brief Compute the thread bound between two ranges of partitions
+ *
+ * @tparam CountIterator1
+ * @tparam CountIterator2
+ * @param lhs
+ * @param rhs
+ * @param stream
+ * @return rmm::device_uvector<IndexType>
+ */
+template <typename CountIterator1,
+          typename CountIterator2,
+          typename index_t = iterator_value_type<CountIterator1>>
+rmm::device_uvector<index_t> compute_segment_thread_bounds(CountIterator1 lhs_begin,
+                                                           CountIterator1 lhs_end,
+                                                           CountIterator2 rhs_begin,
+                                                           rmm::cuda_stream_view stream)
+{
+  auto size = thrust::distance(lhs_begin, lhs_end) + 1;
+
+  // Compute the "boundary" of threads. Threads are partitioned based on the number of linestrings
+  // times the number of polygons in a multilinestring-multipolygon pair.
+  auto segment_count_product_it =
+    thrust::make_transform_iterator(thrust::make_zip_iterator(lhs_begin, rhs_begin),
+                                    thrust::make_zip_function(thrust::multiplies<index_t>{}));
+
+  // Computes the "thread boundary" of each pair. This array partitions the thread range by
+  // geometries. E.g. threadIdx within [thread_bounds[i], thread_bounds[i+1]) computes distances of
+  // the ith pair.
+  auto thread_bounds = rmm::device_uvector<index_t>(size, stream);
+  detail::zero_data_async(thread_bounds.begin(), thread_bounds.end(), stream);
+
+  thrust::inclusive_scan(rmm::exec_policy(stream),
+                         segment_count_product_it,
+                         segment_count_product_it + thread_bounds.size() - 1,
+                         thrust::next(thread_bounds.begin()));
+
+  return thread_bounds;
 }
 
 }  // namespace detail

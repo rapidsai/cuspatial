@@ -21,6 +21,7 @@
 
 #include <rmm/device_uvector.hpp>
 
+#include <thrust/binary_search.h>
 #include <thrust/optional.h>
 
 namespace cuspatial {
@@ -42,10 +43,10 @@ namespace detail {
  * set to nullopt, no distance computation will be bypassed.
  */
 template <class MultiLinestringRange1, class MultiLinestringRange2, class OutputIt>
-__global__ void linestring_distance_multilinestring_loop(MultiLinestringRange1 multilinestrings1,
-                                                         MultiLinestringRange2 multilinestrings2,
-                                                         thrust::optional<uint8_t*> intersects,
-                                                         OutputIt distances_first)
+__global__ void linestring_distance(MultiLinestringRange1 multilinestrings1,
+                                    MultiLinestringRange2 multilinestrings2,
+                                    thrust::optional<uint8_t*> intersects,
+                                    OutputIt distances_first)
 {
   using T = typename MultiLinestringRange1::element_t;
 
@@ -83,17 +84,43 @@ __global__ void linestring_distance_multilinestring_loop(MultiLinestringRange1 m
  * `i`th output should be set to 0 and bypass distance computation. This argument is optional, if
  * set to nullopt, no distance computation will be bypassed.
  */
-template <class MultiLinestringRange1, class MultiLinestringRange2, class OutputIt>
-__global__ void linestring_distance_load_balanced(MultiLinestringRange1 multilinestrings1,
-                                                  MultiLinestringRange2 multilinestrings2,
+template <typename T, class SegmentRange1, class SegmentRange2, class IndexRange, class OutputIt>
+__global__ void linestring_distance_load_balanced(SegmentRange1 multilinestrings1,
+                                                  SegmentRange2 multilinestrings2,
+                                                  IndexRange thread_bounds,
                                                   thrust::optional<uint8_t*> intersects,
-                                                  OutputIt distances_first)
+                                                  OutputIt distances)
 {
-  using T = typename MultiLinestringRange1::element_t;
+  using index_t = typename IndexRange::value_type;
 
-  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < multilinestrings1.num_points();
+  auto num_threads = thread_bounds[thread_bounds.size() - 1];
+  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < num_threads;
        idx += gridDim.x * blockDim.x) {
-    atomicMin(&distances_first[geometry_idx], static_cast<T>(sqrt(min_distance_squared)));
+    auto it = thrust::prev(
+      thrust::upper_bound(thrust::seq, thread_bounds.begin(), thread_bounds.end(), idx));
+    auto const geometry_id = thrust::distance(thread_bounds.begin(), it);
+
+    if (intersects.has_value() && intersects.value()[geometry_id]) {
+      distances[geometry_id] = 0.0f;
+      continue;
+    }
+
+    auto const local_idx = idx - *it;
+    // Retrieve the number of segments in multilinestrings[geometry_id]
+    auto num_segment_this_multilinestring =
+      multilinestrings1.multigeometry_count_begin()[geometry_id];
+    // The segment id from multilinestring1 this thread is computing (local_id + global_offset)
+    auto multilinestring1_segment_id = local_idx % num_segment_this_multilinestring +
+                                       multilinestrings1.multigeometry_offset_begin()[geometry_id];
+
+    // The segment id from multilinestring2 this thread is computing (local_id + global_offset)
+    auto multilinestring2_segment_id = local_idx / num_segment_this_multilinestring +
+                                       multilinestrings2.multigeometry_offset_begin()[geometry_id];
+
+    auto [a, b] = multilinestrings1.begin()[multilinestring1_segment_id];
+    auto [c, d] = multilinestrings2.begin()[multilinestring2_segment_id];
+
+    atomicMin(&distances[geometry_id], sqrt(squared_segment_distance(a, b, c, d)));
   }
 }
 

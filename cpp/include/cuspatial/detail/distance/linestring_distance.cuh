@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cuspatial/detail/algorithm/linestring_distance.cuh>
+#include <cuspatial/detail/distance/distance_utils.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
@@ -33,8 +34,8 @@
 namespace cuspatial {
 
 template <class MultiLinestringRange1, class MultiLinestringRange2, class OutputIt>
-OutputIt pairwise_linestring_distance(MultiLinestringRange1 multilinestrings1,
-                                      MultiLinestringRange2 multilinestrings2,
+OutputIt pairwise_linestring_distance(MultiLinestringRange1 lhs,
+                                      MultiLinestringRange2 rhs,
                                       OutputIt distances_first,
                                       rmm::cuda_stream_view stream)
 {
@@ -48,25 +49,43 @@ OutputIt pairwise_linestring_distance(MultiLinestringRange1 multilinestrings1,
                         typename MultiLinestringRange2::point_t>(),
                 "All input types must be cuspatial::vec_2d with the same value type");
 
-  CUSPATIAL_EXPECTS(multilinestrings1.size() == multilinestrings2.size(),
-                    "Inputs must have the same number of rows.");
+  CUSPATIAL_EXPECTS(lhs.size() == rhs.size(), "Inputs must have the same number of rows.");
 
-  if (multilinestrings1.size() == 0) return distances_first;
+  if (lhs.size() == 0) return distances_first;
 
+  // Make views to the segments in the multilinestring
+  auto lhs_segments       = lhs._segments(stream);
+  auto lhs_segments_range = lhs_segments.view();
+
+  // Make views to the segments in the multilinestring
+  auto rhs_segments       = rhs._segments(stream);
+  auto rhs_segments_range = rhs_segments.view();
+
+  auto thread_bounds =
+    detail::compute_segment_thread_bounds(lhs_segments_range.multigeometry_count_begin(),
+                                          lhs_segments_range.multigeometry_count_end(),
+                                          rhs_segments_range.multigeometry_count_begin(),
+                                          stream);
+  // Initialize the output range
   thrust::fill(rmm::exec_policy(stream),
                distances_first,
-               distances_first + multilinestrings1.size(),
+               distances_first + lhs.size(),
                std::numeric_limits<T>::max());
 
   std::size_t constexpr threads_per_block = 256;
-  std::size_t const num_blocks =
-    (multilinestrings1.num_points() + threads_per_block - 1) / threads_per_block;
+  std::size_t num_threads                 = thread_bounds.element(thread_bounds.size() - 1, stream);
+  std::size_t const num_blocks = (num_threads + threads_per_block - 1) / threads_per_block;
 
-  detail::linestring_distance<<<num_blocks, threads_per_block, 0, stream.value()>>>(
-    multilinestrings1, multilinestrings2, thrust::nullopt, distances_first);
+  detail::linestring_distance_load_balanced<T>
+    <<<num_blocks, threads_per_block, 0, stream.value()>>>(
+      lhs_segments_range,
+      rhs_segments_range,
+      range(thread_bounds.begin(), thread_bounds.end()),
+      thrust::nullopt,
+      distances_first);
 
   CUSPATIAL_CUDA_TRY(cudaGetLastError());
-  return distances_first + multilinestrings1.size();
+  return distances_first + lhs.size();
 }
 
 }  // namespace cuspatial
