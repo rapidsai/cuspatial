@@ -50,6 +50,7 @@ files:
     includes:
       - build_cpp
       - build_python
+      - build_wheels
   py_run:
     output: [requirements, pyproject]
     pyproject_dir: python/cuspatial
@@ -112,10 +113,11 @@ dependencies:
               - nvcc_linux-aarch64=11.8
   build_python:
     common:
-      - output_types: [conda, requirements]
+      - output_types: [conda, requirements, pyproject]
         packages:
           - *cmake_ver
           - cython>=0.29,<0.30
+          - ninja
           - scikit-build>=0.13.1,<0.17.2
           - setuptools
       - output_types: conda
@@ -150,6 +152,12 @@ dependencies:
           - {matrix: {cuda: "11.4"}, packages: *build_python_packages_cu11}
           - {matrix: {cuda: "11.2"}, packages: *build_python_packages_cu11}
           - {matrix: null, packages: [*cudf_conda, *rmm_conda] }
+  build_wheels:
+    common:
+      - output_types: [requirements, pyproject]
+        packages:
+          - wheel
+          - setuptools
   cudatoolkit:
     specific:
       - output_types: conda
