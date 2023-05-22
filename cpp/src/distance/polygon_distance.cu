@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include "../utility/iterator.hpp"
 #include "../utility/multi_geometry_dispatch.hpp"
 
 #include <cudf/column/column.hpp>
@@ -83,6 +82,16 @@ struct pairwise_polygon_distance {
                                            rmm::cuda_stream_view stream,
                                            rmm::mr::device_memory_resource* mr)
   {
+    CUSPATIAL_EXPECTS(lhs.geometry_type() == geometry_type_id::POLYGON &&
+                        rhs.geometry_type() == geometry_type_id::POLYGON,
+                      "Unexpected input geometry types.");
+
+    CUSPATIAL_EXPECTS(lhs.coordinate_type() == rhs.coordinate_type(),
+                      "Input geometries must have the same coordinate data types.");
+
+    CUSPATIAL_EXPECTS(lhs.size() == rhs.size(),
+                      "Input geometries must have the same number of polygons.");
+
     return cudf::type_dispatcher(
       lhs.coordinate_type(),
       pairwise_polygon_distance_impl<is_multi_polygon_lhs, is_multi_polygon_rhs>{},
@@ -99,13 +108,6 @@ std::unique_ptr<cudf::column> pairwise_polygon_distance(geometry_column_view con
                                                         geometry_column_view const& rhs,
                                                         rmm::mr::device_memory_resource* mr)
 {
-  CUSPATIAL_EXPECTS(lhs.geometry_type() == geometry_type_id::POLYGON &&
-                      rhs.geometry_type() == geometry_type_id::POLYGON,
-                    "Unexpected input geometry types.");
-
-  CUSPATIAL_EXPECTS(lhs.coordinate_type() == rhs.coordinate_type(),
-                    "Input geometries must have the same coordinate data types.");
-
   return multi_geometry_double_dispatch<detail::pairwise_polygon_distance>(
     lhs.collection_type(), rhs.collection_type(), lhs, rhs, rmm::cuda_stream_default, mr);
 }

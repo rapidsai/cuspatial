@@ -14,154 +14,95 @@
  * limitations under the License.
  */
 
-#include "../utility/double_boolean_dispatch.hpp"
-#include "../utility/iterator.hpp"
+#include "../utility/multi_geometry_dispatch.hpp"
 
+#include <cuspatial/column/geometry_column_view.hpp>
 #include <cuspatial/distance.cuh>
 #include <cuspatial/error.hpp>
-#include <cuspatial/geometry/vec_2d.hpp>
-#include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/range/multilinestring_range.cuh>
+#include <cuspatial/traits.hpp>
+#include <cuspatial/types.hpp>
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
-#include <cudf/copying.hpp>
-#include <cudf/detail/utilities/device_atomics.cuh>
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 
-#include <limits>
 #include <memory>
 #include <type_traits>
 namespace cuspatial {
 namespace detail {
 
-template <bool first_is_multilinestring, bool second_is_multilinestring>
+template <collection_type_id lhs_is_multilinestring, collection_type_id rhs_is_multilinestring>
 struct pairwise_linestring_distance_launch {
   using SizeType = cudf::device_span<cudf::size_type const>::size_type;
 
-  template <typename T>
-  std::enable_if_t<std::is_floating_point<T>::value, std::unique_ptr<cudf::column>> operator()(
-    SizeType num_pairs,
-    std::optional<cudf::device_span<cudf::size_type const>> multilinestring1_geometry_offsets,
-    cudf::device_span<cudf::size_type const> linestring1_part_offsets,
-    cudf::column_view const& linestring1_points_xy,
-    std::optional<cudf::device_span<cudf::size_type const>> multilinestring2_geometry_offsets,
-    cudf::device_span<cudf::size_type const> linestring2_part_offsets,
-    cudf::column_view const& linestring2_points_xy,
-    rmm::cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr)
+  template <typename T, CUSPATIAL_ENABLE_IF(std::is_floating_point_v<T>)>
+  std::unique_ptr<cudf::column> operator()(geometry_column_view const& multilinestrings1,
+                                           geometry_column_view const& multilinestrings2,
+                                           rmm::cuda_stream_view stream,
+                                           rmm::mr::device_memory_resource* mr)
   {
-    auto const num_multilinestring1_parts =
-      static_cast<SizeType>(linestring1_part_offsets.size() - 1);
-    auto const num_multilinestring2_parts =
-      static_cast<SizeType>(linestring2_part_offsets.size() - 1);
-    auto const num_multilinestring1_points =
-      static_cast<SizeType>(linestring1_points_xy.size() / 2);
-    auto const num_multilinestring2_points =
-      static_cast<SizeType>(linestring2_points_xy.size() / 2);
+    auto size = multilinestrings1.size();
 
     auto distances = cudf::make_numeric_column(
-      cudf::data_type{cudf::type_to_id<T>()}, num_pairs, cudf::mask_state::UNALLOCATED, stream, mr);
+      cudf::data_type{cudf::type_to_id<T>()}, size, cudf::mask_state::UNALLOCATED, stream, mr);
 
-    auto linestring1_coords_it = make_vec_2d_iterator(linestring1_points_xy.begin<T>());
-    auto linestring2_coords_it = make_vec_2d_iterator(linestring2_points_xy.begin<T>());
+    auto lhs =
+      make_multilinestring_range<lhs_is_multilinestring, T, cudf::size_type>(multilinestrings1);
+    auto rhs =
+      make_multilinestring_range<rhs_is_multilinestring, T, cudf::size_type>(multilinestrings2);
 
-    auto multilinestrings1 = make_multilinestring_range(
-      num_pairs,
-      get_geometry_iterator_functor<first_is_multilinestring>{}(multilinestring1_geometry_offsets),
-      num_multilinestring1_parts,
-      linestring1_part_offsets.begin(),
-      num_multilinestring1_points,
-      linestring1_coords_it);
-
-    auto multilinestrings2 = make_multilinestring_range(
-      num_pairs,
-      get_geometry_iterator_functor<second_is_multilinestring>{}(multilinestring2_geometry_offsets),
-      num_multilinestring2_parts,
-      linestring2_part_offsets.begin(),
-      num_multilinestring2_points,
-      linestring2_coords_it);
-
-    pairwise_linestring_distance(
-      multilinestrings1, multilinestrings2, distances->mutable_view().begin<T>(), stream);
+    pairwise_linestring_distance(lhs, rhs, distances->mutable_view().begin<T>(), stream);
 
     return distances;
   }
 
-  template <typename T, typename... Args>
-  std::enable_if_t<not std::is_floating_point<T>::value, std::unique_ptr<cudf::column>> operator()(
-    Args&&...)
+  template <typename T, CUSPATIAL_ENABLE_IF(!std::is_floating_point_v<T>), typename... Args>
+  std::unique_ptr<cudf::column> operator()(Args&&...)
   {
     CUSPATIAL_FAIL("Linestring distance API only supports floating point coordinates.");
   }
 };
 
-template <bool first_is_multilinestring, bool second_is_multilinestring>
+template <collection_type_id lhs_is_multilinestring, collection_type_id rhs_is_multilinestring>
 struct pairwise_linestring_distance_functor {
-  std::unique_ptr<cudf::column> operator()(
-    std::optional<cudf::device_span<cudf::size_type const>> multilinestring1_geometry_offsets,
-    cudf::device_span<cudf::size_type const> linestring1_part_offsets,
-    cudf::column_view const& linestring1_points_xy,
-    std::optional<cudf::device_span<cudf::size_type const>> multilinestring2_geometry_offsets,
-    cudf::device_span<cudf::size_type const> linestring2_part_offsets,
-    cudf::column_view const& linestring2_points_xy,
-    rmm::cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr)
+  std::unique_ptr<cudf::column> operator()(geometry_column_view const& multilinestrings1,
+                                           geometry_column_view const& multilinestrings2,
+                                           rmm::cuda_stream_view stream,
+                                           rmm::mr::device_memory_resource* mr)
   {
-    CUSPATIAL_EXPECTS(
-      linestring1_points_xy.size() % 2 == 0 && linestring2_points_xy.size() % 2 == 0,
-      "Points array must contain even number of coordinates.");
+    CUSPATIAL_EXPECTS(multilinestrings1.geometry_type() == geometry_type_id::LINESTRING &&
+                        multilinestrings2.geometry_type() == geometry_type_id::LINESTRING,
+                      "Unexpected input geometry types.");
 
-    auto num_lhs = first_is_multilinestring ? multilinestring1_geometry_offsets.value().size() - 1
-                                            : linestring1_part_offsets.size() - 1;
-    auto num_rhs = second_is_multilinestring ? multilinestring2_geometry_offsets.value().size() - 1
-                                             : linestring2_part_offsets.size() - 1;
+    CUSPATIAL_EXPECTS(multilinestrings1.coordinate_type() == multilinestrings2.coordinate_type(),
+                      "Inputs must have the same coordinate type.");
 
-    CUSPATIAL_EXPECTS(num_lhs == num_rhs, "Mismatch number of points and linestrings.");
-
-    CUSPATIAL_EXPECTS(linestring1_points_xy.type() == linestring2_points_xy.type(),
-                      "The types of linestring coordinates arrays mismatch.");
-
-    CUSPATIAL_EXPECTS(!(linestring1_points_xy.has_nulls() || linestring2_points_xy.has_nulls()),
-                      "All inputs must not have nulls.");
-
-    if (num_lhs == 0) { return cudf::empty_like(linestring1_points_xy); }
+    CUSPATIAL_EXPECTS(multilinestrings1.size() == multilinestrings2.size(),
+                      "Inputs should have the same number of geometries.");
 
     return cudf::type_dispatcher(
-      linestring1_points_xy.type(),
-      pairwise_linestring_distance_launch<first_is_multilinestring, second_is_multilinestring>{},
-      num_lhs,
-      multilinestring1_geometry_offsets,
-      linestring1_part_offsets,
-      linestring1_points_xy,
-      multilinestring2_geometry_offsets,
-      linestring2_part_offsets,
-      linestring2_points_xy,
+      multilinestrings1.coordinate_type(),
+      pairwise_linestring_distance_launch<lhs_is_multilinestring, rhs_is_multilinestring>{},
+      multilinestrings1,
+      multilinestrings2,
       stream,
       mr);
   }
 };
 }  // namespace detail
 std::unique_ptr<cudf::column> pairwise_linestring_distance(
-  std::optional<cudf::device_span<cudf::size_type const>> multilinestring1_geometry_offsets,
-  cudf::device_span<cudf::size_type const> linestring1_part_offsets,
-  cudf::column_view const& linestring1_points_xy,
-  std::optional<cudf::device_span<cudf::size_type const>> multilinestring2_geometry_offsets,
-  cudf::device_span<cudf::size_type const> linestring2_part_offsets,
-  cudf::column_view const& linestring2_points_xy,
+  geometry_column_view const& multilinestrings1,
+  geometry_column_view const& multilinestrings2,
   rmm::mr::device_memory_resource* mr)
 {
-  return double_boolean_dispatch<detail::pairwise_linestring_distance_functor>(
-    multilinestring1_geometry_offsets.has_value(),
-    multilinestring2_geometry_offsets.has_value(),
-    multilinestring1_geometry_offsets,
-    linestring1_part_offsets,
-    linestring1_points_xy,
-    multilinestring2_geometry_offsets,
-    linestring2_part_offsets,
-    linestring2_points_xy,
+  return multi_geometry_double_dispatch<detail::pairwise_linestring_distance_functor>(
+    multilinestrings1.collection_type(),
+    multilinestrings2.collection_type(),
+    multilinestrings1,
+    multilinestrings2,
     rmm::cuda_stream_default,
     mr);
 }

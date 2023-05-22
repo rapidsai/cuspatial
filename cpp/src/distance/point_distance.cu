@@ -14,58 +14,43 @@
  * limitations under the License.
  */
 
-#include "../utility/double_boolean_dispatch.hpp"
-#include "../utility/iterator.hpp"
+#include "../utility/multi_geometry_dispatch.hpp"
 
+#include <cuspatial/column/geometry_column_view.hpp>
 #include <cuspatial/distance.cuh>
 #include <cuspatial/error.hpp>
-#include <cuspatial/geometry/vec_2d.hpp>
-#include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/range/multipoint_range.cuh>
+#include <cuspatial/types.hpp>
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
-#include <cudf/copying.hpp>
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/exec_policy.hpp>
 
 #include <memory>
 #include <type_traits>
 
 namespace cuspatial {
 namespace detail {
-template <bool is_multipoint1, bool is_multipoint2>
+template <collection_type_id lhs_is_multipoint, collection_type_id rhs_is_multipoint>
 struct pairwise_point_distance_impl {
   template <typename T>
   std::enable_if_t<std::is_floating_point<T>::value, std::unique_ptr<cudf::column>> operator()(
-    cudf::size_type num_pairs,
-    std::optional<cudf::device_span<cudf::size_type const>> multipoints1_offset,
-    cudf::column_view const& points1_xy,
-    std::optional<cudf::device_span<cudf::size_type const>> multipoints2_offset,
-    cudf::column_view const& points2_xy,
+    geometry_column_view const& multipoints1,
+    geometry_column_view const& multipoints2,
     rmm::cuda_stream_view stream,
     rmm::mr::device_memory_resource* mr)
   {
+    auto size = multipoints1.size();
+
     auto distances = cudf::make_numeric_column(
-      cudf::data_type{cudf::type_to_id<T>()}, num_pairs, cudf::mask_state::UNALLOCATED, stream, mr);
+      cudf::data_type{cudf::type_to_id<T>()}, size, cudf::mask_state::UNALLOCATED, stream, mr);
 
-    auto multipoint1_offset_it =
-      get_geometry_iterator_functor<is_multipoint1>{}(multipoints1_offset);
-    auto multipoint2_offset_it =
-      get_geometry_iterator_functor<is_multipoint2>{}(multipoints2_offset);
+    auto lhs = make_multipoint_range<lhs_is_multipoint, T, cudf::size_type>(multipoints1);
+    auto rhs = make_multipoint_range<rhs_is_multipoint, T, cudf::size_type>(multipoints2);
 
-    auto points1_it = make_vec_2d_iterator(points1_xy.begin<T>());
-    auto points2_it = make_vec_2d_iterator(points2_xy.begin<T>());
-
-    auto multipoint1_its =
-      make_multipoint_range(num_pairs, multipoint1_offset_it, points1_xy.size() / 2, points1_it);
-    auto multipoint2_its =
-      make_multipoint_range(num_pairs, multipoint2_offset_it, points2_xy.size() / 2, points2_it);
-
-    pairwise_point_distance(
-      multipoint1_its, multipoint2_its, distances->mutable_view().begin<T>(), stream);
+    pairwise_point_distance(lhs, rhs, distances->mutable_view().begin<T>(), stream);
 
     return distances;
   }
@@ -78,58 +63,44 @@ struct pairwise_point_distance_impl {
   }
 };
 
-template <bool is_multipoint1, bool is_multipoint2>
+template <collection_type_id lhs_is_multipoint, collection_type_id rhs_is_multipoint>
 struct pairwise_point_distance_functor {
-  std::unique_ptr<cudf::column> operator()(
-    std::optional<cudf::device_span<cudf::size_type const>> multipoints1_offset,
-    cudf::column_view const& points1_xy,
-    std::optional<cudf::device_span<cudf::size_type const>> multipoints2_offset,
-    cudf::column_view const& points2_xy,
-    rmm::cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr)
+  std::unique_ptr<cudf::column> operator()(geometry_column_view const& multipoints1,
+                                           geometry_column_view const& multipoints2,
+                                           rmm::cuda_stream_view stream,
+                                           rmm::mr::device_memory_resource* mr)
   {
-    CUSPATIAL_EXPECTS(points1_xy.size() % 2 == 0 and points2_xy.size() % 2 == 0,
-                      "Coordinate array should contain even number of points.");
-    CUSPATIAL_EXPECTS(points1_xy.type() == points2_xy.type(),
-                      "The types of point coordinates arrays mismatch.");
-    CUSPATIAL_EXPECTS(not points1_xy.has_nulls() and not points2_xy.has_nulls(),
-                      "The coordinate columns cannot have nulls.");
+    CUSPATIAL_EXPECTS(multipoints1.geometry_type() == geometry_type_id::POINT &&
+                        multipoints2.geometry_type() == geometry_type_id::POINT,
+                      "Unexpected input geometry types.");
 
-    auto num_lhs = is_multipoint1 ? multipoints1_offset.value().size() - 1 : points1_xy.size() / 2;
-    auto num_rhs = is_multipoint2 ? multipoints2_offset.value().size() - 1 : points2_xy.size() / 2;
+    CUSPATIAL_EXPECTS(multipoints1.coordinate_type() == multipoints2.coordinate_type(),
+                      "Input coordinates must have the same floating point type.");
 
-    CUSPATIAL_EXPECTS(num_lhs == num_rhs, "Mismatch number of (multi)point(s) in input.");
+    CUSPATIAL_EXPECTS(multipoints1.size() == multipoints2.size(),
+                      "Inputs should have the same number of geometries.");
 
-    if (num_lhs == 0) { return cudf::empty_like(points1_xy); }
-
-    return cudf::type_dispatcher(points1_xy.type(),
-                                 pairwise_point_distance_impl<is_multipoint1, is_multipoint2>{},
-                                 num_lhs,
-                                 multipoints1_offset,
-                                 points1_xy,
-                                 multipoints2_offset,
-                                 points2_xy,
-                                 stream,
-                                 mr);
+    return cudf::type_dispatcher(
+      multipoints1.coordinate_type(),
+      pairwise_point_distance_impl<lhs_is_multipoint, rhs_is_multipoint>{},
+      multipoints1,
+      multipoints2,
+      stream,
+      mr);
   }
 };
 
 }  // namespace detail
 
-std::unique_ptr<cudf::column> pairwise_point_distance(
-  std::optional<cudf::device_span<cudf::size_type const>> multipoints1_offset,
-  cudf::column_view const& points1_xy,
-  std::optional<cudf::device_span<cudf::size_type const>> multipoints2_offset,
-  cudf::column_view const& points2_xy,
-  rmm::mr::device_memory_resource* mr)
+std::unique_ptr<cudf::column> pairwise_point_distance(geometry_column_view const& multipoints1,
+                                                      geometry_column_view const& multipoints2,
+                                                      rmm::mr::device_memory_resource* mr)
 {
-  return double_boolean_dispatch<detail::pairwise_point_distance_functor>(
-    multipoints1_offset.has_value(),
-    multipoints2_offset.has_value(),
-    multipoints1_offset,
-    points1_xy,
-    multipoints2_offset,
-    points2_xy,
+  return multi_geometry_double_dispatch<detail::pairwise_point_distance_functor>(
+    multipoints1.collection_type(),
+    multipoints2.collection_type(),
+    multipoints1,
+    multipoints2,
     rmm::cuda_stream_default,
     mr);
 }
