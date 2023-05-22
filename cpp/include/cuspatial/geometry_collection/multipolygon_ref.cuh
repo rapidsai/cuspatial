@@ -41,6 +41,9 @@ class multipolygon_ref {
   /// Return the number of polygons in the multipolygon.
   CUSPATIAL_HOST_DEVICE auto size() const { return num_polygons(); }
 
+  /// Returns true if the multipolygon contains 0 geometries.
+  CUSPATIAL_HOST_DEVICE bool is_empty() const { return num_polygons() == 0; }
+
   /// Return iterator to the first polygon.
   CUSPATIAL_HOST_DEVICE auto part_begin() const;
   /// Return iterator to one past the last polygon.
