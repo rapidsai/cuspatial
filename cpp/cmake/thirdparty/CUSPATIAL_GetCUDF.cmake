@@ -53,6 +53,8 @@ function(find_and_configure_cudf)
                 "CUDF_BUILD_STREAMS_TEST_UTIL ${BUILD_TESTS}"
                 "CUDF_USE_PER_THREAD_DEFAULT_STREAM ${PKG_PER_THREAD_DEFAULT_STREAM}"
     )
+
+    set_property(TARGET cudf PROPERTY SYSTEM TRUE)
 endfunction()
 
 set(CUSPATIAL_MIN_VERSION_cudf "${CUSPATIAL_VERSION_MAJOR}.${CUSPATIAL_VERSION_MINOR}")
