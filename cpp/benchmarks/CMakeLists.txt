@@ -80,6 +80,7 @@ ConfigureBench(HAUSDORFF_BENCH
     distance/hausdorff_benchmark.cpp)
 
 ConfigureNVBench(DISTANCES_BENCH
+    distance/pairwise_point_polygon_distance.cu
     distance/pairwise_linestring_distance.cu)
 
 ConfigureNVBench(QUADTREE_ON_POINTS_BENCH
