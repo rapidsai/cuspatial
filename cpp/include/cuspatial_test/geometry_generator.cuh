@@ -286,6 +286,13 @@ struct multilinestring_generator_parameter {
   std::size_t num_segments_per_linestring;
   T segment_length;
   vec_2d<T> origin;
+
+  std::size_t num_linestrings()
+  {
+    return num_multilinestrings * num_linestrings_per_multilinestring;
+  }
+  std::size_t num_segments() { return num_linestrings() * num_segments_per_linestring; }
+  std::size_t num_points() { return num_linestrings() * (num_segments_per_linestring + 1); }
 };
 
 /**
@@ -300,9 +307,8 @@ struct multilinestring_generator_parameter {
  * `num_segment_per_string`.
  *
  * Since the outreach upper bound of the linestring group is
- * `(init_xy + num_multilinestrings * num_linestrings_per_multilinestring * num_segments_per_string
- * * segment_length)`, user may control the locality of the linestring group via these five
- * arguments.
+ * `(init_xy + total_num_segments * segment_length)`, user may control the
+ * locality of the linestring group via these five arguments.
  *
  * The locality of the multilinestrings is important to the computation and
  * and carefully designing the parmaeters can make the multilinestrings intersect/disjoint.
@@ -317,14 +323,9 @@ template <typename T>
 auto generate_linestring_array(multilinestring_generator_parameter<T> params,
                                rmm::cuda_stream_view stream)
 {
-  std::size_t num_points = params.num_multilinestrings *
-                           params.num_linestrings_per_multilinestring *
-                           (params.num_segments_per_linestring + 1);
-
   rmm::device_uvector<std::size_t> geometry_offset(params.num_multilinestrings + 1, stream);
-  rmm::device_uvector<std::size_t> part_offset(
-    params.num_multilinestrings * params.num_linestrings_per_multilinestring + 1, stream);
-  rmm::device_uvector<vec_2d<T>> points(num_points, stream);
+  rmm::device_uvector<std::size_t> part_offset(params.num_linestrings() + 1, stream);
+  rmm::device_uvector<vec_2d<T>> points(params.num_points(), stream);
 
   thrust::sequence(rmm::exec_policy(stream),
                    geometry_offset.begin(),
@@ -352,7 +353,6 @@ auto generate_linestring_array(multilinestring_generator_parameter<T> params,
 
   return make_multilinestring_array(
     std::move(geometry_offset), std::move(part_offset), std::move(points));
-
 }
 
 /**
