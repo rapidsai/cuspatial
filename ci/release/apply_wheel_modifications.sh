@@ -8,5 +8,7 @@ CUDA_SUFFIX=${2}
 
 sed -i "s/^version = .*/version = \"${VERSION}\"/g" python/cuspatial/pyproject.toml
 
-sed -i "s/^name = \"rmm\"/name = \"rmm${CUDA_SUFFIX}\"/g" python/cuspatial/pyproject.toml
-sed -i "s/^name = \"cudf\"/name = \"cudf${CUDA_SUFFIX}\"/g" python/cuspatial/pyproject.toml
+sed -i "s/^name = \"cuspatial\"/name = \"cuspatial${CUDA_SUFFIX}\"/g" python/cuspatial/pyproject.toml
+
+sed -i "s/rmm==/rmm${CUDA_SUFFIX}==/g" python/cuspatial/pyproject.toml
+sed -i "s/cudf==/cudf${CUDA_SUFFIX}==/g" python/cuspatial/pyproject.toml
