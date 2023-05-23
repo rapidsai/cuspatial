@@ -32,6 +32,7 @@ namespace cuspatial {
 namespace detail {
 
 /**
+ * @internal
  * @brief Computes the offsets to the starting segment per linestring
  *
  * The point indices and segment indices are correlated, but in a different index space.
@@ -80,6 +81,7 @@ point_offset_to_segment_offset(OffsetIterator, CountIterator)
   -> point_offset_to_segment_offset<OffsetIterator, CountIterator>;
 
 /**
+ * @internal
  * @brief Given a segment index, return the corresponding segment
  *
  * Given a segment index, first find its corresponding part index by performing a binary search in
@@ -119,11 +121,12 @@ to_valid_segment_functor(OffsetIterator, OffsetIterator, CountIterator, Coordina
   -> to_valid_segment_functor<OffsetIterator, CountIterator, CoordinateIterator>;
 
 /**
- * @brief Non-owning object to `multilinestring_segment` class
+ * @internal
+ * @brief A non-owning range of segments in a multilinestring
  *
  * A `multilinestring_segment_range` provide views into the segments of a multilinestring.
- * The segments of a multilinestring has a near 1-1 mapping to the points of the multilinestring,
- * except that the last point of a linestring and the first point of the next linestring does not
+ * The segments of a multilinestring have a near 1:1 mapping to the points of the multilinestring,
+ * except that the last point of a linestring and the first point of the next linestring do not
  * form a valid segment. For example, the below multilinestring (points are denoted a letters):
  *
  * ```

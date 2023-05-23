@@ -41,7 +41,7 @@ struct MultilinestringRangeTest : public BaseFixture {
       make_multilinestring_array(geometry_offset, part_offset, coordinates);
     auto rng            = multilinestring_array.range();
     auto segments       = rng._segments(stream());
-    auto segments_range = segments.view();
+    auto segments_range = segments.segment_range();
 
     rmm::device_uvector<segment<T>> got(segments_range.num_segments(), stream());
     thrust::copy(
@@ -81,7 +81,7 @@ struct MultilinestringRangeTest : public BaseFixture {
       make_multilinestring_array(geometry_offset, part_offset, coordinates);
     auto rng            = multilinestring_array.range();
     auto segments       = rng._segments(stream());
-    auto segments_range = segments.view();
+    auto segments_range = segments.segment_range();
 
     auto d_expected = thrust::device_vector<std::size_t>(expected.begin(), expected.end());
 
@@ -103,7 +103,7 @@ struct MultilinestringRangeTest : public BaseFixture {
       make_multilinestring_array(geometry_offset, part_offset, coordinates);
     auto rng            = multilinestring_array.range();
     auto segments       = rng._segments(stream());
-    auto segments_range = segments.view();
+    auto segments_range = segments.segment_range();
 
     auto d_expected = thrust::device_vector<std::size_t>(expected.begin(), expected.end());
 

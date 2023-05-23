@@ -44,7 +44,7 @@ struct MultipolygonRangeTest : public BaseFixture {
       make_multipolygon_array(geometry_offset, part_offset, ring_offset, coordinates);
     auto rng           = multipolygon_array.range();
     auto segments      = rng._segments(stream());
-    auto segment_range = segments.view();
+    auto segment_range = segments.segment_range();
 
     auto got = rmm::device_uvector<segment<T>>(segment_range.num_segments(), stream());
 
@@ -91,7 +91,7 @@ struct MultipolygonRangeTest : public BaseFixture {
       make_multipolygon_array(geometry_offset, part_offset, ring_offset, coordinates);
     auto rng           = multipolygon_array.range();
     auto segments      = rng._segments(stream());
-    auto segment_range = segments.view();
+    auto segment_range = segments.segment_range();
 
     auto got = rmm::device_uvector<std::size_t>(rng.num_multipolygons(), stream());
 

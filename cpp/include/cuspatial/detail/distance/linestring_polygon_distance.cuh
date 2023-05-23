@@ -137,13 +137,13 @@ OutputIt pairwise_linestring_polygon_distance(MultiLinestringRange multilinestri
 
   // Make views to the segments in the multilinestring
   auto multilinestring_segments       = multilinestrings._segments(stream);
-  auto multilinestring_segments_range = multilinestring_segments.view();
+  auto multilinestring_segments_range = multilinestring_segments.segment_range();
   auto multilinestring_segment_count_begin =
     multilinestring_segments_range.multigeometry_count_begin();
 
   // Make views to the segments in the multilinestring
   auto multipolygon_segments            = multipolygons._segments(stream);
-  auto multipolygon_segments_range      = multipolygon_segments.view();
+  auto multipolygon_segments_range      = multipolygon_segments.segment_range();
   auto multipolygon_segment_count_begin = multipolygon_segments_range.multigeometry_count_begin();
 
   // Compute the "boundary" of threads. Threads are partitioned based on the number of linestrings

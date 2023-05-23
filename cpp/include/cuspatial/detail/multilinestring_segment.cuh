@@ -49,12 +49,12 @@ struct greater_than_zero_functor {
  * @internal
  * @brief Owning class to provide iterators to segments in a multilinestring range
  *
- * The owned memory in this struct is `_non_empty_linestring_prefix_sum`, which equals the
- * number of linestrings in the multilinestring range plus 1. This vector holds the number
+ * The owned memory in this struct is the vector `_non_empty_linestring_prefix_sum` of size equal to
+ * the number of linestrings in the multilinestring range plus 1. This vector holds the number
  * of non empty linestrings that precedes the current linestring.
  *
  * This class is only meant for tracking the life time of the owned memory. To access the
- * segment iterators, call `view()` function to create a non-owning object of this class.
+ * segment iterators, call `segment_range()` function to create a non-owning object of this class.
  *
  * For detailed explanation on the implementation of the segment iterators, see documentation
  * of `multilinestring_segment_range`.
@@ -62,8 +62,8 @@ struct greater_than_zero_functor {
  * @note To use this class with a multipolygon range, cast the multipolygon range as a
  * multilinestring range.
  *
- * TODO: Optimization: for range that does not contain any empty linestrings,
- * `_non_empty_linestring_prefix_sum` can be substituted with `counting_iterator`.
+ * TODO: Optimization: for ranges that do not contain any empty linestrings,
+ * `_non_empty_linestring_prefix_sum` can replaced by a `counting_iterator`.
  *
  * @tparam MultilinestringRange The multilinestring range to initialize this class with.
  */
@@ -109,7 +109,7 @@ class multilinestring_segment {
    *
    * @return multilinestring_segment_range
    */
-  auto view()
+  auto segment_range()
   {
     auto index_range = ::cuspatial::range{_non_empty_linestring_prefix_sum.begin(),
                                           _non_empty_linestring_prefix_sum.end()};
