@@ -28,7 +28,7 @@ function(find_and_configure_cudf)
 
     if(BUILD_TESTS)
       list(APPEND global_targets cudf::cudftestutil)
-      set(cudf_components "COMPONENTS testing")
+      set(cudf_components COMPONENTS testing)
     endif()
 
     set(BUILD_SHARED ON)
@@ -36,7 +36,7 @@ function(find_and_configure_cudf)
         set(BUILD_SHARED OFF)
     endif()
 
-    rapids_cpm_find(cudf ${PKG_VERSION}
+    rapids_cpm_find(cudf ${PKG_VERSION} ${cudf_components}
       GLOBAL_TARGETS ${global_targets}
       BUILD_EXPORT_SET cuspatial-exports
       INSTALL_EXPORT_SET cuspatial-exports
@@ -52,7 +52,6 @@ function(find_and_configure_cudf)
                 "CUDF_BUILD_TESTUTIL ${BUILD_TESTS}"
                 "CUDF_BUILD_STREAMS_TEST_UTIL ${BUILD_TESTS}"
                 "CUDF_USE_PER_THREAD_DEFAULT_STREAM ${PKG_PER_THREAD_DEFAULT_STREAM}"
-        FIND_PACKAGE_ARGUMENTS "${cudf_components}"
     )
 
     if(TARGET cudf)
