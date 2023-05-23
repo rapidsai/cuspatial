@@ -140,10 +140,10 @@ struct MultipolygonRangeTest : public BaseFixture {
                                                       multipolygon_coordinates);
     auto rng                = multipolygon_array.range().as_multipoint_range();
 
-    auto got = make_multipoints_array(range(rng.offsets_begin(), rng.offsets_end()),
-                                      range(rng.point_begin(), rng.point_end()));
+    auto got = make_multipoint_array(range(rng.offsets_begin(), rng.offsets_end()),
+                                     range(rng.point_begin(), rng.point_end()));
 
-    auto expected = make_multipoints_array(
+    auto expected = make_multipoint_array(
       range(multipoint_geometry_offset.begin(), multipoint_geometry_offset.end()),
       range(multipoint_coordinates.begin(), multipoint_coordinates.end()));
 
