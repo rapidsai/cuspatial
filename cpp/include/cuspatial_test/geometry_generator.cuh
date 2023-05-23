@@ -34,6 +34,28 @@
 namespace cuspatial {
 namespace test {
 
+namespace detail {
+
+template <typename T>
+struct tabulate_direction_functor {
+  vec_2d<T> __device__ operator()(auto i)
+  {
+    return vec_2d<T>{cos(static_cast<T>(i)), sin(static_cast<T>(i))};
+  }
+};
+
+template <typename T>
+struct random_walk_functor {
+  T segment_length;
+
+  vec_2d<T> __device__ operator()(vec_2d<T> prev, vec_2d<T> rad)
+  {
+    return prev + segment_length * rad;
+  }
+};
+
+}  // namespace detail
+
 /**
  * @brief Struct to store the parameters of the multipolygon array generator
  *
@@ -105,7 +127,7 @@ vec_2d<T> __device__ polygon_centroid_displacement(vec_2d<T> centroid,
                                                    std::size_t part_local_idx,
                                                    T radius)
 {
-  return centroid + vec_2d<T>{part_local_idx * radius * T{3.0}, T{0.0}};
+  return centroid + vec_2d<T>{part_local_idx * radius* T{3.0}, T{0.0}};
 }
 
 /**
@@ -250,6 +272,87 @@ auto generate_multipolygon_array(multipolygon_generator_parameter<T> params,
                                                          std::move(part_offsets),
                                                          std::move(ring_offsets),
                                                          std::move(coordinates));
+}
+
+/**
+ * @brief Struct to store the parameters of the multilinestring generator
+ *
+ * @tparam T Underlying type of the coordinates
+ */
+template <typename T>
+struct multilinestring_generator_parameter {
+  std::size_t num_multilinestrings;
+  std::size_t num_linestrings_per_multilinestring;
+  std::size_t num_segments_per_linestring;
+  T segment_length;
+  vec_2d<T> origin;
+};
+
+/**
+ * @brief Helper to generate linestrings used for benchmarks.
+ *
+ * The generator adopts a walking algorithm. The ith point is computed by
+ * walking (cos(i) * segment_length, sin(i) * segment_length) from the `i-1`
+ * point. The initial point of the linestring is at `(init_xy, init_xy)`.
+ * The walking angle between segments are random.
+ *
+ * The number of line segments per linestring is constrolled by
+ * `num_segment_per_string`.
+ *
+ * Since the outreach upper bound of the linestring group is
+ * `(init_xy + num_multilinestrings * num_linestrings_per_multilinestring * num_segments_per_string
+ * * segment_length)`, user may control the locality of the linestring group via these five
+ * arguments.
+ *
+ * The locality of the multilinestrings is important to the computation and
+ * and carefully designing the parmaeters can make the multilinestrings intersect/disjoint.
+ * which could affect whether the benchmark is testing against best or worst case.
+ *
+ * @tparam T The floating point type for the coordinates
+ * @param params The parameters used to specify the generator
+ * @param stream The CUDA stream to use for device memory operations and kernel launches
+ * @return The generated multilinestring array
+ */
+template <typename T>
+auto generate_linestring_array(multilinestring_generator_parameter<T> params,
+                               rmm::cuda_stream_view stream)
+{
+  std::size_t num_points = params.num_multilinestrings *
+                           params.num_linestrings_per_multilinestring *
+                           (params.num_segments_per_linestring + 1);
+
+  rmm::device_uvector<std::size_t> geometry_offset(params.num_multilinestrings + 1, stream);
+  rmm::device_uvector<std::size_t> part_offset(
+    params.num_multilinestrings * params.num_linestrings_per_multilinestring + 1, stream);
+  rmm::device_uvector<vec_2d<T>> points(num_points, stream);
+
+  thrust::sequence(rmm::exec_policy(stream),
+                   geometry_offset.begin(),
+                   geometry_offset.end(),
+                   static_cast<std::size_t>(0),
+                   params.num_linestrings_per_multilinestring);
+
+  thrust::sequence(rmm::exec_policy(stream),
+                   part_offset.begin(),
+                   part_offset.end(),
+                   static_cast<std::size_t>(0),
+                   params.num_segments_per_linestring + 1);
+
+  thrust::tabulate(rmm::exec_policy(stream),
+                   points.begin(),
+                   points.end(),
+                   detail::tabulate_direction_functor<T>{});
+
+  thrust::exclusive_scan(thrust::host,
+                         points.begin(),
+                         points.end(),
+                         points.begin(),
+                         params.origin,
+                         detail::random_walk_functor<T>{params.segment_length});
+
+  return make_multilinestring_array(
+    std::move(geometry_offset), std::move(part_offset), std::move(points));
+
 }
 
 /**

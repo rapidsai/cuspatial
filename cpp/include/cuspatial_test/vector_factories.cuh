@@ -276,7 +276,7 @@ auto make_multilinestring_array(IndexRangeA geometry_inl,
   using DeviceCoordVector = thrust::device_vector<CoordType>;
 
   return multilinestring_array<DeviceIndexVector, DeviceIndexVector, DeviceCoordVector>(
-    make_device_vector(geometry_inl), make_device_vector(part_inl), make_device_vector(coord_inl));
+    make_device_vector(std::move(geometry_inl)), make_device_vector(std::move(part_inl)), make_device_vector(std::move(coord_inl)));
 }
 
 /**
