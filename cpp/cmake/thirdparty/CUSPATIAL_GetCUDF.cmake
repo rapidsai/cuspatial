@@ -46,13 +46,13 @@ function(find_and_configure_cudf)
         GIT_SHALLOW      TRUE
         SOURCE_SUBDIR    cpp
         EXCLUDE_FROM_ALL ${PKG_EXCLUDE_FROM_ALL}
-        FIND_PACKAGE_ARGUMENTS "${cudf_components}"
         OPTIONS "BUILD_TESTS OFF"
                 "BUILD_BENCHMARKS OFF"
                 "BUILD_SHARED_LIBS ${BUILD_SHARED}"
                 "CUDF_BUILD_TESTUTIL ${BUILD_TESTS}"
                 "CUDF_BUILD_STREAMS_TEST_UTIL ${BUILD_TESTS}"
                 "CUDF_USE_PER_THREAD_DEFAULT_STREAM ${PKG_PER_THREAD_DEFAULT_STREAM}"
+        FIND_PACKAGE_ARGUMENTS "${cudf_components}"
     )
 
     if(TARGET cudf)
