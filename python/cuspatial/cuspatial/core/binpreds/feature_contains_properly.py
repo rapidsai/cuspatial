@@ -81,12 +81,12 @@ class ContainsProperlyPredicate(ContainsGeometryProcessor):
            code complexity would be higher if we did multipolygon
            reconstruction on both code paths.
         """
-        if self.config.allpairs or has_multipolygons(lhs) or len(lhs) > 31:
-            return "quadtree"
-        elif len(lhs) == len(rhs):
-            return "pairwise"
-        else:
+        if len(lhs) <= 31:
             return "brute_force"
+        elif self.config.allpairs or has_multipolygons(lhs):
+            return "quadtree"
+        else:
+            return "pairwise"
 
     def _compute_predicate(
         self,
@@ -103,8 +103,11 @@ class ContainsProperlyPredicate(ContainsGeometryProcessor):
                 "`.contains` can only be called with polygon series."
             )
         mode = self._pip_mode(lhs, preprocessor_result.final_rhs)
+        lhs_indices = lhs.index
+        if mode == "pairwise":
+            lhs_indices = preprocessor_result.point_indices
         pip_result = contains_properly(
-            lhs, preprocessor_result.final_rhs, mode=mode
+            lhs[lhs_indices], preprocessor_result.final_rhs, mode=mode
         )
         op_result = ContainsOpResult(pip_result, preprocessor_result)
         return self._postprocess(lhs, rhs, preprocessor_result, op_result)

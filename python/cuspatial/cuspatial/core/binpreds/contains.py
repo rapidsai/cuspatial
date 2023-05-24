@@ -42,7 +42,7 @@ def _quadtree_contains_properly(points, polygons):
     if len(polygons) == 0:
         return Series()
 
-    max_depth = 15
+    max_depth = 6
     min_size = ceil(sqrt(len(points)))
     x_max = polygons.polygons.x.max()
     x_min = polygons.polygons.x.min()
