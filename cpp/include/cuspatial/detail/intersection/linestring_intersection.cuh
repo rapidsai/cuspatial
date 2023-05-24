@@ -230,7 +230,7 @@ linestring_intersection_result<T, index_t> pairwise_linestring_intersection(
   // Phase 3: Remove duplicate points from intermediates
   // TODO: improve memory usage by using IIFE to
   // Remove the duplicate points
-  rmm::device_uvector<int32_t> point_flags(num_points, stream);
+  rmm::device_uvector<uint8_t> point_flags(num_points, stream);
   detail::find_duplicate_points(
     make_multipoint_range(points.offset_range(), points.geom_range()), point_flags.begin(), stream);
 
