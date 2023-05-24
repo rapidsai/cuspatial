@@ -36,6 +36,7 @@
 #include <rmm/mr/device/per_device_resource.hpp>
 
 #include <thrust/binary_search.h>
+#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/reduce.h>
@@ -159,30 +160,33 @@ std::unique_ptr<rmm::device_uvector<types_t>> compute_types_buffer(
  * This is performing a group-by cumulative sum (pandas semantic) operation
  * to an "all 1s vector", using `types_buffer` as the key column.
  */
-template <typename index_t>
+template <typename index_t, typename types_t>
 std::unique_ptr<rmm::device_uvector<index_t>> compute_offset_buffer(
-  rmm::device_uvector<uint8_t> const& types_buffer,
+  rmm::device_uvector<types_t> const& types_buffer,
   rmm::mr::device_memory_resource* mr,
   rmm::cuda_stream_view stream)
 {
-  auto N            = types_buffer.size();
-  auto keys_copy    = rmm::device_uvector(types_buffer, stream);
-  auto indices_temp = rmm::device_uvector<index_t>(N, stream);
-  thrust::sequence(rmm::exec_policy(stream), indices_temp.begin(), indices_temp.end());
-  thrust::stable_sort_by_key(
-    rmm::exec_policy(stream), keys_copy.begin(), keys_copy.end(), indices_temp.begin());
+  auto N                                = types_buffer.size();
+  auto [offset_buffer_grouped, indices] = [&]() {
+    auto indices = rmm::device_uvector<index_t>(N, stream);
+    auto keys    = rmm::device_uvector<types_t>(types_buffer, stream);
+    thrust::sequence(rmm::exec_policy(stream), indices.begin(), indices.end());
+    thrust::stable_sort_by_key(rmm::exec_policy(stream), keys.begin(), keys.end(), indices.begin());
+
+    auto offset_buffer_grouped = std::make_unique<rmm::device_uvector<index_t>>(N, stream);
+
+    auto one_it = thrust::make_constant_iterator(1);
+    thrust::exclusive_scan_by_key(
+      rmm::exec_policy(stream), keys.begin(), keys.end(), one_it, offset_buffer_grouped->begin());
+
+    return std::pair{std::move(offset_buffer_grouped), std::move(indices)};
+  }();
 
   auto offset_buffer = std::make_unique<rmm::device_uvector<index_t>>(N, stream, mr);
-  thrust::uninitialized_fill_n(rmm::exec_policy(stream), offset_buffer->begin(), N, 1);
-  thrust::exclusive_scan_by_key(rmm::exec_policy(stream),
-                                keys_copy.begin(),
-                                keys_copy.end(),
-                                offset_buffer->begin(),
-                                offset_buffer->begin());
   thrust::scatter(rmm::exec_policy(stream),
-                  offset_buffer->begin(),
-                  offset_buffer->end(),
-                  indices_temp.begin(),
+                  offset_buffer_grouped->begin(),
+                  offset_buffer_grouped->end(),
+                  indices.begin(),
                   offset_buffer->begin());
   return offset_buffer;
 }
@@ -275,7 +279,7 @@ linestring_intersection_result<T, index_t> pairwise_linestring_intersection(
     stream,
     mr);
 
-  auto offsets_buffer = detail::compute_offset_buffer<index_t>(*types_buffer, mr, stream);
+  auto offsets_buffer = detail::compute_offset_buffer<index_t, types_t>(*types_buffer, mr, stream);
 
   // Assemble the look-back ids.
   auto lhs_linestring_id =
