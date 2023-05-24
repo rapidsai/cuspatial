@@ -60,7 +60,7 @@ class ContainsProperlyPredicate(ContainsGeometryProcessor):
         preprocessor_result = super()._preprocess_multipoint_rhs(lhs, rhs)
         return self._compute_predicate(lhs, rhs, preprocessor_result)
 
-    def _should_use_quadtree(self, lhs):
+    def _pip_mode(self, lhs, rhs):
         """Determine if the quadtree should be used for the binary predicate.
 
         Returns
@@ -74,14 +74,19 @@ class ContainsProperlyPredicate(ContainsGeometryProcessor):
         2. If the number of polygons in the lhs is less than 32, we use the
            brute-force algorithm because it is faster and has less memory
            overhead.
-        3. If the lhs contains more than 32 polygons, we use the quadtree
-           because it does not have a polygon-count limit.
+        3. If the lhs and rhs contain the same number of elements, we use
+           pairwise point-in-polygon.
         4. If the lhs contains multipolygons, we use quadtree because the
            performance between quadtree and brute-force is similar, but
            code complexity would be higher if we did multipolygon
            reconstruction on both code paths.
         """
-        return len(lhs) >= 32 or has_multipolygons(lhs) or self.config.allpairs
+        if self.config.allpairs or has_multipolygons(lhs) or len(lhs) > 31:
+            return "quadtree"
+        elif len(lhs) == len(rhs):
+            return "pairwise"
+        else:
+            return "brute_force"
 
     def _compute_predicate(
         self,
@@ -97,9 +102,9 @@ class ContainsProperlyPredicate(ContainsGeometryProcessor):
             raise TypeError(
                 "`.contains` can only be called with polygon series."
             )
-        use_quadtree = self._should_use_quadtree(lhs)
+        mode = self._pip_mode(lhs, preprocessor_result.final_rhs)
         pip_result = contains_properly(
-            lhs, preprocessor_result.final_rhs, quadtree=use_quadtree
+            lhs, preprocessor_result.final_rhs, mode=mode
         )
         op_result = ContainsOpResult(pip_result, preprocessor_result)
         return self._postprocess(lhs, rhs, preprocessor_result, op_result)

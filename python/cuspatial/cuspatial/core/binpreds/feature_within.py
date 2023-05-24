@@ -1,8 +1,8 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
 from cuspatial.core.binpreds.basic_predicates import (
-    _basic_equals,
     _basic_equals_all,
+    _basic_equals_any,
     _basic_intersects,
 )
 from cuspatial.core.binpreds.binpred_interface import (
@@ -26,14 +26,14 @@ class WithinPredicateBase(BinPred):
 class WithinIntersectsPredicate(BinPred):
     def _preprocess(self, lhs, rhs):
         intersects = _basic_intersects(rhs, lhs)
-        equals = _basic_equals(rhs, lhs)
+        equals = _basic_equals_any(rhs, lhs)
         return intersects & ~equals
 
 
 class PointLineStringWithin(BinPred):
     def _preprocess(self, lhs, rhs):
         intersects = lhs.intersects(rhs)
-        equals = _basic_equals(lhs, rhs)
+        equals = _basic_equals_any(lhs, rhs)
         return intersects & ~equals
 
 
@@ -44,9 +44,8 @@ class PointPolygonWithin(BinPred):
 
 class LineStringLineStringWithin(BinPred):
     def _preprocess(self, lhs, rhs):
-        intersects = _basic_intersects(rhs, lhs)
-        equals = _basic_equals_all(rhs, lhs)
-        return intersects & equals
+        contains = rhs.contains(lhs)
+        return contains
 
 
 class LineStringPolygonWithin(BinPred):

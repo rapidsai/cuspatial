@@ -1,12 +1,10 @@
-# Copyright (c) 2023, NVIDIA CORPORATION.
-
 from typing import TypeVar
 
 import cudf
 
 from cuspatial.core.binpreds.basic_predicates import (
     _basic_contains_count,
-    _basic_equals,
+    _basic_equals_any,
     _basic_equals_count,
     _basic_intersects,
     _basic_intersects_pli,
@@ -132,20 +130,25 @@ class ContainsPredicate(ContainsGeometryProcessor):
 
 class PointPointContains(BinPred):
     def _preprocess(self, lhs, rhs):
-        return _basic_equals(lhs, rhs)
+        return _basic_equals_any(lhs, rhs)
 
 
 class LineStringPointContains(BinPred):
     def _preprocess(self, lhs, rhs):
         intersects = _basic_intersects(lhs, rhs)
-        equals = _basic_equals(lhs, rhs)
+        equals = _basic_equals_any(lhs, rhs)
         return intersects & ~equals
 
 
 class LineStringLineStringContainsPredicate(BinPred):
     def _preprocess(self, lhs, rhs):
-        count = _basic_equals_count(lhs, rhs)
-        return count == rhs.sizes
+        # A linestring A covers another linestring B iff
+        # no point in B is outside of A.
+        pli = _basic_intersects_pli(lhs, rhs)
+        points = _points_and_lines_to_multipoints(pli[1], pli[0])
+        # Every point in B must be in the intersection
+        equals = _basic_equals_count(rhs, points) == rhs.sizes
+        return equals
 
 
 """DispatchDict listing the classes to use for each combination of

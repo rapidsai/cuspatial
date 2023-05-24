@@ -1,3 +1,4 @@
+import cupy as cp
 import geopandas as gpd
 import pandas as pd
 from geopandas.testing import assert_geoseries_equal
@@ -6,6 +7,10 @@ from shapely.geometry import LineString, MultiLineString, Point
 
 import cuspatial
 from cuspatial.core.binops.intersection import pairwise_linestring_intersection
+from cuspatial.tests.binpreds.binpred_test_dispatch import (
+    features,
+    linestring_linestring_dispatch_list,
+)
 
 
 def run_test(s1, s2, expect_offset, expect_geom, expect_ids):
@@ -234,3 +239,32 @@ def test_three_pairs_identical_no_ring():
     )
 
     run_test(lhs, rhs, expect_offset, expect_geom, expect_ids)
+
+
+def sample_test_data(features, dispatch_list, size):
+    geometry_tuples = [features[key][1:3] for key in dispatch_list]
+    geometries = [
+        [lhs_geo for lhs_geo, _ in geometry_tuples],
+        [rhs_geo for _, rhs_geo in geometry_tuples],
+    ]
+    lhs = cuspatial.GeoSeries(list(geometries[0]))
+    rhs = cuspatial.GeoSeries(list(geometries[1]))
+    cp.random.seed(0)
+    lhs_picks = cp.random.randint(0, len(lhs), size)
+    rhs_picks = cp.random.randint(0, len(rhs), size)
+    return (
+        lhs[lhs_picks].reset_index(drop=True),
+        rhs[rhs_picks].reset_index(drop=True),
+    )
+
+
+def test_100_sampled_from_5():
+    lhs, rhs = sample_test_data(
+        features, linestring_linestring_dispatch_list, 311
+    )
+
+    offset, geoms, ids = pairwise_linestring_intersection(lhs, rhs)
+
+    print(geoms)
+
+    assert True

@@ -109,7 +109,7 @@ class GeoSeries(cudf.Series):
 
     @property
     def feature_types(self):
-        return self._column._meta.input_types
+        return self._column._meta.input_types.reset_index(drop=True)
 
     @property
     def type(self):
@@ -323,8 +323,7 @@ class GeoSeries(cudf.Series):
                 self.geometry_offset
             )
             sizes = offsets[1:] - offsets[:-1]
-
-            return self._series.index.repeat(sizes).values
+            return self._meta.input_types.index.repeat(sizes)
 
     @property
     def points(self):
@@ -996,6 +995,54 @@ class GeoSeries(cudf.Series):
         else:
             self.index = cudf_series.index
             return None
+
+    def expand_values(self):
+        """Converts a potentially sparse view of a GeoSeries into a
+        dense view. Makes a copy if self is already dense."""
+        dense_points = cudf.Series([])
+        dense_mpoints = cudf.Series([])
+        dense_lines = cudf.Series([])
+        dense_polygons = cudf.Series([])
+        if len(self._column.points) > 0:
+            dense_points = self._column.points[
+                self._column._meta.union_offsets[
+                    self._column._meta.input_types == Feature_Enum.POINT.value
+                ]
+            ]
+        if len(self._column.mpoints) > 0:
+            dense_mpoints = self._column.mpoints[
+                self._column._meta.union_offsets[
+                    self._column._meta.input_types
+                    == Feature_Enum.MULTIPOINT.value
+                ]
+            ]
+        if len(self._column.lines) > 0:
+            dense_lines = self._column.lines[
+                self._column._meta.union_offsets[
+                    self._column._meta.input_types
+                    == Feature_Enum.LINESTRING.value
+                ]
+            ]
+        if len(self._column.polygons) > 0:
+            dense_polygons = self._column.polygons[
+                self._column._meta.union_offsets[
+                    self._column._meta.input_types
+                    == Feature_Enum.POLYGON.value
+                ]
+            ]
+        column = GeoColumn(
+            (
+                dense_points,
+                dense_mpoints,
+                dense_lines,
+                dense_polygons,
+            ),
+            {
+                "input_types": self._column._meta.input_types,
+                "union_offsets": self._column._meta.union_offsets,
+            },
+        )
+        return GeoSeries(column)
 
     def contains(self, other, align=False, allpairs=False, mode="full"):
         """Returns a `Series` of `dtype('bool')` with value `True` for each
