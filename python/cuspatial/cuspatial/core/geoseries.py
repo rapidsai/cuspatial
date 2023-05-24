@@ -323,8 +323,7 @@ class GeoSeries(cudf.Series):
                 self.geometry_offset
             )
             sizes = offsets[1:] - offsets[:-1]
-
-            return self._series.index.repeat(sizes).values
+            return self._meta.input_types.index.repeat(sizes)
 
     @property
     def points(self):

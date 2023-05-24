@@ -7,6 +7,7 @@ import cudf
 
 import cuspatial
 from cuspatial.core._column.geocolumn import ColumnType
+from cuspatial.core._column.geometa import Feature_Enum
 
 """Column-Type objects to use for simple syntax in the `DispatchDict` contained
 in each `feature_<predicate>.py` file.  For example, instead of writing out
@@ -348,8 +349,8 @@ def _points_and_lines_to_multipoints(geoseries, offsets):
     1    MULTIPOINT (3.00000 3.00000, 4.00000, 4.0000, ...
     dtype: geometry
     """
-    points_mask = geoseries.type == "Point"
-    lines_mask = geoseries.type == "Linestring"
+    points_mask = geoseries.feature_types == Feature_Enum.POINT.value
+    lines_mask = geoseries.feature_types == Feature_Enum.LINESTRING.value
     if (points_mask + lines_mask).sum() != len(geoseries):
         raise ValueError("Geoseries must contain only points and lines")
     points = geoseries[points_mask]
