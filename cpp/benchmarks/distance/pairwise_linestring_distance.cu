@@ -20,19 +20,8 @@
 #include <cuspatial_test/geometry_generator.cuh>
 
 #include <cuspatial/distance.cuh>
-#include <cuspatial/geometry/vec_2d.hpp>
-#include <cuspatial/iterator_factory.cuh>
-#include <cuspatial/range/multilinestring_range.cuh>
 
-#include <rmm/device_vector.hpp>
-#include <rmm/exec_policy.hpp>
 #include <rmm/cuda_stream_view.hpp>
-
-#include <thrust/execution_policy.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/scan.h>
-
-#include <memory>
 
 using namespace cuspatial;
 
@@ -44,28 +33,31 @@ void pairwise_linestring_distance_benchmark(nvbench::state& state, nvbench::type
   rmm::cuda_stream_view stream = rmm::cuda_stream_default;
 
   auto const num_string_pairs{static_cast<std::size_t>(state.get_int64("NumStrings"))};
-  auto const num_segments_per_string{static_cast<std::size_t>(state.get_int64("NumSegmentsPerString"))};
+  auto const num_segments_per_string{
+    static_cast<std::size_t>(state.get_int64("NumSegmentsPerString"))};
 
   auto params1 = test::multilinestring_generator_parameter<T>{
     num_string_pairs, num_string_pairs, num_segments_per_string, 1.0, {0., 0.}};
   auto params2 = test::multilinestring_generator_parameter<T>{
     num_string_pairs, num_string_pairs, num_segments_per_string, 1.0, {100., 100.}};
 
-  auto ls1 = generate_linestring_array(params1, stream);
-  auto ls2 = generate_linestring_array(params2, stream);
+  auto ls1 = generate_multilinestring_array(params1, stream);
+  auto ls2 = generate_multilinestring_array(params2, stream);
 
   auto ls1range = ls1.range();
   auto ls2range = ls2.range();
 
-  auto distances = rmm::device_uvector<T>(ls1range.size(), stream);
-  auto out_it    = distances.begin();
+  auto output = rmm::device_uvector<T>(num_string_pairs, stream);
+  auto out_it = output.begin();
 
-  auto const total_points = ls1.size() + ls2.size();
-
+  auto const total_points = params1.num_points() + params2.num_points();
   state.add_element_count(num_string_pairs, "LineStringPairs");
   state.add_element_count(total_points, "NumPoints");
   state.add_global_memory_reads<T>(total_points * 2, "CoordinatesDataSize");
-  state.add_global_memory_reads<int32_t>(num_string_pairs * 2, "OffsetsDataSize");
+  state.add_global_memory_reads<int32_t>(params1.num_multilinestrings +
+                                           params2.num_multilinestrings +
+                                           params1.num_linestrings() + params2.num_linestrings(),
+                                         "OffsetsDataSize");
   state.add_global_memory_writes<T>(num_string_pairs);
 
   state.exec(nvbench::exec_tag::sync, [&ls1range, &ls2range, &out_it](nvbench::launch& launch) {

@@ -36,9 +36,9 @@ namespace test {
 
 namespace detail {
 
-template <typename T>
+template <typename T, typename index_t>
 struct tabulate_direction_functor {
-  vec_2d<T> __device__ operator()(auto i)
+  vec_2d<T> __device__ operator()(index_t i)
   {
     return vec_2d<T>{cos(static_cast<T>(i)), sin(static_cast<T>(i))};
   }
@@ -127,7 +127,7 @@ vec_2d<T> __device__ polygon_centroid_displacement(vec_2d<T> centroid,
                                                    std::size_t part_local_idx,
                                                    T radius)
 {
-  return centroid + vec_2d<T>{part_local_idx * radius* T{3.0}, T{0.0}};
+  return centroid + vec_2d<T>{part_local_idx * radius * T{3.0}, T{0.0}};
 }
 
 /**
@@ -291,8 +291,11 @@ struct multilinestring_generator_parameter {
   {
     return num_multilinestrings * num_linestrings_per_multilinestring;
   }
+
+  std::size_t num_points_per_linestring() { return num_segments_per_linestring + 1; }
+
   std::size_t num_segments() { return num_linestrings() * num_segments_per_linestring; }
-  std::size_t num_points() { return num_linestrings() * (num_segments_per_linestring + 1); }
+  std::size_t num_points() { return num_linestrings() * num_points_per_linestring(); }
 };
 
 /**
@@ -320,7 +323,7 @@ struct multilinestring_generator_parameter {
  * @return The generated multilinestring array
  */
 template <typename T>
-auto generate_linestring_array(multilinestring_generator_parameter<T> params,
+auto generate_multilinestring_array(multilinestring_generator_parameter<T> params,
                                rmm::cuda_stream_view stream)
 {
   rmm::device_uvector<std::size_t> geometry_offset(params.num_multilinestrings + 1, stream);
@@ -342,9 +345,9 @@ auto generate_linestring_array(multilinestring_generator_parameter<T> params,
   thrust::tabulate(rmm::exec_policy(stream),
                    points.begin(),
                    points.end(),
-                   detail::tabulate_direction_functor<T>{});
+                   detail::tabulate_direction_functor<T, std::size_t>{});
 
-  thrust::exclusive_scan(thrust::host,
+  thrust::exclusive_scan(rmm::exec_policy(stream),
                          points.begin(),
                          points.end(),
                          points.begin(),
