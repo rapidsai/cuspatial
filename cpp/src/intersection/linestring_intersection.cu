@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include "../utility/iterator.hpp"
 #include "../utility/multi_geometry_dispatch.hpp"
 
 #include <cuspatial/column/geometry_column_view.hpp>

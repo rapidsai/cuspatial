@@ -19,14 +19,15 @@
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
 
-#include <iomanip>
 #include <rmm/device_uvector.hpp>
 
-#include <string_view>
 #include <thrust/for_each.h>
 #include <thrust/host_vector.h>
+#include <thrust/optional.h>
 
 #include <cstdio>
+#include <iomanip>
+#include <string_view>
 
 namespace cuspatial {
 
