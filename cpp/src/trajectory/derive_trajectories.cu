@@ -70,8 +70,11 @@ struct derive_trajectories_dispatch {
 
     auto num_trajectories = offsets->size();
 
-    auto offsets_column = std::make_unique<cudf::column>(
-      cudf::data_type{cudf::type_id::INT32}, num_trajectories, offsets->release());
+    auto offsets_column = std::make_unique<cudf::column>(cudf::data_type{cudf::type_id::INT32},
+                                                         num_trajectories,
+                                                         offsets->release(),
+                                                         rmm::device_buffer{},
+                                                         0);
 
     return {std::move(result_table), std::move(offsets_column)};
   }
