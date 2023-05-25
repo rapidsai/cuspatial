@@ -17,28 +17,14 @@
 #pragma once
 
 #include "distance_utils.cuh"
-#include "linestring_distance.cuh"
 
+#include <cuspatial/detail/kernel/pairwise_distance.cuh>
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/algorithm/is_point_in_polygon.cuh>
-#include <cuspatial/detail/functors.cuh>
-#include <cuspatial/detail/utility/device_atomics.cuh>
-#include <cuspatial/detail/utility/linestring.cuh>
-#include <cuspatial/detail/utility/zero_data.cuh>
-#include <cuspatial/geometry/vec_2d.hpp>
-#include <cuspatial/iterator_factory.cuh>
-#include <cuspatial/range/range.cuh>
 
 #include <thrust/fill.h>
-#include <thrust/functional.h>
-#include <thrust/iterator/discard_iterator.h>
-#include <thrust/iterator/permutation_iterator.h>
-#include <thrust/logical.h>
-#include <thrust/scan.h>
-#include <thrust/zip_function.h>
 
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
 
 #include <limits>
@@ -69,7 +55,7 @@ OutputIt pairwise_linestring_polygon_distance(MultiLinestringRange multilinestri
 
   thrust::fill(rmm::exec_policy(stream),
                distances_first,
-               distances_first + size.size(),
+               distances_first + size,
                std::numeric_limits<T>::max());
 
   auto [threads_per_block, num_blocks] = grid_1d(multilinestrings.num_points());
