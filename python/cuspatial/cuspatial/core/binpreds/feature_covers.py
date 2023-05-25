@@ -28,20 +28,10 @@ from cuspatial.utils.binpred_utils import (
 class CoversPredicateBase(EqualsPredicateBase):
     """Implements the covers predicate across different combinations of
     geometry types.  For example, a Point-Polygon covers predicate is
-    defined in terms of a Point-Point equals predicate. The initial release
-    implements covers predicates that depend only on the equals predicate, or
-    depend on no predicate, such as impossible cases like
-    `LineString.covers(Polygon)`.
-
-    For this initial release, cover is supported for the following types:
+    defined in terms of a Point-Polygon equals predicate.
 
     Point.covers(Point)
-    Point.covers(Polygon)
     LineString.covers(Polygon)
-    Polygon.covers(Point)
-    Polygon.covers(MultiPoint)
-    Polygon.covers(LineString)
-    Polygon.covers(Polygon)
     """
 
     pass

@@ -106,8 +106,7 @@ class PointPolygonIntersects(BinPred):
 
 class LineStringPointIntersects(IntersectsPredicateBase):
     def _preprocess(self, lhs, rhs):
-        intersects = _basic_intersects(lhs, rhs)
-        return intersects
+        return _basic_intersects(lhs, rhs)
 
 
 class PointLineStringIntersects(LineStringPointIntersects):
