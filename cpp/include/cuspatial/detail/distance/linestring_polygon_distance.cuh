@@ -18,9 +18,9 @@
 
 #include "distance_utils.cuh"
 
-#include <cuspatial/detail/kernel/pairwise_distance.cuh>
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/algorithm/is_point_in_polygon.cuh>
+#include <cuspatial/detail/kernel/pairwise_distance.cuh>
 
 #include <thrust/fill.h>
 

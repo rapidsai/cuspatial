@@ -72,7 +72,6 @@ __global__ void linestring_distance(MultiLinestringRange1 multilinestrings1,
   }
 }
 
-
 /**
  * @brief Kernel to compute the distance between pairs of point and linestring.
  *
@@ -103,8 +102,7 @@ void __global__ point_linestring_distance(MultiPointRange multipoints,
     // current linestring point
     auto geometry_idx = multilinestrings.geometry_idx_from_part_idx(part_idx);
 
-    if (intersects.has_value() && intersects.value()[geometry_idx])
-    {
+    if (intersects.has_value() && intersects.value()[geometry_idx]) {
       distances[geometry_idx] = 0;
       continue;
     }
@@ -121,8 +119,6 @@ void __global__ point_linestring_distance(MultiPointRange multipoints,
     atomicMin(&distances[geometry_idx], static_cast<T>(sqrt(min_distance_squared)));
   }
 }
-
-
 
 }  // namespace detail
 }  // namespace cuspatial

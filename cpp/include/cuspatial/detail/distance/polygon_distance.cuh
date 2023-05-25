@@ -18,8 +18,8 @@
 
 #include "distance_utils.cuh"
 
-#include <cuspatial/detail/kernel/pairwise_distance.cuh>
 #include <cuspatial/cuda_utils.hpp>
+#include <cuspatial/detail/kernel/pairwise_distance.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
 

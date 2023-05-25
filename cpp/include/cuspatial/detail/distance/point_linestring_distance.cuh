@@ -16,11 +16,11 @@
 
 #pragma once
 
+#include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/kernel/pairwise_distance.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
-#include <cuspatial/cuda_utils.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
@@ -61,9 +61,8 @@ OutputIt pairwise_point_linestring_distance(MultiPointRange multipoints,
 
   auto [threads_per_block, num_blocks] = grid_1d(multilinestrings.num_points());
 
-  detail::
-    point_linestring_distance<<<num_blocks, threads_per_block, 0, stream.value()>>>(
-      multipoints, multilinestrings, thrust::nullopt, distances_first);
+  detail::point_linestring_distance<<<num_blocks, threads_per_block, 0, stream.value()>>>(
+    multipoints, multilinestrings, thrust::nullopt, distances_first);
 
   CUSPATIAL_CUDA_TRY(cudaGetLastError());
 
