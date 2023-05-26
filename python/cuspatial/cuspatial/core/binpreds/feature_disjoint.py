@@ -2,6 +2,7 @@
 
 from cuspatial.core.binpreds.basic_predicates import (
     _basic_contains_any,
+    _basic_equals_any,
     _basic_intersects,
 )
 from cuspatial.core.binpreds.binpred_interface import (
@@ -23,11 +24,15 @@ class DisjointByWayOfContains(BinPred):
         and then negate the result.
 
         Used by:
-        (Point, Point)
         (Point, Polygon)
         (Polygon, Point)
         """
         return ~_basic_contains_any(lhs, rhs)
+
+
+class PointPointDisjoint(BinPred):
+    def _preprocess(self, lhs, rhs):
+        return ~_basic_equals_any(lhs, rhs)
 
 
 class PointLineStringDisjoint(BinPred):
@@ -40,9 +45,8 @@ class PointLineStringDisjoint(BinPred):
 
 class PointPolygonDisjoint(BinPred):
     def _preprocess(self, lhs, rhs):
-        intersects = _basic_intersects(lhs, rhs)
         contains = _basic_contains_any(lhs, rhs)
-        return ~intersects & ~contains
+        return ~contains
 
 
 class LineStringPointDisjoint(PointLineStringDisjoint):
@@ -61,9 +65,8 @@ class LineStringLineStringDisjoint(IntersectsPredicateBase):
 
 class LineStringPolygonDisjoint(BinPred):
     def _preprocess(self, lhs, rhs):
-        intersects = _basic_intersects(lhs, rhs)
         contains = _basic_contains_any(rhs, lhs)
-        return ~intersects & ~contains
+        return ~contains
 
 
 class PolygonPolygonDisjoint(BinPred):
@@ -72,7 +75,7 @@ class PolygonPolygonDisjoint(BinPred):
 
 
 DispatchDict = {
-    (Point, Point): DisjointByWayOfContains,
+    (Point, Point): PointPointDisjoint,
     (Point, MultiPoint): NotImplementedPredicate,
     (Point, LineString): PointLineStringDisjoint,
     (Point, Polygon): PointPolygonDisjoint,

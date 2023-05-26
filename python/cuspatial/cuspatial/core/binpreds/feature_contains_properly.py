@@ -176,7 +176,7 @@ class LineStringLineStringContainsProperly(BinPred):
     left and right hand side types. """
 DispatchDict = {
     (Point, Point): ContainsProperlyByIntersection,
-    (Point, MultiPoint): ImpossiblePredicate,
+    (Point, MultiPoint): ContainsProperlyByIntersection,
     (Point, LineString): ImpossiblePredicate,
     (Point, Polygon): ImpossiblePredicate,
     (MultiPoint, Point): NotImplementedPredicate,
