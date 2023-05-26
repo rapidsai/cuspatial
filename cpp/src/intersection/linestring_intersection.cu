@@ -85,7 +85,9 @@ struct pairwise_linestring_intersection_launch {
 
     auto points_xy = std::make_unique<cudf::column>(cudf::data_type(cudf::type_to_id<T>()),
                                                     2 * num_points,
-                                                    intersection_results.points_coords->release());
+                                                    intersection_results.points_coords->release(),
+                                                    rmm::device_buffer{},
+                                                    0);
 
     auto points =
       cudf::make_lists_column(num_points, std::move(points_offsets), std::move(points_xy), 0, {});
@@ -100,7 +102,9 @@ struct pairwise_linestring_intersection_launch {
     auto segments_xy =
       std::make_unique<cudf::column>(cudf::data_type(cudf::type_to_id<T>()),
                                      num_segment_coords,
-                                     intersection_results.segments_coords->release());
+                                     intersection_results.segments_coords->release(),
+                                     rmm::device_buffer{},
+                                     0);
 
     auto segments =
       cudf::make_lists_column(num_segments,
@@ -118,15 +122,24 @@ struct pairwise_linestring_intersection_launch {
                               mr);
 
     return linestring_intersection_column_result{
-      std::make_unique<cudf::column>(std::move(*intersection_results.geometry_collection_offset)),
-      std::make_unique<cudf::column>(std::move(*intersection_results.types_buffer)),
-      std::make_unique<cudf::column>(std::move(*intersection_results.offset_buffer)),
+      std::make_unique<cudf::column>(
+        std::move(*intersection_results.geometry_collection_offset.release()),
+        rmm::device_buffer{},
+        0),
+      std::make_unique<cudf::column>(
+        std::move(*intersection_results.types_buffer.release()), rmm::device_buffer{}, 0),
+      std::make_unique<cudf::column>(
+        std::move(*intersection_results.offset_buffer.release()), rmm::device_buffer{}, 0),
       std::move(points),
       std::move(segments),
-      std::make_unique<cudf::column>(std::move(*intersection_results.lhs_linestring_id)),
-      std::make_unique<cudf::column>(std::move(*intersection_results.lhs_segment_id)),
-      std::make_unique<cudf::column>(std::move(*intersection_results.rhs_linestring_id)),
-      std::make_unique<cudf::column>(std::move(*intersection_results.rhs_segment_id))};
+      std::make_unique<cudf::column>(
+        std::move(*intersection_results.lhs_linestring_id.release()), rmm::device_buffer{}, 0),
+      std::make_unique<cudf::column>(
+        std::move(*intersection_results.lhs_segment_id.release()), rmm::device_buffer{}, 0),
+      std::make_unique<cudf::column>(
+        std::move(*intersection_results.rhs_linestring_id.release()), rmm::device_buffer{}, 0),
+      std::make_unique<cudf::column>(
+        std::move(*intersection_results.rhs_segment_id.release()), rmm::device_buffer{}, 0)};
   }
 
   template <typename T, typename... Args>
