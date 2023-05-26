@@ -12,7 +12,7 @@ from cuspatial.utils.binpred_utils import (
 )
 
 
-def _basic_equals(lhs, rhs):
+def _basic_equals_any(lhs, rhs):
     """Utility method that returns True if any point in the lhs geometry
     is equal to a point in the rhs geometry."""
     lhs = _multipoints_from_geometry(lhs)
