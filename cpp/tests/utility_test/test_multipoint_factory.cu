@@ -34,7 +34,7 @@ TYPED_TEST(MultiPointFactoryTest, simple)
   using P = vec_2d<T>;
 
   auto multipoints =
-    make_multipoints_array({{P{0.0, 0.0}, P{1.0, 0.0}}, {P{2.0, 0.0}, P{2.0, 2.0}}});
+    make_multipoint_array({{P{0.0, 0.0}, P{1.0, 0.0}}, {P{2.0, 0.0}, P{2.0, 2.0}}});
 
   auto [offsets, coords] = multipoints.release();
 
@@ -51,7 +51,7 @@ TYPED_TEST(MultiPointFactoryTest, empty)
   using T = TypeParam;
   using P = vec_2d<T>;
 
-  auto multipoints = make_multipoints_array<T>({});
+  auto multipoints = make_multipoint_array<T>({});
 
   auto [offsets, coords] = multipoints.release();
 
@@ -67,7 +67,7 @@ TYPED_TEST(MultiPointFactoryTest, mixed_empty_multipoint)
   using T = TypeParam;
   using P = vec_2d<T>;
 
-  auto multipoints = make_multipoints_array({{P{1.0, 0.0}}, {}, {P{2.0, 3.0}, P{4.0, 5.0}}});
+  auto multipoints = make_multipoint_array({{P{1.0, 0.0}}, {}, {P{2.0, 3.0}, P{4.0, 5.0}}});
 
   auto [offsets, coords] = multipoints.release();
 
@@ -83,7 +83,7 @@ TYPED_TEST(MultiPointFactoryTest, mixed_empty_multipoint2)
   using T = TypeParam;
   using P = vec_2d<T>;
 
-  auto multipoints = make_multipoints_array({{}, {P{1.0, 0.0}}, {P{2.0, 3.0}, P{4.0, 5.0}}});
+  auto multipoints = make_multipoint_array({{}, {P{1.0, 0.0}}, {P{2.0, 3.0}, P{4.0, 5.0}}});
 
   auto [offsets, coords] = multipoints.release();
 
@@ -99,7 +99,7 @@ TYPED_TEST(MultiPointFactoryTest, mixed_empty_multipoint3)
   using T = TypeParam;
   using P = vec_2d<T>;
 
-  auto multipoints = make_multipoints_array({{P{1.0, 0.0}}, {P{2.0, 3.0}, P{4.0, 5.0}}, {}});
+  auto multipoints = make_multipoint_array({{P{1.0, 0.0}}, {P{2.0, 3.0}, P{4.0, 5.0}}, {}});
 
   auto [offsets, coords] = multipoints.release();
 
