@@ -21,6 +21,7 @@
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
+#include <cuspatial/range/range.cuh>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
@@ -73,10 +74,11 @@ OutputIt pairwise_linestring_distance(MultiLinestringRange1 lhs,
                std::numeric_limits<T>::max());
 
   std::size_t constexpr threads_per_block = 256;
-  std::size_t num_threads                 = thread_bounds.element(thread_bounds.size() - 1, stream);
+  // std::size_t num_threads                 = thread_bounds.element(thread_bounds.size() - 1, stream);
+  std::size_t num_threads = lhs.num_points() * rhs.num_points();
   std::size_t const num_blocks = (num_threads + threads_per_block - 1) / threads_per_block;
 
-  detail::linestring_distance_load_balanced<T>
+  detail::linestring_distance_load_balanced<T, threads_per_block>
     <<<num_blocks, threads_per_block, 0, stream.value()>>>(
       lhs_segments_range,
       rhs_segments_range,
