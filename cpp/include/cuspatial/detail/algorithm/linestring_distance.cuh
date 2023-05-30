@@ -21,7 +21,12 @@
 
 #include <rmm/device_uvector.hpp>
 
+#include <thrust/binary_search.h>
 #include <thrust/optional.h>
+
+#include <cub/cub.cuh>
+
+#include <cooperative_groups.h>
 
 namespace cuspatial {
 namespace detail {
@@ -69,6 +74,85 @@ __global__ void linestring_distance(MultiLinestringRange1 multilinestrings1,
       }
     }
     atomicMin(&distances_first[geometry_idx], static_cast<T>(sqrt(min_distance_squared)));
+  }
+}
+
+template<typename BoundsIterator, typename IndexType>
+auto __device__ compute_geometry_id(BoundsIterator bounds_begin, BoundsIterator bounds_end, IndexType idx)
+{
+    auto it = thrust::prev(
+      thrust::upper_bound(thrust::seq, bounds_begin, bounds_end, idx));
+    auto const geometry_id = thrust::distance(bounds_begin, it);
+    return thrust::make_pair(it, geometry_id);
+}
+
+/**
+ * @internal
+ * @brief The kernel to compute (multi)linestring to (multi)linestring distance
+ *
+ * Load balanced kernel to compute distances between one pair of segments from the multilinestring
+ * and multilinestring.
+ *
+ * `intersects` is an optional pointer to a boolean range where the `i`th element indicates the
+ * `i`th output should be set to 0 and bypass distance computation. This argument is optional, if
+ * set to nullopt, no distance computation will be bypassed.
+ */
+template <typename T, int block_size, class SegmentRange1, class SegmentRange2, class IndexRange, class OutputIt>
+__global__ void linestring_distance_load_balanced(SegmentRange1 multilinestrings1,
+                                                  SegmentRange2 multilinestrings2,
+                                                  IndexRange thread_bounds,
+                                                  thrust::optional<uint8_t*> intersects,
+                                                  OutputIt distances)
+{
+  using index_t = typename IndexRange::value_type;
+
+  auto num_segment_pairs = thread_bounds[thread_bounds.size() - 1];
+  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < num_segment_pairs;
+       idx += gridDim.x * blockDim.x) {
+
+    auto [it, geometry_id] = compute_geometry_id(thread_bounds.begin(), thread_bounds.end(), idx);
+
+    auto first_thread_of_this_block = blockDim.x * blockIdx.x;
+    auto last_thread_of_block = blockDim.x * (blockIdx.x + 1) - 1;
+    auto first_thread_of_next_geometry = thread_bounds[geometry_id + 1];
+
+    bool split_block = first_thread_of_this_block < first_thread_of_next_geometry && first_thread_of_next_geometry <= last_thread_of_block;
+
+    if (intersects.has_value() && intersects.value()[geometry_id]) {
+      distances[geometry_id] = 0.0f;
+      continue;
+    }
+
+    auto const local_idx = idx - *it;
+    // Retrieve the number of segments in multilinestrings[geometry_id]
+    auto num_segment_this_multilinestring =
+      multilinestrings1.multigeometry_count_begin()[geometry_id];
+    // The segment id from multilinestring1 this thread is computing (local_id + global_offset)
+    auto multilinestring1_segment_id = local_idx % num_segment_this_multilinestring +
+                                       multilinestrings1.multigeometry_offset_begin()[geometry_id];
+
+    // The segment id from multilinestring2 this thread is computing (local_id + global_offset)
+    auto multilinestring2_segment_id = local_idx / num_segment_this_multilinestring +
+                                       multilinestrings2.multigeometry_offset_begin()[geometry_id];
+
+    auto [a, b] = multilinestrings1.begin()[multilinestring1_segment_id];
+    auto [c, d] = multilinestrings2.begin()[multilinestring2_segment_id];
+
+    auto partial = sqrt(squared_segment_distance(a, b, c, d));
+
+    if (split_block)
+      atomicMin(&distances[geometry_id], partial);
+    else
+    {
+      // block reduce
+      typedef cub::BlockReduce<T, block_size> BlockReduce;
+      __shared__ typename BlockReduce::TempStorage temp_storage;
+      auto aggregate = BlockReduce(temp_storage).Reduce(partial, cub::Min());
+
+      // atmomic with leading thread
+      if (cooperative_groups::this_thread_block().thread_rank() == 0)
+        atomicMin(&distances[geometry_id], aggregate);
+    }
   }
 }
 
