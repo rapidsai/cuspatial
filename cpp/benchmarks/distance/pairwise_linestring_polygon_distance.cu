@@ -66,9 +66,10 @@ void pairwise_linestring_polygon_distance_benchmark(nvbench::state& state, nvben
   state.add_element_count(num_pairs, "NumPairs");
   state.add_element_count(total_points, "NumPoints");
   state.add_global_memory_reads<T>(total_points * 2, "CoordinatesDataSize");
-  state.add_global_memory_reads<int32_t>(
-    params1.num_multilinestrings + params1.num_linestrings() + params2.num_multipolygons + params2.num_polygons() + params2.num_rings() + 5,
-    "OffsetsDataSize");
+  state.add_global_memory_reads<int32_t>(params1.num_multilinestrings + params1.num_linestrings() +
+                                           params2.num_multipolygons + params2.num_polygons() +
+                                           params2.num_rings() + 5,
+                                         "OffsetsDataSize");
   state.add_global_memory_writes<T>(num_pairs);
 
   state.exec(nvbench::exec_tag::sync,
@@ -78,7 +79,8 @@ void pairwise_linestring_polygon_distance_benchmark(nvbench::state& state, nvben
 }
 
 using floating_point_types = nvbench::type_list<float, double>;
-NVBENCH_BENCH_TYPES(pairwise_linestring_polygon_distance_benchmark, NVBENCH_TYPE_AXES(floating_point_types))
+NVBENCH_BENCH_TYPES(pairwise_linestring_polygon_distance_benchmark,
+                    NVBENCH_TYPE_AXES(floating_point_types))
   .set_type_axes_names({"CoordsType"})
   .add_int64_axis("NumPairs", {100'00})
   .add_int64_axis("NumLineStringPerMultiLineString", {10, 100, 1'000})
