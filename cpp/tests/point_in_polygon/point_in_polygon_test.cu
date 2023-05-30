@@ -383,7 +383,7 @@ TYPED_TEST(PointInPolygonTest, ContainsButCollinearWithBoundary)
 {
   using T = TypeParam;
 
-  auto point   = cuspatial::test::make_multipoints_array<T>({{{0.5, 0.5}}});
+  auto point   = cuspatial::test::make_multipoint_array<T>({{{0.5, 0.5}}});
   auto polygon = cuspatial::test::make_multipolygon_array<T>(
     {0, 1},
     {0, 1},

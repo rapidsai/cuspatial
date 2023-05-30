@@ -23,7 +23,6 @@ from cuspatial.utils.binpred_utils import (
     Point,
     Polygon,
     _false_series,
-    _linestrings_from_geometry,
 )
 
 
@@ -107,12 +106,7 @@ class PointPolygonIntersects(BinPred):
 
 class LineStringPointIntersects(IntersectsPredicateBase):
     def _preprocess(self, lhs, rhs):
-        """Convert rhs to linestrings by making a linestring that has
-        the same start and end point."""
-        ls_rhs = _linestrings_from_geometry(rhs)
-        return self._compute_predicate(
-            lhs, ls_rhs, PreprocessorResult(lhs, ls_rhs)
-        )
+        return _basic_intersects(lhs, rhs)
 
 
 class PointLineStringIntersects(LineStringPointIntersects):
