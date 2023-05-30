@@ -219,7 +219,8 @@ ConfigureTest(LINESTRING_INTERSECTION_TEST_EXP
     intersection/linestring_intersection_count_test.cu
     intersection/linestring_intersection_intermediates_remove_if_test.cu
     intersection/linestring_intersection_with_duplicates_test.cu
-    intersection/linestring_intersection_test.cu)
+    intersection/linestring_intersection_test.cu
+    intersection/linestring_intersection_large_test.cu)
 
 # nearest points
 ConfigureTest(POINT_LINESTRING_NEAREST_POINT_TEST_EXP
