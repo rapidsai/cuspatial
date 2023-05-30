@@ -90,20 +90,31 @@ struct dispatch_construct_quadtree {
 
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.push_back(std::make_unique<cudf::column>(
-      cudf::data_type{cudf::type_id::UINT32}, size, tree.key.release()));
+      cudf::data_type{cudf::type_id::UINT32}, size, tree.key.release(), rmm::device_buffer{}, 0));
     cols.push_back(std::make_unique<cudf::column>(
-      cudf::data_type{cudf::type_id::UINT8}, size, tree.level.release()));
-    cols.push_back(std::make_unique<cudf::column>(
-      cudf::data_type{cudf::type_id::BOOL8}, size, tree.internal_node_flag.release()));
-    cols.push_back(std::make_unique<cudf::column>(
-      cudf::data_type{cudf::type_id::UINT32}, size, tree.length.release()));
-    cols.push_back(std::make_unique<cudf::column>(
-      cudf::data_type{cudf::type_id::UINT32}, size, tree.offset.release()));
+      cudf::data_type{cudf::type_id::UINT8}, size, tree.level.release(), rmm::device_buffer{}, 0));
+    cols.push_back(std::make_unique<cudf::column>(cudf::data_type{cudf::type_id::BOOL8},
+                                                  size,
+                                                  tree.internal_node_flag.release(),
+                                                  rmm::device_buffer{},
+                                                  0));
+    cols.push_back(std::make_unique<cudf::column>(cudf::data_type{cudf::type_id::UINT32},
+                                                  size,
+                                                  tree.length.release(),
+                                                  rmm::device_buffer{},
+                                                  0));
+    cols.push_back(std::make_unique<cudf::column>(cudf::data_type{cudf::type_id::UINT32},
+                                                  size,
+                                                  tree.offset.release(),
+                                                  rmm::device_buffer{},
+                                                  0));
 
-    return std::make_pair(
-      std::make_unique<cudf::column>(
-        cudf::data_type{cudf::type_id::UINT32}, x.size(), point_indices.release()),
-      std::make_unique<cudf::table>(std::move(cols)));
+    return std::make_pair(std::make_unique<cudf::column>(cudf::data_type{cudf::type_id::UINT32},
+                                                         x.size(),
+                                                         point_indices.release(),
+                                                         rmm::device_buffer{},
+                                                         0),
+                          std::make_unique<cudf::table>(std::move(cols)));
   }
 };
 

@@ -45,10 +45,13 @@ void __global__ find_duplicate_points_kernel_simple(MultiPointRange multipoints,
       duplicate_flags[i + global_offset] = 0;
     }
 
-    for (auto i = 0; i < multipoint.size() && duplicate_flags[i] != 1; ++i)
+    // Loop over the point range to find duplicates, skipping if the point is already marked as
+    // duplicate.
+    for (auto i = 0; i < multipoint.size() && duplicate_flags[i + global_offset] != 1; ++i) {
       for (auto j = i + 1; j < multipoint.size(); ++j) {
         if (multipoint[i] == multipoint[j]) duplicate_flags[j + global_offset] = 1;
       }
+    }
   }
 }
 
