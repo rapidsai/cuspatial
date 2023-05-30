@@ -106,8 +106,8 @@ __global__ void linestring_distance_load_balanced(SegmentRange1 multilinestrings
 {
   using index_t = typename IndexRange::value_type;
 
-  auto num_threads = thread_bounds[thread_bounds.size() - 1];
-  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < num_threads;
+  auto num_segment_pairs = thread_bounds[thread_bounds.size() - 1];
+  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < num_segment_pairs;
        idx += gridDim.x * blockDim.x) {
 
     auto [it, geometry_id] = compute_geometry_id(thread_bounds.begin(), thread_bounds.end(), idx);
@@ -141,9 +141,7 @@ __global__ void linestring_distance_load_balanced(SegmentRange1 multilinestrings
     auto partial = sqrt(squared_segment_distance(a, b, c, d));
 
     if (split_block)
-    {
       atomicMin(&distances[geometry_id], partial);
-    }
     else
     {
       // block reduce
