@@ -185,9 +185,11 @@ dependencies:
           - pre-commit
   docs:
     common:
-      - output_types: [conda, requirements]
+      - output_types: [conda]
         packages:
           - doxygen
+      - output_types: [conda, requirements]
+        packages:
           - ipython
           - myst-parser
           - nbsphinx
