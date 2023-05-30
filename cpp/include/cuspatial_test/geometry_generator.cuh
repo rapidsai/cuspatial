@@ -314,7 +314,7 @@ struct multilinestring_generator_parameter {
  * locality of the linestring group via these five arguments.
  *
  * The locality of the multilinestrings is important to the computation and
- * and carefully designing the parmaeters can make the multilinestrings intersect/disjoint.
+ * and carefully designing the parameters can make the multilinestrings intersect/disjoint.
  * which could affect whether the benchmark is testing against best or worst case.
  *
  * @tparam T The floating point type for the coordinates
@@ -324,7 +324,7 @@ struct multilinestring_generator_parameter {
  */
 template <typename T>
 auto generate_multilinestring_array(multilinestring_generator_parameter<T> params,
-                               rmm::cuda_stream_view stream)
+                                    rmm::cuda_stream_view stream)
 {
   rmm::device_uvector<std::size_t> geometry_offset(params.num_multilinestrings + 1, stream);
   rmm::device_uvector<std::size_t> part_offset(params.num_linestrings() + 1, stream);
