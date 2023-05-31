@@ -81,12 +81,6 @@ rapids_cmake_support_conda_env(conda_env MODIFY_PREFIX_PATH)
 
 ###################################################################################################
 # - compiler options ------------------------------------------------------------------------------
-set(_ctk_static_suffix "")
-if(CUDA_STATIC_RUNTIME)
-  set(_ctk_static_suffix "_static")
-  # Control legacy FindCUDA.cmake behavior too
-  set(CUDA_USE_STATIC_CUDA_RUNTIME ON)
-endif()
 
 rapids_cuda_init_runtime(USE_STATIC ${CUDA_STATIC_RUNTIME})
 
