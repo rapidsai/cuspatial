@@ -304,7 +304,6 @@ struct multilinestring_generator_parameter {
  * The generator adopts a walking algorithm. The ith point is computed by
  * walking (cos(i) * segment_length, sin(i) * segment_length) from the `i-1`
  * point. The initial point of the linestring is at `(init_xy, init_xy)`.
- * The walking angle between segments are random.
  *
  * The number of line segments per linestring is constrolled by
  * `num_segment_per_string`.
