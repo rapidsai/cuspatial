@@ -222,6 +222,7 @@ def quadtree_point_in_polygon(
     ring_offsets = as_column(polygons.polygons.ring_offset)
     poly_points_x = as_column(polygons.polygons.x)
     poly_points_y = as_column(polygons.polygons.y)
+
     return DataFrame._from_data(
         *spatial_join.quadtree_point_in_polygon(
             poly_quad_pairs,

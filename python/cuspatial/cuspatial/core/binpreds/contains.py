@@ -39,11 +39,11 @@ def _quadtree_contains_properly(points, polygons):
         within its corresponding polygon.
     """
 
+    # Set the scale to the default minimum scale without triggering a warning.
+    max_depth = 15
+    min_size = ceil(sqrt(len(points)))
     if len(polygons) == 0:
         return Series()
-
-    max_depth = 6
-    min_size = ceil(sqrt(len(points)))
     x_max = polygons.polygons.x.max()
     x_min = polygons.polygons.x.min()
     y_max = polygons.polygons.y.max()
@@ -153,6 +153,10 @@ def _pairwise_contains_properly(points, polygons):
         as_column(polygons.polygons.x),
         as_column(polygons.polygons.y),
     )
+    # Pairwise returns a boolean column where the point and polygon index
+    # always correspond. We can use this to create a dataframe with the
+    # same shape as the quadtree result. Finally all the False results
+    # are dropped, as quadtree doesn't report False results.
     quadtree_shaped_result = (
         cudf.Series(pip_result).reset_index().reset_index()
     )

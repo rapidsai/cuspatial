@@ -74,12 +74,10 @@ class ContainsProperlyPredicate(ContainsGeometryProcessor):
         2. If the number of polygons in the lhs is less than 32, we use the
            brute-force algorithm because it is faster and has less memory
            overhead.
-        3. If the lhs and rhs contain the same number of elements, we use
-           pairwise point-in-polygon.
-        4. If the lhs contains multipolygons, we use quadtree because the
-           performance between quadtree and brute-force is similar, but
-           code complexity would be higher if we did multipolygon
-           reconstruction on both code paths.
+        3. If the lhs contains multipolygons, we use quadtree because
+           the quadtree code path already handles multipolygons.
+        4. Otherwise pairwise is defaulted to since the default GeoPandas
+           behavior is to use the pairwise algorithm.
         """
         if len(lhs) <= 31:
             return "brute_force"
@@ -104,6 +102,8 @@ class ContainsProperlyPredicate(ContainsGeometryProcessor):
             )
         mode = self._pip_mode(lhs, preprocessor_result.final_rhs)
         lhs_indices = lhs.index
+        # Duplicates the lhs polygon for each point in the final_rhs result
+        # that was computed by _preprocess.
         if mode == "pairwise":
             lhs_indices = preprocessor_result.point_indices
         pip_result = contains_properly(
