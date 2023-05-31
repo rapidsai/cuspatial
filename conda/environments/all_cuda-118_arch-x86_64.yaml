@@ -36,7 +36,7 @@ dependencies:
 - pytest-xdist
 - python>=3.9,<3.11
 - rmm==23.6.*
-- scikit-build>=0.13.1,<0.17.2
+- scikit-build>=0.13.1
 - scikit-image
 - setuptools
 - shapely
