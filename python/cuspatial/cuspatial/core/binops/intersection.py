@@ -71,7 +71,7 @@ def pairwise_linestring_intersection(
         raise ValueError("Input GeoSeries must contain only linestrings.")
 
     geoms, look_back_ids = c_pairwise_linestring_intersection(
-        linestrings1._column.lines._column, linestrings2._column.lines._column
+        linestrings1.lines.column(), linestrings2.lines.column()
     )
 
     (

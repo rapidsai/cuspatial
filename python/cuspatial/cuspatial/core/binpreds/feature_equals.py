@@ -13,6 +13,7 @@ import cuspatial
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     EqualsOpResult,
+    ImpossiblePredicate,
     NotImplementedPredicate,
     PreprocessorResult,
 )
@@ -334,11 +335,19 @@ class LineStringPointEquals(EqualsPredicateBase):
         return _false_series(len(lhs))
 
 
+class PolygonPolygonEquals(BinPred):
+    def _preprocess(self, lhs, rhs):
+        """Two polygons are equal if they contain each other."""
+        lhs_contains_rhs = lhs.contains(rhs)
+        rhs_contains_lhs = rhs.contains(lhs)
+        return lhs_contains_rhs & rhs_contains_lhs
+
+
 """DispatchDict for Equals operations."""
 DispatchDict = {
     (Point, Point): EqualsPredicateBase,
     (Point, MultiPoint): NotImplementedPredicate,
-    (Point, LineString): NotImplementedPredicate,
+    (Point, LineString): ImpossiblePredicate,
     (Point, Polygon): EqualsPredicateBase,
     (MultiPoint, Point): NotImplementedPredicate,
     (MultiPoint, MultiPoint): MultiPointMultiPointEquals,
@@ -351,5 +360,5 @@ DispatchDict = {
     (Polygon, Point): EqualsPredicateBase,
     (Polygon, MultiPoint): EqualsPredicateBase,
     (Polygon, LineString): EqualsPredicateBase,
-    (Polygon, Polygon): EqualsPredicateBase,
+    (Polygon, Polygon): PolygonPolygonEquals,
 }
