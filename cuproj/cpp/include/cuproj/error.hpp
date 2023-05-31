@@ -73,10 +73,10 @@ struct cuda_error : public std::runtime_error {
  * expected to be true
  * @throw cuproj::logic_error if the condition evaluates to false.
  *---------------------------------------------------------------------------**/
-#define CUPROJ_EXPECTS(cond, reason)                                       \
-  (!!(cond)) ? static_cast<void>(0)                                        \
-             : throw cuspatial::logic_error("cuProj failure at: " __FILE__ \
-                                            ":" CUPROJ_STRINGIFY(__LINE__) ": " reason)
+#define CUPROJ_EXPECTS(cond, reason)                                    \
+  (!!(cond)) ? static_cast<void>(0)                                     \
+             : throw cuproj::logic_error("cuProj failure at: " __FILE__ \
+                                         ":" CUPROJ_STRINGIFY(__LINE__) ": " reason)
 
 /**---------------------------------------------------------------------------*
  * @brief Macro for checking (pre-)conditions that throws an exception when
