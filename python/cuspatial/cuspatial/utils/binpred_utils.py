@@ -305,7 +305,49 @@ def _open_polygon_rings(geoseries):
 
 def _points_and_lines_to_multipoints(geoseries, offsets):
     """Converts a geoseries of points and lines into a geoseries of
-    multipoints."""
+    multipoints.
+
+    Given a geoseries of points and lines, this function will return a
+    geoseries of multipoints. The multipoints will contain the points
+    and lines in the same order as the original geoseries. The offsets
+    parameter groups the points and lines into multipoints. The offsets
+    parameter must be a list of integers that contains the offsets of
+    the multipoints in the original geoseries. A group of four points
+    and lines can be arranged into four sets of multipoints depending
+    on the offset used:
+
+    >>> import cuspatial
+    >>> from cuspatial.utils.binpred_utils import (
+    ...     _points_and_lines_to_multipoints
+    ... )
+    >>> from shapely.geometry import Point, LineString
+    >>> mixed = cuspatial.GeoSeries([
+    ...    Point(0, 0),
+    ...    LineString([(1, 1), (2, 2)]),
+    ...    Point(3, 3),
+    ...    LineString([(4, 4), (5, 5)]),
+    ... ])
+    >>> offsets = [0, 4]
+    >>> # Place all of the points and linestrings into a single
+    >>> # multipoint
+    >>> _points_and_lines_to_multipoints(mixed, offsets)
+    0    MULTIPOINT (0.00000 0.00000, 1.00000, 1.0000, ...
+    dtype: geometry
+    >>> offsets = [0, 1, 2, 3, 4]
+    >>> # Place each point and linestring into its own multipoint
+    >>> _points_and_lines_to_multipoints(mixed, offsets)
+    0    MULTIPOINT (0.00000 0.00000)
+    1    MULTIPOINT (1.00000, 1.00000, 2.00000, 2.00000)
+    2    MULTIPOINT (3.00000 3.00000)
+    3    MULTIPOINT (4.00000, 4.00000, 5.00000, 5.00000)
+    dtype: geometry
+    >>> offsets = [0, 2, 4]
+    >>> # Split the points and linestrings into two multipoints
+    >>> _points_and_lines_to_multipoints(mixed, offsets)
+    0    MULTIPOINT (0.00000 0.00000, 1.00000, 1.0000, ...
+    1    MULTIPOINT (3.00000 3.00000, 4.00000, 4.0000, ...
+    dtype: geometry
+    """
     points_mask = geoseries.type == "Point"
     lines_mask = geoseries.type == "Linestring"
     if (points_mask + lines_mask).sum() != len(geoseries):
@@ -375,8 +417,3 @@ def _multipoints_is_degenerate(geoseries):
     ) & (y1.reset_index(drop=True) == y2.reset_index(drop=True))
     result[sizes_mask] = is_degenerate.reset_index(drop=True)
     return result
-
-
-def _linestrings_is_degenerate(geoseries):
-    multipoints = _multipoints_from_geometry(geoseries)
-    return _multipoints_is_degenerate(multipoints)

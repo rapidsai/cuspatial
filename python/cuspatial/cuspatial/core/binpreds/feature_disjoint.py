@@ -1,13 +1,14 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
+from cuspatial.core.binpreds.basic_predicates import (
+    _basic_contains_any,
+    _basic_intersects,
+)
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     NotImplementedPredicate,
 )
-from cuspatial.core.binpreds.feature_intersects import (
-    IntersectsPredicateBase,
-    PointLineStringIntersects,
-)
+from cuspatial.core.binpreds.feature_intersects import IntersectsPredicateBase
 from cuspatial.utils.binpred_utils import (
     LineString,
     MultiPoint,
@@ -16,7 +17,7 @@ from cuspatial.utils.binpred_utils import (
 )
 
 
-class ContainsDisjoint(BinPred):
+class DisjointByWayOfContains(BinPred):
     def _preprocess(self, lhs, rhs):
         """Disjoint is the opposite of contains, so just implement contains
         and then negate the result.
@@ -26,20 +27,22 @@ class ContainsDisjoint(BinPred):
         (Point, Polygon)
         (Polygon, Point)
         """
-        from cuspatial.core.binpreds.binpred_dispatch import CONTAINS_DISPATCH
-
-        predicate = CONTAINS_DISPATCH[(lhs.column_type, rhs.column_type)](
-            align=self.config.align
-        )
-        return ~predicate(lhs, rhs)
+        return ~_basic_contains_any(lhs, rhs)
 
 
-class PointLineStringDisjoint(PointLineStringIntersects):
-    def _postprocess(self, lhs, rhs, op_result):
+class PointLineStringDisjoint(BinPred):
+    def _preprocess(self, lhs, rhs):
         """Disjoint is the opposite of intersects, so just implement intersects
         and then negate the result."""
-        result = super()._postprocess(lhs, rhs, op_result)
-        return ~result
+        intersects = _basic_intersects(lhs, rhs)
+        return ~intersects
+
+
+class PointPolygonDisjoint(BinPred):
+    def _preprocess(self, lhs, rhs):
+        intersects = _basic_intersects(lhs, rhs)
+        contains = _basic_contains_any(lhs, rhs)
+        return ~intersects & ~contains
 
 
 class LineStringPointDisjoint(PointLineStringDisjoint):
@@ -56,21 +59,33 @@ class LineStringLineStringDisjoint(IntersectsPredicateBase):
         return ~result
 
 
+class LineStringPolygonDisjoint(BinPred):
+    def _preprocess(self, lhs, rhs):
+        intersects = _basic_intersects(lhs, rhs)
+        contains = _basic_contains_any(rhs, lhs)
+        return ~intersects & ~contains
+
+
+class PolygonPolygonDisjoint(BinPred):
+    def _preprocess(self, lhs, rhs):
+        return ~_basic_contains_any(lhs, rhs) & ~_basic_contains_any(rhs, lhs)
+
+
 DispatchDict = {
-    (Point, Point): ContainsDisjoint,
+    (Point, Point): DisjointByWayOfContains,
     (Point, MultiPoint): NotImplementedPredicate,
     (Point, LineString): PointLineStringDisjoint,
-    (Point, Polygon): ContainsDisjoint,
+    (Point, Polygon): PointPolygonDisjoint,
     (MultiPoint, Point): NotImplementedPredicate,
     (MultiPoint, MultiPoint): NotImplementedPredicate,
     (MultiPoint, LineString): NotImplementedPredicate,
-    (MultiPoint, Polygon): NotImplementedPredicate,
+    (MultiPoint, Polygon): LineStringPolygonDisjoint,
     (LineString, Point): LineStringPointDisjoint,
     (LineString, MultiPoint): NotImplementedPredicate,
     (LineString, LineString): LineStringLineStringDisjoint,
-    (LineString, Polygon): NotImplementedPredicate,
-    (Polygon, Point): ContainsDisjoint,
+    (LineString, Polygon): LineStringPolygonDisjoint,
+    (Polygon, Point): DisjointByWayOfContains,
     (Polygon, MultiPoint): NotImplementedPredicate,
-    (Polygon, LineString): NotImplementedPredicate,
-    (Polygon, Polygon): NotImplementedPredicate,
+    (Polygon, LineString): DisjointByWayOfContains,
+    (Polygon, Polygon): PolygonPolygonDisjoint,
 }
