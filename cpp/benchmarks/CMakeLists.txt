@@ -79,9 +79,14 @@ endfunction()
 ConfigureBench(HAUSDORFF_BENCH
     distance/hausdorff_benchmark.cpp)
 
-ConfigureNVBench(DISTANCES_BENCH
-    distance/pairwise_point_polygon_distance.cu
+ConfigureNVBench(POINT_POLYGON_DISTANCES_BENCH
+    distance/pairwise_point_polygon_distance.cu)
+
+ConfigureNVBench(LINESTRING_DISTANCES_BENCH
     distance/pairwise_linestring_distance.cu)
+
+ConfigureNVBench(LINESTRING_POLYGON_DISTANCES_BENCH
+    distance/pairwise_linestring_polygon_distance.cu)
 
 ConfigureNVBench(QUADTREE_ON_POINTS_BENCH
     indexing/quadtree_on_points.cu)
