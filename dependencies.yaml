@@ -118,7 +118,7 @@ dependencies:
       - output_types: [conda, requirements, pyproject]
         packages:
           - cython>=0.29,<0.30
-          - scikit-build>=0.13.1,<0.17.2
+          - scikit-build>=0.13.1
           - setuptools
       - output_types: conda
         packages: &build_python_packages_conda
