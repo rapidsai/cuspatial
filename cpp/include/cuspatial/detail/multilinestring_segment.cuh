@@ -68,7 +68,7 @@ struct greater_than_zero_functor {
  * @tparam MultilinestringRange The multilinestring range to initialize this class with.
  */
 template <typename MultilinestringRange>
-class multilinestring_segment {
+class multilinestring_segment_manager {
   using index_t = iterator_value_type<typename MultilinestringRange::part_it_t>;
 
  public:
@@ -81,7 +81,7 @@ class multilinestring_segment {
    * @param parent The parent multilinestring object to construct from
    * @param stream The stream to perform computation on
    */
-  multilinestring_segment(MultilinestringRange parent, rmm::cuda_stream_view stream)
+  multilinestring_segment_manager(MultilinestringRange parent, rmm::cuda_stream_view stream)
     : _parent(parent), _non_empty_linestring_prefix_sum(parent.num_linestrings() + 1, stream)
   {
     auto offset_range = ::cuspatial::range{_parent.part_offset_begin(), _parent.part_offset_end()};

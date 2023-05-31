@@ -363,7 +363,7 @@ auto multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterato
   rmm::cuda_stream_view stream)
 {
   auto multilinestring_range = this->as_multilinestring_range();
-  return multilinestring_segment{multilinestring_range, stream};
+  return multilinestring_segment_manager{multilinestring_range, stream};
 }
 
 template <typename GeometryIterator,

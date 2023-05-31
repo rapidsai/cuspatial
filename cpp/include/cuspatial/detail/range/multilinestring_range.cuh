@@ -244,7 +244,7 @@ template <typename GeometryIterator, typename PartIterator, typename VecIterator
 auto multilinestring_range<GeometryIterator, PartIterator, VecIterator>::_segments(
   rmm::cuda_stream_view stream)
 {
-  return multilinestring_segment{*this, stream};
+  return multilinestring_segment_manager{*this, stream};
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
