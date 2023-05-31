@@ -143,14 +143,9 @@ target_include_directories(cuproj
            PRIVATE     "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}/src>"
            INTERFACE   "$<INSTALL_INTERFACE:include>")
 
-# Add Conda library paths if specified
-if(CONDA_LINK_DIRS)
-    target_link_directories(cuproj PUBLIC "$<BUILD_INTERFACE:${CONDA_LINK_DIRS}>")
-endif()
-
-# Add Conda include paths if specified
-if(CONDA_INCLUDE_DIRS)
-    target_include_directories(cuproj PUBLIC "$<BUILD_INTERFACE:${CONDA_INCLUDE_DIRS}>")
+# Add Conda library and include paths if specified
+if(TARGET conda_env)
+    target_link_libraries(cuproj PUBLIC "$<BUILD_INTERFACE:conda_env>")
 endif()
 
 # Per-thread default stream
