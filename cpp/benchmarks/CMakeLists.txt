@@ -83,6 +83,12 @@ ConfigureNVBench(DISTANCES_BENCH
     distance/pairwise_point_polygon_distance.cu
     distance/pairwise_linestring_distance.cu)
 
+ConfigureNVBench(POINTS_IN_RANGE_BENCH
+    points_in_range.cu)
+
+ConfigureNVBench(POINT_IN_POLYGON_BENCH
+    point_in_polygon.cu)
+
 ConfigureNVBench(QUADTREE_ON_POINTS_BENCH
     indexing/quadtree_on_points.cu)
 

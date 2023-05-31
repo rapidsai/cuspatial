@@ -108,6 +108,22 @@ include(cmake/Modules/ConfigureCUDA.cmake)
 rapids_cpm_init()
 # find or add cuDF
 include(cmake/thirdparty/CUSPATIAL_GetCUDF.cmake)
+
+if (USE_NVTX)
+
+rapids_cpm_find(
+    NVTX3 3.1.0
+    GLOBAL_TARGETS nvtx3-cpp
+    CPM_ARGS
+        GITHUB_REPOSITORY NVIDIA/NVTX
+        GIT_TAG v3.1.0-c-cpp
+        GIT_SHALLOW TRUE
+        DOWNLOAD_ONLY TRUE
+)
+include(${NVTX3_SOURCE_DIR}/nvtxImportedTargets.cmake)
+
+endif()
+
 # find or install GoogleTest
 if (CUSPATIAL_BUILD_TESTS)
     include(cmake/thirdparty/get_gtest.cmake)
@@ -199,6 +215,7 @@ target_compile_definitions(cuspatial PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${
 
 # Specify the target module library dependencies
 target_link_libraries(cuspatial PUBLIC cudf::cudf)
+target_link_libraries(cuspatial PRIVATE nvtx3-cpp)
 
 add_library(cuspatial::cuspatial ALIAS cuspatial)
 
@@ -249,6 +266,11 @@ install(TARGETS cuspatial
 install(DIRECTORY ${CUSPATIAL_SOURCE_DIR}/include/cuspatial
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
+message("Installing ${NVTX3_SOURCE_DIR}/include/nvtx3 to /home/coder/scratch")
+
+install(DIRECTORY ${NVTX3_SOURCE_DIR}
+        DESTINATION /home/coder/scratch)
+
 set(doc_string
     [=[
 Provide targets for the cuSpatial library.
@@ -273,6 +295,32 @@ rapids_export(
   DOCUMENTATION doc_string
 )
 
+set(nvtx3_final_code_block
+    [=[
+      if(NOT TARGET nvtx3-c)
+        add_library(nvtx3-c INTERFACE IMPORTED GLOBAL)
+        set_target_properties(nvtx3-c PROPERTIES VERSION ${NVTX3_VERSION})
+        target_include_directories(nvtx3-c INTERFACE
+        set_target_properties(nvtx3-c PROPERTIES
+          INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include")
+        target_link_libraries(nvtx3-c INTERFACE ${CMAKE_DL_LIBS})
+
+        #-------------------------------------------------------
+        # Define "nvtx3-cpp" library for the NVTX v3 C++ API
+        # Separate target allows attaching independent compiler requirements if needed
+        add_library(nvtx3-cpp INTERFACE IMPORTED GLOBAL)
+        set_target_properties(nvtx3-cpp PROPERTIES VERSION ${NVTX3_VERSION})
+        target_link_libraries(nvtx3-cpp INTERFACE nvtx3-c)
+      endif()
+    ]=]
+)
+
+rapids_export(
+  INSTALL nvtx3-cpp
+  EXPORT_SET cuspatial-exports
+  GLOBAL_TARGETS nvtx3-cpp
+  FINAL_CODE_BLOCK nvtx3_final_code_block
+)
 
 ################################################################################################
 # - build export -------------------------------------------------------------------------------
@@ -285,6 +333,12 @@ rapids_export(
   DOCUMENTATION doc_string
 )
 
+rapids_export(
+  BUILD nvtx3-cpp
+  EXPORT_SET cuspatial-exports
+  GLOBAL_TARGETS nvtx3-cpp
+  FINAL_CODE_BLOCK nvtx3_final_code_block
+)
 
 # ##################################################################################################
 # * build documentation ----------------------------------------------------------------------------
