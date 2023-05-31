@@ -11,6 +11,25 @@ if LOG_DISPATCHED_PREDICATES:
     out_file = open("test_binpred_test_dispatch.log", "w")
 
 
+def execute_test(pred, lhs, rhs):
+    gpdlhs = lhs.to_geopandas()
+    gpdrhs = rhs.to_geopandas()
+
+    # Reverse
+    pred_fn = getattr(rhs, pred)
+    got = pred_fn(lhs)
+    gpd_pred_fn = getattr(gpdrhs, pred)
+    expected = gpd_pred_fn(gpdlhs)
+    assert (got.values_host == expected.values).all()
+
+    # Forward
+    pred_fn = getattr(lhs, pred)
+    got = pred_fn(rhs)
+    gpd_pred_fn = getattr(gpdlhs, pred)
+    expected = gpd_pred_fn(gpdrhs)
+    assert (got.values_host == expected.values).all()
+
+
 def test_simple_features(
     predicate,  # noqa: F811
     simple_test,  # noqa: F811
@@ -63,41 +82,10 @@ def test_simple_features(
     """
     if not LOG_DISPATCHED_PREDICATES:
         (lhs, rhs) = simple_test[2], simple_test[3]
-        gpdlhs = lhs.to_geopandas()
-        gpdrhs = rhs.to_geopandas()
-
-        # Reverse
-        pred_fn = getattr(rhs, predicate)
-        got = pred_fn(lhs)
-        gpd_pred_fn = getattr(gpdrhs, predicate)
-        expected = gpd_pred_fn(gpdlhs)
-        assert (got.values_host == expected.values).all()
-
-        # Forward
-        pred_fn = getattr(lhs, predicate)
-        got = pred_fn(rhs)
-        gpd_pred_fn = getattr(gpdlhs, predicate)
-        expected = gpd_pred_fn(gpdrhs)
-        assert (got.values_host == expected.values).all()
+        execute_test(predicate, lhs, rhs)
     else:
         try:
-            (lhs, rhs) = simple_test[2], simple_test[3]
-            gpdlhs = lhs.to_geopandas()
-            gpdrhs = rhs.to_geopandas()
-
-            # Reverse
-            pred_fn = getattr(rhs, predicate)
-            got = pred_fn(lhs)
-            gpd_pred_fn = getattr(gpdrhs, predicate)
-            expected = gpd_pred_fn(gpdlhs)
-            assert (got.values_host == expected.values).all()
-
-            # Forward
-            pred_fn = getattr(lhs, predicate)
-            got = pred_fn(rhs)
-            gpd_pred_fn = getattr(gpdlhs, predicate)
-            expected = gpd_pred_fn(gpdrhs)
-            assert (got.values_host == expected.values).all()
+            execute_test(predicate, lhs, rhs)
 
             # The test is complete, the rest is just logging.
             try:
@@ -127,7 +115,7 @@ def test_simple_features(
                 )
                 passes_df.to_csv("feature_passes.csv", index=False)
             except Exception as e:
-                raise ValueError(e)
+                raise e
         except Exception as e:
             # The test failed, store the results.
             out_file.write(

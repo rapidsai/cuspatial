@@ -46,8 +46,7 @@ class TouchesPredicateBase(ContainsPredicate):
     """
 
     def _preprocess(self, lhs, rhs):
-        equals = _basic_equals_any(lhs, rhs)
-        return equals
+        return _basic_equals_any(lhs, rhs)
 
 
 class PointPolygonTouches(ContainsPredicate):
