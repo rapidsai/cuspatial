@@ -19,6 +19,7 @@
 #include <cuspatial/detail/utility/device_atomics.cuh>
 #include <cuspatial/detail/utility/linestring.cuh>
 
+#include <limits>
 #include <rmm/device_uvector.hpp>
 
 #include <thrust/optional.h>
@@ -40,6 +41,8 @@ namespace detail {
  * `intersects` is an optional pointer to a boolean range where the `i`th element indicates the
  * `i`th output should be set to 0 and bypass distance computation. This argument is optional, if
  * set to nullopt, no distance computation will be bypassed.
+ *
+ * @note This kernel does not compute pairs that contains empty geometry.
  */
 template <class MultiLinestringRange1, class MultiLinestringRange2, class OutputIt>
 __global__ void linestring_distance(MultiLinestringRange1 multilinestrings1,
@@ -55,11 +58,14 @@ __global__ void linestring_distance(MultiLinestringRange1 multilinestrings1,
     if (!multilinestrings1.is_valid_segment_id(idx, part_idx)) continue;
     auto const geometry_idx = multilinestrings1.geometry_idx_from_part_idx(part_idx);
 
+    if (multilinestrings1[geometry_idx].is_empty() || multilinestrings2[geometry_idx].is_empty()) {
+      continue;
+    }
+
     if (intersects.has_value() && intersects.value()[geometry_idx]) {
       distances_first[geometry_idx] = 0;
       continue;
     }
-
     auto [a, b]            = multilinestrings1.segment(idx);
     T min_distance_squared = std::numeric_limits<T>::max();
 
