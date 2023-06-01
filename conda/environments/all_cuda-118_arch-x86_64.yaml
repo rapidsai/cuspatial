@@ -28,6 +28,7 @@ dependencies:
 - notebook
 - numpydoc
 - nvcc_linux-64=11.8
+- osmnx
 - pre-commit
 - pydata-sphinx-theme
 - pydeck
