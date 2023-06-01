@@ -83,33 +83,60 @@ class ContainsPredicate(ContainsGeometryProcessor):
         ) - rhs.polygons.part_offset.take(rhs.polygons.geometry_offset[:-1])
         return contains + intersects >= rhs.sizes - polygon_size_reduction
 
+    def _test_interior(self, lhs, rhs):
+        # The hardest case. We need to check if the linestring is
+        # contained in the boundary of the polygon, the interior,
+        # or the exterior.
+        # We only need to test linestrings that are length 2.
+        # Divide the linestring in half and test the point for containment
+        # in the polygon.
+
+        size_two = rhs.sizes == 2
+        if (size_two).any():
+            center_points = _linestrings_to_center_point(rhs[size_two])
+            size_two_results = _false_series(len(lhs))
+            size_two_results.iloc[rhs.index[size_two]] = (
+                _basic_contains_count(lhs, center_points) > 0
+            )
+            return size_two_results
+        else:
+            return _false_series(len(lhs))
+
     def _compute_polygon_linestring_contains(
         self, lhs, rhs, preprocessor_result
     ):
         contains = _basic_contains_count(lhs, rhs).reset_index(drop=True)
         intersects = self._intersection_results_for_contains(lhs, rhs)
-        if (contains == 0).all() and (intersects != 0).all():
-            # The hardest case. We need to check if the linestring is
-            # contained in the boundary of the polygon, the interior,
-            # or the exterior.
-            # We only need to test linestrings that are length 2.
-            # Divide the linestring in half and test the point for containment
-            # in the polygon.
 
-            if (rhs.sizes == 2).any():
-                center_points = _linestrings_to_center_point(
-                    rhs[rhs.sizes == 2]
-                )
-                size_two_results = _false_series(len(lhs))
-                size_two_results[rhs.sizes == 2] = (
-                    _basic_contains_count(lhs, center_points) > 0
-                )
-                return size_two_results
-            else:
-                line_intersections = _false_series(len(lhs))
-                line_intersections[intersects == rhs.sizes] = True
-                return line_intersections
-        return contains + intersects >= rhs.sizes
+        # Four tests:
+        # 1. Intersection with no containment:
+        #   May be a line that shares points with the polygon boundary and
+        #   crosses over the interior, which is contained.
+        # 2. Intersection with containment:
+        #   A Linestring that shares boundary points as well as interior points
+        #   is contained.
+        # 3. Containment with no intersection:
+        #   If every point of a linestring is within a polygon and none of its
+        #   segments intersect the polygon, then it is contained.
+        # 4. Containment with intersection:
+        #   If every point of a linestring is within a polygon and it has an
+        #   intersection, the linestring is crossing a concave region and is
+        #   not contained.
+
+        final_result = _false_series(len(lhs))
+        intersection_with_no_containment = (contains == 0) & (intersects != 0)
+        interior_tests = self._test_interior(
+            lhs[intersection_with_no_containment].reset_index(drop=True),
+            rhs[intersection_with_no_containment].reset_index(drop=True),
+        )
+        interior_tests.index = intersection_with_no_containment[
+            intersection_with_no_containment
+        ].index
+        final_result[intersection_with_no_containment] = interior_tests
+        final_result[~intersection_with_no_containment] = (
+            contains + intersects >= rhs.sizes
+        )
+        return final_result
 
     def _compute_predicate(self, lhs, rhs, preprocessor_result):
         if contains_only_points(rhs):
