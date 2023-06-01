@@ -33,19 +33,23 @@ using namespace cuspatial::test;
 
 template <typename T>
 struct MultipolygonRangeTest : public BaseFixture {
-  void run_multipolygon_segment_iterator_single(std::initializer_list<std::size_t> geometry_offset,
-                                                std::initializer_list<std::size_t> part_offset,
-                                                std::initializer_list<std::size_t> ring_offset,
-                                                std::initializer_list<vec_2d<T>> coordinates,
-                                                std::initializer_list<segment<T>> expected)
+  void run_multipolygon_segment_method_iterator_single(
+    std::initializer_list<std::size_t> geometry_offset,
+    std::initializer_list<std::size_t> part_offset,
+    std::initializer_list<std::size_t> ring_offset,
+    std::initializer_list<vec_2d<T>> coordinates,
+    std::initializer_list<segment<T>> expected)
   {
     auto multipolygon_array =
       make_multipolygon_array(geometry_offset, part_offset, ring_offset, coordinates);
-    auto rng = multipolygon_array.range();
+    auto rng           = multipolygon_array.range();
+    auto segments      = rng._segments(stream());
+    auto segment_range = segments.segment_range();
 
-    auto got = rmm::device_uvector<segment<T>>(rng.num_segments(), stream());
+    auto got = rmm::device_uvector<segment<T>>(segment_range.num_segments(), stream());
 
-    thrust::copy(rmm::exec_policy(stream()), rng.segment_begin(), rng.segment_end(), got.begin());
+    thrust::copy(
+      rmm::exec_policy(stream()), segment_range.begin(), segment_range.end(), got.begin());
 
     auto d_expected = thrust::device_vector<segment<T>>(expected.begin(), expected.end());
 
@@ -76,7 +80,7 @@ struct MultipolygonRangeTest : public BaseFixture {
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(got, d_expected);
   }
 
-  void run_multipolygon_segment_count_single(
+  void run_multipolygon_segment_method_count_single(
     std::initializer_list<std::size_t> geometry_offset,
     std::initializer_list<std::size_t> part_offset,
     std::initializer_list<std::size_t> ring_offset,
@@ -85,13 +89,15 @@ struct MultipolygonRangeTest : public BaseFixture {
   {
     auto multipolygon_array =
       make_multipolygon_array(geometry_offset, part_offset, ring_offset, coordinates);
-    auto rng = multipolygon_array.range();
+    auto rng           = multipolygon_array.range();
+    auto segments      = rng._segments(stream());
+    auto segment_range = segments.segment_range();
 
     auto got = rmm::device_uvector<std::size_t>(rng.num_multipolygons(), stream());
 
     thrust::copy(rmm::exec_policy(stream()),
-                 rng.multipolygon_segment_count_begin(),
-                 rng.multipolygon_segment_count_end(),
+                 segment_range.multigeometry_count_begin(),
+                 segment_range.multigeometry_count_end(),
                  got.begin());
 
     auto d_expected = thrust::device_vector<std::size_t>(expected_segment_counts.begin(),
@@ -158,17 +164,17 @@ TYPED_TEST(MultipolygonRangeTest, SegmentIterators)
   using T = TypeParam;
   using P = vec_2d<T>;
   using S = segment<T>;
-  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_iterator_single,
+  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_method_iterator_single,
                      {0, 1},
                      {0, 1},
                      {0, 4},
                      {{0, 0}, {1, 0}, {1, 1}, {0, 0}},
-                     {S{P{0, 0}, P{1, 0}}, S{P{1, 0}, P{1, 1}}, S{P{1, 1}, P{0, 0}}});
+                     {S{{0, 0}, P{1, 0}}, S{P{1, 0}, P{1, 1}}, S{P{1, 1}, P{0, 0}}});
 }
 
 TYPED_TEST(MultipolygonRangeTest, SegmentIterators2)
 {
-  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_iterator_single,
+  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_method_iterator_single,
                      {0, 1},
                      {0, 2},
                      {0, 4, 8},
@@ -183,7 +189,7 @@ TYPED_TEST(MultipolygonRangeTest, SegmentIterators2)
 
 TYPED_TEST(MultipolygonRangeTest, SegmentIterators3)
 {
-  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_iterator_single,
+  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_method_iterator_single,
                      {0, 2},
                      {0, 1, 2},
                      {0, 4, 8},
@@ -198,8 +204,89 @@ TYPED_TEST(MultipolygonRangeTest, SegmentIterators3)
 
 TYPED_TEST(MultipolygonRangeTest, SegmentIterators4)
 {
-  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_iterator_single,
+  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_method_iterator_single,
                      {0, 1, 2},
+                     {0, 1, 2},
+                     {0, 4, 8},
+                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}},
+                     {{{0, 0}, {1, 0}},
+                      {{1, 0}, {1, 1}},
+                      {{1, 1}, {0, 0}},
+                      {{10, 10}, {11, 10}},
+                      {{11, 10}, {11, 11}},
+                      {{11, 11}, {10, 10}}});
+}
+
+TYPED_TEST(MultipolygonRangeTest, SegmentIterators5)
+{
+  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_method_iterator_single,
+                     {0, 1, 2, 3},
+                     {0, 1, 2, 3},
+                     {0, 4, 9, 14},
+                     {{-1, -1},
+                      {-2, -2},
+                      {-2, -1},
+                      {-1, -1},
+
+                      {-20, -20},
+                      {-20, -21},
+                      {-21, -21},
+                      {-21, -20},
+                      {-20, -20},
+
+                      {-10, -10},
+                      {-10, -11},
+                      {-11, -11},
+                      {-11, -10},
+                      {-10, -10}},
+
+                     {{{-1, -1}, {-2, -2}},
+                      {{-2, -2}, {-2, -1}},
+                      {{-2, -1}, {-1, -1}},
+                      {{-20, -20}, {-20, -21}},
+                      {{-20, -21}, {-21, -21}},
+                      {{-21, -21}, {-21, -20}},
+                      {{-21, -20}, {-20, -20}},
+                      {{-10, -10}, {-10, -11}},
+                      {{-10, -11}, {-11, -11}},
+                      {{-11, -11}, {-11, -10}},
+                      {{-11, -10}, {-10, -10}}});
+}
+
+TYPED_TEST(MultipolygonRangeTest, SegmentIterators5EmptyRing)
+{
+  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_method_iterator_single,
+                     {0, 1, 2},
+                     {0, 1, 3},
+                     {0, 4, 4, 8},
+                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}},
+                     {{{0, 0}, {1, 0}},
+                      {{1, 0}, {1, 1}},
+                      {{1, 1}, {0, 0}},
+                      {{10, 10}, {11, 10}},
+                      {{11, 10}, {11, 11}},
+                      {{11, 11}, {10, 10}}});
+}
+
+TYPED_TEST(MultipolygonRangeTest, SegmentIterators6EmptyPolygon)
+{
+  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_method_iterator_single,
+                     {0, 1, 3},
+                     {0, 1, 1, 2},
+                     {0, 4, 8},
+                     {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}},
+                     {{{0, 0}, {1, 0}},
+                      {{1, 0}, {1, 1}},
+                      {{1, 1}, {0, 0}},
+                      {{10, 10}, {11, 10}},
+                      {{11, 10}, {11, 11}},
+                      {{11, 11}, {10, 10}}});
+}
+
+TYPED_TEST(MultipolygonRangeTest, SegmentIterators7EmptyMultiPolygon)
+{
+  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_method_iterator_single,
+                     {0, 1, 1, 2},
                      {0, 1, 2},
                      {0, 4, 8},
                      {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}},
@@ -280,7 +367,7 @@ TYPED_TEST(MultipolygonRangeTest, MultipolygonCountIterator4)
 
 TYPED_TEST(MultipolygonRangeTest, MultipolygonSegmentCount)
 {
-  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_count_single,
+  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_method_count_single,
                      {0, 1},
                      {0, 1},
                      {0, 4},
@@ -291,7 +378,7 @@ TYPED_TEST(MultipolygonRangeTest, MultipolygonSegmentCount)
 TYPED_TEST(MultipolygonRangeTest, MultipolygonSegmentCount2)
 {
   CUSPATIAL_RUN_TEST(
-    this->run_multipolygon_segment_count_single,
+    this->run_multipolygon_segment_method_count_single,
     {0, 1},
     {0, 2},
     {0, 4, 8},
@@ -301,7 +388,7 @@ TYPED_TEST(MultipolygonRangeTest, MultipolygonSegmentCount2)
 
 TYPED_TEST(MultipolygonRangeTest, MultipolygonSegmentCount3)
 {
-  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_count_single,
+  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_method_count_single,
                      {0, 2},
                      {0, 2, 3},
                      {0, 4, 8, 12},
@@ -322,7 +409,7 @@ TYPED_TEST(MultipolygonRangeTest, MultipolygonSegmentCount3)
 
 TYPED_TEST(MultipolygonRangeTest, MultipolygonSegmentCount4)
 {
-  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_count_single,
+  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_method_count_single,
                      {0, 2, 3},
                      {0, 2, 3, 4},
                      {0, 4, 8, 12, 16},
@@ -345,16 +432,19 @@ TYPED_TEST(MultipolygonRangeTest, MultipolygonSegmentCount4)
                      {9, 3});
 }
 
-// FIXME: multipolygon doesn't constructor doesn't allow empty rings, should it?
-TYPED_TEST(MultipolygonRangeTest, DISABLED_MultipolygonSegmentCount_ConatainsEmptyRing)
+// FIXME: multipolygon constructor doesn't allow empty rings, should it?
+TYPED_TEST(MultipolygonRangeTest, MultipolygonSegmentCount_ContainsEmptyRing)
 {
-  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_count_single,
+  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_method_count_single,
                      {0, 2, 3},
                      {0, 2, 3, 4},
-                     {0, 4, 4, 8, 12},
+                     {0, 7, 7, 11, 18},
                      {{0, 0},
                       {1, 0},
                       {1, 1},
+                      {0.5, 1.5},
+                      {0, 1.0},
+                      {0.5, 0.5},
                       {0, 0},
                       {0.2, 0.2},
                       {0.2, 0.3},
@@ -363,16 +453,19 @@ TYPED_TEST(MultipolygonRangeTest, DISABLED_MultipolygonSegmentCount_ConatainsEmp
                       {0, 0},
                       {1, 0},
                       {1, 1},
+                      {0.5, 1.5},
+                      {0, 1.0},
+                      {0.5, 0.5},
                       {0, 0}},
-                     {6, 3});
+                     {9, 6});
 }
 
-// FIXME: multipolygon doesn't constructor doesn't allow empty rings, should it?
-TYPED_TEST(MultipolygonRangeTest, DISABLED_MultipolygonSegmentCount_ConatainsEmptyPart)
+// FIXME: multipolygon constructor doesn't allow empty rings, should it?
+TYPED_TEST(MultipolygonRangeTest, MultipolygonSegmentCount_ContainsEmptyPart)
 {
-  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_count_single,
+  CUSPATIAL_RUN_TEST(this->run_multipolygon_segment_method_count_single,
                      {0, 3, 4},
-                     {0, 2, 2, 3, 4},
+                     {0, 1, 1, 2, 3},
                      {0, 4, 8, 12},
                      {{0, 0},
                       {1, 0},

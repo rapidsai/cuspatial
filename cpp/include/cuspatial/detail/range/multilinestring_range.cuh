@@ -16,14 +16,9 @@
 
 #pragma once
 
-#include <thrust/binary_search.h>
-#include <thrust/distance.h>
-#include <thrust/iterator/transform_iterator.h>
-#include <thrust/iterator/zip_iterator.h>
-#include <thrust/pair.h>
-
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/functors.cuh>
+#include <cuspatial/detail/multilinestring_segment.cuh>
 #include <cuspatial/detail/utility/validation.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/geometry_collection/multilinestring_ref.cuh>
@@ -31,7 +26,13 @@
 #include <cuspatial/range/multipoint_range.cuh>
 #include <cuspatial/traits.hpp>
 
+#include <thrust/binary_search.h>
+#include <thrust/distance.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/pair.h>
 
 #include <iterator>
 #include <optional>
@@ -113,13 +114,6 @@ CUSPATIAL_HOST_DEVICE auto
 multilinestring_range<GeometryIterator, PartIterator, VecIterator>::num_points()
 {
   return thrust::distance(_point_begin, _point_end);
-}
-
-template <typename GeometryIterator, typename PartIterator, typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto
-multilinestring_range<GeometryIterator, PartIterator, VecIterator>::num_segments()
-{
-  return num_points() - num_linestrings();
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
@@ -233,23 +227,6 @@ CUSPATIAL_HOST_DEVICE auto multilinestring_range<GeometryIterator, PartIterator,
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto multilinestring_range<GeometryIterator, PartIterator, VecIterator>::
-  multilinestring_segment_count_begin()
-{
-  auto n_point_linestring_pair_it = thrust::make_zip_iterator(
-    multilinestring_point_count_begin(), multilinestring_linestring_count_begin());
-  return thrust::make_transform_iterator(n_point_linestring_pair_it,
-                                         detail::point_count_to_segment_count_functor{});
-}
-
-template <typename GeometryIterator, typename PartIterator, typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto multilinestring_range<GeometryIterator, PartIterator, VecIterator>::
-  multilinestring_segment_count_end()
-{
-  return multilinestring_segment_count_begin() + num_multilinestrings();
-}
-
-template <typename GeometryIterator, typename PartIterator, typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto multilinestring_range<GeometryIterator, PartIterator, VecIterator>::
   multilinestring_linestring_count_begin()
 {
   auto paired_it = thrust::make_zip_iterator(_geometry_begin, thrust::next(_geometry_begin));
@@ -264,34 +241,10 @@ CUSPATIAL_HOST_DEVICE auto multilinestring_range<GeometryIterator, PartIterator,
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto
-multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_begin()
+auto multilinestring_range<GeometryIterator, PartIterator, VecIterator>::_segments(
+  rmm::cuda_stream_view stream)
 {
-  return detail::make_counting_transform_iterator(
-    0,
-    detail::to_valid_segment_functor{
-      this->segment_offset_begin(), this->segment_offset_end(), _point_begin});
-}
-
-template <typename GeometryIterator, typename PartIterator, typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto
-multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_end()
-{
-  return segment_begin() + num_segments();
-}
-
-template <typename GeometryIterator, typename PartIterator, typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto
-multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_offset_begin()
-{
-  return detail::make_counting_transform_iterator(0, detail::to_distance_iterator{_part_begin});
-}
-
-template <typename GeometryIterator, typename PartIterator, typename VecIterator>
-CUSPATIAL_HOST_DEVICE auto
-multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment_offset_end()
-{
-  return segment_offset_begin() + thrust::distance(_part_begin, _part_end);
+  return multilinestring_segment_manager{*this, stream};
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>

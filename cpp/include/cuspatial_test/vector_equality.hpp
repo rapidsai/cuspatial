@@ -37,7 +37,7 @@ namespace cuspatial {
 namespace test {
 
 /**
- * @brief Compare two floats are close within N ULPs
+ * @brief Compare two floats are close within N ULPs, nans are treated equal
  *
  * N is predefined by GoogleTest
  * https://google.github.io/googletest/reference/assertions.html#EXPECT_FLOAT_EQ
@@ -46,22 +46,22 @@ template <typename T>
 auto floating_eq_by_ulp(T val)
 {
   if constexpr (std::is_same_v<T, float>) {
-    return ::testing::FloatEq(val);
+    return ::testing::NanSensitiveFloatEq(val);
   } else {
-    return ::testing::DoubleEq(val);
+    return ::testing::NanSensitiveDoubleEq(val);
   }
 }
 
 /**
- * @brief Compare two floats are close within `abs_error`
+ * @brief Compare two floats are close within `abs_error`, nans are treated equal
  */
 template <typename T>
 auto floating_eq_by_abs_error(T val, T abs_error)
 {
   if constexpr (std::is_same_v<T, float>) {
-    return ::testing::FloatNear(val, abs_error);
+    return ::testing::NanSensitiveFloatNear(val, abs_error);
   } else {
-    return ::testing::DoubleNear(val, abs_error);
+    return ::testing::NanSensitiveDoubleNear(val, abs_error);
   }
 }
 
