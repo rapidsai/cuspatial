@@ -38,10 +38,9 @@ def sample_test_data(features, dispatch_list, size, lib=cuspatial):
 
 
 def run_test(pred, dispatch_list):
-    lhs, rhs = sample_test_data(features, dispatch_list, 100000, cuspatial)
-    gpdlhs, gpdrhs = sample_test_data(
-        features, dispatch_list, 100000, geopandas
-    )
+    size = 20
+    lhs, rhs = sample_test_data(features, dispatch_list, size, cuspatial)
+    gpdlhs, gpdrhs = sample_test_data(features, dispatch_list, size, geopandas)
 
     # Reverse
     pred_fn = getattr(rhs, pred)

@@ -400,7 +400,9 @@ class GeoSeries(cudf.Series):
         def __getitem__(self, indexes):
             # Slice the types and offsets
             union_offsets = self._sr._column._meta.union_offsets.iloc[indexes]
-            union_types = self._sr._column._meta.input_types.iloc[indexes]
+            union_types = self._sr._column._meta.input_types.iloc[
+                indexes
+            ].reset_index(drop=True)
 
             points = self._sr._column.points
             mpoints = self._sr._column.mpoints

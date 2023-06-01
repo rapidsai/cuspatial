@@ -260,6 +260,7 @@ class ContainsGeometryProcessor(BinPred):
             return allpairs_result
 
         final_result = _false_series(len(rhs))
+        breakpoint()
         if len(lhs) == len(rhs):
             matches = (
                 allpairs_result["polygon_index"]
