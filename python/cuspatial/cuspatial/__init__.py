@@ -1,4 +1,5 @@
-from ._version import get_versions
+# Copyright (c) 2023, NVIDIA CORPORATION.
+
 from .core.geodataframe import GeoDataFrame
 from .core.geoseries import GeoSeries
 from .core.spatial import (
@@ -12,6 +13,7 @@ from .core.spatial import (
     pairwise_point_linestring_distance,
     pairwise_point_linestring_nearest_points,
     pairwise_point_polygon_distance,
+    pairwise_polygon_distance,
     point_in_polygon,
     points_in_spatial_window,
     polygon_bounding_boxes,
@@ -27,5 +29,4 @@ from .core.trajectory import (
 )
 from .io.geopandas import from_geopandas
 
-__version__ = get_versions()["version"]
-del get_versions
+__version__ = "23.06.00"

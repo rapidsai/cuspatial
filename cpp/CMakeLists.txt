@@ -120,27 +120,27 @@ endif()
 # - library targets -------------------------------------------------------------------------------
 
 add_library(cuspatial
+    src/bounding_boxes/linestring_bounding_boxes.cu
+    src/bounding_boxes/polygon_bounding_boxes.cu
     src/column/geometry_column_view.cpp
-    src/indexing/construction/point_quadtree.cu
+    src/distance/hausdorff.cu
+    src/distance/haversine.cu
+    src/distance/linestring_distance.cu
+    src/distance/linestring_polygon_distance.cu
+    src/distance/point_distance.cu
+    src/distance/point_linestring_distance.cu
+    src/distance/point_polygon_distance.cu
+    src/distance/polygon_distance.cu
+    src/equality/pairwise_multipoint_equals_count.cu
+    src/indexing/point_quadtree.cu
+    src/intersection/linestring_intersection.cu
     src/join/quadtree_point_in_polygon.cu
     src/join/quadtree_point_to_nearest_linestring.cu
     src/join/quadtree_bbox_filtering.cu
-    src/spatial/linestring_bounding_boxes.cu
-    src/spatial/polygon_bounding_boxes.cu
-    src/spatial/pairwise_multipoint_equals_count.cu
-    src/spatial/point_in_polygon.cu
-    src/spatial/points_in_range.cu
-    src/spatial/haversine.cu
-    src/spatial/hausdorff.cu
-    src/spatial/linestring_distance.cu
-    src/spatial/linestring_intersection.cu
-    src/spatial/point_distance.cu
-    src/spatial/point_linestring_distance.cu
-    src/spatial/point_polygon_distance.cu
-    src/spatial/linestring_polygon_distance.cu
-    src/spatial/polygon_distance.cu
-    src/spatial/point_linestring_nearest_points.cu
-    src/spatial/sinusoidal_projection.cu
+    src/nearest_points/point_linestring_nearest_points.cu
+    src/point_in_polygon/point_in_polygon.cu
+    src/points_in_range/points_in_range.cu
+    src/projection/sinusoidal_projection.cu
     src/trajectory/derive_trajectories.cu
     src/trajectory/trajectory_bounding_boxes.cu
     src/trajectory/trajectory_distances_and_speeds.cu
@@ -177,14 +177,16 @@ target_include_directories(cuspatial
            PRIVATE     "$<BUILD_INTERFACE:${CUSPATIAL_SOURCE_DIR}/src>"
            INTERFACE   "$<INSTALL_INTERFACE:include>")
 
-# Add Conda library paths if specified
-if(CONDA_LINK_DIRS)
-    target_link_directories(cuspatial PUBLIC "$<BUILD_INTERFACE:${CONDA_LINK_DIRS}>")
+# Add Conda library, and include paths if specified
+if(TARGET conda_env)
+  target_link_libraries(cuspatial PRIVATE conda_env)
 endif()
 
-# Add Conda include paths if specified
-if(CONDA_INCLUDE_DIRS)
-    target_include_directories(cuspatial PUBLIC "$<BUILD_INTERFACE:${CONDA_INCLUDE_DIRS}>")
+# Workaround until https://github.com/rapidsai/rapids-cmake/issues/176 is resolved
+if(NOT BUILD_SHARED_LIBS)
+  if(TARGET conda_env)
+    install(TARGETS conda_env EXPORT cuspatial-exports)
+  endif()
 endif()
 
 # Per-thread default stream

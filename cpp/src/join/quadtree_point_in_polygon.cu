@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "rmm/device_buffer.hpp"
 #include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/range/multipoint_range.cuh>
 #include <cuspatial/range/multipolygon_range.cuh>
@@ -89,10 +90,16 @@ struct compute_quadtree_point_in_polygon {
     // Allocate output columns for the number of pairs that intersected
     auto num_intersections = poly_idx.size();
 
-    auto poly_idx_col = std::make_unique<cudf::column>(
-      cudf::data_type{cudf::type_id::UINT32}, num_intersections, poly_idx.release());
-    auto point_idx_col = std::make_unique<cudf::column>(
-      cudf::data_type{cudf::type_id::UINT32}, num_intersections, point_idx.release());
+    auto poly_idx_col  = std::make_unique<cudf::column>(cudf::data_type{cudf::type_id::UINT32},
+                                                       num_intersections,
+                                                       poly_idx.release(),
+                                                       rmm::device_buffer{},
+                                                       0);
+    auto point_idx_col = std::make_unique<cudf::column>(cudf::data_type{cudf::type_id::UINT32},
+                                                        num_intersections,
+                                                        point_idx.release(),
+                                                        rmm::device_buffer{},
+                                                        0);
 
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.reserve(2);

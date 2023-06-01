@@ -68,58 +68,58 @@ ConfigureTest(SINUSOIDAL_PROJECTION_TEST
 
 # bounding boxes
 ConfigureTest(LINESTRING_BOUNDING_BOXES_TEST
-    spatial/bounding_boxes/linestring_bounding_boxes_test.cpp)
+    bounding_boxes/linestring_bounding_boxes_test.cpp)
 
 ConfigureTest(POLYGON_BOUNDING_BOXES_TEST
-    spatial/bounding_boxes/polygon_bounding_boxes_test.cpp)
+    bounding_boxes/polygon_bounding_boxes_test.cpp)
 
 # distance
 ConfigureTest(HAVERSINE_TEST
-    spatial/distance/haversine_test.cpp)
+    distance/haversine_test.cpp)
 
 ConfigureTest(HAUSDORFF_TEST
-    spatial/distance/hausdorff_test.cpp)
+    distance/hausdorff_test.cpp)
 
 ConfigureTest(POINT_DISTANCE_TEST
-    spatial/distance/point_distance_test.cpp)
+    distance/point_distance_test.cpp)
 
 ConfigureTest(POINT_LINESTRING_DISTANCE_TEST
-    spatial/distance/point_linestring_distance_test.cpp)
+    distance/point_linestring_distance_test.cpp)
 
 ConfigureTest(LINESTRING_DISTANCE_TEST
-    spatial/distance/linestring_distance_test.cpp)
+    distance/linestring_distance_test.cpp)
 
 ConfigureTest(POINT_POLYGON_DISTANCE_TEST
-    spatial/distance/point_polygon_distance_test.cpp)
+    distance/point_polygon_distance_test.cpp)
 
 ConfigureTest(LINESTRING_POLYGON_DISTANCE_TEST
-    spatial/distance/linestring_polygon_distance_test.cpp)
+    distance/linestring_polygon_distance_test.cpp)
 
 ConfigureTest(POLYGON_DISTANCE_TEST
-    spatial/distance/polygon_distance_test.cpp)
+    distance/polygon_distance_test.cpp)
 
 # equality
 ConfigureTest(PAIRWISE_MULTIPOINT_EQUALS_COUNT_TEST
-    spatial/equality/pairwise_multipoint_equals_count_test.cpp)
+    equality/pairwise_multipoint_equals_count_test.cpp)
 
 # intersection
 ConfigureTest(LINESTRING_INTERSECTION_TEST
-    spatial/intersection/linestring_intersection_test.cpp)
+    intersection/linestring_intersection_test.cpp)
 
 # nearest points
 ConfigureTest(POINT_LINESTRING_NEAREST_POINT_TEST
-    spatial/nearest_points/point_linestring_nearest_points_test.cpp)
+    nearest_points/point_linestring_nearest_points_test.cpp)
 
 # point in polygon
 ConfigureTest(POINT_IN_POLYGON_TEST
-    spatial/point_in_polygon/point_in_polygon_test.cpp)
+    point_in_polygon/point_in_polygon_test.cpp)
 
 ConfigureTest(PAIRWISE_POINT_IN_POLYGON_TEST
-    spatial/point_in_polygon/pairwise_point_in_polygon_test.cpp)
+    point_in_polygon/pairwise_point_in_polygon_test.cpp)
 
 # points in range
 ConfigureTest(POINTS_IN_RANGE_TEST
-    spatial/points_in_range/points_in_range_test.cpp)
+    points_in_range/points_in_range_test.cpp)
 
 # trajectory
 ConfigureTest(TRAJECTORY_DISTANCES_AND_SPEEDS_TEST
@@ -176,65 +176,66 @@ ConfigureTest(RANGE_TEST_EXP
 
 # bounding boxes
 ConfigureTest(POINT_BOUNDING_BOXES_TEST_EXP
-    spatial/bounding_boxes/point_bounding_boxes_test.cu)
+    bounding_boxes/point_bounding_boxes_test.cu)
 
 ConfigureTest(POLYGON_BOUNDING_BOXES_TEST_EXP
-    spatial/bounding_boxes/polygon_bounding_boxes_test.cu)
+    bounding_boxes/polygon_bounding_boxes_test.cu)
 
 ConfigureTest(LINESTRING_BOUNDING_BOXES_TEST_EXP
-    spatial/bounding_boxes/linestring_bounding_boxes_test.cu)
+    bounding_boxes/linestring_bounding_boxes_test.cu)
 
 # distance
 ConfigureTest(HAUSDORFF_TEST_EXP
-    spatial/distance/hausdorff_test.cu)
+    distance/hausdorff_test.cu)
 
 ConfigureTest(HAVERSINE_TEST_EXP
-    spatial/distance/haversine_test.cu)
+    distance/haversine_test.cu)
 
 ConfigureTest(POINT_DISTANCE_TEST_EXP
-    spatial/distance/point_distance_test.cu)
+    distance/point_distance_test.cu)
 
 ConfigureTest(POINT_LINESTRING_DISTANCE_TEST_EXP
-    spatial/distance/point_linestring_distance_test.cu)
+    distance/point_linestring_distance_test.cu)
 
 ConfigureTest(POINT_POLYGON_DISTANCE_TEST_EXP
-    spatial/distance/point_polygon_distance_test.cu)
+    distance/point_polygon_distance_test.cu)
 
 ConfigureTest(LINESTRING_POLYGON_DISTANCE_TEST_EXP
-    spatial/distance/linestring_polygon_distance_test.cu)
+    distance/linestring_polygon_distance_test.cu)
 
 ConfigureTest(LINESTRING_DISTANCE_TEST_EXP
-    spatial/distance/linestring_distance_test.cu
-    spatial/distance/linestring_distance_test_medium.cu)
+    distance/linestring_distance_test.cu
+    distance/linestring_distance_test_medium.cu)
 
 ConfigureTest(POLYGON_DISTANCE_TEST_EXP
-    spatial/distance/polygon_distance_test.cu)
+    distance/polygon_distance_test.cu)
 
 # equality
 ConfigureTest(PAIRWISE_MULTIPOINT_EQUALS_COUNT_TEST_EXP
-    spatial/equality/pairwise_multipoint_equals_count_test.cu)
+    equality/pairwise_multipoint_equals_count_test.cu)
 
 # intersection
 ConfigureTest(LINESTRING_INTERSECTION_TEST_EXP
-    spatial/intersection/linestring_intersection_count_test.cu
-    spatial/intersection/linestring_intersection_intermediates_remove_if_test.cu
-    spatial/intersection/linestring_intersection_with_duplicates_test.cu
-    spatial/intersection/linestring_intersection_test.cu)
+    intersection/linestring_intersection_count_test.cu
+    intersection/linestring_intersection_intermediates_remove_if_test.cu
+    intersection/linestring_intersection_with_duplicates_test.cu
+    intersection/linestring_intersection_test.cu
+    intersection/linestring_intersection_large_test.cu)
 
 # nearest points
 ConfigureTest(POINT_LINESTRING_NEAREST_POINT_TEST_EXP
-    spatial/nearest_points/point_linestring_nearest_points_test.cu)
+    nearest_points/point_linestring_nearest_points_test.cu)
 
 # point in polygon
 ConfigureTest(POINT_IN_POLYGON_TEST_EXP
-    spatial/point_in_polygon/point_in_polygon_test.cu)
+    point_in_polygon/point_in_polygon_test.cu)
 
 ConfigureTest(PAIRWISE_POINT_IN_POLYGON_TEST_EXP
-    spatial/point_in_polygon/pairwise_point_in_polygon_test.cu)
+    point_in_polygon/pairwise_point_in_polygon_test.cu)
 
 # points in range
 ConfigureTest(POINTS_IN_RANGE_TEST_EXP
-    spatial/points_in_range/points_in_range_test.cu)
+    points_in_range/points_in_range_test.cu)
 
 # trajectory
 ConfigureTest(DERIVE_TRAJECTORIES_TEST_EXP

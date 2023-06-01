@@ -17,7 +17,7 @@
 function(find_and_configure_cudf)
 
     if(TARGET cudf::cudf)
-        return()
+      return()
     endif()
 
     set(oneValueArgs VERSION GIT_REPO GIT_TAG USE_CUDF_STATIC EXCLUDE_FROM_ALL PER_THREAD_DEFAULT_STREAM)
@@ -28,7 +28,7 @@ function(find_and_configure_cudf)
 
     if(BUILD_TESTS)
       list(APPEND global_targets cudf::cudftestutil)
-      set(cudf_components "COMPONENTS testing")
+      set(cudf_components COMPONENTS testing)
     endif()
 
     set(BUILD_SHARED ON)
@@ -53,6 +53,10 @@ function(find_and_configure_cudf)
                 "CUDF_BUILD_STREAMS_TEST_UTIL ${BUILD_TESTS}"
                 "CUDF_USE_PER_THREAD_DEFAULT_STREAM ${PKG_PER_THREAD_DEFAULT_STREAM}"
     )
+
+    if(TARGET cudf)
+      set_property(TARGET cudf PROPERTY SYSTEM TRUE)
+    endif()
 endfunction()
 
 set(CUSPATIAL_MIN_VERSION_cudf "${CUSPATIAL_VERSION_MAJOR}.${CUSPATIAL_VERSION_MINOR}")

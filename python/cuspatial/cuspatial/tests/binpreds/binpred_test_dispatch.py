@@ -105,6 +105,17 @@ features = {
         LineString([(0.0, 0.0), (1.0, 0.0)]),
         LineString([(0.0, 0.0), (1.0, 0.0)]),
     ),
+    "linestring-linestring-covers": (
+        """
+        x
+       x
+      /
+     x
+    x
+    """,
+        LineString([(0.0, 0.0), (1.0, 1.0)]),
+        LineString([(0.25, 0.25), (0.5, 0.5)]),
+    ),
     "linestring-linestring-touches": (
         """
     x
@@ -137,6 +148,17 @@ features = {
     """,
         LineString([(0.0, 0.0), (1.0, 0.0)]),
         LineString([(0.5, 0.0), (0.5, 1.0)]),
+    ),
+    "linestring-linestring-touch-edge-twice": (
+        """
+        x
+       x
+      / \\
+     x---x
+    x
+    """,
+        LineString([(0.0, 0.0), (1.0, 1.0), (2.0, 2.0)]),
+        LineString([(0.25, 0.25), (1.0, 0.0), (0.5, 0.5)]),
     ),
     "linestring-linestring-crosses": (
         """
@@ -358,14 +380,26 @@ features = {
         Polygon([(0.0, 1.0), (0.0, 2.0), (1.0, 2.0)]),
         point_polygon,
     ),
+    "polygon-polygon-overlap-inside-edge": (
+        """
+          x
+         /|
+    x---x |
+    \\ /  |
+      x   |
+     /    |
+    x-----x
+    """,
+        Polygon([(0, 0), (1, 0), (1, 1), (0, 0)]),
+        Polygon([(0.25, 0.25), (0.5, 0.5), (0, 0.5), (0.25, 0.25)]),
+    ),
     "polygon-polygon-point-inside": (
         """
       x---x
       |  /
-      | /
-    --|/-
+    --|-/
+    | |/|
     | x |
-    |   |
     |   |
     -----
     """,
@@ -453,7 +487,11 @@ point_polygon_dispatch_list = [
 linestring_linestring_dispatch_list = [
     "linestring-linestring-disjoint",
     "linestring-linestring-same",
+    "linestring-linestring-covers",
     "linestring-linestring-touches",
+    "linestring-linestring-touch-interior",
+    "linestring-linestring-touch-edge",
+    "linestring-linestring-touch-edge-twice",
     "linestring-linestring-crosses",
 ]
 
@@ -475,6 +513,7 @@ polygon_polygon_dispatch_list = [
     "polygon-polygon-touch-point",
     "polygon-polygon-touch-edge",
     "polygon-polygon-overlap-edge",
+    "polygon-polygon-overlap-inside-edge",
     "polygon-polygon-point-inside",
     "polygon-polygon-point-outside",
     "polygon-polygon-in-out-point",
