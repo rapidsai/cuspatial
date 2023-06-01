@@ -31,7 +31,7 @@ files:
       - notebooks
       - py_version
   checks:
-    output: requirements
+    output: none
     includes:
       - develop
       - py_version
@@ -42,9 +42,8 @@ files:
       - docs
       - py_version
   py_build:
-    output: [requirements, pyproject]
+    output: [pyproject]
     pyproject_dir: python/cuspatial
-    requirements_dir: python/cuspatial
     extras:
       table: build-system
     includes:
@@ -52,17 +51,15 @@ files:
       - build_python
       - build_wheels
   py_run:
-    output: [requirements, pyproject]
+    output: [pyproject]
     pyproject_dir: python/cuspatial
-    requirements_dir: python/cuspatial
     extras:
       table: project
     includes:
       - run_python
   py_test:
-    output: [requirements, pyproject]
+    output: [pyproject]
     pyproject_dir: python/cuspatial
-    requirements_dir: python/cuspatial
     extras:
       table: project.optional-dependencies
       key: test
