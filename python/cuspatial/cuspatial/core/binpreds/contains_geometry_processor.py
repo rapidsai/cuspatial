@@ -49,10 +49,10 @@ class ContainsGeometryProcessor(BinPred):
         if contains_only_linestrings(rhs):
             # condition for linestrings
             geom = rhs.lines
-        elif contains_only_polygons(rhs) is True:
+        elif contains_only_polygons(rhs):
             # polygon in polygon
             geom = rhs.polygons
-        elif contains_only_multipoints(rhs) is True:
+        elif contains_only_multipoints(rhs):
             # mpoint in polygon
             geom = rhs.multipoints
         else:
@@ -150,6 +150,7 @@ class ContainsGeometryProcessor(BinPred):
         # once their index is converted to a polygon index.
         allpairs_result = polygon_indices.drop_duplicates()
 
+        # TODO: This is slow and needs optimization
         # Replace the polygon index with the original index
         allpairs_result["polygon_index"] = allpairs_result[
             "polygon_index"

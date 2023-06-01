@@ -93,15 +93,13 @@ class IntersectsByEquals(EqualsPredicateBase):
 class PolygonPointIntersects(BinPred):
     def _preprocess(self, lhs, rhs):
         contains = _basic_contains_any(lhs, rhs)
-        intersects = _basic_intersects(lhs, rhs)
-        return contains | intersects
+        return contains
 
 
 class PointPolygonIntersects(BinPred):
     def _preprocess(self, lhs, rhs):
         contains = _basic_contains_any(rhs, lhs)
-        intersects = _basic_intersects(rhs, lhs)
-        return contains | intersects
+        return contains
 
 
 class LineStringPointIntersects(IntersectsPredicateBase):
@@ -117,25 +115,22 @@ class PointLineStringIntersects(LineStringPointIntersects):
 
 class LineStringPolygonIntersects(BinPred):
     def _preprocess(self, lhs, rhs):
-        intersects = _basic_intersects(lhs, rhs)
         contains = _basic_contains_any(rhs, lhs)
-        return intersects | contains
+        return contains
 
 
 class PolygonLineStringIntersects(BinPred):
     def _preprocess(self, lhs, rhs):
-        intersects = _basic_intersects(lhs, rhs)
         contains = _basic_contains_any(lhs, rhs)
-        return intersects | contains
+        return contains
 
 
 class PolygonPolygonIntersects(BinPred):
     def _preprocess(self, lhs, rhs):
-        intersects = _basic_intersects(lhs, rhs)
         contains_rhs = _basic_contains_any(rhs, lhs)
         contains_lhs = _basic_contains_any(lhs, rhs)
 
-        return intersects | contains_rhs | contains_lhs
+        return contains_rhs | contains_lhs
 
 
 """ Type dispatch dictionary for intersects binary predicates. """

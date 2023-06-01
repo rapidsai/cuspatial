@@ -109,7 +109,7 @@ class GeoSeries(cudf.Series):
 
     @property
     def feature_types(self):
-        return self._column._meta.input_types
+        return self._column._meta.input_types.reset_index(drop=True)
 
     @property
     def type(self):
@@ -323,8 +323,7 @@ class GeoSeries(cudf.Series):
                 self.geometry_offset
             )
             sizes = offsets[1:] - offsets[:-1]
-
-            return self._series.index.repeat(sizes).values
+            return self._meta.input_types.index.repeat(sizes)
 
     @property
     def points(self):
@@ -967,7 +966,7 @@ class GeoSeries(cudf.Series):
         # and use `cudf` reset_index to identify what our result
         # should look like.
         cudf_series = cudf.Series(
-            np.arange(len(geo_series.index)), index=geo_series.index
+            cp.arange(len(geo_series.index)), index=geo_series.index
         )
         cudf_result = cudf_series.reset_index(level, drop, name, inplace)
 
