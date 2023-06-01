@@ -16,6 +16,33 @@
 
 // Code in this file is originally from the [OSGeo/PROJ project](https://github.com/OSGeo/PROJ)
 // and has been modified to run on the GPU using CUDA.
+//
+// PROJ License from https://github.com/OSGeo/PROJ/blob/9.2/COPYING:
+//   Note however that the file it is taken from did not have a copyright notice.
+/*
+Copyright information can be found in source files.
+
+ --------------
+
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of this software and associated documentation files (the "Software"),
+ to deal in the Software without restriction, including without limitation
+ the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ and/or sell copies of the Software, and to permit persons to whom the
+ Software is furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice shall be included
+ in all copies or substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ DEALINGS IN THE SOFTWARE.
+*/
+
 // The following text is taken from the PROJ file
 // [tmerc.cpp](https://github.com/OSGeo/PROJ/blob/9.2/src/projections/tmerc.cpp)
 // see the file LICENSE_PROJ in the cuspatial repository root directory for the original PROJ
