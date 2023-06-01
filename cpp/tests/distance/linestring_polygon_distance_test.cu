@@ -413,3 +413,108 @@ TYPED_TEST(PairwiseLinestringPolygonDistanceTest, TwoPairsCrosses)
                       P{5, 5}},
                      {std::sqrt(T{2}), 0.0});
 }
+
+// Empty Geometries Tests
+
+/// Empty MultiLinestring vs Non-empty multipolygons
+TYPED_TEST(PairwiseLinestringPolygonDistanceTest, ThreePairEmptyMultiLinestring)
+{
+  using T = TypeParam;
+  using P = vec_2d<T>;
+
+  CUSPATIAL_RUN_TEST(this->run_single,
+
+                     {0, 1, 1, 2},
+                     {0, 4, 7},
+                     {P{0, 0}, P{1, 1}, P{2, 2}, P{3, 3}, P{10, 10}, P{11, 11}, P{12, 12}},
+
+                     {0, 1, 2, 3},
+                     {0, 1, 2, 3},
+                     {0, 4, 9, 14},
+                     {P{-1, -1},
+                      P{-2, -2},
+                      P{-2, -1},
+                      P{-1, -1},
+
+                      P{-20, -20},
+                      P{-20, -21},
+                      P{-21, -21},
+                      P{-21, -20},
+                      P{-20, -20},
+
+                      P{-10, -10},
+                      P{-10, -11},
+                      P{-11, -11},
+                      P{-11, -10},
+                      P{-10, -10}},
+
+                     {std::sqrt(T{2}), std::numeric_limits<T>::quiet_NaN(), 20 * std::sqrt(T{2})});
+}
+
+/// Non-empty MultiLinestring vs Empty multipolygons
+TYPED_TEST(PairwiseLinestringPolygonDistanceTest, ThreePairEmptyMultiPolygon)
+{
+  using T = TypeParam;
+  using P = vec_2d<T>;
+
+  CUSPATIAL_RUN_TEST(this->run_single,
+
+                     {0, 1, 2, 3},
+                     {0, 4, 7, 10},
+                     {P{0, 0},
+                      P{1, 1},
+                      P{2, 2},
+                      P{3, 3},
+                      P{20, 20},
+                      P{21, 21},
+                      P{22, 22},
+                      P{10, 10},
+                      P{11, 11},
+                      P{12, 12}},
+
+                     {0, 1, 1, 2},
+                     {0, 1, 2},
+                     {0, 4, 9},
+                     {P{-1, -1},
+                      P{-2, -2},
+                      P{-2, -1},
+                      P{-1, -1},
+
+                      P{-10, -10},
+                      P{-10, -11},
+                      P{-11, -11},
+                      P{-11, -10},
+                      P{-10, -10}},
+                     {std::sqrt(T{2}), std::numeric_limits<T>::quiet_NaN(), 20 * std::sqrt(T{2})});
+}
+
+/// FIXME: Empty MultiLinestring vs Empty multipolygons
+/// This example fails at distance util, where point-polyogn intersection kernel doesn't handle
+/// empty multipoint/multipolygons.
+TYPED_TEST(PairwiseLinestringPolygonDistanceTest,
+           DISABLED_ThreePairEmptyMultiLineStringEmptyMultiPolygon)
+{
+  using T = TypeParam;
+  using P = vec_2d<T>;
+
+  CUSPATIAL_RUN_TEST(this->run_single,
+
+                     {0, 1, 1, 3},
+                     {0, 4, 7},
+                     {P{0, 0}, P{1, 1}, P{2, 2}, P{3, 3}, P{10, 10}, P{11, 11}, P{12, 12}},
+
+                     {0, 1, 1, 2},
+                     {0, 1, 2, 3},
+                     {0, 4, 9, 14},
+                     {P{-1, -1},
+                      P{-2, -2},
+                      P{-2, -1},
+                      P{-1, -1},
+
+                      P{-10, -10},
+                      P{-10, -11},
+                      P{-11, -11},
+                      P{-11, -10},
+                      P{-10, -10}},
+                     {std::sqrt(T{2}), std::numeric_limits<T>::quiet_NaN(), 20 * std::sqrt(T{2})});
+}

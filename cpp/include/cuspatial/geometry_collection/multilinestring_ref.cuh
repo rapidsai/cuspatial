@@ -38,6 +38,9 @@ class multilinestring_ref {
   /// Return the number of linestrings in the multilinestring.
   CUSPATIAL_HOST_DEVICE auto size() const { return num_linestrings(); }
 
+  /// Return true if this multilinestring contains 0 linestrings.
+  CUSPATIAL_HOST_DEVICE bool is_empty() const { return num_linestrings() == 0; }
+
   /// Return iterator to the first linestring.
   CUSPATIAL_HOST_DEVICE auto part_begin() const;
   /// Return iterator to one past the last linestring.

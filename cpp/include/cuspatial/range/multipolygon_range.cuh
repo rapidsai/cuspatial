@@ -16,13 +16,15 @@
 
 #pragma once
 
-#include <thrust/pair.h>
-
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/range/enumerate_range.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/types.hpp>
+
+#include <rmm/cuda_stream_view.hpp>
+
+#include <thrust/pair.h>
 
 namespace cuspatial {
 
@@ -96,9 +98,6 @@ class multipolygon_range {
   /// Return the total number of points in the array.
   CUSPATIAL_HOST_DEVICE auto num_points();
 
-  /// Return the total number of segments in the array.
-  CUSPATIAL_HOST_DEVICE auto num_segments();
-
   /// Return the iterator to the first multipolygon in the range.
   CUSPATIAL_HOST_DEVICE auto multipolygon_begin();
 
@@ -116,6 +115,12 @@ class multipolygon_range {
 
   /// Return the iterator to the one past the last point in the range.
   CUSPATIAL_HOST_DEVICE auto point_end();
+
+  /// Return the iterator to the first geometry offset in the range.
+  CUSPATIAL_HOST_DEVICE auto geometry_offsets_begin() { return _part_begin; }
+
+  /// Return the iterator to the one past the last geometry offset in the range.
+  CUSPATIAL_HOST_DEVICE auto geometry_offsets_end() { return _part_end; }
 
   /// Return the iterator to the first part offset in the range.
   CUSPATIAL_HOST_DEVICE auto part_offset_begin() { return _part_begin; }
@@ -175,16 +180,10 @@ class multipolygon_range {
   /// Returns the one past the iterator to the number of rings of the last multipolygon
   CUSPATIAL_HOST_DEVICE auto multipolygon_ring_count_end();
 
-  /// Returns an iterator to the number of segments of the first multipolygon
-  CUSPATIAL_HOST_DEVICE auto multipolygon_segment_count_begin();
-  /// Returns the one past the iterator to the number of segments of the last multipolygon
-  CUSPATIAL_HOST_DEVICE auto multipolygon_segment_count_end();
-
-  /// Returns an iterator to the start of the segment
-  CUSPATIAL_HOST_DEVICE auto segment_begin();
-
-  /// Returns an iterator to the end of the segment
-  CUSPATIAL_HOST_DEVICE auto segment_end();
+  /// @internal
+  /// Returns the owning class that provides views into the segments of the multipolygon range
+  /// Can only be constructed on host.
+  auto _segments(rmm::cuda_stream_view);
 
   /// Range Casting
 
@@ -204,10 +203,6 @@ class multipolygon_range {
   RingIterator _ring_end;
   VecIterator _point_begin;
   VecIterator _point_end;
-
-  // TODO: find a better name
-  CUSPATIAL_HOST_DEVICE auto subtracted_ring_begin();
-  CUSPATIAL_HOST_DEVICE auto subtracted_ring_end();
 
  private:
   template <typename IndexType1, typename IndexType2>

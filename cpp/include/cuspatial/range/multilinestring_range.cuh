@@ -23,6 +23,8 @@
 #include <cuspatial/traits.hpp>
 #include <cuspatial/types.hpp>
 
+#include <rmm/cuda_stream_view.hpp>
+
 #include <thrust/pair.h>
 
 namespace cuspatial {
@@ -80,9 +82,6 @@ class multilinestring_range {
 
   /// Return the total number of points in the array.
   CUSPATIAL_HOST_DEVICE auto num_points();
-
-  /// Return the total number of segments in the array.
-  CUSPATIAL_HOST_DEVICE auto num_segments();
 
   /// Return the iterator to the first multilinestring in the range.
   CUSPATIAL_HOST_DEVICE auto multilinestring_begin();
@@ -154,23 +153,16 @@ class multilinestring_range {
   /// Returns an iterator to the counts of segments per multilinestring
   CUSPATIAL_HOST_DEVICE auto multilinestring_point_count_end();
 
-  /// Returns an iterator to the counts of segments per multilinestring
-  CUSPATIAL_HOST_DEVICE auto multilinestring_segment_count_begin();
-
-  /// Returns an iterator to the counts of points per multilinestring
-  CUSPATIAL_HOST_DEVICE auto multilinestring_segment_count_end();
-
   /// Returns an iterator to the counts of points per multilinestring
   CUSPATIAL_HOST_DEVICE auto multilinestring_linestring_count_begin();
 
   /// Returns an iterator to the counts of points per multilinestring
   CUSPATIAL_HOST_DEVICE auto multilinestring_linestring_count_end();
 
-  /// Returns an iterator to the start of the segment
-  CUSPATIAL_HOST_DEVICE auto segment_begin();
-
-  /// Returns an iterator to the end of the segment
-  CUSPATIAL_HOST_DEVICE auto segment_end();
+  /// @internal
+  /// Returns the owning class that provides views into the segments of the multilinestring range
+  /// Can only be constructed on host
+  auto _segments(rmm::cuda_stream_view);
 
   /// Returns the `multilinestring_idx`th multilinestring in the range.
   template <typename IndexType>
@@ -197,9 +189,6 @@ class multilinestring_range {
   PartIterator _part_end;
   VecIterator _point_begin;
   VecIterator _point_end;
-
-  CUSPATIAL_HOST_DEVICE auto segment_offset_begin();
-  CUSPATIAL_HOST_DEVICE auto segment_offset_end();
 
  private:
   /// @internal
