@@ -25,7 +25,7 @@
   ],
 
   "initializeCommand": [
-    "/bin/bash", "-c", "mkdir -m 0755 -p ${localWorkspaceFolder}/../.{aws,cache,config/pip,${localWorkspaceFolderBasename}-single-local}"
+    "/bin/bash", "-c", "mkdir -m 0755 -p ${localWorkspaceFolder}/../.{aws,cache,config/pip,local/${localWorkspaceFolderBasename}/single}"
   ],
   "updateContentCommand": ["rapids-make-vscode-workspace", "--update"],
   "postCreateCommand": ["rapids-make-vscode-workspace", "--update"],
@@ -43,7 +43,7 @@
     "source=${localWorkspaceFolder}/../.aws,target=/home/coder/.aws,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/../.cache,target=/home/coder/.cache,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/../.config,target=/home/coder/.config,type=bind,consistency=consistent",
-    "source=${localWorkspaceFolder}/../.${localWorkspaceFolderBasename}-single-local,target=/home/coder/.local,type=bind,consistency=consistent"
+    "source=${localWorkspaceFolder}/../.local/${localWorkspaceFolderBasename}/single,target=/home/coder/.local,type=bind,consistency=consistent"
   ],
 
   "customizations": {
