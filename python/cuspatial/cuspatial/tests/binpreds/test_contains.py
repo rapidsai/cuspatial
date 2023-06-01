@@ -8,6 +8,28 @@ from shapely.geometry import MultiPolygon, Polygon
 import cuspatial
 
 
+def test_manual_polygons():
+    gpdlhs = gpd.GeoSeries([Polygon(((-8, -8), (-8, 8), (8, 8), (8, -8)))] * 6)
+    gpdrhs = gpd.GeoSeries(
+        [
+            Polygon(((-8, -8), (-8, 8), (8, 8), (8, -8))),
+            Polygon(((-2, -2), (-2, 2), (2, 2), (2, -2))),
+            Polygon(((-10, -2), (-10, 2), (-6, 2), (-6, -2))),
+            Polygon(((-2, 8), (-2, 12), (2, 12), (2, 8))),
+            Polygon(((6, 0), (8, 2), (10, 0), (8, -2))),
+            Polygon(((-2, -8), (-2, -4), (2, -4), (2, -8))),
+        ]
+    )
+    rhs = cuspatial.from_geopandas(gpdrhs)
+    lhs = cuspatial.from_geopandas(gpdlhs)
+    got = lhs.contains(rhs).values_host
+    expected = gpdlhs.contains(gpdrhs).values
+    assert (got == expected).all()
+    got = rhs.contains(lhs).values_host
+    expected = gpdrhs.contains(gpdlhs).values
+    assert (got == expected).all()
+
+
 def test_same():
     lhs = cuspatial.GeoSeries([Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])])
     rhs = cuspatial.GeoSeries([Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])])

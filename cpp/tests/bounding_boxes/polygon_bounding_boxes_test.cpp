@@ -55,19 +55,6 @@ TEST_F(PolygonBoundingBoxErrorTest, test_empty)
   }
 }
 
-TEST_F(PolygonBoundingBoxErrorTest, test_more_polys_than_rings)
-{
-  using namespace cudf::test;
-
-  fixed_width_column_wrapper<int32_t> poly_offsets({0, 1, 2});
-  fixed_width_column_wrapper<int32_t> ring_offsets({0, 4});
-  fixed_width_column_wrapper<T> x({2.488450, 1.333584, 3.460720, 2.488450});
-  fixed_width_column_wrapper<T> y({5.856625, 5.008840, 4.586599, 5.856625});
-
-  EXPECT_THROW(cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, x, y, 0.0),
-               cuspatial::logic_error);
-}
-
 TEST_F(PolygonBoundingBoxErrorTest, type_mismatch)
 {
   using namespace cudf::test;
@@ -125,19 +112,6 @@ TEST_F(PolygonBoundingBoxErrorTest, vertex_size_mismatch)
   fixed_width_column_wrapper<int32_t> poly_offsets({0, 1});
   fixed_width_column_wrapper<int32_t> ring_offsets({0, 4});
   fixed_width_column_wrapper<T> x({2.488450, 1.333584, 3.460720, 2.488450});
-  fixed_width_column_wrapper<T> y({5.856625, 5.008840});
-
-  EXPECT_THROW(cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, x, y, 0.0),
-               cuspatial::logic_error);
-}
-
-TEST_F(PolygonBoundingBoxErrorTest, ring_too_small)
-{
-  using namespace cudf::test;
-
-  fixed_width_column_wrapper<int32_t> poly_offsets({0, 1});
-  fixed_width_column_wrapper<int32_t> ring_offsets({0, 2});
-  fixed_width_column_wrapper<T> x({2.488450, 1.333584});
   fixed_width_column_wrapper<T> y({5.856625, 5.008840});
 
   EXPECT_THROW(cuspatial::polygon_bounding_boxes(poly_offsets, ring_offsets, x, y, 0.0),

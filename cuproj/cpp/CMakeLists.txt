@@ -25,7 +25,7 @@ include(rapids-find)
 
 rapids_cuda_init_architectures(CUPROJ)
 
-project(CUPROJ VERSION 23.06.00 LANGUAGES C CXX CUDA)
+project(CUPROJ VERSION 23.08.00 LANGUAGES C CXX CUDA)
 
 # Needed because GoogleBenchmark changes the state of FindThreads.cmake,
 # causing subsequent runs to have different values for the `Threads::Threads` target.
@@ -81,12 +81,6 @@ rapids_cmake_support_conda_env(conda_env MODIFY_PREFIX_PATH)
 
 ###################################################################################################
 # - compiler options ------------------------------------------------------------------------------
-set(_ctk_static_suffix "")
-if(CUDA_STATIC_RUNTIME)
-  set(_ctk_static_suffix "_static")
-  # Control legacy FindCUDA.cmake behavior too
-  set(CUDA_USE_STATIC_CUDA_RUNTIME ON)
-endif()
 
 rapids_cuda_init_runtime(USE_STATIC ${CUDA_STATIC_RUNTIME})
 
@@ -149,14 +143,9 @@ target_include_directories(cuproj
            PRIVATE     "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}/src>"
            INTERFACE   "$<INSTALL_INTERFACE:include>")
 
-# Add Conda library paths if specified
-if(CONDA_LINK_DIRS)
-    target_link_directories(cuproj PUBLIC "$<BUILD_INTERFACE:${CONDA_LINK_DIRS}>")
-endif()
-
-# Add Conda include paths if specified
-if(CONDA_INCLUDE_DIRS)
-    target_include_directories(cuproj PUBLIC "$<BUILD_INTERFACE:${CONDA_INCLUDE_DIRS}>")
+# Add Conda library and include paths if specified
+if(TARGET conda_env)
+    target_link_libraries(cuproj PRIVATE "$<BUILD_INTERFACE:conda_env>")
 endif()
 
 # Per-thread default stream

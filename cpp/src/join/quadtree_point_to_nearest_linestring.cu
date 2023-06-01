@@ -88,12 +88,18 @@ struct compute_quadtree_point_to_nearest_linestring {
 
     auto num_distances = distances.size();
 
-    auto point_idx_col = std::make_unique<cudf::column>(
-      cudf::data_type{cudf::type_id::UINT32}, num_distances, point_idxs.release());
-    auto linestring_idx_col = std::make_unique<cudf::column>(
-      cudf::data_type{cudf::type_id::UINT32}, num_distances, linestring_idxs.release());
-    auto distance_col =
-      std::make_unique<cudf::column>(point_x.type(), num_distances, distances.release());
+    auto point_idx_col      = std::make_unique<cudf::column>(cudf::data_type{cudf::type_id::UINT32},
+                                                        num_distances,
+                                                        point_idxs.release(),
+                                                        rmm::device_buffer{},
+                                                        0);
+    auto linestring_idx_col = std::make_unique<cudf::column>(cudf::data_type{cudf::type_id::UINT32},
+                                                             num_distances,
+                                                             linestring_idxs.release(),
+                                                             rmm::device_buffer{},
+                                                             0);
+    auto distance_col       = std::make_unique<cudf::column>(
+      point_x.type(), num_distances, distances.release(), rmm::device_buffer{}, 0);
 
     std::vector<std::unique_ptr<cudf::column>> cols{};
     cols.reserve(3);

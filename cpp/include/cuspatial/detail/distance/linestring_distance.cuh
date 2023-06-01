@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <cuspatial/detail/algorithm/linestring_distance.cuh>
+#include <cuspatial/detail/kernel/pairwise_distance.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
@@ -50,6 +50,8 @@ OutputIt pairwise_linestring_distance(MultiLinestringRange1 multilinestrings1,
 
   CUSPATIAL_EXPECTS(multilinestrings1.size() == multilinestrings2.size(),
                     "Inputs must have the same number of rows.");
+
+  if (multilinestrings1.size() == 0) return distances_first;
 
   thrust::fill(rmm::exec_policy(stream),
                distances_first,

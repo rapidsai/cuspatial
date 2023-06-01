@@ -14,107 +14,83 @@
  * limitations under the License.
  */
 
+#include <cuspatial_test/geometry_fixtures.hpp>
+
 #include <cuspatial/distance.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/geometry/vec_2d.hpp>
-
-#include <cudf_test/column_utilities.hpp>
-#include <cudf_test/column_wrapper.hpp>
-
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
 
 #include <optional>
 
-namespace cuspatial {
+using namespace cuspatial;
+using namespace cuspatial::test;
 
 using namespace cudf;
 using namespace cudf::test;
 
 template <typename T>
-struct PairwisePointLinestringDistanceTest : public ::testing::Test {};
+struct PairwisePointLineStringDistanceTest : public EmptyGeometryColumnFixture<T> {};
 
 using TestTypes = ::testing::Types<float, double>;
 
-TYPED_TEST_CASE(PairwisePointLinestringDistanceTest, TestTypes);
+TYPED_TEST_CASE(PairwisePointLineStringDistanceTest, TestTypes);
 
-TYPED_TEST(PairwisePointLinestringDistanceTest, EmptySingleComponent)
+TYPED_TEST(PairwisePointLineStringDistanceTest, SingleToSingleEmpty)
 {
-  using T = TypeParam;
-
-  auto xy      = fixed_width_column_wrapper<T>{};
-  auto offset  = fixed_width_column_wrapper<int32_t>{0};
-  auto line_xy = fixed_width_column_wrapper<T>{};
-
-  auto expect = fixed_width_column_wrapper<T>{};
-  auto got    = pairwise_point_linestring_distance(
-    std::nullopt, xy, std::nullopt, column_view(offset), line_xy);
-
+  auto got    = pairwise_point_linestring_distance(this->empty_point(), this->empty_linestring());
+  auto expect = fixed_width_column_wrapper<TypeParam>{};
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect, *got);
 }
 
-TYPED_TEST(PairwisePointLinestringDistanceTest, EmptyMultiComponent)
+TYPED_TEST(PairwisePointLineStringDistanceTest, SingleToMultiEmpty)
 {
-  using T = TypeParam;
-
-  auto multipoint_offset      = fixed_width_column_wrapper<int32_t>{0};
-  auto xy                     = fixed_width_column_wrapper<T>{};
-  auto multilinestring_offset = fixed_width_column_wrapper<int32_t>{0};
-  auto offset                 = fixed_width_column_wrapper<int32_t>{0};
-  auto line_xy                = fixed_width_column_wrapper<T>{};
-
-  auto expect = fixed_width_column_wrapper<T>{};
-  auto got    = pairwise_point_linestring_distance(column_view(multipoint_offset),
-                                                xy,
-                                                column_view(multilinestring_offset),
-                                                column_view(offset),
-                                                line_xy);
-
+  auto got = pairwise_point_linestring_distance(this->empty_point(), this->empty_multilinestring());
+  auto expect = fixed_width_column_wrapper<TypeParam>{};
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect, *got);
 }
 
-TYPED_TEST(PairwisePointLinestringDistanceTest, OnePairMultiPointMultiLinestring)
+TYPED_TEST(PairwisePointLineStringDistanceTest, MultiToSingleEmpty)
 {
-  using T = TypeParam;
-
-  auto multipoint_offset      = fixed_width_column_wrapper<int32_t>{0, 2};
-  auto xy                     = fixed_width_column_wrapper<T>{0.0, 0.0, 0.5, 0.5};
-  auto multilinestring_offset = fixed_width_column_wrapper<int32_t>{0, 1};
-  auto offset                 = fixed_width_column_wrapper<int32_t>{0, 2};
-  auto line_xy                = fixed_width_column_wrapper<T>{1.0, 0.0, 0.0, 1.0};
-
-  auto expect = fixed_width_column_wrapper<T>{0.0};
-  auto got    = pairwise_point_linestring_distance(column_view(multipoint_offset),
-                                                xy,
-                                                column_view(multilinestring_offset),
-                                                column_view(offset),
-                                                line_xy);
-
+  auto got = pairwise_point_linestring_distance(this->empty_multipoint(), this->empty_linestring());
+  auto expect = fixed_width_column_wrapper<TypeParam>{};
   CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect, *got);
 }
 
-struct PairwisePointLinestringDistanceTestThrow : public ::testing::Test {};
-
-TEST_F(PairwisePointLinestringDistanceTestThrow, PointTypeMismatch)
+TYPED_TEST(PairwisePointLineStringDistanceTest, MultiToMultiEmpty)
 {
-  auto xy      = fixed_width_column_wrapper<float>{1, 1, 2, 2, 3, 3};
-  auto offset  = fixed_width_column_wrapper<int32_t>{0, 6};
-  auto line_xy = fixed_width_column_wrapper<double>{1, 1, 2, 2, 3, 3};
+  auto got =
+    pairwise_point_linestring_distance(this->empty_multipoint(), this->empty_multilinestring());
+  auto expect = fixed_width_column_wrapper<TypeParam>{};
+  CUDF_TEST_EXPECT_COLUMNS_EQUIVALENT(expect, *got);
+}
 
-  EXPECT_THROW(pairwise_point_linestring_distance(
-                 std::nullopt, xy, std::nullopt, column_view(offset), line_xy),
+struct PairwisePointLineStringDistanceFailOnSizeTest : public EmptyAndOneGeometryColumnFixture {};
+
+TEST_F(PairwisePointLineStringDistanceFailOnSizeTest, SizeMismatch)
+{
+  EXPECT_THROW(pairwise_point_linestring_distance(this->empty_point(), this->one_linestring()),
                cuspatial::logic_error);
 }
 
-TEST_F(PairwisePointLinestringDistanceTestThrow, ContainsNull)
+TEST_F(PairwisePointLineStringDistanceFailOnSizeTest, SizeMismatch2)
 {
-  auto xy      = fixed_width_column_wrapper<float>{{1, 1, 2, 2, 3, 3}, {1, 0, 1, 1, 1, 1}};
-  auto offset  = fixed_width_column_wrapper<int32_t>{0, 6};
-  auto line_xy = fixed_width_column_wrapper<float>{1, 2, 3, 1, 2, 3};
-
-  EXPECT_THROW(pairwise_point_linestring_distance(
-                 std::nullopt, xy, std::nullopt, column_view(offset), line_xy),
+  EXPECT_THROW(pairwise_point_linestring_distance(this->one_point(), this->empty_multilinestring()),
                cuspatial::logic_error);
 }
 
-}  // namespace cuspatial
+struct PairwisePointLineStringDistanceFailOnTypeTest
+  : public EmptyGeometryColumnFixtureMultipleTypes {};
+
+TEST_F(PairwisePointLineStringDistanceFailOnTypeTest, CoordinateTypeMismatch)
+{
+  EXPECT_THROW(
+    pairwise_point_linestring_distance(EmptyGeometryColumnBase<float>::empty_point(),
+                                       EmptyGeometryColumnBase<double>::empty_linestring()),
+    cuspatial::logic_error);
+}
+
+TEST_F(PairwisePointLineStringDistanceFailOnTypeTest, GeometryTypeMismatch)
+{
+  EXPECT_THROW(pairwise_point_linestring_distance(EmptyGeometryColumnBase<float>::empty_point(),
+                                                  EmptyGeometryColumnBase<float>::empty_polygon()),
+               cuspatial::logic_error);
+}
