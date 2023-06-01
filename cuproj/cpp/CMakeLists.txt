@@ -25,7 +25,7 @@ include(rapids-find)
 
 rapids_cuda_init_architectures(CUPROJ)
 
-project(CUPROJ VERSION 23.06.00 LANGUAGES C CXX CUDA)
+project(CUPROJ VERSION 23.08.00 LANGUAGES C CXX CUDA)
 
 # Needed because GoogleBenchmark changes the state of FindThreads.cmake,
 # causing subsequent runs to have different values for the `Threads::Threads` target.
@@ -145,7 +145,7 @@ target_include_directories(cuproj
 
 # Add Conda library and include paths if specified
 if(TARGET conda_env)
-    target_link_libraries(cuproj PUBLIC "$<BUILD_INTERFACE:conda_env>")
+    target_link_libraries(cuproj PRIVATE "$<BUILD_INTERFACE:conda_env>")
 endif()
 
 # Per-thread default stream

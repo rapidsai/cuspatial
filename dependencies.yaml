@@ -171,7 +171,7 @@ dependencies:
     common:
       - output_types: [conda, requirements]
         packages:
-          - cuml==23.8.*
+          #- cuml==23.8.*
           - ipython
           - ipywidgets
           - notebook
