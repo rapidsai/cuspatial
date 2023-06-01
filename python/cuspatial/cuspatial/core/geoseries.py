@@ -251,7 +251,9 @@ class GeoSeries(cudf.Series):
             sizes = offsets[1:] - offsets[:-1]
             return cp.repeat(self._series.index, sizes)
             """
-            return self._meta.input_types.index[self._meta.input_types != -1]
+            return self._meta.input_types.reset_index(drop=True).index[
+                self._meta.input_types != -1
+            ]
 
         def column(self):
             """Return the ListColumn reordered by union offset."""
@@ -401,6 +403,13 @@ class GeoSeries(cudf.Series):
             # Slice the types and offsets
             union_offsets = self._sr._column._meta.union_offsets.iloc[indexes]
             union_types = self._sr._column._meta.input_types.iloc[indexes]
+
+            # Very important to reset the index if it has been constructed from
+            # a slice.
+            if isinstance(union_offsets, cudf.Series):
+                union_offsets = union_offsets.reset_index(drop=True)
+            if isinstance(union_types, cudf.Series):
+                union_types = union_types.reset_index(drop=True)
 
             points = self._sr._column.points
             mpoints = self._sr._column.mpoints
