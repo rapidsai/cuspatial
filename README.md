@@ -121,7 +121,7 @@ docker run --gpus all --rm -it \
 ### Install with Conda
 
 To install via conda:
-> **Note** cuSpatial is supported only on Linux or [through WSL](https://rapids.ai/wsl2.html), and with Python versions 3.9 and later
+> **Note** cuSpatial is supported only on Linux or [through WSL](https://rapids.ai/wsl2.html), and with Python versions 3.9 and 3.10
 
 cuSpatial can be installed with conda (miniconda, or the full Anaconda distribution) from the rapidsai channel:
 
@@ -136,7 +136,7 @@ See the [RAPIDS release selector](https://rapids.ai/start.html#get-rapids) for m
 ### Install with pip
 
 To install via pip:
-> **Note** cuSpatial is supported only on Linux or [through WSL](https://rapids.ai/wsl2.html), and with Python versions 3.9 and later
+> **Note** cuSpatial is supported only on Linux or [through WSL](https://rapids.ai/wsl2.html), and with Python versions 3.9 and 3.10
 
 The cuSpatial pip packages can be installed from NVIDIA's PyPI index:
 
