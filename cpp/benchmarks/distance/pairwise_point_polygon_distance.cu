@@ -49,7 +49,7 @@ void pairwise_point_polygon_distance_benchmark(nvbench::state& state, nvbench::t
   auto mpoly_generator_param = multipolygon_generator_parameter<T>{
     num_pairs, num_polygons_per_multipolygon, num_holes_per_polygon, num_edges_per_ring};
 
-  auto mpoint_generator_param = multipoint_generator_parameter_idendity<T>{
+  auto mpoint_generator_param = multipoint_fixed_generator_parameter<T>{
     num_pairs, num_points_per_multipoint, vec_2d<T>{-1, -1}, vec_2d<T>{0, 0}};
 
   auto multipolygons = generate_multipolygon_array<T>(mpoly_generator_param, stream);

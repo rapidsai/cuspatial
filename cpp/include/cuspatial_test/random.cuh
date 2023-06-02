@@ -38,6 +38,21 @@ namespace cuspatial {
 namespace test {
 
 /**
+ * @brief Class to represent a random variable that follows normal distribution.
+ *
+ * @tparam RealT Type of the random variable
+ */
+template <typename RealT>
+class normal_random_variable {
+ public:
+  RealT mu;
+  float stddev;
+
+  RealT neg_6stddev() { return mu - 6 * stddev; }
+  RealT plus_6stddev() { return mu + 6 * stddev; }
+};
+
+/**
  * @brief Identifies a probability distribution type.
  */
 enum class distribution_id : int8_t {

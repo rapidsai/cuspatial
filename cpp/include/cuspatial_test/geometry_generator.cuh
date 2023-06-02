@@ -26,6 +26,7 @@
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/range/multipolygon_range.cuh>
 
+#include <optional>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
@@ -87,6 +88,33 @@ class multipoint_generator_parameter {
 template <typename T>
 multipoint_generator_parameter(std::size_t, std::size_t, vec_2d<T>, vec_2d<T>)
   -> multipoint_generator_parameter<T>;
+
+template <typename Param>
+rmm::device_uvector<std::size_t> make_offsets(Param params,
+                                              std::size_t size,
+                                              rmm::cuda_stream_view stream)
+{
+  rmm::device_uvector<std::size_t> offsets(size, stream);
+
+  if (params.count_has_variance()) {
+    auto count_generator = params.multipoint_count_generator();
+    zero_data_async(offsets.begin(), offsets.end(), stream);
+    thrust::tabulate(
+      rmm::exec_policy(stream), thrust::next(offsets.begin()), offsets.end(), count_generator);
+    thrust::inclusive_scan(rmm::exec_policy(stream),
+                           thrust::next(offsets.begin()),
+                           offsets.end(),
+                           thrust::next(offsets.begin()));
+  } else {
+    thrust::sequence(rmm::exec_policy(stream),
+                     offsets.begin(),
+                     offsets.end(),
+                     std::size_t{0},
+                     static_cast<std::size_t>(params.num_points_per_multipoints().mu));
+  }
+
+  return offsets;
+}
 
 }  // namespace detail
 
@@ -390,62 +418,90 @@ auto generate_multilinestring_array(multilinestring_generator_parameter<T> param
   return make_multilinestring_array(
     std::move(geometry_offset), std::move(part_offset), std::move(points));
 }
-template <typename T>
-class multipoint_generator_parameter_idendity {
- private:
-  detail::multipoint_generator_parameter<T> _params;
+
+/**
+ * @brief Creates a parameter set that configures the multipoint generator
+ *
+ * This assumes that the multipoint generator uses a normal distribution on the point_per_multipoint
+ * parameter.
+ *
+ * @tparam CoordType The type of coordinate
+ */
+template <typename CoordType>
+class multipoint_normal_distribution_generator_parameter {
+ protected:
+  std::size_t _num_multipoints;
+  cuspatial::test::normal_random_variable<double> _num_points_per_multipoints;
+  vec_2d<CoordType> _lower_left;
+  vec_2d<CoordType> _upper_right;
 
  public:
-  multipoint_generator_parameter_idendity(std::size_t num_multipoints,
-                                          std::size_t num_points_per_multipoints,
-                                          vec_2d<T> lower_left,
-                                          vec_2d<T> upper_right)
-    : _params{num_multipoints, num_points_per_multipoints, lower_left, upper_right}
+  multipoint_normal_distribution_generator_parameter(
+    std::size_t num_multipoints,
+    cuspatial::test::normal_random_variable<double> num_points_per_multipoints,
+    vec_2d<CoordType> lower_left,
+    vec_2d<CoordType> upper_right)
+    : _num_multipoints(num_multipoints),
+      _num_points_per_multipoints(num_points_per_multipoints),
+      _lower_left(lower_left),
+      _upper_right(upper_right)
   {
   }
-  std::size_t num_multipoints() { return _params.num_multipoints; }
-  std::size_t num_points_per_multipoints() { return _params.num_points_per_multipoints; }
-  std::size_t num_points() { return num_multipoints() * num_points_per_multipoints(); }
-  vec_2d<T> lower_left() { return _params.lower_left; }
-  vec_2d<T> upper_right() { return _params.upper_right; }
 
-  auto points_generator() { return _params.points_generator(); }
-};
-
-template <typename T>
-class multipoint_generator_parameter_normal {
- private:
-  detail::multipoint_generator_parameter<T> _params;
-  T stddev;
-
- public:
-  multipoint_generator_parameter_normal(std::size_t num_multipoints,
-                                        std::size_t num_points_per_multipoints,
-                                        vec_2d<T> lower_left,
-                                        vec_2d<T> upper_right,
-                                        T stddev)
-    : _params{num_multipoints, num_points_per_multipoints, lower_left, upper_right}, stddev(stddev)
-  {
-  }
+  bool count_has_variance() { return _num_points_per_multipoints.stddev != 0.0; }
 
   auto multipoint_count_generator()
   {
-    auto lower  = std::max(1, static_cast<int>(_params.num_points_per_multipoints - 6 * stddev));
-    auto upper  = static_cast<int>(_params.num_points_per_multipoints + 6 * stddev);
+    auto lower  = std::max(1, static_cast<int>(_num_points_per_multipoints.neg_6stddev()));
+    auto upper  = static_cast<int>(_num_points_per_multipoints.plus_6stddev());
     auto engine = deterministic_engine(0);
     auto normal = make_normal_dist(lower, upper);
     return value_generator{lower, upper, engine, normal};
   }
 
-  auto points_generator() { return _params.points_generator(); }
+  auto points_generator()
+  {
+    auto engine_x = deterministic_engine(0);
+    auto engine_y = deterministic_engine(1);
 
-  std::size_t num_multipoints() { return _params.num_multipoints; }
-  vec_2d<T> lower_left() { return _params.lower_left; }
-  vec_2d<T> upper_right() { return _params.upper_right; }
+    auto x_dist = make_uniform_dist(_lower_left.x, _upper_right.x);
+    auto y_dist = make_uniform_dist(_lower_left.y, _upper_right.y);
+
+    return point_generator(_lower_left, _upper_right, engine_x, engine_y, x_dist, y_dist);
+  }
+
+  std::size_t num_multipoints() { return _num_multipoints; }
+  auto num_points_per_multipoints() { return _num_points_per_multipoints; }
+  vec_2d<CoordType> lower_left() { return _lower_left; }
+  vec_2d<CoordType> upper_right() { return _upper_right; }
+};
+
+template <typename CoordType>
+class multipoint_fixed_generator_parameter
+  : public multipoint_normal_distribution_generator_parameter<CoordType> {
+ public:
+  multipoint_fixed_generator_parameter(std::size_t num_multipoints,
+                                       std::size_t num_points_per_multipoints,
+                                       vec_2d<CoordType> lower_left,
+                                       vec_2d<CoordType> upper_right)
+    : multipoint_normal_distribution_generator_parameter<CoordType>(
+        num_multipoints,
+        {static_cast<double>(num_points_per_multipoints), 0.0},
+        lower_left,
+        upper_right)
+  {
+  }
+
+  std::size_t num_points()
+  {
+    return this->num_multipoints() *
+           static_cast<std::size_t>(this->num_points_per_multipoints().mu);
+  }
 };
 
 /**
- * @brief Helper to generate random multipoints within a range
+ * @brief Generate a multipoint array, the number of point in each multipoint follows a normal
+ * distribution
  *
  * @tparam T The floating point type for the coordinates
  * @param params Parameters to specify for the multipoints
@@ -453,48 +509,10 @@ class multipoint_generator_parameter_normal {
  * @return a cuspatial::test::multipoint_array object
  */
 template <typename T>
-auto generate_multipoint_array(multipoint_generator_parameter_idendity<T> params,
+auto generate_multipoint_array(multipoint_normal_distribution_generator_parameter<T> params,
                                rmm::cuda_stream_view stream)
 {
-  rmm::device_uvector<vec_2d<T>> coordinates(params.num_points(), stream);
-  rmm::device_uvector<std::size_t> offsets(params.num_multipoints() + 1, stream);
-
-  thrust::sequence(rmm::exec_policy(stream),
-                   offsets.begin(),
-                   offsets.end(),
-                   std::size_t{0},
-                   params.num_points_per_multipoints());
-
-  auto point_gen = params.points_generator();
-  thrust::tabulate(rmm::exec_policy(stream), coordinates.begin(), coordinates.end(), point_gen);
-
-  return make_multipoint_array(std::move(offsets), std::move(coordinates));
-}
-
-template <typename Generator>
-rmm::device_uvector<std::size_t> make_offsets(Generator count_generator,
-                                              std::size_t size,
-                                              rmm::cuda_stream_view stream)
-{
-  rmm::device_uvector<std::size_t> offsets(size, stream);
-
-  zero_data_async(offsets.begin(), offsets.end(), stream);
-  thrust::tabulate(
-    rmm::exec_policy(stream), thrust::next(offsets.begin()), offsets.end(), count_generator);
-  thrust::inclusive_scan(rmm::exec_policy(stream),
-                         thrust::next(offsets.begin()),
-                         offsets.end(),
-                         thrust::next(offsets.begin()));
-
-  return offsets;
-}
-
-template <typename T>
-auto generate_multipoint_array(multipoint_generator_parameter_normal<T> params,
-                               rmm::cuda_stream_view stream)
-{
-  auto offsets =
-    make_offsets(params.multipoint_count_generator(), params.num_multipoints() + 1, stream);
+  auto offsets    = detail::make_offsets(params, params.num_multipoints() + 1, stream);
   auto num_points = offsets.element(offsets.size() - 1, stream);
 
   rmm::device_uvector<vec_2d<T>> coordinates(num_points, stream);
