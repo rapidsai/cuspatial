@@ -62,7 +62,7 @@ using integral_to_realType =
                      std::conditional_t<sizeof(T) * 8 <= 23, float, double>>;
 
 /**
- * @brief Generates a normal distribution between zero and upper_bound.
+ * @brief Generates a normal distribution between lower_bound and upper_bound.
  */
 template <typename T>
 auto make_normal_dist(T lower_bound, T upper_bound)
