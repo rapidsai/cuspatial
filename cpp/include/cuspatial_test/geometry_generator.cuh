@@ -342,10 +342,10 @@ auto generate_multipolygon_array(multipolygon_generator_parameter<T> params,
  * @tparam T Underlying type of the coordinates
  */
 template <typename T>
-struct multilinestring_generator_parameter {
+struct multilinestring_normal_distribution_generator_parameter {
   std::size_t num_multilinestrings;
-  std::size_t num_linestrings_per_multilinestring;
-  std::size_t num_segments_per_linestring;
+  cuspatial::test::normal_random_variable<double> num_linestrings_per_multilinestring;
+  cuspatial::test::normal_random_variable<double> num_segments_per_linestring;
   T segment_length;
   vec_2d<T> origin;
 
@@ -384,7 +384,7 @@ struct multilinestring_generator_parameter {
  * @return The generated multilinestring array
  */
 template <typename T>
-auto generate_multilinestring_array(multilinestring_generator_parameter<T> params,
+auto generate_multilinestring_array(multilinestring_normal_distribution_generator_parameter<T> params,
                                     rmm::cuda_stream_view stream)
 {
   rmm::device_uvector<std::size_t> geometry_offset(params.num_multilinestrings + 1, stream);
@@ -422,8 +422,7 @@ auto generate_multilinestring_array(multilinestring_generator_parameter<T> param
 /**
  * @brief Creates a parameter set that configures the multipoint generator
  *
- * This assumes that the multipoint generator uses a normal distribution on the point_per_multipoint
- * parameter.
+ * The number of point in each multipoint is sampled from a normal distribution.
  *
  * @tparam CoordType The type of coordinate
  */
@@ -476,6 +475,13 @@ class multipoint_normal_distribution_generator_parameter {
   vec_2d<CoordType> upper_right() { return _upper_right; }
 };
 
+/**
+ * @brief Parameters to configure a multipoint generator to generate identical multipoint for each element
+ *
+ * Idendity function is a special case of normal distribution where deviation is 0.
+ *
+ * @tparam CoordType The type of underlying coordinates
+ */
 template <typename CoordType>
 class multipoint_fixed_generator_parameter
   : public multipoint_normal_distribution_generator_parameter<CoordType> {

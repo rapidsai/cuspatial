@@ -43,7 +43,7 @@ void pairwise_linestring_polygon_distance_benchmark(nvbench::state& state, nvben
   auto const num_ring_per_polygon{static_cast<std::size_t>(state.get_int64("NumRingsPerPolygon"))};
   auto const num_points_per_ring{static_cast<std::size_t>(state.get_int64("NumPointsPerRing"))};
 
-  auto params1 = test::multilinestring_generator_parameter<T>{
+  auto params1 = test::multilinestring_normal_distribution_generator_parameter<T>{
     num_pairs, num_linestrings_per_multilinestring, num_segments_per_linestring, 1.0, {0., 0.}};
   auto params2 = test::multipolygon_generator_parameter<T>{num_pairs,
                                                            num_polygon_per_multipolygon,

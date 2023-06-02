@@ -38,9 +38,9 @@ void pairwise_linestring_distance_benchmark(nvbench::state& state, nvbench::type
   auto const num_segments_per_linestring{
     static_cast<std::size_t>(state.get_int64("NumSegmentsPerLineString"))};
 
-  auto params1 = test::multilinestring_generator_parameter<T>{
+  auto params1 = test::multilinestring_normal_distribution_generator_parameter<T>{
     num_pairs, num_linestrings_per_multilinestring, num_segments_per_linestring, 1.0, {0., 0.}};
-  auto params2 = test::multilinestring_generator_parameter<T>{num_pairs,
+  auto params2 = test::multilinestring_normal_distribution_generator_parameter<T>{num_pairs,
                                                               num_linestrings_per_multilinestring,
                                                               num_segments_per_linestring,
                                                               1.0,
