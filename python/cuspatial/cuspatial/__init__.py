@@ -1,4 +1,5 @@
-from ._version import get_versions
+# Copyright (c) 2023, NVIDIA CORPORATION.
+
 from .core.geodataframe import GeoDataFrame
 from .core.geoseries import GeoSeries
 from .core.spatial import (
@@ -28,5 +29,4 @@ from .core.trajectory import (
 )
 from .io.geopandas import from_geopandas
 
-__version__ = get_versions()["version"]
-del get_versions
+__version__ = "23.06.00"

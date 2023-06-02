@@ -31,5 +31,9 @@ set(cython_sources
     )
 set(linked_libraries cuspatial::cuspatial)
 
-rapids_cython_create_modules(SOURCE_FILES "${cython_sources}" LINKED_LIBRARIES "${linked_libraries}"
-                                                                               CXX)
+rapids_cython_create_modules(
+  CXX
+  ASSOCIATED_TARGETS cuspatial
+  SOURCE_FILES "${cython_sources}"
+  LINKED_LIBRARIES "${linked_libraries}"
+)

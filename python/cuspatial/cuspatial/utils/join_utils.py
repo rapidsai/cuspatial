@@ -2,9 +2,9 @@
 
 import operator
 
-import rmm
 from numba import cuda
 
+import rmm
 from cudf.core.buffer import acquire_spill_lock
 
 
