@@ -85,13 +85,9 @@ class ContainsPredicate(ContainsGeometryProcessor):
         return result
 
     def _test_interior(self, lhs, rhs):
-        # The hardest case. We need to check if the linestring is
-        # contained in the boundary of the polygon, the interior,
-        # or the exterior.
         # We only need to test linestrings that are length 2.
         # Divide the linestring in half and test the point for containment
         # in the polygon.
-
         size_two = rhs.sizes == 2
         if (size_two).any():
             center_points = _linestrings_to_center_point(rhs[size_two])
@@ -109,21 +105,8 @@ class ContainsPredicate(ContainsGeometryProcessor):
         contains = _basic_contains_count(lhs, rhs).reset_index(drop=True)
         intersects = self._intersection_results_for_contains(lhs, rhs)
 
-        # Four tests:
-        # 1. Intersection with no containment:
-        #   May be a line that shares points with the polygon boundary and
-        #   crosses over the interior, which is contained.
-        # 2. Intersection with containment:
-        #   A Linestring that shares boundary points as well as interior points
-        #   is contained.
-        # 3. Containment with no intersection:
-        #   If every point of a linestring is within a polygon and none of its
-        #   segments intersect the polygon, then it is contained.
-        # 4. Containment with intersection:
-        #   If every point of a linestring is within a polygon and it has an
-        #   intersection, the linestring is crossing a concave region and is
-        #   not contained.
-
+        # If a linestring has intersection but not containment, we need to
+        # test if the linestring is in the interior of the polygon.
         final_result = _false_series(len(lhs))
         intersection_with_no_containment = (contains == 0) & (intersects != 0)
         interior_tests = self._test_interior(
@@ -133,7 +116,12 @@ class ContainsPredicate(ContainsGeometryProcessor):
         interior_tests.index = intersection_with_no_containment[
             intersection_with_no_containment
         ].index
+        # LineStrings that have intersection but no containment are set
+        # according to the `intersection_with_no_containment` mask.
         final_result[intersection_with_no_containment] = interior_tests
+        # LineStrings that do not are contained if the sum of intersecting
+        # and containing points is greater than or equal to the number of
+        # points that make up the linestring.
         final_result[~intersection_with_no_containment] = (
             contains + intersects >= rhs.sizes
         )
