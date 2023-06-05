@@ -75,4 +75,4 @@ sed_runner "s/^version = .*/version = \"${NEXT_FULL_TAG}\"/g" python/cuspatial/p
 
 # Dependency versions in pyproject.toml
 sed_runner "s/cudf==.*\",/cudf==${NEXT_SHORT_TAG_PEP440}.*\",/g" python/cuspatial/pyproject.toml
-sed_runner "s/rmm==.*\",/rmm==${NEXT_SHORT_TAG_PEP440}.*\",/g" python/cuspatial/pyproject.py
+sed_runner "s/rmm==.*\",/rmm==${NEXT_SHORT_TAG_PEP440}.*\",/g" python/cuspatial/pyproject.toml
