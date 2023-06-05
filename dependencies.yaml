@@ -41,6 +41,30 @@ files:
       - cudatoolkit
       - docs
       - py_version
+  py_build:
+    output: [pyproject]
+    pyproject_dir: python/cuspatial
+    extras:
+      table: build-system
+    includes:
+      - build_cpp
+      - build_python
+      - build_wheels
+  py_run:
+    output: [pyproject]
+    pyproject_dir: python/cuspatial
+    extras:
+      table: project
+    includes:
+      - run_python
+  py_test:
+    output: [pyproject]
+    pyproject_dir: python/cuspatial
+    extras:
+      table: project.optional-dependencies
+      key: test
+    includes:
+      - test_python
 channels:
   - rapidsai
   - rapidsai-nightly
@@ -49,9 +73,12 @@ channels:
 dependencies:
   build_cpp:
     common:
+      - output_types: [conda, requirements, pyproject]
+        packages:
+          - ninja
+          - cmake>=3.23.1,!=3.25.0
       - output_types: conda
         packages:
-          - &cmake_ver cmake>=3.23.1,!=3.25.0
           - c-compiler
           - cxx-compiler
           - gmock>=1.13.0
@@ -86,9 +113,8 @@ dependencies:
               - nvcc_linux-aarch64=11.8
   build_python:
     common:
-      - output_types: [conda, requirements]
+      - output_types: [conda, requirements, pyproject]
         packages:
-          - *cmake_ver
           - cython>=0.29,<0.30
           - scikit-build>=0.13.1
           - setuptools
@@ -108,7 +134,7 @@ dependencies:
             packages:
               - *gcc_aarch64
               - *sysroot_aarch64
-      - output_types: requirements
+      - output_types: [requirements, pyproject]
         matrices:
           - matrix:
               cuda: "11.8"
@@ -160,6 +186,8 @@ dependencies:
       - output_types: [conda]
         packages:
           - doxygen
+      - output_types: [conda, requirements]
+        packages:
           - ipython
           - myst-parser
           - nbsphinx
@@ -168,7 +196,7 @@ dependencies:
           - sphinx<6
   notebooks:
     common:
-      - output_types: [conda, requirements]
+      - output_types: [conda, requirements, pyproject]
         packages:
           - cuml==23.8.*
           - ipython
@@ -178,6 +206,19 @@ dependencies:
           - pydeck
           - shapely
           - scikit-image
+      - output_types: conda
+        packages:
+          - &cuml_conda cuml==23.6.*
+    specific:
+      - output_types: [requirements, pyproject]
+        matrices:
+          - {matrix: null, packages: [*cuml_conda]}
+          - matrix: {cuda: "11.8"}
+            packages: &notebooks_packages_cu11
+              - &cuml_cu11 cuml-cu11==23.6.*
+          - {matrix: {cuda: "11.5"}, packages: *notebooks_packages_cu11}
+          - {matrix: {cuda: "11.4"}, packages: *notebooks_packages_cu11}
+          - {matrix: {cuda: "11.2"}, packages: *notebooks_packages_cu11}
   py_version:
     specific:
       - output_types: conda
@@ -195,7 +236,7 @@ dependencies:
               - python>=3.9,<3.11
   run_python:
     common:
-      - output_types: [conda, requirements]
+      - output_types: [conda, requirements, pyproject]
         packages:
           - geopandas>=0.11.0
       - output_types: conda
@@ -204,6 +245,12 @@ dependencies:
           - rmm==23.8.*
     specific:
       - output_types: requirements
+        packages:
+          # pip recognizes the index as a global option for the requirements.txt file
+          # This index is needed for cudf and rmm.
+          - --extra-index-url=https://pypi.nvidia.com
+    specific:
+      - output_types: [requirements, pyproject]
         matrices:
           - matrix:
               cuda: "11.8"
@@ -227,7 +274,7 @@ dependencies:
               - rmm-cu11==23.8.*
   test_python:
     common:
-      - output_types: [conda, requirements]
+      - output_types: [conda, requirements, pyproject]
         packages:
           - pytest
           - pytest-cov

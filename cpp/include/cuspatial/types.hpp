@@ -30,4 +30,19 @@ enum class geometry_type_id : uint8_t { POINT, LINESTRING, POLYGON };
  */
 enum class collection_type_id : uint8_t { SINGLE, MULTI };
 
+using mixed_geometry_type_t = int8_t;
+
+/**
+ * @brief The underlying type id used in `cuspatial::mixed_geometry_column_view`
+ */
+enum class mixed_geometry_column_type_id : mixed_geometry_type_t {
+  INVALID = -1,
+  POINT,
+  LINESTRING,
+  POLYGON,
+  MULTIPOINT,
+  MULTILINESTRING,
+  MULTIPOLYGON
+};
+
 }  // namespace cuspatial
