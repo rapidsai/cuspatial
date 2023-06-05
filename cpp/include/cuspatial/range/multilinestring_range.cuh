@@ -23,13 +23,18 @@
 #include <cuspatial/traits.hpp>
 #include <cuspatial/types.hpp>
 
+#include <rmm/cuda_stream_view.hpp>
+
 #include <thrust/pair.h>
 
 namespace cuspatial {
 
 /**
+ * @addtogroup ranges
+ */
+
+/**
  * @brief Non-owning range-based interface to multilinestring data
- * @ingroup ranges
  *
  * Provides a range-based interface to contiguous storage of multilinestring data, to make it easier
  * to access and iterate over multilinestrings, linestrings and points.
@@ -59,12 +64,12 @@ class multilinestring_range {
   using point_t       = iterator_value_type<VecIterator>;
   using element_t     = iterator_vec_base_type<VecIterator>;
 
-  multilinestring_range(GeometryIterator geometry_begin,
-                        GeometryIterator geometry_end,
-                        PartIterator part_begin,
-                        PartIterator part_end,
-                        VecIterator points_begin,
-                        VecIterator points_end);
+  CUSPATIAL_HOST_DEVICE multilinestring_range(GeometryIterator geometry_begin,
+                                              GeometryIterator geometry_end,
+                                              PartIterator part_begin,
+                                              PartIterator part_end,
+                                              VecIterator points_begin,
+                                              VecIterator points_end);
 
   /// Return the number of multilinestrings in the array.
   CUSPATIAL_HOST_DEVICE auto size() { return num_multilinestrings(); }
@@ -77,9 +82,6 @@ class multilinestring_range {
 
   /// Return the total number of points in the array.
   CUSPATIAL_HOST_DEVICE auto num_points();
-
-  /// Return the total number of segments in the array.
-  CUSPATIAL_HOST_DEVICE auto num_segments();
 
   /// Return the iterator to the first multilinestring in the range.
   CUSPATIAL_HOST_DEVICE auto multilinestring_begin();
@@ -151,23 +153,16 @@ class multilinestring_range {
   /// Returns an iterator to the counts of segments per multilinestring
   CUSPATIAL_HOST_DEVICE auto multilinestring_point_count_end();
 
-  /// Returns an iterator to the counts of segments per multilinestring
-  CUSPATIAL_HOST_DEVICE auto multilinestring_segment_count_begin();
-
-  /// Returns an iterator to the counts of points per multilinestring
-  CUSPATIAL_HOST_DEVICE auto multilinestring_segment_count_end();
-
   /// Returns an iterator to the counts of points per multilinestring
   CUSPATIAL_HOST_DEVICE auto multilinestring_linestring_count_begin();
 
   /// Returns an iterator to the counts of points per multilinestring
   CUSPATIAL_HOST_DEVICE auto multilinestring_linestring_count_end();
 
-  /// Returns an iterator to the start of the segment
-  CUSPATIAL_HOST_DEVICE auto segment_begin();
-
-  /// Returns an iterator to the end of the segment
-  CUSPATIAL_HOST_DEVICE auto segment_end();
+  /// @internal
+  /// Returns the owning class that provides views into the segments of the multilinestring range
+  /// Can only be constructed on host
+  auto _segments(rmm::cuda_stream_view);
 
   /// Returns the `multilinestring_idx`th multilinestring in the range.
   template <typename IndexType>
@@ -195,9 +190,6 @@ class multilinestring_range {
   VecIterator _point_begin;
   VecIterator _point_end;
 
-  CUSPATIAL_HOST_DEVICE auto segment_offset_begin();
-  CUSPATIAL_HOST_DEVICE auto segment_offset_end();
-
  private:
   /// @internal
   /// Return the iterator to the part index where the point locates.
@@ -211,7 +203,6 @@ class multilinestring_range {
 
 /**
  * @brief Create a multilinestring_range object from size and start iterators
- * @ingroup ranges
  *
  * @tparam GeometryIteratorDiffType Index type of the size of the geometry array
  * @tparam PartIteratorDiffType Index type of the size of the part array
@@ -260,7 +251,6 @@ auto make_multilinestring_range(GeometryIteratorDiffType num_multilinestrings,
 
 /**
  * @brief Create a range object of multilinestring data from offset and point ranges
- * @ingroup ranges
  *
  * @tparam IntegerRange1 Range to integers
  * @tparam IntegerRange2 Range to integers
@@ -285,7 +275,6 @@ auto make_multilinestring_range(IntegerRange1 geometry_offsets,
 }
 
 /**
- * @ingroup ranges
  * @brief Create a range object of multilinestring from cuspatial::geometry_column_view.
  * Specialization for linestrings column.
  *
@@ -315,7 +304,6 @@ auto make_multilinestring_range(GeometryColumnView const& linestrings_column)
 }
 
 /**
- * @ingroup ranges
  * @brief Create a range object of multilinestring from cuspatial::geometry_column_view.
  * Specialization for multilinestrings column.
  *
@@ -344,6 +332,10 @@ auto make_multilinestring_range(GeometryColumnView const& linestrings_column)
                                points_it,
                                points_it + points_xy.size() / 2);
 };
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial
 

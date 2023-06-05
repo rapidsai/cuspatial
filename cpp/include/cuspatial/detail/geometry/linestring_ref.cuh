@@ -16,8 +16,8 @@
 #pragma once
 
 #include <cuspatial/cuda_utils.hpp>
-#include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/geometry/segment.cuh>
+#include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/traits.hpp>
 
 #include <thrust/iterator/zip_iterator.h>

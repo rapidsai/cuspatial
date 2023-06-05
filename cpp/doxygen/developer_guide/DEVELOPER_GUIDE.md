@@ -38,19 +38,20 @@ TODO: add terms
 
 External/public libcuspatial APIs are grouped based on functionality into an appropriately titled
 header file in `cuspatial/cpp/include/cuspatial/`. For example,
-`cuspatial/cpp/include/cuspatial/projection.hpp` contains the declarations of public API
-functions related to coordinate projection transforms. Note the `.hpp` file extension used to
+`cuspatial/cpp/include/cuspatial/distance.hpp` contains the declarations of public API
+functions related to distance computations. Note the `.hpp` file extension used to
 indicate a C++ header file that can be included from a `.cpp` source file.
 
 Header files should use the `#pragma once` include guard.
 
 The folder that contains the source files that implement an API should be named consistently with
 the name of the of the header for the API. For example, the implementation of the APIs found in
-`cuspatial/cpp/include/cuspatial/trajectory.hpp` are located in `cuspatial/src/trajectory`. This
+`cuspatial/cpp/include/cuspatial/trajectory.hpp` are located in `cuspatial/cpp/src/trajectory`. This
 rule obviously does not apply to the header-only API, since the headers are the source files.
 
-Likewise, unit tests reside in folders corresponding to the names of the API headers, e.g.
-trajectory.hpp tests are in `cuspatial/tests/trajectory/`.
+Likewise, unit tests and benchmarks reside in folders corresponding to the names of the API headers,
+e.g. distance.hpp tests are in `cuspatial/cpp/tests/distance/` and benchmarks are in
+`cuspatial/cpp/benchmarks/distance/`.
 
 Internal API headers containing `detail` namespace definitions that are used across translation
 units inside libcuspatial should be placed in `include/cuspatial/detail`.

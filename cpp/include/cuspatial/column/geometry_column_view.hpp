@@ -24,8 +24,9 @@
 namespace cuspatial {
 
 /**
- * @ingroup cuspatial_types
  * @brief A non-owning, immutable view of a geometry column.
+ *
+ * @ingroup cuspatial_types
  *
  * A geometry column is GeoArrow compliant, except that the data type for
  * the coordinates is List<T>, instead of FixedSizeList<T>[n_dim]. This is

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include <cuspatial_test/test_util.cuh>
 
 #include <cuspatial/geometry/vec_2d.hpp>
@@ -274,7 +276,9 @@ auto make_multilinestring_array(IndexRangeA geometry_inl,
   using DeviceCoordVector = thrust::device_vector<CoordType>;
 
   return multilinestring_array<DeviceIndexVector, DeviceIndexVector, DeviceCoordVector>(
-    make_device_vector(geometry_inl), make_device_vector(part_inl), make_device_vector(coord_inl));
+    make_device_vector(std::move(geometry_inl)),
+    make_device_vector(std::move(part_inl)),
+    make_device_vector(std::move(coord_inl)));
 }
 
 /**
@@ -307,8 +311,19 @@ auto make_multilinestring_array(std::initializer_list<std::size_t> geometry_inl,
 template <typename GeometryArray, typename CoordinateArray>
 class multipoint_array {
  public:
-  multipoint_array(GeometryArray geometry_offsets_array, CoordinateArray coordinate_array)
+  using geometry_t = typename GeometryArray::value_type;
+  using coord_t    = typename CoordinateArray::value_type;
+
+  multipoint_array(thrust::device_vector<geometry_t> geometry_offsets_array,
+                   thrust::device_vector<coord_t> coordinate_array)
     : _geometry_offsets(geometry_offsets_array), _coordinates(coordinate_array)
+  {
+  }
+
+  multipoint_array(rmm::device_uvector<geometry_t>&& geometry_offsets_array,
+                   rmm::device_uvector<coord_t>&& coordinate_array)
+    : _geometry_offsets(std::move(geometry_offsets_array)),
+      _coordinates(std::move(coordinate_array))
   {
   }
 
@@ -335,9 +350,15 @@ class multipoint_array {
  * coordinates
  */
 template <typename GeometryRange, typename CoordRange>
-auto make_multipoints_array(GeometryRange geometry_inl, CoordRange coordinates_inl)
+auto make_multipoint_array(GeometryRange geometry_inl, CoordRange coordinates_inl)
 {
-  return multipoint_array{make_device_vector(geometry_inl), make_device_vector(coordinates_inl)};
+  using IndexType         = typename GeometryRange::value_type;
+  using CoordType         = typename CoordRange::value_type;
+  using DeviceIndexVector = thrust::device_vector<IndexType>;
+  using DeviceCoordVector = thrust::device_vector<CoordType>;
+
+  return multipoint_array<DeviceIndexVector, DeviceCoordVector>{
+    make_device_vector(geometry_inl), make_device_vector(coordinates_inl)};
 }
 
 /**
@@ -345,17 +366,17 @@ auto make_multipoints_array(GeometryRange geometry_inl, CoordRange coordinates_i
  *
  * Example: Construct an array of 2 multipoints, each with 2, 0, 1 points:
  * using P = vec_2d<float>;
- * make_multipoints_array({{P{0.0, 1.0}, P{2.0, 0.0}}, {}, {P{3.0, 4.0}}});
+ * make_multipoint_array({{P{0.0, 1.0}, P{2.0, 0.0}}, {}, {P{3.0, 4.0}}});
  *
  * Example: Construct an empty multilinestring array:
- * make_multipoints_array<float>({}); // Explicit parameter required to deduce type.
+ * make_multipoint_array<float>({}); // Explicit parameter required to deduce type.
  *
  * @tparam T Type of coordinate
  * @param inl List of multipoints
  * @return multipoints_array object
  */
 template <typename T>
-auto make_multipoints_array(std::initializer_list<std::initializer_list<vec_2d<T>>> inl)
+auto make_multipoint_array(std::initializer_list<std::initializer_list<vec_2d<T>>> inl)
 {
   std::vector<std::size_t> offsets{0};
   std::transform(inl.begin(), inl.end(), std::back_inserter(offsets), [](auto multipoint) {
@@ -369,8 +390,20 @@ auto make_multipoints_array(std::initializer_list<std::initializer_list<vec_2d<T
       return init;
     });
 
-  return multipoint_array{rmm::device_vector<std::size_t>(offsets),
-                          rmm::device_vector<vec_2d<T>>(coordinates)};
+  return multipoint_array<rmm::device_vector<std::size_t>, rmm::device_vector<vec_2d<T>>>{
+    rmm::device_vector<std::size_t>(offsets), rmm::device_vector<vec_2d<T>>(coordinates)};
+}
+
+/**
+ * @brief Factory method to construct multipoint array by moving the offsets and coordinates from
+ * `rmm::device_uvector`.
+ */
+template <typename IndexType, typename T>
+auto make_multipoint_array(rmm::device_uvector<IndexType> geometry_offsets,
+                           rmm::device_uvector<vec_2d<T>> coords)
+{
+  return multipoint_array<rmm::device_uvector<std::size_t>, rmm::device_uvector<vec_2d<T>>>{
+    std::move(geometry_offsets), std::move(coords)};
 }
 
 }  // namespace test

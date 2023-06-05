@@ -8,26 +8,9 @@ from cudf._lib.column cimport Column
 from cudf._lib.cpp.column.column cimport column
 from cudf._lib.cpp.column.column_view cimport column_view
 
-from cuspatial._lib.cpp.distance.haversine cimport (
-    haversine_distance as cpp_haversine_distance,
-)
 from cuspatial._lib.cpp.projection cimport (
     sinusoidal_projection as cpp_sinusoidal_projection,
 )
-
-
-cpdef haversine_distance(Column x1, Column y1, Column x2, Column y2):
-    cdef column_view c_x1 = x1.view()
-    cdef column_view c_y1 = y1.view()
-    cdef column_view c_x2 = x2.view()
-    cdef column_view c_y2 = y2.view()
-
-    cdef unique_ptr[column] c_result
-
-    with nogil:
-        c_result = move(cpp_haversine_distance(c_x1, c_y1, c_x2, c_y2))
-
-    return Column.from_unique_ptr(move(c_result))
 
 
 def sinusoidal_projection(

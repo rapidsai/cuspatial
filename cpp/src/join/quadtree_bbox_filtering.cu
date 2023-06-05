@@ -17,8 +17,8 @@
 #include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/spatial_join.cuh>
 
-#include <cuspatial/detail/iterator.hpp>
 #include <cuspatial/error.hpp>
+#include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/spatial_join.hpp>
 
 #include <cudf/column/column.hpp>
@@ -72,8 +72,8 @@ struct dispatch_quadtree_bounding_box_join {
       mr);
 
     std::vector<std::unique_ptr<cudf::column>> cols{};
-    cols.push_back(std::make_unique<cudf::column>(std::move(bbox_offset)));
-    cols.push_back(std::make_unique<cudf::column>(std::move(quad_offset)));
+    cols.push_back(std::make_unique<cudf::column>(std::move(bbox_offset), rmm::device_buffer{}, 0));
+    cols.push_back(std::make_unique<cudf::column>(std::move(quad_offset), rmm::device_buffer{}, 0));
 
     return std::make_unique<cudf::table>(std::move(cols));
   }

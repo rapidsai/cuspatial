@@ -25,8 +25,12 @@
 namespace cuspatial {
 
 /**
+ * @addtogroup ranges
+ * @{
+ */
+
+/**
  * @brief Non-owning range-based interface to multipoint data
- * @ingroup ranges
  *
  * Provides a range-based interface to contiguous storage of multipoint data, to make it easier
  * to access and iterate over multipoints and points.
@@ -160,7 +164,6 @@ class multipoint_range {
 
 /**
  * @brief Create a multipoint_range object of from size and start iterators
- * @ingroup ranges
  *
  * @tparam GeometryIteratorDiffType Index type of the size of the geometry array
  * @tparam VecIteratorDiffType Index type of the size of the point array
@@ -212,7 +215,6 @@ auto make_multipoint_range(IntegerRange geometry_offsets, PointRange points)
 }
 
 /**
- * @ingroup ranges
  * @brief Create a range object of multipoints from cuspatial::geometry_column_view.
  * Specialization for points column.
  *
@@ -239,7 +241,6 @@ auto make_multipoint_range(GeometryColumnView const& points_column)
 }
 
 /**
- * @ingroup ranges
  * @brief Create a range object of multipoints from cuspatial::geometry_column_view.
  * Specialization for multipoints column.
  *
@@ -264,6 +265,10 @@ auto make_multipoint_range(GeometryColumnView const& points_column)
                           points_it,
                           points_it + points_xy.size() / 2);
 };
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial
 

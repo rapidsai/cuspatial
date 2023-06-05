@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <cuspatial/derive_trajectories.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/iterator_factory.cuh>
+#include <cuspatial/trajectory.cuh>
 
 #include <cudf/column/column_factories.hpp>
 #include <cudf/copying.hpp>
@@ -70,8 +70,11 @@ struct derive_trajectories_dispatch {
 
     auto num_trajectories = offsets->size();
 
-    auto offsets_column = std::make_unique<cudf::column>(
-      cudf::data_type{cudf::type_id::INT32}, num_trajectories, offsets->release());
+    auto offsets_column = std::make_unique<cudf::column>(cudf::data_type{cudf::type_id::INT32},
+                                                         num_trajectories,
+                                                         offsets->release(),
+                                                         rmm::device_buffer{},
+                                                         0);
 
     return {std::move(result_table), std::move(offsets_column)};
   }

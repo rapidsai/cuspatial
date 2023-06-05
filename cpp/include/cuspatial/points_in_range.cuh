@@ -25,9 +25,11 @@
 namespace cuspatial {
 
 /**
+ * @addtogroup nearest_points
+ */
+
+/**
  * @brief Count of points (x,y) that fall within a query range.
- *
- * @ingroup spatial_relationship
  *
  * The query range is defined by a pair of opposite vertices within the coordinate system of the
  * input points, `v1` and `v2`. A point (x, y) is in the range if `x` lies between `v1.x` and `v2.x`
@@ -65,8 +67,6 @@ typename thrust::iterator_traits<InputIt>::difference_type count_points_in_range
 
 /**
  * @brief Copies points (x,y) that fall within a query range.
- *
- * @ingroup spatial_relationship
  *
  * The query range is defined by a pair of opposite vertices of a quadrilateral within the
  * coordinate system of the input points, `v1` and `v2`. A point (x, y) is in the range if `x` lies
@@ -112,6 +112,10 @@ OutputIt copy_points_in_range(vec_2d<T> vertex_1,
                               InputIt points_last,
                               OutputIt output_points_first,
                               rmm::cuda_stream_view stream = rmm::cuda_stream_default);
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuspatial
 

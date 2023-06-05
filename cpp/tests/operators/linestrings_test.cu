@@ -30,6 +30,7 @@
 
 #include <gtest/gtest.h>
 
+#include <iostream>
 #include <optional>
 
 using namespace cuspatial;
@@ -38,6 +39,21 @@ using namespace cuspatial::test;
 
 template <typename T>
 using optional_vec2d = thrust::optional<vec_2d<T>>;
+
+namespace cuspatial {
+
+// Required by gtest test suite to compile
+// Need to be defined within cuspatial namespace for ADL.
+template <typename T>
+std::ostream& operator<<(std::ostream& os, thrust::optional<vec_2d<T>> const& opt)
+{
+  if (opt.has_value())
+    return os << opt.value();
+  else
+    return os << "null";
+}
+
+}  // namespace cuspatial
 
 template <typename T>
 struct SegmentIntersectionTest : public BaseFixture {};
@@ -128,6 +144,32 @@ TYPED_TEST(SegmentIntersectionTest, IntersectAtEndPoint)
   segment<T> cd{{1.0, 1.0}, {1.0, 0.0}};
 
   std::vector<thrust::optional<vec_2d<T>>> points_expected{vec_2d<T>{1.0, 1.0}};
+  std::vector<thrust::optional<segment<T>>> segments_expected{thrust::nullopt};
+
+  run_single_intersection_test(ab, cd, points_expected, segments_expected);
+}
+
+TYPED_TEST(SegmentIntersectionTest, IntersectAtEndPoint2)
+{
+  using T = TypeParam;
+
+  segment<T> ab{{-1.0, 0.0}, {0.0, 0.0}};
+  segment<T> cd{{0.0, 0.0}, {0.0, 1.0}};
+
+  std::vector<thrust::optional<vec_2d<T>>> points_expected{vec_2d<T>{0.0, 0.0}};
+  std::vector<thrust::optional<segment<T>>> segments_expected{thrust::nullopt};
+
+  run_single_intersection_test(ab, cd, points_expected, segments_expected);
+}
+
+TYPED_TEST(SegmentIntersectionTest, IntersectAtEndPoint3)
+{
+  using T = TypeParam;
+
+  segment<T> ab{{-1.0, 0.0}, {0.0, 0.0}};
+  segment<T> cd{{1.0, 0.0}, {0.0, 0.0}};
+
+  std::vector<thrust::optional<vec_2d<T>>> points_expected{vec_2d<T>{0.0, 0.0}};
   std::vector<thrust::optional<segment<T>>> segments_expected{thrust::nullopt};
 
   run_single_intersection_test(ab, cd, points_expected, segments_expected);
