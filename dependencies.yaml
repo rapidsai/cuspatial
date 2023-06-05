@@ -83,8 +83,9 @@ dependencies:
           - cxx-compiler
           - gmock>=1.13.0
           - gtest>=1.13.0
-          - libcudf==23.6.*
-          - librmm==23.6.*
+          - libcudf==23.8.*
+          - librmm==23.8.*
+          - ninja
     specific:
       - output_types: conda
         matrices:
@@ -118,14 +119,8 @@ dependencies:
           - scikit-build>=0.13.1
           - setuptools
       - output_types: conda
-        packages: &build_python_packages_conda
-          - &cudf_conda cudf==23.6.*
-          - &rmm_conda rmm==23.6.*
-      - output_types: requirements
         packages:
-          # pip recognizes the index as a global option for the requirements.txt file
-          # This index is needed for cudf and rmm.
-          - --extra-index-url=https://pypi.nvidia.com
+          - &cudf_conda cudf==23.8.*
     specific:
       - output_types: conda
         matrices:
@@ -141,20 +136,26 @@ dependencies:
               - *sysroot_aarch64
       - output_types: [requirements, pyproject]
         matrices:
-          - matrix: {cuda: "11.8"}
-            packages: &build_python_packages_cu11
-              - &cudf_cu11 cudf-cu11==23.6.*
-              - &rmm_cu11 rmm-cu11==23.6.*
-          - {matrix: {cuda: "11.5"}, packages: *build_python_packages_cu11}
-          - {matrix: {cuda: "11.4"}, packages: *build_python_packages_cu11}
-          - {matrix: {cuda: "11.2"}, packages: *build_python_packages_cu11}
-          - {matrix: null, packages: [*cudf_conda, *rmm_conda] }
-  build_wheels:
-    common:
-      - output_types: [requirements, pyproject]
-        packages:
-          - wheel
-          - setuptools
+          - matrix:
+              cuda: "11.8"
+            packages:
+              - "--extra-index-url=https://pypi.nvidia.com"
+              - cudf-cu11==23.8.*
+          - matrix:
+              cuda: "11.5"
+            packages:
+              - "--extra-index-url=https://pypi.nvidia.com"
+              - cudf-cu11==23.8.*
+          - matrix:
+              cuda: "11.4"
+            packages:
+              - "--extra-index-url=https://pypi.nvidia.com"
+              - cudf-cu11==23.8.*
+          - matrix:
+              cuda: "11.2"
+            packages:
+              - "--extra-index-url=https://pypi.nvidia.com"
+              - cudf-cu11==23.8.*
   cudatoolkit:
     specific:
       - output_types: conda
@@ -197,6 +198,7 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
+          - cuml==23.8.*
           - ipython
           - ipywidgets
           - notebook
@@ -240,7 +242,8 @@ dependencies:
       - output_types: conda
         packages:
           - *cudf_conda
-          - *rmm_conda
+          - rmm==23.8.*
+    specific:
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -249,14 +252,26 @@ dependencies:
     specific:
       - output_types: [requirements, pyproject]
         matrices:
-          - matrix: {cuda: "11.8"}
-            packages: &run_python_packages_cu11
-              - cudf-cu11==23.6.*
-              - rmm-cu11==23.6.*
-          - {matrix: {cuda: "11.5"}, packages: *run_python_packages_cu11}
-          - {matrix: {cuda: "11.4"}, packages: *run_python_packages_cu11}
-          - {matrix: {cuda: "11.2"}, packages: *run_python_packages_cu11}
-          - {matrix: null, packages: [*cudf_conda, *rmm_conda]}
+          - matrix:
+              cuda: "11.8"
+            packages:
+              - "--extra-index-url=https://pypi.nvidia.com"
+              - rmm-cu11==23.8.*
+          - matrix:
+              cuda: "11.5"
+            packages:
+              - "--extra-index-url=https://pypi.nvidia.com"
+              - rmm-cu11==23.8.*
+          - matrix:
+              cuda: "11.4"
+            packages:
+              - "--extra-index-url=https://pypi.nvidia.com"
+              - rmm-cu11==23.8.*
+          - matrix:
+              cuda: "11.2"
+            packages:
+              - "--extra-index-url=https://pypi.nvidia.com"
+              - rmm-cu11==23.8.*
   test_python:
     common:
       - output_types: [conda, requirements, pyproject]
