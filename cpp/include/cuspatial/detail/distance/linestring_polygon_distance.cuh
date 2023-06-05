@@ -22,8 +22,6 @@
 #include <cuspatial/detail/algorithm/is_point_in_polygon.cuh>
 #include <cuspatial/detail/kernel/pairwise_distance.cuh>
 
-#include <thrust/fill.h>
-
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
 
@@ -53,17 +51,23 @@ OutputIt pairwise_linestring_polygon_distance(MultiLinestringRange multilinestri
 
   auto polygons_as_linestrings = multipolygons.as_multilinestring_range();
 
-  thrust::fill(rmm::exec_policy(stream),
-               distances_first,
-               distances_first + size,
-               std::numeric_limits<T>::max());
+  thrust::transform(rmm::exec_policy(stream),
+                    multilinestrings.begin(),
+                    multilinestrings.end(),
+                    multipolygons.begin(),
+                    distances_first,
+                    [] __device__(auto multilinestring, auto multipolygon) {
+                      return (multilinestring.is_empty() || multipolygon.is_empty())
+                               ? std::numeric_limits<T>::quiet_NaN()
+                               : std::numeric_limits<T>::max();
+                    });
 
   auto [threads_per_block, num_blocks] = grid_1d(multilinestrings.num_points());
 
   detail::linestring_distance<<<num_blocks, threads_per_block, 0, stream.value()>>>(
     multilinestrings, polygons_as_linestrings, intersects.begin(), distances_first);
 
-  return distances_first + multilinestrings.num_multilinestrings();
+  return distances_first + size;
 }
 
 }  // namespace cuspatial
