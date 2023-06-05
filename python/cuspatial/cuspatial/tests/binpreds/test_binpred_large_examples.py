@@ -38,7 +38,7 @@ def sample_test_data(features, dispatch_list, size, lib=cuspatial):
 
 
 def run_test(pred, dispatch_list):
-    size = 20
+    size = 10000
     lhs, rhs = sample_test_data(features, dispatch_list, size, cuspatial)
     gpdlhs, gpdrhs = sample_test_data(features, dispatch_list, size, geopandas)
 

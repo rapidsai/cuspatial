@@ -81,7 +81,8 @@ class ContainsPredicate(ContainsGeometryProcessor):
         polygon_size_reduction = rhs.polygons.part_offset.take(
             rhs.polygons.geometry_offset[1:]
         ) - rhs.polygons.part_offset.take(rhs.polygons.geometry_offset[:-1])
-        return contains + intersects >= rhs.sizes - polygon_size_reduction
+        result = contains + intersects >= rhs.sizes - polygon_size_reduction
+        return result
 
     def _test_interior(self, lhs, rhs):
         # The hardest case. We need to check if the linestring is

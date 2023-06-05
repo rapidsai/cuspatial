@@ -62,7 +62,12 @@ def _count_results_in_multipoint_geometries(point_indices, point_result):
         index=cudf.RangeIndex(len(point_indices), name="point_index"),
     ).reset_index()
     with_rhs_indices = point_result.merge(point_indices_df, on="point_index")
-    points_grouped_by_original_polygon = with_rhs_indices[
+    # Because we are doing pairwise operations, we're only interested in the
+    # results where polygon_index and rhs_index match
+    pairwise_matches = with_rhs_indices[
+        with_rhs_indices["polygon_index"] == with_rhs_indices["rhs_index"]
+    ]
+    points_grouped_by_original_polygon = pairwise_matches[
         ["point_index", "rhs_index"]
     ].drop_duplicates()
     hits = (

@@ -2,6 +2,10 @@
 
 from typing import TypeVar
 
+import cupy as cp
+
+import cudf
+
 from cuspatial.core.binpreds.basic_predicates import (
     _basic_equals_all,
     _basic_intersects,
@@ -109,6 +113,16 @@ class ContainsProperlyPredicate(ContainsGeometryProcessor):
         pip_result = contains_properly(
             lhs[lhs_indices], preprocessor_result.final_rhs, mode=mode
         )
+        if mode == "pairwise":
+            pairwise_index_df = cudf.DataFrame(
+                {
+                    "pairwise_index": cp.arange(len(lhs_indices)),
+                    "part_index": rhs.point_indices,
+                }
+            )
+            pip_result = pip_result.merge(
+                pairwise_index_df, on="pairwise_index"
+            )[["part_index", "point_index"]]
         op_result = ContainsOpResult(pip_result, preprocessor_result)
         return self._postprocess(lhs, rhs, preprocessor_result, op_result)
 

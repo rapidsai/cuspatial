@@ -160,11 +160,15 @@ def _pairwise_contains_properly(points, polygons):
     quadtree_shaped_result = (
         cudf.Series(pip_result).reset_index().reset_index()
     )
-    quadtree_shaped_result.columns = ["part_index", "point_index", "result"]
-    result = quadtree_shaped_result[["point_index", "part_index"]][
+    quadtree_shaped_result.columns = [
+        "pairwise_index",
+        "point_index",
+        "result",
+    ]
+    result = quadtree_shaped_result[["point_index", "pairwise_index"]][
         quadtree_shaped_result["result"].astype("bool")
     ]
-    result = result.sort_values(["point_index", "part_index"]).reset_index(
+    result = result.sort_values(["point_index", "pairwise_index"]).reset_index(
         drop=True
     )
     return result
