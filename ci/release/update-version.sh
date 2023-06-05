@@ -59,12 +59,11 @@ NEXT_SHORT_TAG_PEP440=$(python -c "from setuptools.extern import packaging; prin
 
 # bump rapids libraries
 for FILE in dependencies.yaml conda/environments/*.yaml; do
-  sed_runner "/- &cudf_conda cudf==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
-  sed_runner "/- cudf==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
-  sed_runner "/- cuml==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
-  sed_runner "/- rmm==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
-  sed_runner "/- libcudf==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
-  sed_runner "/- librmm==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
+  sed_runner "/-.* cudf==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
+  sed_runner "/-.* cuml==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
+  sed_runner "/-.* libcudf==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
+  sed_runner "/-.* librmm==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
+  sed_runner "/-.* rmm==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
 done
 
 # Dependency versions in dependencies.yaml
