@@ -354,15 +354,16 @@ struct MultiPointFactoryStatsValidator : public BaseFixtureWithParam<std::size_t
 TEST_P(MultiPointFactoryStatsValidator, CountsVerification)
 {
   // Structured binding unsupported by Gtest
-  std::size_t num_multipoints       = std::get<0>(GetParam());
-  double num_points_per_multipoints = static_cast<double>(std::get<1>(GetParam()));
-  float stddev                      = 20.0;
+  std::size_t num_multipoints            = std::get<0>(GetParam());
+  std::size_t num_points_per_multipoints = std::get<1>(GetParam());
+  double stddev                          = 20.0;
 
-  auto params =
-    multipoint_normal_distribution_generator_parameter<float>{num_multipoints,
-                                                              {num_points_per_multipoints, stddev},
-                                                              vec_2d<float>{0.0, 0.0},
-                                                              vec_2d<float>{1.0, 1.0}};
+  auto params = multipoint_normal_distribution_generator_parameter<float>{
+    num_multipoints,
+    cuspatial::test::normal_random_variable{static_cast<double>(num_points_per_multipoints),
+                                            stddev},
+    vec_2d<float>{0.0, 0.0},
+    vec_2d<float>{1.0, 1.0}};
   CUSPATIAL_RUN_TEST(this->run, params);
 }
 

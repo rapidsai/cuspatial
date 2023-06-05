@@ -38,13 +38,14 @@ void pairwise_linestring_distance_benchmark(nvbench::state& state, nvbench::type
   auto const num_segments_per_linestring{
     static_cast<std::size_t>(state.get_int64("NumSegmentsPerLineString"))};
 
-  auto params1 = test::multilinestring_normal_distribution_generator_parameter<T>{
+  auto params1 = test::multilinestring_fixed_generator_parameter<T>{
     num_pairs, num_linestrings_per_multilinestring, num_segments_per_linestring, 1.0, {0., 0.}};
-  auto params2 = test::multilinestring_normal_distribution_generator_parameter<T>{num_pairs,
-                                                              num_linestrings_per_multilinestring,
-                                                              num_segments_per_linestring,
-                                                              1.0,
-                                                              {100000., 100000.}};
+  auto params2 =
+    test::multilinestring_fixed_generator_parameter<T>{num_pairs,
+                                                       num_linestrings_per_multilinestring,
+                                                       num_segments_per_linestring,
+                                                       1.0,
+                                                       {100000., 100000.}};
 
   auto ls1 = generate_multilinestring_array(params1, stream);
   auto ls2 = generate_multilinestring_array(params2, stream);
@@ -55,15 +56,15 @@ void pairwise_linestring_distance_benchmark(nvbench::state& state, nvbench::type
   auto output = rmm::device_uvector<T>(num_pairs, stream);
   auto out_it = output.begin();
 
-  auto const total_points = params1.num_points() + params2.num_points();
+  auto const total_points = ls1range.num_points() + ls2range.num_points();
 
   state.add_element_count(num_pairs, "NumPairs");
   state.add_element_count(total_points, "NumPoints");
 
   state.add_global_memory_reads<T>(total_points * 2, "CoordinatesDataSize");
-  state.add_global_memory_reads<int32_t>(params1.num_multilinestrings +
-                                           params2.num_multilinestrings +
-                                           params1.num_linestrings() + params2.num_linestrings(),
+  state.add_global_memory_reads<int32_t>(ls1range.num_multilinestrings() +
+                                           ls2range.num_multilinestrings() +
+                                           ls1range.num_linestrings() + ls2range.num_linestrings(),
                                          "OffsetsDataSize");
   state.add_global_memory_writes<T>(num_pairs);
 

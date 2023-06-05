@@ -46,11 +46,14 @@ template <typename RealT>
 class normal_random_variable {
  public:
   RealT mu;
-  float stddev;
+  RealT stddev;
 
   RealT neg_6stddev() { return mu - 6 * stddev; }
   RealT plus_6stddev() { return mu + 6 * stddev; }
 };
+
+template <typename RealT>
+normal_random_variable(RealT, RealT) -> normal_random_variable<RealT>;
 
 /**
  * @brief Identifies a probability distribution type.
@@ -160,6 +163,9 @@ struct value_generator {
     }
   }
 
+  bool is_random() { return dist.stddev() != 0; }
+  T mean() { return dist.mean(); }
+
   T lower_bound;
   T upper_bound;
   thrust::minstd_rand engine;
@@ -190,6 +196,25 @@ struct point_generator {
  * @brief LCG pseudo-random engine.
  */
 auto deterministic_engine(unsigned seed) { return thrust::minstd_rand{seed}; }
+
+/**
+ * @brief Make a value generator that samples a value from a clipped normal distribution
+ *
+ * @tparam T
+ * @param lower_bound
+ * @param upper_bound
+ * @param seed
+ * @return auto
+ */
+template <typename T>
+auto make_clipped_normal_distribution_value_generator(T lower_bound,
+                                                      T upper_bound,
+                                                      std::size_t seed = 0)
+{
+  auto engine = deterministic_engine(seed);
+  auto normal = make_normal_dist(lower_bound, upper_bound);
+  return value_generator{lower_bound, upper_bound, engine, normal};
+}
 
 }  // namespace test
 
