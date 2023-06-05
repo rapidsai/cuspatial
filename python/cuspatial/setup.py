@@ -1,31 +1,11 @@
-# Copyright (c) 2018-2022, NVIDIA CORPORATION.
-import versioneer
+# Copyright (c) 2018-2023, NVIDIA CORPORATION.
 from setuptools import find_packages
 from skbuild import setup
 
+packages = find_packages(include=["cuspatial*"])
+
 setup(
-    name="cuspatial",
-    version=versioneer.get_version(),
-    description=(
-        "cuSpatial: GPU-Accelerated Spatial and Trajectory Data Management and"
-        " Analytics Library"
-    ),
-    url="https://github.com/rapidsai/cuspatial",
-    author="NVIDIA Corporation",
-    license="Apache 2.0",
-    classifiers=[
-        "Intended Audience :: Developers",
-        "Topic :: Database",
-        "Topic :: Scientific/Engineering",
-        "License :: OSI Approved :: Apache Software License",
-        "Programming Language :: Python",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-    ],
-    packages=find_packages(include=["cuspatial", "cuspatial.*"]),
-    package_data={"cuspatial._lib": ["*.pxd"]},
-    cmdclass=versioneer.get_cmdclass(),
-    install_requires=["numba"],
+    packages=packages,
+    package_data={key: ["*.pxd", "*.hpp", "*.cuh"] for key in packages},
     zip_safe=False,
 )
