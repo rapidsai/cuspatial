@@ -2,9 +2,7 @@
 
 import geopandas
 import numpy as np
-
-import cuspatial
-from cuspatial.tests.binpreds.binpred_test_dispatch import (  # noqa: F401
+from binpred_test_dispatch import (  # noqa: F401
     features,
     linestring_linestring_dispatch_list,
     linestring_polygon_dispatch_list,
@@ -14,6 +12,8 @@ from cuspatial.tests.binpreds.binpred_test_dispatch import (  # noqa: F401
     polygon_polygon_dispatch_list,
     predicate,
 )
+
+import cuspatial
 
 
 def sample_test_data(features, dispatch_list, size, lib=cuspatial):
