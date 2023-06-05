@@ -29,4 +29,4 @@ from .core.trajectory import (
 )
 from .io.geopandas import from_geopandas
 
-__version__ = "23.06.00"
+__version__ = "23.08.00"
