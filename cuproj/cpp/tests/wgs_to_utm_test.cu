@@ -45,7 +45,7 @@ TYPED_TEST_CASE(ProjectionTest, TestTypes);
 template <typename T>
 using coordinate = typename cuspatial::vec_2d<T>;
 
-TYPED_TEST(ProjectionTest, Test_one)
+TYPED_TEST(ProjectionTest, Test_forward_one)
 {
   PJ_CONTEXT* C;
   PJ* P;
@@ -97,10 +97,12 @@ TYPED_TEST(ProjectionTest, Test_one)
   cuproj::transform(
     tmerc_proj, d_in.begin(), d_in.end(), d_out.begin(), cuproj::direction::DIR_FWD);
 
+#ifdef DEBUG
   std::cout << "expected " << std::setprecision(20) << expected_coords[0].xy.x << " "
             << expected_coords[0].xy.y << std::endl;
   coordinate<T> c_out = d_out[0];
   std::cout << "Device: " << std::setprecision(20) << c_out.x << " " << c_out.y << std::endl;
+#endif
 
   // We can expect nanometer accuracy with double precision. The precision ratio of
   // double to single precision is 2^53 / 2^24 == 2^29 ~= 10^9, then we should
@@ -140,7 +142,7 @@ struct grid_generator {
   }
 };
 
-TYPED_TEST(ProjectionTest, Test_many)
+TYPED_TEST(ProjectionTest, Test_forward_many)
 {
   using T = TypeParam;
   // generate (lat, lon) points on a grid between -60 and 60 degrees longitude and
@@ -203,10 +205,12 @@ TYPED_TEST(ProjectionTest, Test_many)
 
   thrust::device_vector<coordinate<T>> d_expected = expected;
 
+#ifdef DEBUG
   std::cout << "expected " << std::setprecision(20) << expected_coords[0].xy.x << " "
             << expected_coords[0].xy.y << std::endl;
   coordinate<T> c_out = output[0];
   std::cout << "Device: " << std::setprecision(20) << c_out.x << " " << c_out.y << std::endl;
+#endif
 
   // Assumption: we can expect 5 nanometer (5e-9m) accuracy with double precision. The precision
   // ratio of double to single precision is 2^53 / 2^24 == 2^29 ~= 10^9, so we should expect 5 meter

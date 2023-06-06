@@ -50,5 +50,5 @@ endfunction(ConfigureTest)
 ###################################################################################################
 
 # index
-ConfigureTest(TEST_TEST
-    test.cu)
+ConfigureTest(WGS_TO_UTM_TEST
+    wgs_to_utm_test.cu)
