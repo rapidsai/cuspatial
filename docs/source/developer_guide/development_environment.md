@@ -1,15 +1,24 @@
 # Creating a Development Environment
 
-cuSpatial follows the RAPIDS release schedule, so developers are encouraged to develop 
-using the latest development branch of RAPIDS libraries that cuspatial depends on. Other
-cuspatial dependencies can be found in `conda/environments/`.
+cuspatial recommends using [devcontainers](https://containers.dev/) to setup development environment.
+Install `devcontainers` extension in vscode, and open this repo in vscode. When promted to open the repo
+in devcontainer, click proceed.
 
-Maintaining a local development environment can be an arduous task, especially after each
-RAPIDS release. Most cuspatial developers today use
-[rapids-compose](https://github.com/trxcllnt/rapids-compose) to setup their development environment.
-It contains helpful scripts to build a RAPIDS development container image with the required
-dependencies and RAPIDS libraries automatically fetched and correctly versioned. It also provides
-script commands for simple building and testing of all RAPIDS libraries, including cuSpatial.
-`rapids-compose` is the recommended way to set up your environment to develop for cuspatial.
+## From Bare Metal
 
-For developers who would like to build from conda or from source, see the [build page](https://docs.rapids.ai/api/cuspatial/stable/developer_guide/build.html).
+RAPIDS keeps a single source of truth for library dependencies in `dependencies.yaml`. This file divides
+the dependencies into several dimensions: building, testing, documentations, notebooks etc. As a developer,
+you generally want to generate an environment recipe that includes everything that the library *may* use.
+
+To do so, install the rapids-dependency-file-generator via pip:
+```shell
+pip install rapids-dependency-file-generator
+```
+
+And run under the repo root:
+```shell
+rapids-dependency-file-generator --clean
+```
+
+The generated environment recipe is now under `conda/environments`. To continue the next step of building,
+see the [build page](https://docs.rapids.ai/api/cuspatial/stable/developer_guide/build.html).

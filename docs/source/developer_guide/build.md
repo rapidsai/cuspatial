@@ -18,30 +18,44 @@ git clone https://github.com/rapidsai/cuspatial.git $CUSPATIAL_HOME
 2. clone the cuSpatial repo
 
 ```shell
-conda env update --file conda/environments/all_cuda-118_arch-x86_64.yaml
+conda env create -n cuspatial --file conda/environments/all_cuda-118_arch-x86_64.yaml
 ```
 
-## Build and install cuSpatial
+## Build cuSpatial
 
-1. Compile and install
-   ```shell
-   cd $CUSPATIAL_HOME && \
-   chmod +x ./build.sh && \
-   ./build.sh
-   ```
+### From devcontainer:
 
-2. Run C++/Python test code
+Execute `build-cuspatial-cpp -DBUILD_TESTS=ON` to build libcuspatial and tests.
+In addition, `build-cuspatial-python` to build cuspatial cython components.
 
-   Some tests using inline data can be run directly, e.g.:
+### From bare metal:
 
-   ```shell
-   $CUSPATIAL_HOME/cpp/build/gtests/LEGACY_HAUSDORFF_TEST
-   $CUSPATIAL_HOME/cpp/build/gtests/POINT_IN_POLYGON_TEST
-   python python/cuspatial/cuspatial/tests/legacy/test_hausdorff_distance.py
-   python python/cuspatial/cuspatial/tests/test_pip.py
-   ```
+Compile libcuspatial (C++), cuspatial (cython) and C++ tests:
+```shell
+cd $CUSPATIAL_HOME && \
+chmod +x ./build.sh && \
+./build.sh libcuspatial cuspatial tests
+```
 
-   Some other tests involve I/O from data files under `$CUSPATIAL_HOME/test_fixtures`.
-   For example, `$CUSPATIAL_HOME/cpp/build/gtests/SHAPEFILE_READER_TEST` requires three
-   pre-generated polygon shapefiles that contain 0, 1 and 2 polygons, respectively. They are available at
-   `$CUSPATIAL_HOME/test_fixtures/shapefiles` <br>
+## Validate installation by running C++ and Python tests
+
+C++ tests locate under `$CUSPATIAL_HOME/cpp/build/gtests`. Python tests locate under
+`$CUSPATIAL_HOME/python/cuspatial/cuspatial/tests`.
+
+```note
+Devcontainer users: to manage difference between branches, the build directory is further alternatively placed
+`$CUSPATIAL_HOME/cpp/build/release` and `$CUSPATIAL_HOME/cpp/build/latest`, where `release` places the release build,
+and `latest` is the symlink to the most recent build directory.
+```
+
+Execute C++ tests:
+```shell
+$CUSPATIAL_HOME/cpp/build/gtests/
+$CUSPATIAL_HOME/cpp/build/gtests/POINT_IN_POLYGON_TEST
+```
+
+Execute Python tests:
+```
+python python/cuspatial/cuspatial/tests/test_hausdorff_distance.py
+python python/cuspatial/cuspatial/tests/test_pip.py
+```
