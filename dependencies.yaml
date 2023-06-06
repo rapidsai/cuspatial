@@ -176,6 +176,7 @@ dependencies:
           - ipython
           - ipywidgets
           - notebook
+          - osmnx
           - pydeck
           - shapely
           - scikit-image
