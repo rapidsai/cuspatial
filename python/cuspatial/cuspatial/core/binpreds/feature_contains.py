@@ -25,9 +25,9 @@ from cuspatial.utils.binpred_utils import (
     Point,
     Polygon,
     _false_series,
-    _linestrings_to_center_point,
     _open_polygon_rings,
     _points_and_lines_to_multipoints,
+    _points_to_multipoints,
     _zero_series,
 )
 from cuspatial.utils.column_utils import (
@@ -58,6 +58,26 @@ class ContainsPredicate(ContainsGeometryProcessor):
         pli_offsets = cudf.Series(pli[0])
 
         # Convert the pli to multipoints for equality checking
+        multipoints = _points_to_multipoints(pli_features, pli_offsets)
+
+        # A point in the rhs can be one of three possible states:
+        # 1. It is in the interior of the lhs
+        # 2. It is in the exterior of the lhs
+        # 3. It is on the boundary of the lhs
+        # This function tests if the point in the rhs is in the boundary
+        # of the lhs
+        intersect_equals_count = _basic_equals_count(rhs, multipoints)
+        return intersect_equals_count
+
+    def _intersection_results_for_contains_polygon(self, lhs, rhs):
+        pli = _basic_intersects_pli(lhs, rhs)
+        pli_features = pli[1]
+        if len(pli_features) == 0:
+            return _zero_series(len(lhs))
+
+        pli_offsets = cudf.Series(pli[0])
+
+        # Convert the pli to multipoints for equality checking
         multipoints = _points_and_lines_to_multipoints(
             pli_features, pli_offsets
         )
@@ -74,7 +94,9 @@ class ContainsPredicate(ContainsGeometryProcessor):
     def _compute_polygon_polygon_contains(self, lhs, rhs, preprocessor_result):
         lines_rhs = _open_polygon_rings(rhs)
         contains = _basic_contains_count(lhs, lines_rhs).reset_index(drop=True)
-        intersects = self._intersection_results_for_contains(lhs, lines_rhs)
+        intersects = self._intersection_results_for_contains_polygon(
+            lhs, lines_rhs
+        )
         # A closed polygon has an extra line segment that is not used in
         # counting the number of points. We need to subtract this from the
         # number of points in the polygon.
@@ -87,24 +109,23 @@ class ContainsPredicate(ContainsGeometryProcessor):
         result = contains + intersects >= rhs.sizes - polygon_size_reduction
         return result
 
-    def _test_interior(self, lhs, rhs):
-        # We only need to test linestrings that are length 2.
-        # Divide the linestring in half and test the point for containment
-        # in the polygon.
-        size_two = rhs.sizes == 2
-        if (size_two).any():
-            center_points = _linestrings_to_center_point(rhs[size_two])
-            size_two_results = _false_series(len(lhs))
-            size_two_results.iloc[rhs.index[size_two]] = (
-                _basic_contains_count(lhs, center_points) > 0
-            )
-            return size_two_results
-        else:
-            return _false_series(len(lhs))
-
     def _compute_polygon_linestring_contains(
         self, lhs, rhs, preprocessor_result
     ):
+        # No points are contained:
+        # 1. No points intersect: Not contained
+        # 2. All intersecting points are equal to points in the
+        # linestring: Contained
+
+        # Some points are contained:
+        # 1. No points intersect: Contained
+        # 2. All intersections are points, and intersecting points are equal
+        #    to points in the linestring: Contained
+
+        # All points are contained: Contained
+
+        # If all the intersection results are Points, and no points are outside
+        # of the polygon, then the linestring is contained in the polygon.
         contains = _basic_contains_count(lhs, rhs).reset_index(drop=True)
         intersects = self._intersection_results_for_contains(lhs, rhs)
 
@@ -112,9 +133,9 @@ class ContainsPredicate(ContainsGeometryProcessor):
         # test if the linestring is in the interior of the polygon.
         final_result = _false_series(len(lhs))
         intersection_with_no_containment = (contains == 0) & (intersects != 0)
-        interior_tests = self._test_interior(
-            lhs[intersection_with_no_containment].reset_index(drop=True),
-            rhs[intersection_with_no_containment].reset_index(drop=True),
+        interior_tests = (
+            intersects[intersection_with_no_containment]
+            == rhs.sizes[intersection_with_no_containment]
         )
         interior_tests.index = intersection_with_no_containment[
             intersection_with_no_containment

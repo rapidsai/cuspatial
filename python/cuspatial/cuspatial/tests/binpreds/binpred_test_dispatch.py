@@ -326,6 +326,17 @@ features = {
         LineString([(0.5, 1.25), (0.5, -0.25)]),
         point_polygon,
     ),
+    "linestring-polygon-cross-concave-edge": (
+        """
+    -----
+    x\\-/x
+    | x |
+    |   |
+    -----
+    """,
+        LineString([(0.5, 0.0), (0.5, 1.0)]),
+        Polygon([(0, 0), (0, 1), (0.3, 0.4), (1, 1), (1, 0)]),
+    ),
     "polygon-polygon-disjoint": (
         """
     Polygon polygon tests use a triangle for the lhs and a square for the rhs.
@@ -519,6 +530,7 @@ linestring_polygon_dispatch_list = [
     "linestring-polygon-edge-interior",
     "linestring-polygon-in",
     "linestring-polygon-crosses",
+    "linestring-polygon-cross-concave-edge",
 ]
 
 polygon_polygon_dispatch_list = [
