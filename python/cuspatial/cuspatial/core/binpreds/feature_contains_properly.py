@@ -115,10 +115,10 @@ class ContainsProperlyPredicate(ContainsGeometryProcessor):
         pip_result = contains_properly(
             lhs[lhs_indices], preprocessor_result.final_rhs, mode=mode
         )
-        # If the mode is pairwise, we need to replace the `pairwise_index`
-        # of each repeated polygon with the `part_index` from the
-        # preprocessor result.
-        if mode == "pairwise":
+        # If the mode is pairwise or brute_force, we need to replace the
+        # `pairwise_index` of each repeated polygon with the `part_index`
+        # from the preprocessor result.
+        if "pairwise_index" in pip_result.columns:
             pairwise_index_df = cudf.DataFrame(
                 {
                     "pairwise_index": cp.arange(len(lhs_indices)),

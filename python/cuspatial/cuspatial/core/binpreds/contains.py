@@ -120,6 +120,21 @@ def _brute_force_contains_properly(points, polygons):
     return final_result
 
 
+def _pairwise_pip_result_to_point_polygon_index_pairs(pairwise_result):
+    pairwise_result.columns = [
+        "pairwise_index",
+        "point_index",
+        "result",
+    ]
+    result = pairwise_result[["point_index", "pairwise_index"]][
+        pairwise_result["result"].astype("bool")
+    ]
+    result = result.sort_values(["point_index", "pairwise_index"]).reset_index(
+        drop=True
+    )
+    return result
+
+
 def _pairwise_contains_properly(points, polygons):
     """Compute from a series of points and a series of polygons which points
     are properly contained within the corresponding polygon. Polygon A contains
@@ -160,16 +175,8 @@ def _pairwise_contains_properly(points, polygons):
     quadtree_shaped_result = (
         cudf.Series(pip_result).reset_index().reset_index()
     )
-    quadtree_shaped_result.columns = [
-        "pairwise_index",
-        "point_index",
-        "result",
-    ]
-    result = quadtree_shaped_result[["point_index", "pairwise_index"]][
-        quadtree_shaped_result["result"].astype("bool")
-    ]
-    result = result.sort_values(["point_index", "pairwise_index"]).reset_index(
-        drop=True
+    result = _pairwise_pip_result_to_point_polygon_index_pairs(
+        quadtree_shaped_result
     )
     return result
 
@@ -185,15 +192,8 @@ def contains_properly(polygons, points, mode="pairwise"):
         # two-column DataFrame.
         bitmask_result = _brute_force_contains_properly(points, polygons)
         quadtree_shaped_result = bitmask_result.stack().reset_index()
-        quadtree_shaped_result.columns = [
-            "point_index",
-            "part_index",
-            "result",
-        ]
-        result = quadtree_shaped_result[["point_index", "part_index"]][
-            quadtree_shaped_result["result"]
-        ]
-        result = result.sort_values(["point_index", "part_index"]).reset_index(
-            drop=True
+        result = _pairwise_pip_result_to_point_polygon_index_pairs(
+            quadtree_shaped_result
         )
+        result.columns = ["part_index", "point_index"]
         return result

@@ -78,9 +78,12 @@ class ContainsPredicate(ContainsGeometryProcessor):
         # A closed polygon has an extra line segment that is not used in
         # counting the number of points. We need to subtract this from the
         # number of points in the polygon.
-        polygon_size_reduction = rhs.polygons.part_offset.take(
-            rhs.polygons.geometry_offset[1:]
-        ) - rhs.polygons.part_offset.take(rhs.polygons.geometry_offset[:-1])
+        multipolygon_part_offset = rhs.polygons.part_offset.take(
+            rhs.polygons.geometry_offset
+        )
+        polygon_size_reduction = (
+            multipolygon_part_offset[1:] - multipolygon_part_offset[:-1]
+        )
         result = contains + intersects >= rhs.sizes - polygon_size_reduction
         return result
 

@@ -28,9 +28,8 @@ def sample_test_data(features, dispatch_list, size, lib=cuspatial):
     ]
     lhs = lib.GeoSeries(list(geometries[0]))
     rhs = lib.GeoSeries(list(geometries[1]))
-    np.random.seed(0)
-    lhs_picks = np.random.randint(0, len(lhs), size)
-    rhs_picks = np.random.randint(0, len(rhs), size)
+    lhs_picks = np.repeat(np.arange(len(lhs)), len(lhs))
+    rhs_picks = np.tile(np.arange(len(rhs)), len(rhs))
     return (
         lhs[lhs_picks].reset_index(drop=True),
         rhs[rhs_picks].reset_index(drop=True),
