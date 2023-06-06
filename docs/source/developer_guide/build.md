@@ -50,12 +50,12 @@ and `latest` is the symlink to the most recent build directory.
 
 Execute C++ tests:
 ```shell
-$CUSPATIAL_HOME/cpp/build/gtests/
-$CUSPATIAL_HOME/cpp/build/gtests/POINT_IN_POLYGON_TEST
+$CUSPATIAL_HOME/cpp/build/gtests/HAUSDORFF_TEST
+$CUSPATIAL_HOME/cpp/build/gtests/POINT_IN_POLYGON_TEST_EXP
 ```
 
 Execute Python tests:
 ```
-python python/cuspatial/cuspatial/tests/test_hausdorff_distance.py
-python python/cuspatial/cuspatial/tests/test_pip.py
+python python/cuspatial/cuspatial/tests/test_geoseries.py
+python python/cuspatial/cuspatial/tests/test_trajectory.py
 ```
