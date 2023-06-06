@@ -29,10 +29,10 @@ jobs:
     # Only run if the issue author is not part of RAPIDS
     if: ${{ ! contains(fromJSON('["OWNER", "MEMBER", "CONTRIBUTOR", "COLLABORATOR"]'), github.event.issue.author_association)}}
     steps: 
-      - name: add-triage-label
+      - name: add-external-labels
         run: |
           issue_url=${{ github.event.issue.html_url }}
-          gh issue edit ${issue_url} --add-label "Needs Triage"
+          gh issue edit ${issue_url} --add-label "Needs Triage,External"
       
       - name: add-comment-to-issue
         run: |
