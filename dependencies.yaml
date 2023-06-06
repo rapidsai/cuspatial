@@ -60,6 +60,7 @@ dependencies:
           - librmm==23.8.*
           - ninja
           - proj
+          - sqlite
     specific:
       - output_types: conda
         matrices:
