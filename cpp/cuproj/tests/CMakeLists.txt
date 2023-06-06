@@ -39,7 +39,7 @@ function(ConfigureTest CMAKE_TEST_NAME)
     install(
         TARGETS ${CMAKE_TEST_NAME}
         COMPONENT testing
-        DESTINATION bin/gtests/libcuproj
+        DESTINATION bin/gtests/libcuspatial # add to libcuspatial CI testing
         EXCLUDE_FROM_ALL
     )
 endfunction(ConfigureTest)
