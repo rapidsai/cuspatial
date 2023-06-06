@@ -51,6 +51,9 @@ option(CUDA_ENABLE_LINEINFO "Enable the -lineinfo option for nvcc (useful for cu
 # cudart can be statically linked or dynamically linked. The python ecosystem wants dynamic linking
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA toolkit runtime and libraries" OFF)
 
+option(CUSPATIAL_USE_CUDF_STATIC "Build and statically link cuDF" OFF)
+option(CUSPATIAL_EXCLUDE_CUDF_FROM_ALL "Exclude cuDF targets from cuSpatial's 'all' target" OFF)
+
 message(STATUS "CUSPATIAL: Build with NVTX support: ${USE_NVTX}")
 message(STATUS "CUSPATIAL: Configure CMake to build tests: ${BUILD_TESTS}")
 message(STATUS "CUSPATIAL: Configure CMake to build (google) benchmarks: ${BUILD_BENCHMARKS}")
@@ -176,14 +179,16 @@ target_include_directories(cuspatial
            PRIVATE     "$<BUILD_INTERFACE:${CUSPATIAL_SOURCE_DIR}/src>"
            INTERFACE   "$<INSTALL_INTERFACE:include>")
 
-# Add Conda library paths if specified
-if(CONDA_LINK_DIRS)
-    target_link_directories(cuspatial PUBLIC "$<BUILD_INTERFACE:${CONDA_LINK_DIRS}>")
+# Add Conda library, and include paths if specified
+if(TARGET conda_env)
+  target_link_libraries(cuspatial PRIVATE conda_env)
 endif()
 
-# Add Conda include paths if specified
-if(CONDA_INCLUDE_DIRS)
-    target_include_directories(cuspatial PUBLIC "$<BUILD_INTERFACE:${CONDA_INCLUDE_DIRS}>")
+# Workaround until https://github.com/rapidsai/rapids-cmake/issues/176 is resolved
+if(NOT BUILD_SHARED_LIBS)
+  if(TARGET conda_env)
+    install(TARGETS conda_env EXPORT cuspatial-exports)
+  endif()
 endif()
 
 # Per-thread default stream
