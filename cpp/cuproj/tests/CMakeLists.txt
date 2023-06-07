@@ -24,7 +24,7 @@ function(ConfigureTest CMAKE_TEST_NAME)
                         "$<$<COMPILE_LANGUAGE:CUDA>:${CUPROJ_CUDA_FLAGS}>")
     target_include_directories(${CMAKE_TEST_NAME}
                 PRIVATE "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}>"
-                        "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}/src>",
+                        "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}/src>"
                         ../../../cpp/include)
     set_target_properties(
         ${CMAKE_TEST_NAME}
