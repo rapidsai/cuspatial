@@ -19,9 +19,9 @@ function(find_and_configure_proj VERSION)
   # Find or install Proj
   rapids_cpm_find(
     PROJ ${VERSION}
-    #GLOBAL_TARGETS "${global_targets}"
-    BUILD_EXPORT_SET cuspatial-exports
-    INSTALL_EXPORT_SET cuspatial-exports
+    GLOBAL_TARGETS PROJ::proj
+    BUILD_EXPORT_SET cuproj-exports
+    INSTALL_EXPORT_SET cuproj-exports
     CPM_ARGS
     GIT_REPOSITORY https://github.com/osgeo/proj.git
     GIT_TAG ${VERSION}
@@ -33,7 +33,7 @@ function(find_and_configure_proj VERSION)
     rapids_export(
       BUILD PROJ
       VERSION ${PROJ_VERSION}
-      EXPORT_SET PROJTargets
+      EXPORT_SET cuproj-exports
       GLOBAL_TARGETS PROJ
       NAMESPACE PROJ::
     )
