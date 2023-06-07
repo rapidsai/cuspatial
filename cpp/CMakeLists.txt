@@ -240,7 +240,6 @@ endif()
 
 rapids_cmake_install_lib_dir(lib_dir)
 include(CPack)
-include(GNUInstallDirs)
 
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME cuspatial)
 
