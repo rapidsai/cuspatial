@@ -166,10 +166,9 @@ def _pairwise_contains_properly(points, polygons):
         as_column(polygons.polygons.x),
         as_column(polygons.polygons.y),
     )
-    # Pairwise returns a boolean column where the point and polygon index
-    # always correspond. We can use this to create a dataframe with the
-    # same shape as the quadtree result. Finally all the False results
-    # are dropped, as quadtree doesn't report False results.
+    # Pairwise returns a boolean column with a True value for each (polygon, point) pair 
+    # where the point is contained properly by the polygon. We can use this to create a
+    # dataframe with only (polygon, point) pairs that satisfy the relationship.
     quadtree_shaped_result = (
         cudf.Series(pip_result).reset_index().reset_index()
     )
