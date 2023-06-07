@@ -93,7 +93,7 @@ class IntersectsByEquals(EqualsPredicateBase):
 class PolygonPointIntersects(BinPred):
     def _preprocess(self, lhs, rhs):
         contains = _basic_contains_any(lhs, rhs)
-        return contains
+        return _basic_contains_any(lhs, rhs)
 
 
 class PointPolygonIntersects(BinPred):
