@@ -26,8 +26,8 @@ conda env create -n cuspatial --file conda/environments/all_cuda-118_arch-x86_64
 ### From the cuSpatial Dev Container:
 
 Execute `build-cuspatial-cpp to build `libcuspatial`. The following options may be added.
- - `-DBUILD_TESTS=ON`: build `libcuspatial` unit tests. 
- - `-DBUILD_BENCHMARKS=ON`: build `libcuspatial` benchmarks.  
+ - `-DBUILD_TESTS=ON`: build `libcuspatial` unit tests.
+ - `-DBUILD_BENCHMARKS=ON`: build `libcuspatial` benchmarks.
  - `-DCMAKE_BUILD_TYPE=Debug`: Create a Debug build of `libcuspatial` (default is Release).
 In addition, `build-cuspatial-python` to build cuspatial cython components.
 
@@ -39,6 +39,10 @@ cd $CUSPATIAL_HOME && \
 chmod +x ./build.sh && \
 ./build.sh libcuspatial cuspatial tests
 ```
+Additionally, the following options are also commonly used:
+- `benchmarks`: build libcuspatial benchmarks
+- `clean`: remove all existing build artifacts and configuration
+Execute `./build.sh -h` for full list of available options.
 
 ## Validate Installation with C++ and Python Tests
 
@@ -53,12 +57,10 @@ is a symbolic link to the most recent build directory.
 
 Execute C++ tests:
 ```shell
-$CUSPATIAL_HOME/cpp/build/gtests/HAUSDORFF_TEST
-$CUSPATIAL_HOME/cpp/build/gtests/POINT_IN_POLYGON_TEST_EXP
+ninja -C $CUSPATIAL_HOME/cpp/build/ test
 ```
 
 Execute Python tests:
 ```
-python python/cuspatial/cuspatial/tests/test_geoseries.py
-python python/cuspatial/cuspatial/tests/test_trajectory.py
+pytest $CUSPATIAL_HOME/python/cuspatial/cuspatial/tests/
 ```
