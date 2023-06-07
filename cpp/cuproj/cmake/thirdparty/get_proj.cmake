@@ -27,22 +27,6 @@ function(find_and_configure_proj VERSION)
     GIT_TAG ${VERSION}
     GIT_SHALLOW TRUE
   )
-
-  if(PROJ_ADDED)
-    rapids_export(
-      BUILD PROJ
-      VERSION ${PROJ_VERSION}
-      EXPORT_SET cuproj-exports
-      GLOBAL_TARGETS PROJ::proj
-      NAMESPACE PROJ::
-    )
-
-    include("${rapids-cmake-dir}/export/find_package_root.cmake")
-    rapids_export_find_package_root(
-      BUILD PROJ [=[${CMAKE_CURRENT_LIST_DIR}]=] cuspatial-testing-exports
-    )
-  endif()
-
 endfunction()
 
 find_and_configure_proj(9.2.0)
