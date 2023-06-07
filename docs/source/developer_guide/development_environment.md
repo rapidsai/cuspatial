@@ -1,8 +1,7 @@
 # Creating a Development Environment
 
 cuSpatial recommends using [Dev Containers](https://containers.dev/) to setup the development environment.
-Install `devcontainers` extension in vscode, and open this repo in vscode. When promted to open the repo
-in devcontainer, click proceed.
+To setup Dev Containers for cuspatial, please refer to [documentation](https://github.com/rapidsai/cuspatial/tree/main/.devcontainer).
 
 ## From Bare Metal
 
@@ -22,3 +21,5 @@ rapids-dependency-file-generator --clean
 
 The environment recipe is generated within the `conda/environments` directory. To continue the next step of building,
 see the [build page](https://docs.rapids.ai/api/cuspatial/stable/developer_guide/build.html).
+
+For more information about how RAPIDS manages dependencies, see [README of rapids-depenency-file-generator repo](https://github.com/rapidsai/dependency-file-generator).
