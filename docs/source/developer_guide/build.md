@@ -25,7 +25,10 @@ conda env create -n cuspatial --file conda/environments/all_cuda-118_arch-x86_64
 
 ### From the cuSpatial Dev Container:
 
-Execute `build-cuspatial-cpp -DBUILD_TESTS=ON` to build libcuspatial and tests.
+Execute `build-cuspatial-cpp to build `libcuspatial`. The following options may be added.
+ - `-DBUILD_TESTS=ON`: build `libcuspatial` unit tests. 
+ - `-DBUILD_BENCHMARKS=ON`: build `libcuspatial` benchmarks.  
+ - `-DCMAKE_BUILD_TYPE=Debug`: Create a Debug build of `libcuspatial` (default is Release).
 In addition, `build-cuspatial-python` to build cuspatial cython components.
 
 ### From Bare Metal:
@@ -43,10 +46,10 @@ chmod +x ./build.sh && \
 - Python tests are located within the `$CUSPATIAL_HOME/python/cuspatial/cuspatial/tests` directory.
 
 ```note
-Devcontainer users: to manage difference between branches, the build directory is further alternatively placed
-`$CUSPATIAL_HOME/cpp/build/release` and `$CUSPATIAL_HOME/cpp/build/latest`, where `release` places the release build,
-and `latest` is the symlink to the most recent build directory.
-```
+Dev Container users:
+To manage difference between branches and build types, the build directories are located at
+`$CUSPATIAL_HOME/cpp/build/[release|debug]` depending on build type, and  `$CUSPATIAL_HOME/cpp/build/latest`.
+is a symbolic link to the most recent build directory.
 
 Execute C++ tests:
 ```shell
