@@ -22,4 +22,4 @@ rapids-dependency-file-generator --clean
 The environment recipe is generated within the `conda/environments` directory. To continue the next step of building,
 see the [build page](https://docs.rapids.ai/api/cuspatial/stable/developer_guide/build.html).
 
-For more information about how RAPIDS manages dependencies, see [README of rapids-depenency-file-generator repo](https://github.com/rapidsai/dependency-file-generator).
+For more information about how RAPIDS manages dependencies, see [README of rapids-dependency-file-generator repo](https://github.com/rapidsai/dependency-file-generator).
