@@ -26,7 +26,7 @@ function(find_and_configure_cudf)
     set(global_targets cudf::cudf)
     set(cudf_components "")
 
-    if(BUILD_TESTS)
+    if(BUILD_TESTS OR BUILD_BENCHMARKS)
       list(APPEND global_targets cudf::cudftestutil)
       set(cudf_components COMPONENTS testing)
     endif()

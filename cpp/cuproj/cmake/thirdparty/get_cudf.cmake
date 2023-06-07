@@ -28,7 +28,7 @@ function(find_and_configure_cudf VERSION)
 
     set(global_targets cudf::cudf)
     set(find_package_args "")
-    if(BUILD_TESTS)
+    if(BUILD_TESTS OR BUILD_BENCHMARKS)
       list(APPEND global_targets cudf::cudftestutil)
       set(find_package_args "COMPONENTS testing")
     endif()
