@@ -144,8 +144,6 @@ def _pairwise_contains_properly(points, polygons):
     Note that polygons must be closed: the first and last vertex of each
     polygon must be the same.
 
-    This version provides support for a very large number of points with
-    an equal number of polygons.
 
     Parameters
     ----------
