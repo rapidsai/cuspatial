@@ -81,12 +81,4 @@ struct prepare_angular_coordinates {
   }
 };
 
-template <class CoordIterator, typename T = typename CoordIterator::value_type::value_type>
-auto make_prepare_angular_coordinates(T lam0, T prime_meridian_offset, CoordIterator iter)
-{
-  return thrust::make_transform_iterator(
-    iter,
-    prepare_angular_coordinates<typename CoordIterator::value_type>{lam0, prime_meridian_offset});
-}
-
 }  // namespace cuproj

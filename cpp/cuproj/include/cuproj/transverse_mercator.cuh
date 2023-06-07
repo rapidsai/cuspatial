@@ -358,26 +358,4 @@ struct transverse_mercator {
   }
 };
 
-/*template <class CoordIter,
-          typename Coordinate = typename CoordIter::value_type,
-          typename T          = typename Coordinate::value_type>
-auto make_transverse_mercator(projection<T> proj, CoordIter iter)
-{
-  // ctor sets up lam0 from utm zone, so must go before prepare_angular_coordinates ctor
-  // TODO fix this.
-  auto utm = transverse_mercator<Coordinate>{proj.ellipsoid_, proj.utm_zone_};
-
-  auto op = [lam0 = utm.lam0(), utm] __device__(auto c) {
-    auto swap    = axis_swap<Coordinate>{};
-    auto radians = to_radians<Coordinate>{};
-    auto prep    = prepare_angular_coordinates<Coordinate>(lam0, T{0});
-    return utm(prep(radians(swap(c))));
-  };
-
-  // auto prepare_angular_coordinates = make_prepare_angular_coordinates(utm.lam0(), T{0},
-  // to_radians);
-
-  return thrust::make_transform_iterator(prepare_angular_coordinates, utm);
-}*/
-
 }  // namespace cuproj

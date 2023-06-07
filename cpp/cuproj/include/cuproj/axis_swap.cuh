@@ -28,10 +28,4 @@ struct axis_swap {
   }
 };
 
-template <class CoordIterator>
-auto make_axis_swap(CoordIterator iter)
-{
-  return thrust::make_transform_iterator(iter, axis_swap<typename CoordIterator::value_type>{});
-}
-
 }  // namespace cuproj

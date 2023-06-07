@@ -31,10 +31,4 @@ struct to_radians {
   }
 };
 
-template <class CoordIterator>
-auto make_to_radians(CoordIterator iter)
-{
-  return thrust::make_transform_iterator(iter, to_radians<typename CoordIterator::value_type>{});
-}
-
 }  // namespace cuproj
