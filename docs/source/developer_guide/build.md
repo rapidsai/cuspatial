@@ -23,12 +23,12 @@ conda env create -n cuspatial --file conda/environments/all_cuda-118_arch-x86_64
 
 ## Build cuSpatial
 
-### From devcontainer:
+### From the cuSpatial Dev Container:
 
 Execute `build-cuspatial-cpp -DBUILD_TESTS=ON` to build libcuspatial and tests.
 In addition, `build-cuspatial-python` to build cuspatial cython components.
 
-### From bare metal:
+### From Bare Metal:
 
 Compile libcuspatial (C++), cuspatial (cython) and C++ tests:
 ```shell
@@ -37,10 +37,10 @@ chmod +x ./build.sh && \
 ./build.sh libcuspatial cuspatial tests
 ```
 
-## Validate installation by running C++ and Python tests
+## Validate Installation with C++ and Python Tests
 
-C++ tests locate under `$CUSPATIAL_HOME/cpp/build/gtests`. Python tests locate under
-`$CUSPATIAL_HOME/python/cuspatial/cuspatial/tests`.
+- C++ tests are located within the `$CUSPATIAL_HOME/cpp/build/gtests` directory.
+- Python tests are located within the `$CUSPATIAL_HOME/python/cuspatial/cuspatial/tests` directory.
 
 ```note
 Devcontainer users: to manage difference between branches, the build directory is further alternatively placed
