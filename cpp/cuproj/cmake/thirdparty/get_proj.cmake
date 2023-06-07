@@ -26,7 +26,6 @@ function(find_and_configure_proj VERSION)
     GIT_REPOSITORY https://github.com/osgeo/proj.git
     GIT_TAG ${VERSION}
     GIT_SHALLOW TRUE
-    FIND_PACKAGE_ARGUMENTS "${find_package_args}"
   )
 
   if(PROJ_ADDED)
