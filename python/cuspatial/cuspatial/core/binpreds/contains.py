@@ -136,7 +136,7 @@ def _pairwise_pip_result_to_point_polygon_index_pairs(pairwise_result):
 
 
 def _pairwise_contains_properly(points, polygons):
-    """Compute from a series of points and a series of polygons which points
+    """Compute from a series of polygons and an equal-length series of points which points
     are properly contained within the corresponding polygon. Polygon A contains
     Point B properly if B intersects the interior of A but not the boundary (or
     exterior).
