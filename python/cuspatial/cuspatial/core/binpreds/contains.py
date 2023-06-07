@@ -120,21 +120,6 @@ def _brute_force_contains_properly(points, polygons):
     return final_result
 
 
-def _pairwise_pip_result_to_point_polygon_index_pairs(pairwise_result):
-    pairwise_result.columns = [
-        "pairwise_index",
-        "point_index",
-        "result",
-    ]
-    result = pairwise_result[["point_index", "pairwise_index"]][
-        pairwise_result["result"].astype("bool")
-    ]
-    result = result.sort_values(["point_index", "pairwise_index"]).reset_index(
-        drop=True
-    )
-    return result
-
-
 def _pairwise_contains_properly(points, polygons):
     """Compute from a series of polygons and an equal-length series of points
     which points are properly contained within the corresponding polygon.
