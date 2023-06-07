@@ -56,22 +56,25 @@ sed_runner "s/RAPIDS_VERSION_NUMBER=\".*/RAPIDS_VERSION_NUMBER=\"${NEXT_SHORT_TA
 
 # Need to distutils-normalize the original version
 NEXT_SHORT_TAG_PEP440=$(python -c "from setuptools.extern import packaging; print(packaging.version.Version('${NEXT_SHORT_TAG}'))")
+NEXT_FULL_TAG_PEP440=$(python -c "from setuptools.extern import packaging; print(packaging.version.Version('${NEXT_FULL_TAG}'))")
 
-# bump rapids libraries
-for FILE in dependencies.yaml conda/environments/*.yaml; do
-  sed_runner "/-.* cudf==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
-  sed_runner "/-.* cuml==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
-  sed_runner "/-.* libcudf==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
-  sed_runner "/-.* librmm==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
-  sed_runner "/-.* rmm==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
+DEPENDENCIES=(
+  cudf
+  cuml
+  libcudf
+  librmm
+  rmm
+)
+
+for DEP in "${DEPENDENCIES[@]}"; do
+  for FILE in dependencies.yaml conda/environments/*.yaml; do
+    sed_runner "/-.* ${DEP}==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}.*/g" ${FILE}
+  done
+  sed_runner "s/${DEP}==.*\",/${DEP}==${NEXT_SHORT_TAG_PEP440}.*\",/g" python/cuspatial/pyproject.toml
 done
+
+# Version in pyproject.toml
+sed_runner "s/^version = .*/version = \"${NEXT_FULL_TAG_PEP440}\"/g" python/cuspatial/pyproject.toml
 
 # Dependency versions in dependencies.yaml
 sed_runner "/-cu[0-9]\{2\}==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}.*/g" dependencies.yaml
-
-# Python pyproject.toml updates
-sed_runner "s/^version = .*/version = \"${NEXT_FULL_TAG}\"/g" python/cuspatial/pyproject.toml
-
-# Dependency versions in pyproject.toml
-sed_runner "s/cudf==.*\",/cudf==${NEXT_SHORT_TAG_PEP440}.*\",/g" python/cuspatial/pyproject.toml
-sed_runner "s/rmm==.*\",/rmm==${NEXT_SHORT_TAG_PEP440}.*\",/g" python/cuspatial/pyproject.toml
