@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 
 #include <thrust/optional.h>
 

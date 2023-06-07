@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+#include <cuspatial/bounding_boxes.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/point_quadtree.hpp>
-#include <cuspatial/polygon_bounding_box.hpp>
 #include <cuspatial/spatial_join.hpp>
 
 #include <cudf/table/table.hpp>
@@ -29,8 +29,7 @@
 #include <cudf_test/type_lists.hpp>
 
 template <typename T>
-struct JoinQuadtreeAndBoundingBoxesErrorTest : public cudf::test::BaseFixture {
-};
+struct JoinQuadtreeAndBoundingBoxesErrorTest : public cudf::test::BaseFixture {};
 
 TYPED_TEST_CASE(JoinQuadtreeAndBoundingBoxesErrorTest, cudf::test::FloatingPointTypes);
 

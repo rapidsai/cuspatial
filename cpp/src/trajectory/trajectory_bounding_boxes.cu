@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+#include <cuspatial/bounding_boxes.cuh>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/bounding_box.cuh>
-#include <cuspatial/experimental/iterator_factory.cuh>
+#include <cuspatial/iterator_factory.cuh>
 
 #include <cudf/column/column_device_view.cuh>
 #include <cudf/column/column_factories.hpp>

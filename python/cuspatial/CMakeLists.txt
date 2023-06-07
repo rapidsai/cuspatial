@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -14,7 +14,7 @@
 
 cmake_minimum_required(VERSION 3.23.1 FATAL_ERROR)
 
-set(cuspatial_version 23.04.00)
+set(cuspatial_version 23.06.00)
 
 include(../../fetch_rapids.cmake)
 include(rapids-cuda)
@@ -32,6 +32,8 @@ project(
 option(FIND_CUSPATIAL_CPP "Search for existing cuspatial C++ installations before defaulting to local files"
        OFF)
 
+option(CUSPATIAL_BUILD_WHEELS "Whether this build is generating a Python wheel." OFF)
+
 # If the user requested it we attempt to find cuspatial.
 if(FIND_CUSPATIAL_CPP)
   find_package(cuspatial ${cuspatial_version})
@@ -40,22 +42,49 @@ else()
 endif()
 
 if(NOT cuspatial_FOUND)
-  # TODO: This will not be necessary once we upgrade to CMake 3.22, which will
-  # pull in the required languages for the C++ project even if this project
-  # does not require those languages.
-  include(rapids-cuda)
-  rapids_cuda_init_architectures(cuspatial)
-  enable_language(CUDA)
-  # Since cuspatial only enables CUDA optionally we need to manually include the file that
-  # rapids_cuda_init_architectures relies on `project` including.
-  include("${CMAKE_PROJECT_cuspatial_INCLUDE}")
+  set(BUILD_TESTS OFF)
+  set(BUILD_BENCHMARKS OFF)
+  set(_exclude_from_all "")
+  if(CUSPATIAL_BUILD_WHEELS)
 
-  add_subdirectory(../../cpp cuspatial-cpp)
+    # Statically link cudart if building wheels
+    set(CUDA_STATIC_RUNTIME ON)
+    set(CUSPATIAL_USE_CUDF_STATIC ON)
+    set(CUSPATIAL_EXCLUDE_CUDF_FROM_ALL ON)
 
-  install(TARGETS cuspatial DESTINATION cuspatial/_lib)
+    # Always build wheels against the pyarrow libarrow.
+    set(USE_LIBARROW_FROM_PYARROW ON)
+
+    # Need to set this so all the nvcomp targets are global, not only nvcomp::nvcomp
+    # https://cmake.org/cmake/help/latest/variable/CMAKE_FIND_PACKAGE_TARGETS_GLOBAL.html#variable:CMAKE_FIND_PACKAGE_TARGETS_GLOBAL
+    set(CMAKE_FIND_PACKAGE_TARGETS_GLOBAL ON)
+
+    # Don't install the cuSpatial C++ targets into wheels
+    set(_exclude_from_all EXCLUDE_FROM_ALL)
+  endif()
+
+  add_subdirectory(../../cpp cuspatial-cpp ${_exclude_from_all})
+
+  set(cython_lib_dir cuspatial)
+
+  if(CUSPATIAL_BUILD_WHEELS)
+    include(cmake/Modules/WheelHelpers.cmake)
+    get_target_property(_nvcomp_link_libs nvcomp::nvcomp INTERFACE_LINK_LIBRARIES)
+    # Ensure all the shared objects we need at runtime are in the wheel
+    add_target_libs_to_wheel(LIB_DIR ${cython_lib_dir} TARGETS arrow_shared nvcomp::nvcomp ${_nvcomp_link_libs})
+  endif()
+
+  # Since there are multiple subpackages of cuspatial._lib that require access to libcuspatial, we place the
+  # library in the cuspatial directory as a single source of truth and modify the other rpaths
+  # appropriately.
+  install(TARGETS cuspatial DESTINATION ${cython_lib_dir})
 endif()
 
 include(rapids-cython)
 rapids_cython_init()
 
 add_subdirectory(cuspatial/_lib)
+
+if(DEFINED cython_lib_dir)
+  rapids_cython_add_rpath_entries(TARGET cuspatial PATHS "${cython_lib_dir}")
+endif()

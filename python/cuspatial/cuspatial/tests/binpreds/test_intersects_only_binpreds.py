@@ -261,9 +261,7 @@ def test_linestring_intersects_multipoint_cross_intersection():
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-@pytest.mark.skip(
-    reason="NotImplemented. Depends on allpairs_multipoint_equals_count"
-)
+@pytest.mark.xfail(reason="Multipoints not supported yet.")
 def test_linestring_intersects_multipoint_implicit_cross_intersection():
     g1 = cuspatial.GeoSeries([LineString([(0.0, 0.0), (1.0, 1.0)])])
     g2 = cuspatial.GeoSeries([MultiPoint([(0.0, 1.0), (1.0, 0.0)])])
@@ -274,9 +272,7 @@ def test_linestring_intersects_multipoint_implicit_cross_intersection():
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-@pytest.mark.skip(
-    reason="NotImplemented. Depends on allpairs_multipoint_equals_count"
-)
+@pytest.mark.xfail(reason="Multipoints not supported yet.")
 def test_100_linestrings_intersects_100_multipoints(
     linestring_generator, multipoint_generator
 ):
@@ -569,10 +565,6 @@ def test_multilinestring_intersects_linestring():
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-@pytest.mark.skip(
-    reason="""NotImplemented. Depends on a a combination
-of intersects and contains."""
-)
 def test_linestring_intersects_polygon():
     g1 = cuspatial.GeoSeries(
         [
@@ -593,10 +585,6 @@ def test_linestring_intersects_polygon():
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-@pytest.mark.skip(
-    reason="""NotImplemented. Depends on a a combination
-of intersects and contains."""
-)
 def test_polygon_intersects_linestring():
     g1 = cuspatial.GeoSeries(
         [
@@ -617,10 +605,6 @@ def test_polygon_intersects_linestring():
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-@pytest.mark.skip(
-    reason="""NotImplemented. Depends on a a combination
-of intersects and contains."""
-)
 def test_multipolygon_intersects_linestring():
     g1 = cuspatial.GeoSeries(
         [
@@ -651,10 +635,6 @@ def test_multipolygon_intersects_linestring():
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-@pytest.mark.skip(
-    reason="""NotImplemented. Depends on a a combination
-of intersects and contains."""
-)
 def test_linestring_intersects_multipolygon():
     g1 = cuspatial.GeoSeries(
         [
@@ -685,10 +665,6 @@ def test_linestring_intersects_multipolygon():
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-@pytest.mark.skip(
-    reason="""NotImplemented. Depends on a a combination
-of intersects and contains."""
-)
 def test_polygon_intersects_multipolygon():
     g1 = cuspatial.GeoSeries(
         [
@@ -719,10 +695,6 @@ def test_polygon_intersects_multipolygon():
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-@pytest.mark.skip(
-    reason="""NotImplemented. Depends on a a combination
-of intersects and contains."""
-)
 def test_multipolygon_intersects_polygon():
     g1 = cuspatial.GeoSeries(
         [
@@ -753,10 +725,6 @@ def test_multipolygon_intersects_polygon():
     pd.testing.assert_series_equal(expected, got.to_pandas())
 
 
-@pytest.mark.skip(
-    reason="""NotImplemented. Depends on a a combination
-of intersects and contains."""
-)
 def test_multipolygon_intersects_multipolygon():
     g1 = cuspatial.GeoSeries(
         [

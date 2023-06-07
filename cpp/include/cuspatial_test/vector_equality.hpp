@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include <cuspatial/experimental/geometry/segment.cuh>
+#include <cuspatial/geometry/segment.cuh>
+#include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <cuspatial_test/test_util.cuh>
 
@@ -37,7 +37,7 @@ namespace cuspatial {
 namespace test {
 
 /**
- * @brief Compare two floats are close within N ULPs
+ * @brief Compare two floats are close within N ULPs, nans are treated equal
  *
  * N is predefined by GoogleTest
  * https://google.github.io/googletest/reference/assertions.html#EXPECT_FLOAT_EQ
@@ -46,22 +46,22 @@ template <typename T>
 auto floating_eq_by_ulp(T val)
 {
   if constexpr (std::is_same_v<T, float>) {
-    return ::testing::FloatEq(val);
+    return ::testing::NanSensitiveFloatEq(val);
   } else {
-    return ::testing::DoubleEq(val);
+    return ::testing::NanSensitiveDoubleEq(val);
   }
 }
 
 /**
- * @brief Compare two floats are close within `abs_error`
+ * @brief Compare two floats are close within `abs_error`, nans are treated equal
  */
 template <typename T>
 auto floating_eq_by_abs_error(T val, T abs_error)
 {
   if constexpr (std::is_same_v<T, float>) {
-    return ::testing::FloatNear(val, abs_error);
+    return ::testing::NanSensitiveFloatNear(val, abs_error);
   } else {
-    return ::testing::DoubleNear(val, abs_error);
+    return ::testing::NanSensitiveDoubleNear(val, abs_error);
   }
 }
 
@@ -236,6 +236,39 @@ void expect_vec_2d_pair_equivalent(PairVector1 const& expected, PairVector2 cons
   do {                                                        \
     SCOPED_TRACE(" <--  line of failure\n");                  \
     cuspatial::test::expect_vec_2d_pair_equivalent(lhs, rhs); \
+  } while (0)
+
+template <typename Array1, typename Array2>
+void expect_multilinestring_array_equivalent(Array1& lhs, Array2& rhs)
+{
+  auto [lhs_geometry_offset, lhs_part_offset, lhs_coordinates] = lhs.release();
+  auto [rhs_geometry_offset, rhs_part_offset, rhs_coordinates] = rhs.release();
+
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs_geometry_offset, rhs_geometry_offset);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs_part_offset, rhs_part_offset);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs_coordinates, rhs_coordinates);
+}
+
+#define CUSPATIAL_EXPECT_MULTILINESTRING_ARRAY_EQUIVALENT(lhs, rhs)     \
+  do {                                                                  \
+    SCOPED_TRACE(" <--  line of failure\n");                            \
+    cuspatial::test::expect_multilinestring_array_equivalent(lhs, rhs); \
+  } while (0)
+
+template <typename Array1, typename Array2>
+void expect_multipoint_array_equivalent(Array1& lhs, Array2& rhs)
+{
+  auto [lhs_geometry_offset, lhs_coordinates] = lhs.release();
+  auto [rhs_geometry_offset, rhs_coordinates] = rhs.release();
+
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs_geometry_offset, rhs_geometry_offset);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(lhs_coordinates, rhs_coordinates);
+}
+
+#define CUSPATIAL_EXPECT_MULTIPOINT_ARRAY_EQUIVALENT(lhs, rhs)     \
+  do {                                                             \
+    SCOPED_TRACE(" <--  line of failure\n");                       \
+    cuspatial::test::expect_multipoint_array_equivalent(lhs, rhs); \
   } while (0)
 
 #define CUSPATIAL_RUN_TEST(FUNC, ...)        \

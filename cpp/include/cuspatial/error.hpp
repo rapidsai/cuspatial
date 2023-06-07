@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 #pragma once
+
+#include <cuspatial/assert.cuh>
 
 #include <cuda_runtime_api.h>
 
@@ -75,6 +77,31 @@ struct cuda_error : public std::runtime_error {
   (!!(cond)) ? static_cast<void>(0)                                           \
              : throw cuspatial::logic_error("cuSpatial failure at: " __FILE__ \
                                             ":" CUSPATIAL_STRINGIFY(__LINE__) ": " reason)
+
+/**---------------------------------------------------------------------------*
+ * @brief Macro for checking (pre-)conditions that throws an exception when
+ * a condition is violated.
+ *
+ * Example usage:
+ *
+ * @code
+ * CUSPATIAL_HOST_DEVICE_EXPECTS(lhs->dtype == rhs->dtype, "Column type mismatch");
+ * @endcode
+ *
+ * @param[in] cond Expression that evaluates to true or false
+ * @param[in] reason String literal description of the reason that cond is
+ * expected to be true
+ *
+ * (if on host)
+ * @throw cuspatial::logic_error if the condition evaluates to false.
+ * (if on device)
+ * program terminates and assertion error message is printed to stderr.
+ *---------------------------------------------------------------------------**/
+#ifndef __CUDA_ARCH__
+#define CUSPATIAL_HOST_DEVICE_EXPECTS(cond, reason) CUSPATIAL_EXPECTS(cond, reason)
+#else
+#define CUSPATIAL_HOST_DEVICE_EXPECTS(cond, reason) cuspatial_assert(cond&& reason)
+#endif
 
 /**---------------------------------------------------------------------------*
  * @brief Indicates that an erroneous code path has been taken.

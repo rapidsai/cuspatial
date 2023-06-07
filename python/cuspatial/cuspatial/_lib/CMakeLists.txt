@@ -14,22 +14,26 @@
 
 set(cython_sources
     distance.pyx
-    hausdorff.pyx
     intersection.pyx
     nearest_points.pyx
     point_in_polygon.pyx
+    points_in_range.pyx
+    pairwise_multipoint_equals_count.pyx
     pairwise_point_in_polygon.pyx
     polygon_bounding_boxes.pyx
     linestring_bounding_boxes.pyx
     quadtree.pyx
     spatial.pyx
     spatial_join.pyx
-    spatial_window.pyx
     trajectory.pyx
     types.pyx
     utils.pyx
     )
 set(linked_libraries cuspatial::cuspatial)
 
-rapids_cython_create_modules(SOURCE_FILES "${cython_sources}" LINKED_LIBRARIES "${linked_libraries}"
-                                                                               CXX)
+rapids_cython_create_modules(
+  CXX
+  ASSOCIATED_TARGETS cuspatial
+  SOURCE_FILES "${cython_sources}"
+  LINKED_LIBRARIES "${linked_libraries}"
+)
