@@ -28,9 +28,6 @@ namespace cuproj {
 
 enum class direction { DIR_FWD, DIR_INV };
 
-// B (The Bluebird)
-// auto _b = [] __device__(auto f, auto g) { return [=] __device__(auto x) { return f(g(x)); }; };
-
 template <class CoordIter,
           typename Coordinate = typename CoordIter::value_type,
           typename T          = typename Coordinate::value_type>
@@ -48,8 +45,6 @@ void transform(projection<T> proj,
   auto swap    = axis_swap<Coordinate>{};
   auto radians = to_radians<Coordinate>{};
   auto prep    = prepare_angular_coordinates<Coordinate>(utm.lam0(), T{0});
-
-  // auto pipeline = _b(radians, swap);
 
   auto pipeline = [=] __device__(auto c) { return utm(prep(radians(swap(c)))); };
 
