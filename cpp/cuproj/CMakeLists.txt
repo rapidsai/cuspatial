@@ -77,7 +77,7 @@ message(STATUS "CUPROJ: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'.")
 ###################################################################################################
 # - conda environment -----------------------------------------------------------------------------
 
-rapids_cmake_support_conda_env(conda_env MODIFY_PREFIX_PATH)
+rapids_cmake_support_conda_env(conda_env)
 
 ###################################################################################################
 # - compiler options ------------------------------------------------------------------------------
@@ -101,7 +101,7 @@ include(cmake/modules/ConfigureCUDA.cmake)
 # add third party dependencies using CPM
 rapids_cpm_init()
 # find or add cuDF
-include(cmake/thirdparty/CUPROJ_GetCUDF.cmake)
+include(cmake/thirdparty/get_cudf.cmake)
 # find or install GoogleTest and Proj
 if (CUPROJ_BUILD_TESTS)
     include(cmake/thirdparty/get_gtest.cmake)
@@ -202,7 +202,6 @@ endif()
 
 rapids_cmake_install_lib_dir(lib_dir)
 include(CPack)
-include(GNUInstallDirs)
 
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME cuproj)
 

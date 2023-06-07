@@ -51,6 +51,9 @@ option(CUDA_ENABLE_LINEINFO "Enable the -lineinfo option for nvcc (useful for cu
 # cudart can be statically linked or dynamically linked. The python ecosystem wants dynamic linking
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA toolkit runtime and libraries" OFF)
 
+option(CUSPATIAL_USE_CUDF_STATIC "Build and statically link cuDF" OFF)
+option(CUSPATIAL_EXCLUDE_CUDF_FROM_ALL "Exclude cuDF targets from cuSpatial's 'all' target" OFF)
+
 message(STATUS "CUSPATIAL: Build with NVTX support: ${USE_NVTX}")
 message(STATUS "CUSPATIAL: Configure CMake to build tests: ${BUILD_TESTS}")
 message(STATUS "CUSPATIAL: Configure CMake to build (google) benchmarks: ${BUILD_BENCHMARKS}")
@@ -101,14 +104,17 @@ include(cmake/Modules/ConfigureCUDA.cmake)
 # add third party dependencies using CPM
 rapids_cpm_init()
 # find or add cuDF
-include(cmake/thirdparty/CUSPATIAL_GetCUDF.cmake)
-# find or install GoogleTest and Proj
+include(cmake/thirdparty/get_cudf.cmake)
+# find or install GoogleTest
 if (CUSPATIAL_BUILD_TESTS)
     include(cmake/thirdparty/get_gtest.cmake)
 endif()
 
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
+
+# cuProj
+add_subdirectory(cuproj ${CMAKE_CURRENT_BINARY_DIR}/cuproj)
 
 add_library(cuspatial
     src/bounding_boxes/linestring_bounding_boxes.cu
@@ -168,9 +174,16 @@ target_include_directories(cuspatial
            PRIVATE     "$<BUILD_INTERFACE:${CUSPATIAL_SOURCE_DIR}/src>"
            INTERFACE   "$<INSTALL_INTERFACE:include>")
 
-# Add Conda library and include paths if specified
+# Add Conda library, and include paths if specified
 if(TARGET conda_env)
-    target_link_libraries(cuspatial PRIVATE "$<BUILD_INTERFACE:conda_env>")
+  target_link_libraries(cuspatial PRIVATE conda_env)
+endif()
+
+# Workaround until https://github.com/rapidsai/rapids-cmake/issues/176 is resolved
+if(NOT BUILD_SHARED_LIBS)
+  if(TARGET conda_env)
+    install(TARGETS conda_env EXPORT cuspatial-exports)
+  endif()
 endif()
 
 # Per-thread default stream
@@ -227,7 +240,6 @@ endif()
 
 rapids_cmake_install_lib_dir(lib_dir)
 include(CPack)
-include(GNUInstallDirs)
 
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME cuspatial)
 

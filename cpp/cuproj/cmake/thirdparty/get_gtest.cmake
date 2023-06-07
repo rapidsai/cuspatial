@@ -17,7 +17,7 @@ function(find_and_configure_gtest)
   include(${rapids-cmake-dir}/cpm/gtest.cmake)
 
   # Find or install GoogleTest
-  rapids_cpm_gtest(BUILD_EXPORT_SET cuspatial-testing-exports INSTALL_EXPORT_SET cuspatial-testing-exports)
+  rapids_cpm_gtest(BUILD_EXPORT_SET cuproj-testing-exports INSTALL_EXPORT_SET cuproj-testing-exports)
 
   if(GTest_ADDED)
     rapids_export(
@@ -30,7 +30,7 @@ function(find_and_configure_gtest)
 
     include("${rapids-cmake-dir}/export/find_package_root.cmake")
     rapids_export_find_package_root(
-      BUILD GTest [=[${CMAKE_CURRENT_LIST_DIR}]=] cuspatial-testing-exports
+      BUILD GTest [=[${CMAKE_CURRENT_LIST_DIR}]=] cuproj-testing-exports
     )
   endif()
 
