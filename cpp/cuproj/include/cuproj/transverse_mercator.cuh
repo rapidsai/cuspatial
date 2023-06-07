@@ -20,7 +20,7 @@
 // PROJ License from https://github.com/OSGeo/PROJ/blob/9.2/COPYING:
 //   Note however that the file it is taken from did not have a copyright notice.
 /*
-Copyright information can be found in source files.
+ Copyright information can be found in source files.
 
  --------------
 
