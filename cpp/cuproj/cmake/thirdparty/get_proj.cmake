@@ -33,13 +33,13 @@ function(find_and_configure_proj VERSION)
       BUILD PROJ
       VERSION ${PROJ_VERSION}
       EXPORT_SET cuproj-exports
-      GLOBAL_TARGETS PROJ
+      GLOBAL_TARGETS PROJ::proj
       NAMESPACE PROJ::
     )
 
     include("${rapids-cmake-dir}/export/find_package_root.cmake")
     rapids_export_find_package_root(
-      BUILD Proj [=[${CMAKE_CURRENT_LIST_DIR}]=] cuspatial-testing-exports
+      BUILD PROJ [=[${CMAKE_CURRENT_LIST_DIR}]=] cuspatial-testing-exports
     )
   endif()
 
