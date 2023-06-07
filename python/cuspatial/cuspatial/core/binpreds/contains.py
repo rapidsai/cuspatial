@@ -120,32 +120,15 @@ def _brute_force_contains_properly(points, polygons):
     return final_result
 
 
-def _pairwise_pip_result_to_point_polygon_index_pairs(pairwise_result):
-    pairwise_result.columns = [
-        "pairwise_index",
-        "point_index",
-        "result",
-    ]
-    result = pairwise_result[["point_index", "pairwise_index"]][
-        pairwise_result["result"].astype("bool")
-    ]
-    result = result.sort_values(["point_index", "pairwise_index"]).reset_index(
-        drop=True
-    )
-    return result
-
-
 def _pairwise_contains_properly(points, polygons):
-    """Compute from a series of points and a series of polygons which points
-    are properly contained within the corresponding polygon. Polygon A contains
-    Point B properly if B intersects the interior of A but not the boundary (or
-    exterior).
+    """Compute from a series of polygons and an equal-length series of points
+    which points are properly contained within the corresponding polygon.
+    Polygon A contains Point B properly if B intersects the interior of A
+    but not the boundary (or exterior).
 
     Note that polygons must be closed: the first and last vertex of each
     polygon must be the same.
 
-    This version provides support for a very large number of points with
-    an equal number of polygons.
 
     Parameters
     ----------
@@ -160,7 +143,7 @@ def _pairwise_contains_properly(points, polygons):
         A DataFrame of boolean values indicating whether each point falls
         within its corresponding polygon.
     """
-    pip_result = cpp_pairwise_point_in_polygon(
+    result_column = cpp_pairwise_point_in_polygon(
         as_column(points.points.x),
         as_column(points.points.y),
         as_column(polygons.polygons.part_offset),
@@ -168,17 +151,20 @@ def _pairwise_contains_properly(points, polygons):
         as_column(polygons.polygons.x),
         as_column(polygons.polygons.y),
     )
-    # Pairwise returns a boolean column where the point and polygon index
-    # always correspond. We can use this to create a dataframe with the
-    # same shape as the quadtree result. Finally all the False results
-    # are dropped, as quadtree doesn't report False results.
-    quadtree_shaped_result = (
-        cudf.Series(pip_result).reset_index().reset_index()
+    # Pairwise returns a boolean column with a True value for each (polygon,
+    # point) pair where the point is contained properly by the polygon. We can
+    # use this to create a dataframe with only (polygon, point) pairs that
+    # satisfy the relationship.
+    pip_result = cudf.Series(result_column, dtype="bool")
+    trues = pip_result[pip_result].index
+    true_pairs = cudf.DataFrame(
+        {
+            "pairwise_index": trues,
+            "point_index": trues,
+            "result": True,
+        }
     )
-    result = _pairwise_pip_result_to_point_polygon_index_pairs(
-        quadtree_shaped_result
-    )
-    return result
+    return true_pairs
 
 
 def contains_properly(polygons, points, mode="pairwise"):
@@ -191,9 +177,7 @@ def contains_properly(polygons, points, mode="pairwise"):
         # result, name the columns appropriately, and return the
         # two-column DataFrame.
         bitmask_result = _brute_force_contains_properly(points, polygons)
-        quadtree_shaped_result = bitmask_result.stack().reset_index()
-        result = _pairwise_pip_result_to_point_polygon_index_pairs(
-            quadtree_shaped_result
-        )
-        result.columns = ["part_index", "point_index"]
-        return result
+        bitmask_result_df = bitmask_result.stack().reset_index()
+        trues = bitmask_result_df[bitmask_result_df[0]]
+        trues.columns = ["point_index", "part_index", "result"]
+        return trues
