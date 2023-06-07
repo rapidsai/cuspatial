@@ -80,8 +80,8 @@ class ContainsProperlyPredicate(ContainsGeometryProcessor):
         2. If the lhs contains multipolygons, or `allpairs=True` is specified,
            we use quadtree because the quadtree code path already handles
            multipolygons.
-        3. Otherwise pairwise is defaulted to since the default GeoPandas
-           behavior is to use the pairwise algorithm.
+        3. Otherwise default to pairwise to match the default GeoPandas
+           behavior.
         """
         if len(lhs) <= 31:
             return "brute_force"
