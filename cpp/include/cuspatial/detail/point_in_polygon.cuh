@@ -36,10 +36,8 @@
 namespace cuspatial {
 
 /**
- * @brief
- *
- * @tparam PointRange
- * @tparam PolygonRange
+ * @brief Computes point-in-polygon result of a single point to up to 32 polygons
+ * Result is stored in an `int32_t` integer.
  */
 template <class PointRange, class PolygonRange>
 struct pip_functor {
@@ -48,15 +46,11 @@ struct pip_functor {
 
   int32_t __device__ operator()(std::size_t i)
   {
-    printf("idx: %d\n", static_cast<int>(i));
     using T          = typename PointRange::element_t;
     vec_2d<T> point  = multipoints[i][0];
     int32_t hit_mask = 0;
-    for (auto poly_idx = 0; poly_idx < multipolygons.size(); ++poly_idx) {
-      if (is_point_in_polygon(point, multipolygons[poly_idx][0]))
-        printf("in: poly_idx: %d\n", static_cast<int>(poly_idx));
+    for (auto poly_idx = 0; poly_idx < multipolygons.size(); ++poly_idx)
       hit_mask |= (is_point_in_polygon(point, multipolygons[poly_idx][0]) << poly_idx);
-    }
     return hit_mask;
   }
 };
