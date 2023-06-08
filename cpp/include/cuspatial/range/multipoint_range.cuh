@@ -91,22 +91,22 @@ class multipoint_range {
   /**
    * @brief Returns the iterator to the first multipoint in the multipoint array.
    */
-  auto multipoint_begin();
+  CUSPATIAL_HOST_DEVICE auto multipoint_begin();
 
   /**
    * @brief Returns the iterator past the last multipoint in the multipoint array.
    */
-  auto multipoint_end();
+  CUSPATIAL_HOST_DEVICE auto multipoint_end();
 
   /**
    * @brief Returns the iterator to the start of the multipoint array.
    */
-  auto begin() { return multipoint_begin(); }
+  CUSPATIAL_HOST_DEVICE auto begin() { return multipoint_begin(); }
 
   /**
    * @brief Returns the iterator past the last multipoint in the multipoint array.
    */
-  auto end() { return multipoint_end(); }
+  CUSPATIAL_HOST_DEVICE auto end() { return multipoint_end(); }
 
   /**
    * @brief Returns the iterator to the start of the underlying point array.

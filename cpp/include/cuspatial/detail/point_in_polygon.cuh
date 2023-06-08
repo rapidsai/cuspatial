@@ -28,140 +28,58 @@
 
 #include <thrust/logical.h>
 #include <thrust/memory.h>
+#include <thrust/tabulate.h>
 
 #include <iterator>
 #include <type_traits>
 
 namespace cuspatial {
-namespace detail {
 
-// Get the begin and end offsets of a polygon
-template <class OffsetIteratorA,
-          class OffsetItADiffType,
-          class OffsetType = iterator_value_type<OffsetIteratorA>>
-__device__ auto poly_begin_end(OffsetIteratorA poly_offsets_first,
-                               OffsetItADiffType const num_polys,
-                               OffsetItADiffType const num_rings,
-                               OffsetType const poly_idx)
-{
-  auto poly_idx_next    = poly_idx + 1;
-  OffsetType poly_begin = poly_offsets_first[poly_idx];
-  OffsetType poly_end = (poly_idx_next < num_polys) ? poly_offsets_first[poly_idx_next] : num_rings;
-  return std::make_pair(poly_begin, poly_end);
-}
+template <class PointRange, class PolygonRange>
+struct pip_functor {
+  PointRange points;
+  PolygonRange polygons;
 
-template <class Cart2dItA,
-          class Cart2dItB,
-          class OffsetIteratorA,
-          class OffsetIteratorB,
-          class OutputIt,
-          class Cart2dItADiffType = typename std::iterator_traits<Cart2dItA>::difference_type,
-          class Cart2dItBDiffType = typename std::iterator_traits<Cart2dItB>::difference_type,
-          class OffsetItADiffType = typename std::iterator_traits<OffsetIteratorA>::difference_type,
-          class OffsetItBDiffType = typename std::iterator_traits<OffsetIteratorB>::difference_type>
-__global__ void point_in_polygon_kernel(Cart2dItA test_points_first,
-                                        Cart2dItADiffType const num_test_points,
-                                        OffsetIteratorA poly_offsets_first,
-                                        OffsetItADiffType const num_polys,
-                                        OffsetIteratorB ring_offsets_first,
-                                        OffsetItBDiffType const num_rings,
-                                        Cart2dItB poly_points_first,
-                                        Cart2dItBDiffType const num_poly_points,
-                                        OutputIt result)
-{
-  using Cart2d     = iterator_value_type<Cart2dItA>;
-  using OffsetType = iterator_value_type<OffsetIteratorA>;
-
-  auto idx = blockIdx.x * blockDim.x + threadIdx.x;
-
-  if (idx >= num_test_points) { return; }
-
-  int32_t hit_mask = 0;
-
-  Cart2d const test_point = test_points_first[idx];
-
-  // for each polygon
-  for (auto poly_idx = 0; poly_idx < num_polys; poly_idx++) {
-    auto [poly_begin, poly_end] =
-      poly_begin_end(poly_offsets_first, num_polys, num_rings, poly_idx);
-
-    bool const point_is_within = is_point_in_polygon(test_point,
-                                                     poly_begin,
-                                                     poly_end,
-                                                     ring_offsets_first,
-                                                     num_rings,
-                                                     poly_points_first,
-                                                     num_poly_points);
-
-    hit_mask |= point_is_within << poly_idx;
+  int32_t __device__ operator()(std::size_t i)
+  {
+    auto point       = points[i][0];
+    int32_t hit_mask = 0;
+    for (auto poly_idx = 0; poly_idx < polygons[i].num_polygons(); ++poly_idx)
+      hit_mask |= (is_point_in_polygon(point, polygons[i][poly_idx]) << poly_idx);
+    return hit_mask;
   }
-  result[idx] = hit_mask;
-}
+};
 
-}  // namespace detail
+template <class PointRange, class PolygonRange>
+pip_functor(PointRange, PolygonRange) -> pip_functor<PointRange, PolygonRange>;
 
-template <class Cart2dItA,
-          class Cart2dItB,
-          class OffsetIteratorA,
-          class OffsetIteratorB,
-          class OutputIt>
-OutputIt point_in_polygon(Cart2dItA test_points_first,
-                          Cart2dItA test_points_last,
-                          OffsetIteratorA polygon_offsets_first,
-                          OffsetIteratorA polygon_offsets_last,
-                          OffsetIteratorB poly_ring_offsets_first,
-                          OffsetIteratorB poly_ring_offsets_last,
-                          Cart2dItB polygon_points_first,
-                          Cart2dItB polygon_points_last,
+template <class PointRange, class PolygonRange, class OutputIt>
+OutputIt point_in_polygon(PointRange points,
+                          PolygonRange polygons,
                           OutputIt output,
                           rmm::cuda_stream_view stream)
 {
-  using T = iterator_vec_base_type<Cart2dItA>;
+  using T = typename PointRange::element_t;
 
-  static_assert(is_same_floating_point<T, iterator_vec_base_type<Cart2dItB>>(),
-                "Underlying type of Cart2dItA and Cart2dItB must be the same floating point type");
-  static_assert(
-    is_same<vec_2d<T>, iterator_value_type<Cart2dItA>, iterator_value_type<Cart2dItB>>(),
-    "Inputs must be cuspatial::vec_2d");
+  static_assert(points.contains_only_single_geometry() && polygons.contains_only_single_geometry(),
+                "pairwise_point_in_polygon only supports single-point to single-polygon tests.");
 
-  static_assert(cuspatial::is_integral<iterator_value_type<OffsetIteratorA>,
-                                       iterator_value_type<OffsetIteratorB>>(),
-                "OffsetIterators must point to integral type.");
+  static_assert(is_same_floating_point<T, typename PolygonRange::element_t>(),
+                "points and polygons must have the same coordinate type.");
 
   static_assert(std::is_same_v<iterator_value_type<OutputIt>, int32_t>,
                 "OutputIt must point to 32 bit integer type.");
 
-  auto const num_test_points = std::distance(test_points_first, test_points_last);
+  CUSPATIAL_EXPECTS(points.size() == polygons.size(),
+                    "Must pass in an equal number of (multi)points and (multi)polygons");
 
-  if (num_test_points > 0) {
-    auto const num_polys       = std::distance(polygon_offsets_first, polygon_offsets_last) - 1;
-    auto const num_rings       = std::distance(poly_ring_offsets_first, poly_ring_offsets_last) - 1;
-    auto const num_poly_points = std::distance(polygon_points_first, polygon_points_last);
+  CUSPATIAL_EXPECTS(polygons.size() <= std::numeric_limits<int32_t>::digits,
+                    "Number of polygons cannot exceed 31");
 
-    CUSPATIAL_EXPECTS_VALID_POLYGON_SIZES(
-      num_poly_points,
-      std::distance(polygon_offsets_first, polygon_offsets_last),
-      std::distance(poly_ring_offsets_first, poly_ring_offsets_last));
+  thrust::tabulate(
+    rmm::exec_policy(stream), output, output + points.size(), pip_functor{points, polygons});
 
-    CUSPATIAL_EXPECTS(num_polys <= std::numeric_limits<int32_t>::digits,
-                      "Number of polygons cannot exceed 31");
-
-    auto [threads_per_block, num_blocks] = grid_1d(num_test_points);
-
-    detail::point_in_polygon_kernel<<<num_blocks, threads_per_block, 0, stream.value()>>>(
-      test_points_first,
-      num_test_points,
-      polygon_offsets_first,
-      num_polys,
-      poly_ring_offsets_first,
-      num_rings,
-      polygon_points_first,
-      num_poly_points,
-      output);
-    CUSPATIAL_CHECK_CUDA(stream.value());
-  }
-
-  return output + num_test_points;
+  return output + points.size();
 }
 
 template <class PointRange, class PolygonRange, class OutputIt>

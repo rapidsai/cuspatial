@@ -38,6 +38,7 @@ struct to_multipoint_functor {
   GeometryIterator _offset_iter;
   VecIterator _points_begin;
 
+  CUSPATIAL_HOST_DEVICE
   to_multipoint_functor(GeometryIterator offset_iter, VecIterator points_begin)
     : _offset_iter(offset_iter), _points_begin(points_begin)
   {
@@ -92,14 +93,14 @@ CUSPATIAL_HOST_DEVICE auto multipoint_range<GeometryIterator, VecIterator>::num_
 }
 
 template <typename GeometryIterator, typename VecIterator>
-auto multipoint_range<GeometryIterator, VecIterator>::multipoint_begin()
+CUSPATIAL_HOST_DEVICE auto multipoint_range<GeometryIterator, VecIterator>::multipoint_begin()
 {
   return cuspatial::detail::make_counting_transform_iterator(
     0, detail::to_multipoint_functor(_geometry_begin, _points_begin));
 }
 
 template <typename GeometryIterator, typename VecIterator>
-auto multipoint_range<GeometryIterator, VecIterator>::multipoint_end()
+CUSPATIAL_HOST_DEVICE auto multipoint_range<GeometryIterator, VecIterator>::multipoint_end()
 {
   return multipoint_begin() + size();
 }
@@ -133,8 +134,7 @@ template <typename IndexType>
 CUSPATIAL_HOST_DEVICE auto multipoint_range<GeometryIterator, VecIterator>::operator[](
   IndexType idx)
 {
-  return multipoint_ref<VecIterator>{_points_begin + _geometry_begin[idx],
-                                     _points_begin + _geometry_begin[idx + 1]};
+  return *(thrust::next(begin(), idx));
 }
 
 template <typename GeometryIterator, typename VecIterator>

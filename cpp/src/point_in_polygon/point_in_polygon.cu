@@ -90,16 +90,7 @@ struct point_in_polygon_functor {
       cuspatial::pairwise_point_in_polygon(
         multipoints_range, multipolygon_range, results_begin, stream);
     } else {
-      cuspatial::point_in_polygon(points_begin,
-                                  points_begin + test_points_x.size(),
-                                  polygon_offsets_begin,
-                                  polygon_offsets_begin + poly_offsets.size(),
-                                  ring_offsets_begin,
-                                  ring_offsets_begin + poly_ring_offsets.size(),
-                                  polygon_points_begin,
-                                  polygon_points_begin + poly_points_x.size(),
-                                  results_begin,
-                                  stream);
+      cuspatial::point_in_polygon(multipoints_range, multipolygon_range, results_begin, stream);
     }
 
     return results;
