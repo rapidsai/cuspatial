@@ -21,7 +21,7 @@ on:
       - opened
       
 env:
-  GITHUB_TOKEN: ${{ secrets.ADD_TO_PROJECT_GITHUB_TOKEN }}
+  GITHUB_TOKEN: ${{ secrets.ISSUE_PR_WRITE_GITHUB_TOKEN }}
 
 jobs:
   Label-Issue:
