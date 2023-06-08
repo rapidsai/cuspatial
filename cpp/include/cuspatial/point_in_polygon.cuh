@@ -114,22 +114,24 @@ OutputIt point_in_polygon(Cart2dItA test_points_first,
                           rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
 /**
- * @brief Given (multipoint, multipolygon) pairs, tests whether any of the multipoint in the pair
- * is in any of the multipolygon in the pair.
+ * @brief Given (point, polygon) pairs, tests whether the point in the pair is in the polygon in the
+ * pair.
  *
- * For each of the point in the multipoint, test if the point is in any of the polygon in the multipolygon.
- * Points on the edges of the polygon are not considered to be inside.
+ * Note that the input must be a single geometry column, that is a (multi*)geometry_range
+ * initialized with counting iterator as the geometry offsets iterator.
  *
  * Each input point will map to one `int32_t` element in the output.
  *
- * @tparam MultiPointRange an instance of template type `multipoint_range`
- * @tparam MultiPolygonRange an instance of template type `multipolygon_range`
- * @tparam OutputIt iterator type for output array. Must meet
- * the requirements of [LegacyRandomAccessIterator][LinkLRAI], be device-accessible, mutable and
- * iterate on `int32_t` type.
+ * @tparam PointRange an instance of template type `multipoint_range`, where
+ * `GeometryIterator` must be a counting iterator
+ * @tparam PolygonRange an instance of template type `multipolygon_range`, where
+ * `GeometryIterator` must be a counting iterator
+ * @tparam OutputIt iterator type for output array. Must meet the requirements of
+ * [LegacyRandomAccessIterator][LinkLRAI], be device-accessible, mutable and iterate on `int32_t`
+ * type.
  *
- * @param multipoints Range of multipoints, one per computed point-in-polygon pair
- * @param multipolygons Range of multipolygons, one per comptued point-in-polygon pair
+ * @param points Range of points, one per computed point-in-polygon pair,
+ * @param polygons Range of polygons, one per comptued point-in-polygon pair
  * @param output begin iterator to the output buffer
  * @param stream The CUDA stream to use for kernel launches.
  * @return iterator to one past the last element in the output buffer
@@ -157,9 +159,9 @@ OutputIt point_in_polygon(Cart2dItA test_points_first,
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
  */
-template <typename MultiPointRange, typename MultiPolygonRange, typename OutputIt>
-OutputIt pairwise_point_in_polygon(MultiPointRange points,
-                                   MultiPolygonRange polygons,
+template <typename PointRange, typename PolygonRange, typename OutputIt>
+OutputIt pairwise_point_in_polygon(PointRange points,
+                                   PolygonRange polygons,
                                    OutputIt results,
                                    rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 

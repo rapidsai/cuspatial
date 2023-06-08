@@ -72,6 +72,14 @@ CUSPATIAL_HOST_DEVICE multipoint_range<GeometryIterator, VecIterator>::multipoin
 }
 
 template <typename GeometryIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE constexpr bool
+multipoint_range<GeometryIterator, VecIterator>::contains_only_single_geometry()
+{
+  using index_t = multipoint_range<GeometryIterator, VecIterator>::index_t;
+  return std::is_same_v<GeometryIterator, thrust::counting_iterator<index_t>>;
+}
+
+template <typename GeometryIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto multipoint_range<GeometryIterator, VecIterator>::num_multipoints()
 {
   return thrust::distance(_geometry_begin, _geometry_end) - 1;

@@ -164,38 +164,35 @@ OutputIt point_in_polygon(Cart2dItA test_points_first,
   return output + num_test_points;
 }
 
-template <class MultiPointRange, class MultiPolygonRange, class OutputIt>
-OutputIt pairwise_point_in_polygon(MultiPointRange multipoints,
-                                   MultiPolygonRange multipolygons,
+template <class PointRange, class PolygonRange, class OutputIt>
+OutputIt pairwise_point_in_polygon(PointRange points,
+                                   PolygonRange polygons,
                                    OutputIt output,
                                    rmm::cuda_stream_view stream)
 {
-  using T = typename MultiPointRange::element_t;
+  using T = typename PointRange::element_t;
 
-  static_assert(is_same_floating_point<T, typename MultiPolygonRange::element_t>(),
+  static_assert(points.contains_only_single_geometry() && polygons.contains_only_single_geometry(),
+                "pairwise_point_in_polygon only supports single-point to single-polygon tests.");
+
+  static_assert(is_same_floating_point<T, typename PolygonRange::element_t>(),
                 "points and polygons must have the same coordinate type.");
 
   static_assert(std::is_same_v<iterator_value_type<OutputIt>, int32_t>,
                 "OutputIt must point to 32 bit integer type.");
 
-  CUSPATIAL_EXPECTS(multipoints.size() == multipolygons.size(),
+  CUSPATIAL_EXPECTS(points.size() == polygons.size(),
                     "Must pass in an equal number of (multi)points and (multi)polygons");
 
-  return thrust::transform(
-    rmm::exec_policy(stream),
-    multipoints.begin(),
-    multipoints.end(),
-    multipolygons.begin(),
-    output,
-    [] __device__(auto multipoint, auto multipolygon) {
-      return thrust::any_of(
-        thrust::seq, multipolygon.begin(), multipolygon.end(), [multipoint] __device__(auto& poly) {
-          return thrust::any_of(
-            thrust::seq, multipoint.begin(), multipoint.end(), [poly] __device__(auto point) {
-              return is_point_in_polygon(point, poly);
-            });
-        });
-    });
+  return thrust::transform(rmm::exec_policy(stream),
+                           points.begin(),
+                           points.end(),
+                           polygons.begin(),
+                           output,
+                           [] __device__(auto multipoint, auto multipolygon) {
+                             return is_point_in_polygon(static_cast<vec_2d<T>>(multipoint[0]),
+                                                        multipolygon[0]);
+                           });
 }
 
 }  // namespace cuspatial
