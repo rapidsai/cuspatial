@@ -67,11 +67,8 @@
 
 #pragma once
 
-#include <cuproj/axis_swap.cuh>
 #include <cuproj/ellipsoid.hpp>
-#include <cuproj/prepare_angular_coordinates.cuh>
 #include <cuproj/projection.cuh>
-#include <cuproj/to_radians.cuh>
 
 #include <thrust/iterator/transform_iterator.h>
 
@@ -148,14 +145,16 @@ static __host__ __device__ T clens(const T* a, int size, T arg_r)
 }
 
 template <typename Coordinate, typename T = typename Coordinate::value_type>
-struct transverse_mercator {
+struct transverse_mercator : operation<Coordinate> {
   static constexpr int ETMERC_ORDER = 6;
 
-  transverse_mercator(ellipsoid<T> ell, int zone) : ellipsoid_(ell) { setup(zone); }
+  transverse_mercator(projection<Coordinate> const& p, int zone) : proj_(p) { setup(zone); }
 
-  __host__ __device__ Coordinate operator()(Coordinate coord) const
+  __host__ __device__ Coordinate operator()(Coordinate const& coord) const override
   {
-    Coordinate xy{0.0, 0.0};
+    // so we don't have to qualify the class name everywhere.
+    auto const& params_    = proj_.tmerc_params_;
+    auto const& ellipsoid_ = proj_.ellipsoid_;
 
     /* ell. LAT, LNG -> Gaussian LAT, LNG */
     T Cn = gatg(params_.cbg, ETMERC_ORDER, coord.y, cos(2 * coord.y), sin(2 * coord.y));
@@ -228,56 +227,44 @@ struct transverse_mercator {
     T dCn, dCe;
     Cn +=
       clenS(params_.gtu, ETMERC_ORDER, sin_arg_r, cos_arg_r, sinh_arg_i, cosh_arg_i, &dCn, &dCe);
+
     Ce += dCe;
     // CUPROJ_EXPECTS(fabs(Ce) <= 2.623395162778, "Coordinate transform outside projection domain");
+    Coordinate xy{0.0, 0.0};
     xy.y = params_.Qn * Cn + params_.Zb;  // Northing
     xy.x = params_.Qn * Ce;               // Easting
 
     xy.x *= ellipsoid_.a;
     xy.y *= ellipsoid_.a;
 
-    xy.x = /*P->fr_meter **/ (xy.x + params_.x0);
-    xy.y = /*P->fr_meter **/ (xy.y + params_.y0);
+    xy.x = /*P->fr_meter **/ (xy.x + proj_.x0);
+    xy.y = /*P->fr_meter **/ (xy.y + proj_.y0);
 
     return xy;
   }
 
-  T lam0() const { return params_.lam0; }
+  T lam0() const { return proj_.lam0_; }
+  projection<Coordinate> proj_;
 
  private:
-  ellipsoid<T> ellipsoid_{};
-
-  struct params {
-    T k0;          // scaling
-    T lam0 = 0.0;  // central meridian
-    T phi0 = 0.0;  // central parallel
-    T x0   = 0.0;  // false easting
-    T y0   = 0.0;  // false northing
-
-    T Qn;     /* Merid. quad., scaled to the projection */
-    T Zb;     /* Radius vector in polar coord. systems  */
-    T cgb[6]; /* Constants for Gauss -> Geo lat */
-    T cbg[6]; /* Constants for Geo lat -> Gauss */
-    T utg[6]; /* Constants for transv. merc. -> geo */
-    T gtu[6]; /* Constants for geo -> transv. merc. */
-  };
-
-  params params_;
-
   void setup(int zone)
   {
+    // so we don't have to qualify the class name everywhere.
+    auto& params_    = proj_.tmerc_params_;
+    auto& ellipsoid_ = proj_.ellipsoid_;
+
     assert(ellipsoid_.es > 0);
 
-    params_.x0 = static_cast<T>(500000);
-    params_.y0 = static_cast<T>(10000000);
+    proj_.x0 = static_cast<T>(500000);
+    proj_.y0 = static_cast<T>(10000000);
 
     if (zone > 0 && zone <= 60) --zone;
-    params_.lam0 = (zone + .5) * M_PI / 30. - M_PI;
-    params_.k0   = T{0.9996};
-    params_.phi0 = T{0};
+    proj_.lam0_ = (zone + .5) * M_PI / 30. - M_PI;
+    proj_.k0    = T{0.9996};
+    proj_.phi0  = T{0};
 
     /* third flattening */
-    const T n = ellipsoid_.n;
+    const T n = proj_.ellipsoid_.n;
     T np      = n;
 
     /* COEF. OF TRIG SERIES GEO <-> GAUSS */
@@ -316,7 +303,7 @@ struct transverse_mercator {
     /* Transverse Mercator (UTM, ITM, etc) */
     np = n * n;
     /* Norm. mer. quad, K&W p.50 (96), p.19 (38b), p.5 (2) */
-    params_.Qn = params_.k0 / (1 + n) * (1 + np * (1 / 4.0 + np * (1 / 64.0 + np / 256.0)));
+    params_.Qn = proj_.k0 / (1 + n) * (1 + np * (1 / 4.0 + np * (1 / 64.0 + np / 256.0)));
     /* coef of trig series */
     /* utg := ell. N, E -> sph. N, E,  KW p194 (65) */
     /* gtu := sph. N, E -> ell. N, E,  KW p196 (69) */
@@ -350,7 +337,7 @@ struct transverse_mercator {
 
     /* Gaussian latitude value of the origin latitude */
     const T Z =
-      gatg(params_.cbg, ETMERC_ORDER, params_.phi0, cos(2 * params_.phi0), sin(2 * params_.phi0));
+      gatg(params_.cbg, ETMERC_ORDER, proj_.phi0, cos(2 * proj_.phi0), sin(2 * proj_.phi0));
 
     /* Origin northing minus true northing at the origin latitude */
     /* i.e. true northing = N - P->Zb                         */

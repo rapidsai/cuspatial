@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include <cuproj/axis_swap.cuh>
+#include <cuproj/clamp_angular_coordinates.cuh>
+#include <cuproj/degrees_to_radians.cuh>
 #include <cuproj/projection.cuh>
 #include <cuproj/transverse_mercator.cuh>
 
@@ -41,12 +44,14 @@ void transform(projection<T> proj,
   // currently only supports forward UTM transform from WGS84
   assert(dir == direction::DIR_FWD);
 
-  auto utm     = transverse_mercator<Coordinate>{proj.ellipsoid_, proj.utm_zone_};
+  auto utm     = transverse_mercator<Coordinate>{proj, proj.utm_zone_};
   auto swap    = axis_swap<Coordinate>{};
-  auto radians = to_radians<Coordinate>{};
-  auto prep    = prepare_angular_coordinates<Coordinate>(utm.lam0(), T{0});
+  auto radians = degrees_to_radians<Coordinate>{};
+  // TODO: won't compile with T{0} for second argument for some reason. Check if compiler bug.
+  auto clamp =
+    clamp_angular_coordinates<Coordinate>(utm.lam0(), typename Coordinate::value_type{0});
 
-  auto pipeline = [=] __device__(auto c) { return utm(prep(radians(swap(c)))); };
+  auto pipeline = [=] __device__(auto c) { return utm(clamp(radians(swap(c)))); };
 
   thrust::transform(rmm::exec_policy(stream), first, last, result, pipeline);
 }

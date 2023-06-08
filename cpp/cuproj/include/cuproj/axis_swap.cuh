@@ -16,13 +16,13 @@
 
 #pragma once
 
-#include <thrust/iterator/transform_iterator.h>
+#include <cuproj/projection.cuh>
 
 namespace cuproj {
 
 template <typename Coordinate>
-struct axis_swap {
-  __host__ __device__ Coordinate operator()(Coordinate coord) const
+struct axis_swap : operation<Coordinate> {
+  __host__ __device__ Coordinate operator()(Coordinate const& coord) const override
   {
     return Coordinate{coord.y, coord.x};
   }

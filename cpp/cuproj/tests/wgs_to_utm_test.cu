@@ -92,7 +92,7 @@ TYPED_TEST(ProjectionTest, Test_forward_one)
   thrust::device_vector<coordinate<T>> d_out(d_in.size());
   thrust::device_vector<coordinate<T>> d_expected = expected;
 
-  cuproj::projection<T> tmerc_proj{ellps, 56, 0, 0};
+  cuproj::projection<coordinate<T>> tmerc_proj{ellps, 56, 0, 0};
 
   cuproj::transform(
     tmerc_proj, d_in.begin(), d_in.end(), d_out.begin(), cuproj::direction::DIR_FWD);
@@ -175,7 +175,7 @@ TYPED_TEST(ProjectionTest, Test_forward_many)
   cuproj::ellipsoid<T> ellps{static_cast<T>(ellps_a), static_cast<T>(ellps_inv_flattening)};
 
   // create a projection object
-  cuproj::projection<T> tmerc_proj{ellps, 56};
+  cuproj::projection<coordinate<T>> tmerc_proj{ellps, 56, 0, 0};
   // create a vector of output points
   thrust::device_vector<coordinate<T>> output(input.size());
   // transform the input points to output points

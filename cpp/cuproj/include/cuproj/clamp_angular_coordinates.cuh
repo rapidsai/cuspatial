@@ -24,39 +24,41 @@
 
 namespace cuproj {
 
-template <typename Coordinate>
-struct prepare_angular_coordinates {
-  using T                         = typename Coordinate::value_type;
+template <typename Coordinate, typename T = typename Coordinate::value_type>
+struct clamp_angular_coordinates : operation<Coordinate> {
   static constexpr T EPS_LAT      = 1e-12;
   static constexpr double M_TWOPI = 6.283185307179586476925286766559005;
 
-  prepare_angular_coordinates(T lam0, T prime_meridian_offset)
+  clamp_angular_coordinates(T lam0, T prime_meridian_offset)
     : lam0_(lam0), prime_meridian_offset_(prime_meridian_offset)
   {
   }
 
-  __host__ __device__ Coordinate operator()(Coordinate coord) const
+  __host__ __device__ Coordinate operator()(Coordinate const& coord) const override
   {
     // check for latitude or longitude over-range
     T t = (coord.y < 0 ? -coord.y : coord.y) - M_PI_2;
 
+    // TODO use host-device assert
     // CUPROJ_EXPECTS(t <= EPS_LAT, "Invalid latitude");
     // CUPROJ_EXPECTS(coord.x <= 10 || coord.x >= -10, "Invalid longitude");
 
+    Coordinate xy = coord;
+
     /* Clamp latitude to -90..90 degree range */
     auto half_pi = static_cast<T>(M_PI_2);
-    coord.y      = std::clamp(coord.y, -half_pi, half_pi);
+    xy.y         = std::clamp(xy.y, -half_pi, half_pi);
 
     // Ensure longitude is in the -pi:pi range
-    coord.x = clamp_longitude(coord.x);
+    xy.x = clamp_longitude(xy.x);
 
     // Distance from central meridian, taking system zero meridian into account
-    coord.x = (coord.x - prime_meridian_offset_) - lam0_;
+    xy.x = (xy.x - prime_meridian_offset_) - lam0_;
 
     // Ensure longitude is in the -pi:pi range
-    coord.x = clamp_longitude(coord.x);
+    xy.x = clamp_longitude(xy.x);
 
-    return coord;
+    return xy;
   }
 
   T lam0_;
@@ -75,9 +77,7 @@ struct prepare_angular_coordinates {
     longitude -= M_TWOPI * floor(longitude / M_TWOPI);
 
     // adjust back to -pi..pi range
-    longitude -= M_PI;
-
-    return longitude;
+    return longitude - M_PI;
   }
 };
 
