@@ -3,7 +3,7 @@
 ## Pre-requisites
 
 - gcc >= 7.5
-- cmake >= 3.23
+- cmake >= 3.26.4
 - miniconda
 
 ## Fetch cuSpatial repository
