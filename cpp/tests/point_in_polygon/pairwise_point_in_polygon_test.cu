@@ -40,7 +40,7 @@ struct PairwisePointInPolygonTest : public BaseFixture {
                 std::initializer_list<int> polygon_offsets,
                 std::initializer_list<int> ring_offsets,
                 std::initializer_list<vec_2d<T>> polygon_points,
-                std::initializer_list<int32_t> expected)
+                std::initializer_list<uint8_t> expected)
   {
     auto d_points          = make_device_vector<vec_2d<T>>(points);
     auto d_polygon_offsets = make_device_vector<int>(polygon_offsets);
@@ -60,7 +60,7 @@ struct PairwisePointInPolygonTest : public BaseFixture {
 
     auto d_expected = make_device_vector(expected);
 
-    auto got = rmm::device_uvector<int32_t>(points.size(), stream());
+    auto got = rmm::device_uvector<uint8_t>(points.size(), stream());
 
     auto ret = pairwise_point_in_polygon(mpoints, mpolys, got.begin(), stream());
 
@@ -98,7 +98,7 @@ TYPED_TEST(PairwisePointInPolygonTest, OnePolygonOneRing)
                                                poly_point.size(),
                                                poly_point.begin());
 
-  auto got = rmm::device_vector<int32_t>(1);
+  auto got = rmm::device_vector<uint8_t>(1);
   auto expected =
     cuspatial::test::make_host_vector({false, false, false, false, true, true, true, true});
 
@@ -109,7 +109,7 @@ TYPED_TEST(PairwisePointInPolygonTest, OnePolygonOneRing)
       d_point.size(), thrust::make_counting_iterator(0), d_point.size(), d_point.begin());
 
     auto ret = pairwise_point_in_polygon(point_range, polygon_range, got.begin(), this->stream());
-    EXPECT_EQ(got, std::vector<int>({expected[i]}));
+    EXPECT_EQ(got, std::vector<uint8_t>({expected[i]}));
     EXPECT_EQ(ret, got.end());
   }
 }
@@ -148,8 +148,8 @@ TYPED_TEST(PairwisePointInPolygonTest, TwoPolygonsOneRingEach)
                                                poly_point.size(),
                                                poly_point.begin());
 
-  auto got      = rmm::device_vector<int32_t>(2);
-  auto expected = std::vector<int>({false, false, false, false, true, true, true, true});
+  auto got      = rmm::device_vector<uint8_t>(2);
+  auto expected = std::vector<uint8_t>({false, false, false, false, true, true, true, true});
 
   for (size_t i = 0; i < point_list.size() / 2; i = i + 2) {
     auto points = make_device_vector<vec_2d<T>>(
@@ -159,7 +159,7 @@ TYPED_TEST(PairwisePointInPolygonTest, TwoPolygonsOneRingEach)
 
     auto ret = pairwise_point_in_polygon(points_range, polygon_range, got.begin(), this->stream());
 
-    EXPECT_EQ(got, std::vector<int>({expected[i], expected[i + 1]}));
+    EXPECT_EQ(got, std::vector<uint8_t>({expected[i], expected[i + 1]}));
     EXPECT_EQ(ret, got.end());
   }
 }
@@ -193,10 +193,10 @@ TYPED_TEST(PairwisePointInPolygonTest, OnePolygonTwoRings)
                                                poly_point.size(),
                                                poly_point.begin());
 
-  auto expected = std::vector<int>{0b0, 0b0, 0b1, 0b0, 0b1};
+  auto expected = std::vector<uint8_t>{0b0, 0b0, 0b1, 0b0, 0b1};
 
   for (size_t i = 0; i < point_list.size(); ++i) {
-    auto got = rmm::device_vector<int32_t>(1);
+    auto got = rmm::device_vector<uint8_t>(1);
 
     auto point        = make_device_vector<vec_2d<T>>({{point_list[i][0], point_list[i][1]}});
     auto points_range = make_multipoint_range(
@@ -204,7 +204,7 @@ TYPED_TEST(PairwisePointInPolygonTest, OnePolygonTwoRings)
 
     auto ret = pairwise_point_in_polygon(points_range, polygon_range, got.begin(), this->stream());
 
-    EXPECT_EQ(got, std::vector<int>{expected[i]});
+    EXPECT_EQ(got, std::vector<uint8_t>{expected[i]});
     EXPECT_EQ(ret, got.end());
   }
 }
@@ -313,9 +313,9 @@ TYPED_TEST(PairwisePointInPolygonTest, 32PolygonSupport)
                                                 num_poly_points,
                                                 poly_point_iter);
 
-  auto expected = std::vector<int>({1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-                                    1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0});
-  auto got      = rmm::device_vector<int32_t>(test_point.size());
+  auto expected = std::vector<uint8_t>({1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
+                                        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0});
+  auto got      = rmm::device_vector<uint8_t>(test_point.size());
 
   auto ret = pairwise_point_in_polygon(points_range, polygons_range, got.begin(), this->stream());
 
@@ -347,7 +347,7 @@ TEST_F(PairwisePointInPolygonErrorTest, InsufficientPoints)
                                                 poly_point.size(),
                                                 poly_point.begin());
 
-  auto got = rmm::device_vector<int32_t>(test_point.size());
+  auto got = rmm::device_vector<uint8_t>(test_point.size());
 
   EXPECT_THROW(pairwise_point_in_polygon(points_range, polygons_range, got.begin(), this->stream()),
                cuspatial::logic_error);
@@ -376,7 +376,7 @@ TEST_F(PairwisePointInPolygonErrorTest, InsufficientPolyOffsets)
                                                 poly_point.size(),
                                                 poly_point.begin());
 
-  auto got = rmm::device_vector<int32_t>(test_point.size());
+  auto got = rmm::device_vector<uint8_t>(test_point.size());
 
   EXPECT_THROW(pairwise_point_in_polygon(points_range, polygons_range, got.begin(), this->stream()),
                cuspatial::logic_error);

@@ -98,8 +98,8 @@ OutputIt pairwise_point_in_polygon(PointRange points,
   static_assert(is_same_floating_point<T, typename PolygonRange::element_t>(),
                 "points and polygons must have the same coordinate type.");
 
-  static_assert(std::is_same_v<iterator_value_type<OutputIt>, int32_t>,
-                "OutputIt must point to 32 bit integer type.");
+  static_assert(std::is_same_v<iterator_value_type<OutputIt>, uint8_t>,
+                "OutputIt must be iterator to a uint8_t range.");
 
   CUSPATIAL_EXPECTS(points.size() == polygons.size(),
                     "Must pass in an equal number of (multi)points and (multi)polygons");

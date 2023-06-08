@@ -59,7 +59,7 @@ struct point_in_polygon_functor {
                                            rmm::mr::device_memory_resource* mr)
   {
     auto size = test_points_x.size();
-    auto tid  = cudf::type_to_id<int32_t>();
+    auto tid  = pairwise ? cudf::type_to_id<uint8_t>() : cudf::type_to_id<int32_t>();
     auto type = cudf::data_type{tid};
     auto results =
       cudf::make_fixed_width_column(type, size, cudf::mask_state::UNALLOCATED, stream, mr);
@@ -72,7 +72,6 @@ struct point_in_polygon_functor {
     auto ring_offsets_begin    = poly_ring_offsets.begin<cudf::size_type>();
     auto polygon_points_begin =
       cuspatial::make_vec_2d_iterator(poly_points_x.begin<T>(), poly_points_y.begin<T>());
-    auto results_begin = results->mutable_view().begin<int32_t>();
 
     auto multipoints_range =
       make_multipoint_range(size, thrust::make_counting_iterator(0), size, points_begin);
@@ -87,9 +86,11 @@ struct point_in_polygon_functor {
                                                       polygon_points_begin);
 
     if (pairwise) {
+      auto results_begin = results->mutable_view().begin<uint8_t>();
       cuspatial::pairwise_point_in_polygon(
         multipoints_range, multipolygon_range, results_begin, stream);
     } else {
+      auto results_begin = results->mutable_view().begin<int32_t>();
       cuspatial::point_in_polygon(multipoints_range, multipolygon_range, results_begin, stream);
     }
 

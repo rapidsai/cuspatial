@@ -88,7 +88,7 @@ OutputIt point_in_polygon(PointRange points,
  * Note that the input must be a single geometry column, that is a (multi*)geometry_range
  * initialized with counting iterator as the geometry offsets iterator.
  *
- * Each input point will map to one `int32_t` element in the output.
+ * Each input point will map to one `uint8_t` element in the output.
  *
  * @tparam PointRange an instance of template type `multipoint_range`, where
  * `GeometryIterator` must be a counting iterator
@@ -122,7 +122,7 @@ OutputIt point_in_polygon(PointRange points,
  *        +-----------+   +------------------------+
  * ```
  *
- * @pre Output iterator must be mutable and iterate on int32_t type.
+ * @pre Output iterator must be mutable and iterate on uint8_t type.
  *
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
