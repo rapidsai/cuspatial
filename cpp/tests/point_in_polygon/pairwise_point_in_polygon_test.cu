@@ -42,33 +42,21 @@ struct PairwisePointInPolygonTest : public BaseFixture {
                 std::initializer_list<vec_2d<T>> polygon_points,
                 std::initializer_list<int32_t> expected)
   {
-    auto d_points          = rmm::device_uvector<vec_2d<T>>(points.size(), stream());
-    auto d_polygon_offsets = rmm::device_uvector<int>(polygon_offsets.size(), stream());
-    auto d_ring_offsets    = rmm::device_uvector<int>(ring_offsets.size(), stream());
-    auto d_polygon_points  = rmm::device_uvector<vec_2d<T>>(polygon_points.size(), stream());
-
-    thrust::copy(rmm::exec_policy(stream()), points.begin(), points.end(), d_points.begin());
-    thrust::copy(rmm::exec_policy(stream()),
-                 polygon_offsets.begin(),
-                 polygon_offsets.end(),
-                 d_polygon_offsets.begin());
-    thrust::copy(
-      rmm::exec_policy(stream()), ring_offsets.begin(), ring_offsets.end(), d_ring_offsets.begin());
-    thrust::copy(rmm::exec_policy(stream()),
-                 polygon_points.begin(),
-                 polygon_points.end(),
-                 d_polygon_points.begin());
+    auto d_points          = make_device_vector<vec_2d<T>>(points);
+    auto d_polygon_offsets = make_device_vector<int>(polygon_offsets);
+    auto d_ring_offsets    = make_device_vector<int>(ring_offsets);
+    auto d_polygon_points  = make_device_vector<vec_2d<T>>(polygon_points);
 
     auto mpoints = make_multipoint_range(
       d_points.size(), thrust::make_counting_iterator(0), d_points.size(), d_points.begin());
     auto mpolys = make_multipolygon_range(polygon_offsets.size() - 1,
                                           thrust::make_counting_iterator(0),
-                                          polygon_offsets.size() - 1,
-                                          polygon_offsets.begin(),
-                                          ring_offsets.size() - 1,
-                                          ring_offsets.begin(),
-                                          polygon_points.size(),
-                                          polygon_points.begin());
+                                          d_polygon_offsets.size() - 1,
+                                          d_polygon_offsets.begin(),
+                                          d_ring_offsets.size() - 1,
+                                          d_ring_offsets.begin(),
+                                          d_polygon_points.size(),
+                                          d_polygon_points.begin());
 
     auto d_expected = make_device_vector(expected);
 
@@ -181,7 +169,9 @@ TYPED_TEST(PairwisePointInPolygonTest, OnePolygonTwoRings)
   using T = TypeParam;
   auto point_list =
     std::vector<std::vector<T>>{{0.0, 0.0}, {-0.4, 0.0}, {-0.6, 0.0}, {0.0, 0.4}, {0.0, -0.6}};
-  auto poly_offsets      = make_device_vector({0, 1});
+
+  auto poly_offsets      = make_device_vector({0, 2});
+  auto num_polys         = poly_offsets.size() - 1;
   auto poly_ring_offsets = make_device_vector({0, 5, 10});
   auto poly_point        = make_device_vector<vec_2d<T>>({{-1.0, -1.0},
                                                           {1.0, -1.0},
@@ -194,21 +184,21 @@ TYPED_TEST(PairwisePointInPolygonTest, OnePolygonTwoRings)
                                                           {0.5, -0.5},
                                                           {-0.5, -0.5}});
 
-  auto polygon_range = make_multipolygon_range(poly_offsets.size() - 1,
+  auto polygon_range = make_multipolygon_range(num_polys,
                                                thrust::make_counting_iterator(0),
-                                               poly_offsets.size() - 1,
+                                               num_polys,
                                                poly_offsets.begin(),
                                                poly_ring_offsets.size() - 1,
                                                poly_ring_offsets.begin(),
                                                poly_point.size(),
                                                poly_point.begin());
 
-  auto got      = rmm::device_vector<int32_t>(1);
   auto expected = std::vector<int>{0b0, 0b0, 0b1, 0b0, 0b1};
 
   for (size_t i = 0; i < point_list.size(); ++i) {
-    auto point = make_device_vector<vec_2d<T>>({{point_list[i][0], point_list[i][1]}});
+    auto got = rmm::device_vector<int32_t>(1);
 
+    auto point        = make_device_vector<vec_2d<T>>({{point_list[i][0], point_list[i][1]}});
     auto points_range = make_multipoint_range(
       point.size(), thrust::make_counting_iterator(0), point.size(), point.begin());
 
