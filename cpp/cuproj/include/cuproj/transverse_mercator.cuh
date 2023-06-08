@@ -148,7 +148,7 @@ template <typename Coordinate, typename T = typename Coordinate::value_type>
 struct transverse_mercator : operation<Coordinate> {
   static constexpr int ETMERC_ORDER = 6;
 
-  transverse_mercator(projection<Coordinate> const& p, int zone) : proj_(p) { setup(zone); }
+  transverse_mercator(projection<Coordinate> const& p) : proj_(p) { setup(p.utm_zone_); }
 
   __host__ __device__ Coordinate operator()(Coordinate const& coord) const override
   {

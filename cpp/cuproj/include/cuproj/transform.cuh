@@ -44,7 +44,7 @@ void transform(projection<T> proj,
   // currently only supports forward UTM transform from WGS84
   assert(dir == direction::DIR_FWD);
 
-  auto utm     = transverse_mercator<Coordinate>{proj, proj.utm_zone_};
+  auto utm     = transverse_mercator<Coordinate>{proj};
   auto swap    = axis_swap<Coordinate>{};
   auto radians = degrees_to_radians<Coordinate>{};
   // TODO: won't compile with T{0} for second argument for some reason. Check if compiler bug.
