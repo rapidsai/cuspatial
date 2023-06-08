@@ -7,6 +7,7 @@ import cudf
 
 import cuspatial
 from cuspatial.core._column.geocolumn import ColumnType
+from cuspatial.core._column.geometa import Feature_Enum
 
 """Column-Type objects to use for simple syntax in the `DispatchDict` contained
 in each `feature_<predicate>.py` file.  For example, instead of writing out
@@ -61,7 +62,12 @@ def _count_results_in_multipoint_geometries(point_indices, point_result):
         index=cudf.RangeIndex(len(point_indices), name="point_index"),
     ).reset_index()
     with_rhs_indices = point_result.merge(point_indices_df, on="point_index")
-    points_grouped_by_original_polygon = with_rhs_indices[
+    # Because we are doing pairwise operations, we're only interested in the
+    # results where polygon_index and rhs_index match
+    pairwise_matches = with_rhs_indices[
+        with_rhs_indices["polygon_index"] == with_rhs_indices["rhs_index"]
+    ]
+    points_grouped_by_original_polygon = pairwise_matches[
         ["point_index", "rhs_index"]
     ].drop_duplicates()
     hits = (
@@ -348,8 +354,8 @@ def _points_and_lines_to_multipoints(geoseries, offsets):
     1    MULTIPOINT (3.00000 3.00000, 4.00000, 4.0000, ...
     dtype: geometry
     """
-    points_mask = geoseries.type == "Point"
-    lines_mask = geoseries.type == "Linestring"
+    points_mask = geoseries.feature_types == Feature_Enum.POINT.value
+    lines_mask = geoseries.feature_types == Feature_Enum.LINESTRING.value
     if (points_mask + lines_mask).sum() != len(geoseries):
         raise ValueError("Geoseries must contain only points and lines")
     points = geoseries[points_mask]
