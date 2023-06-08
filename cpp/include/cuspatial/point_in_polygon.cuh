@@ -182,20 +182,10 @@ OutputIt point_in_polygon(Cart2dItA test_points_first,
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
  */
-template <class Cart2dItA,
-          class Cart2dItB,
-          class OffsetIteratorA,
-          class OffsetIteratorB,
-          class OutputIt>
-OutputIt pairwise_point_in_polygon(Cart2dItA test_points_first,
-                                   Cart2dItA test_points_last,
-                                   OffsetIteratorA polygon_offsets_first,
-                                   OffsetIteratorA polygon_offsets_last,
-                                   OffsetIteratorB poly_ring_offsets_first,
-                                   OffsetIteratorB poly_ring_offsets_last,
-                                   Cart2dItB polygon_points_first,
-                                   Cart2dItB polygon_points_last,
-                                   OutputIt output,
+template <typename MultiPointRange, typename MultiPolygonRange, typename OutputIt>
+OutputIt pairwise_point_in_polygon(MultiPointRange points,
+                                   MultiPolygonRange polygons,
+                                   OutputIt results,
                                    rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
 /**

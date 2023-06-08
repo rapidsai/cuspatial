@@ -210,6 +210,68 @@ class multipolygon_range {
 };
 
 /**
+ * @brief Create a multipoylgon_range object of from size and start iterators
+ *
+ * @tparam GeometryIteratorDiffType Integer type of the size of the geometry offset array
+ * @tparam PartIteratorDiffType Integer type of the size of the part offset array
+ * @tparam RingIteratorDiffType Integer type of the size of the ring offset array
+ * @tparam VecIteratorDiffType Integer type of the size of the point array
+ * @tparam GeometryIterator iterator type for offset array. Must meet
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
+ * @tparam PartIterator iterator type for offset array. Must meet
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
+ * @tparam RingIterator iterator type for offset array. Must meet
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
+ * @tparam VecIterator iterator type for the point array. Must meet
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
+ *
+ * @note Iterators should be device-accessible if the view is intended to be
+ * used on device.
+ *
+ * @param num_multipolygons Number of multipolygons in the array
+ * @param geometry_begin Iterator to the start of the geometry offset array
+ * @param num_polygons Number of polygons in the array
+ * @param part_begin Iterator to the start of the part offset array
+ * @param num_rings Number of rings in the array
+ * @param ring_begin Iterator to the start of the ring offset array
+ * @param num_points Number of underlying points in the multipoint array
+ * @param point_begin Iterator to the start of the points array
+ * @return range to multipolygon array
+ *
+ * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+ * "LegacyRandomAccessIterator"
+ */
+template <typename GeometryIteratorDiffType,
+          typename PartIteratorDiffType,
+          typename RingIteratorDiffType,
+          typename VecIteratorDiffType,
+          typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>
+make_multipolygon_range(GeometryIteratorDiffType num_multipolygons,
+                        GeometryIterator geometry_begin,
+                        PartIteratorDiffType num_polygons,
+                        PartIterator part_begin,
+                        RingIteratorDiffType num_rings,
+                        RingIterator ring_begin,
+                        VecIteratorDiffType num_points,
+                        VecIterator point_begin)
+{
+  return multipolygon_range{
+    geometry_begin,
+    thrust::next(geometry_begin, num_multipolygons + 1),
+    part_begin,
+    thrust::next(part_begin, num_polygons + 1),
+    ring_begin,
+    thrust::next(ring_begin, num_rings + 1),
+    point_begin,
+    thrust::next(point_begin, num_points),
+  };
+}
+
+/**
  * @brief Create a range object of multipolygon from cuspatial::geometry_column_view.
  * Specialization for polygons column.
  *

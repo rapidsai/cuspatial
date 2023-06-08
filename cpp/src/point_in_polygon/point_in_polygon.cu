@@ -18,6 +18,8 @@
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/point_in_polygon.cuh>
+#include <cuspatial/range/multipoint_range.cuh>
+#include <cuspatial/range/multipolygon_range.cuh>
 
 #include <cudf/column/column.hpp>
 #include <cudf/column/column_factories.hpp>
@@ -72,18 +74,21 @@ struct point_in_polygon_functor {
       cuspatial::make_vec_2d_iterator(poly_points_x.begin<T>(), poly_points_y.begin<T>());
     auto results_begin = results->mutable_view().begin<int32_t>();
 
-    if (pairwise) {
-      cuspatial::pairwise_point_in_polygon(points_begin,
-                                           points_begin + test_points_x.size(),
-                                           polygon_offsets_begin,
-                                           polygon_offsets_begin + poly_offsets.size(),
-                                           ring_offsets_begin,
-                                           ring_offsets_begin + poly_ring_offsets.size(),
-                                           polygon_points_begin,
-                                           polygon_points_begin + poly_points_x.size(),
-                                           results_begin,
-                                           stream);
+    auto multipoints_range =
+      make_multipoint_range(size, thrust::make_counting_iterator(0), size, points_begin);
 
+    auto multipolygon_range = make_multipolygon_range(size,
+                                                      thrust::make_counting_iterator(0),
+                                                      size,
+                                                      polygon_offsets_begin,
+                                                      poly_ring_offsets.size() - 1,
+                                                      ring_offsets_begin,
+                                                      poly_points_x.size(),
+                                                      polygon_points_begin);
+
+    if (pairwise) {
+      cuspatial::pairwise_point_in_polygon(
+        multipoints_range, multipolygon_range, results_begin, stream);
     } else {
       cuspatial::point_in_polygon(points_begin,
                                   points_begin + test_points_x.size(),

@@ -24,6 +24,9 @@
 
 #include <rmm/cuda_stream_view.hpp>
 
+#include <rmm/exec_policy.hpp>
+
+#include <thrust/logical.h>
 #include <thrust/memory.h>
 
 #include <iterator>
@@ -95,45 +98,6 @@ __global__ void point_in_polygon_kernel(Cart2dItA test_points_first,
   result[idx] = hit_mask;
 }
 
-template <class Cart2dItA,
-          class Cart2dItB,
-          class OffsetIteratorA,
-          class OffsetIteratorB,
-          class OutputIt,
-          class Cart2dItADiffType = typename std::iterator_traits<Cart2dItA>::difference_type,
-          class Cart2dItBDiffType = typename std::iterator_traits<Cart2dItB>::difference_type,
-          class OffsetItADiffType = typename std::iterator_traits<OffsetIteratorA>::difference_type,
-          class OffsetItBDiffType = typename std::iterator_traits<OffsetIteratorB>::difference_type>
-__global__ void pairwise_point_in_polygon_kernel(Cart2dItA test_points_first,
-                                                 Cart2dItADiffType const num_test_points,
-                                                 OffsetIteratorA poly_offsets_first,
-                                                 OffsetItADiffType const num_polys,
-                                                 OffsetIteratorB ring_offsets_first,
-                                                 OffsetItBDiffType const num_rings,
-                                                 Cart2dItB poly_points_first,
-                                                 Cart2dItBDiffType const num_poly_points,
-                                                 OutputIt result)
-{
-  using Cart2d     = iterator_value_type<Cart2dItA>;
-  using OffsetType = iterator_value_type<OffsetIteratorA>;
-  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < num_test_points;
-       idx += gridDim.x * blockDim.x) {
-    Cart2d const test_point = test_points_first[idx];
-
-    // for the matching polygon
-    auto [poly_begin, poly_end] = poly_begin_end(poly_offsets_first, num_polys, num_rings, idx);
-
-    bool const point_is_within = is_point_in_polygon(test_point,
-                                                     poly_begin,
-                                                     poly_end,
-                                                     ring_offsets_first,
-                                                     num_rings,
-                                                     poly_points_first,
-                                                     num_poly_points);
-    result[idx]                = point_is_within;
-  }
-}
-
 }  // namespace detail
 
 template <class Cart2dItA,
@@ -200,64 +164,38 @@ OutputIt point_in_polygon(Cart2dItA test_points_first,
   return output + num_test_points;
 }
 
-template <class Cart2dItA,
-          class Cart2dItB,
-          class OffsetIteratorA,
-          class OffsetIteratorB,
-          class OutputIt>
-OutputIt pairwise_point_in_polygon(Cart2dItA test_points_first,
-                                   Cart2dItA test_points_last,
-                                   OffsetIteratorA polygon_offsets_first,
-                                   OffsetIteratorA polygon_offsets_last,
-                                   OffsetIteratorB poly_ring_offsets_first,
-                                   OffsetIteratorB poly_ring_offsets_last,
-                                   Cart2dItB polygon_points_first,
-                                   Cart2dItB polygon_points_last,
+template <class MultiPointRange, class MultiPolygonRange, class OutputIt>
+OutputIt pairwise_point_in_polygon(MultiPointRange multipoints,
+                                   MultiPolygonRange multipolygons,
                                    OutputIt output,
                                    rmm::cuda_stream_view stream)
 {
-  using T = iterator_vec_base_type<Cart2dItA>;
+  using T = typename MultiPointRange::element_t;
 
-  static_assert(is_same_floating_point<T, iterator_vec_base_type<Cart2dItB>>(),
-                "Underlying type of Cart2dItA and Cart2dItB must be the same floating point type");
-  static_assert(
-    is_same<vec_2d<T>, iterator_value_type<Cart2dItA>, iterator_value_type<Cart2dItB>>(),
-    "Inputs must be cuspatial::vec_2d");
-
-  static_assert(cuspatial::is_integral<iterator_value_type<OffsetIteratorA>,
-                                       iterator_value_type<OffsetIteratorB>>(),
-                "OffsetIterators must point to integral type.");
+  static_assert(is_same_floating_point<T, typename MultiPolygonRange::element_t>(),
+                "points and polygons must have the same coordinate type.");
 
   static_assert(std::is_same_v<iterator_value_type<OutputIt>, int32_t>,
                 "OutputIt must point to 32 bit integer type.");
 
-  auto const num_test_points = std::distance(test_points_first, test_points_last);
-  auto const num_polys       = std::distance(polygon_offsets_first, polygon_offsets_last) - 1;
-  auto const num_rings       = std::distance(poly_ring_offsets_first, poly_ring_offsets_last) - 1;
-  auto const num_poly_points = std::distance(polygon_points_first, polygon_points_last);
+  CUSPATIAL_EXPECTS(multipoints.size() == multipolygons.size(),
+                    "Must pass in an equal number of (multi)points and (multi)polygons");
 
-  CUSPATIAL_EXPECTS_VALID_POLYGON_SIZES(
-    num_poly_points,
-    std::distance(polygon_offsets_first, polygon_offsets_last),
-    std::distance(poly_ring_offsets_first, poly_ring_offsets_last));
-
-  CUSPATIAL_EXPECTS(num_test_points == num_polys,
-                    "Must pass in an equal number of points and polygons");
-
-  auto [threads_per_block, num_blocks] = grid_1d(num_test_points);
-  detail::pairwise_point_in_polygon_kernel<<<num_blocks, threads_per_block, 0, stream.value()>>>(
-    test_points_first,
-    num_test_points,
-    polygon_offsets_first,
-    num_polys,
-    poly_ring_offsets_first,
-    num_rings,
-    polygon_points_first,
-    num_poly_points,
-    output);
-  CUSPATIAL_CHECK_CUDA(stream.value());
-
-  return output + num_test_points;
+  return thrust::transform(
+    rmm::exec_policy(stream),
+    multipoints.begin(),
+    multipoints.end(),
+    multipolygons.begin(),
+    output,
+    [] __device__(auto multipoint, auto multipolygon) {
+      return thrust::any_of(
+        thrust::seq, multipolygon.begin(), multipolygon.end(), [multipoint] __device__(auto& poly) {
+          return thrust::any_of(
+            thrust::seq, multipoint.begin(), multipoint.end(), [poly] __device__(auto point) {
+              return is_point_in_polygon(point, poly);
+            });
+        });
+    });
 }
 
 }  // namespace cuspatial
