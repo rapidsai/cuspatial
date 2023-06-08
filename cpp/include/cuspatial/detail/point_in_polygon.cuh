@@ -35,17 +35,28 @@
 
 namespace cuspatial {
 
+/**
+ * @brief
+ *
+ * @tparam PointRange
+ * @tparam PolygonRange
+ */
 template <class PointRange, class PolygonRange>
 struct pip_functor {
-  PointRange points;
-  PolygonRange polygons;
+  PointRange multipoints;
+  PolygonRange multipolygons;
 
   int32_t __device__ operator()(std::size_t i)
   {
-    auto point       = points[i][0];
+    printf("idx: %d\n", static_cast<int>(i));
+    using T          = typename PointRange::element_t;
+    vec_2d<T> point  = multipoints[i][0];
     int32_t hit_mask = 0;
-    for (auto poly_idx = 0; poly_idx < polygons[i].num_polygons(); ++poly_idx)
-      hit_mask |= (is_point_in_polygon(point, polygons[i][poly_idx]) << poly_idx);
+    for (auto poly_idx = 0; poly_idx < multipolygons.size(); ++poly_idx) {
+      if (is_point_in_polygon(point, multipolygons[poly_idx][0]))
+        printf("in: poly_idx: %d\n", static_cast<int>(poly_idx));
+      hit_mask |= (is_point_in_polygon(point, multipolygons[poly_idx][0]) << poly_idx);
+    }
     return hit_mask;
   }
 };
@@ -62,16 +73,13 @@ OutputIt point_in_polygon(PointRange points,
   using T = typename PointRange::element_t;
 
   static_assert(points.contains_only_single_geometry() && polygons.contains_only_single_geometry(),
-                "pairwise_point_in_polygon only supports single-point to single-polygon tests.");
+                "point_in_polygon only supports single-point to single-polygon tests.");
 
   static_assert(is_same_floating_point<T, typename PolygonRange::element_t>(),
                 "points and polygons must have the same coordinate type.");
 
   static_assert(std::is_same_v<iterator_value_type<OutputIt>, int32_t>,
                 "OutputIt must point to 32 bit integer type.");
-
-  CUSPATIAL_EXPECTS(points.size() == polygons.size(),
-                    "Must pass in an equal number of (multi)points and (multi)polygons");
 
   CUSPATIAL_EXPECTS(polygons.size() <= std::numeric_limits<int32_t>::digits,
                     "Number of polygons cannot exceed 31");

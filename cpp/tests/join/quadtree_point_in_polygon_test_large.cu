@@ -170,16 +170,21 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
 
   {  // verify
     rmm::device_uvector<int32_t> hits(points.size(), this->stream());
-    auto hits_end = cuspatial::point_in_polygon(points.begin(),
-                                                points.end(),
-                                                multipolygons.part_offset_begin(),
-                                                multipolygons.part_offset_end(),
-                                                multipolygons.ring_offset_begin(),
-                                                multipolygons.ring_offset_end(),
-                                                multipolygons.point_begin(),
-                                                multipolygons.point_end(),
-                                                hits.begin(),
-                                                this->stream());
+
+    auto points_range = make_multipoint_range(
+      points.size(), thrust::make_counting_iterator(0), points.size(), points.begin());
+
+    auto polygons_range = make_multipolygon_range(multipolygons.size(),
+                                                  thrust::make_counting_iterator(0),
+                                                  multipolygons.size(),
+                                                  multipolygons.part_offset_begin(),
+                                                  multipolygons.num_rings(),
+                                                  multipolygons.ring_offset_begin(),
+                                                  multipolygons.num_points(),
+                                                  multipolygons.point_begin());
+
+    auto hits_end =
+      cuspatial::point_in_polygon(points_range, polygons_range, hits.begin(), this->stream());
 
     auto hits_host = cuspatial::test::to_host<int32_t>(hits);
 
