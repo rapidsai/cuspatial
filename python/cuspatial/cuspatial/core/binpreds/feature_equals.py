@@ -324,8 +324,11 @@ class LineStringLineStringEquals(PolygonComplexEquals):
             lhs_reversed, rhs_lengths_equal.lines.xy
         )
         result = forward_result | reverse_result
+        original_point_indices = cudf.Series(
+            lhs_lengths_equal.point_indices
+        ).replace(cudf.Series(lhs_lengths_equal.index))
         return self._postprocess(
-            lhs, rhs, EqualsOpResult(result, lhs_lengths_equal.point_indices)
+            lhs, rhs, EqualsOpResult(result, original_point_indices)
         )
 
 

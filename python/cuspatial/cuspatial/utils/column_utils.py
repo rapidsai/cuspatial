@@ -78,34 +78,34 @@ def contains_only_points(gs: GeoSeries):
     """
     Returns true if `gs` contains only points or multipoints
     """
-
-    return contain_single_type_geometry(gs) and (
-        len(gs.points.xy) > 0 or len(gs.multipoints.xy) > 0
-    )
+    points = gs._column._meta.input_types == Feature_Enum.POINT.value
+    mpoints = gs._column._meta.input_types == Feature_Enum.MULTIPOINT.value
+    return (points | mpoints).all()
 
 
 def contains_only_multipoints(gs: GeoSeries):
     """
     Returns true if `gs` contains only multipoints
     """
-
-    return contain_single_type_geometry(gs) and (len(gs.multipoints.xy) > 0)
+    return (
+        gs._column._meta.input_types == Feature_Enum.MULTIPOINT.value
+    ).all()
 
 
 def contains_only_linestrings(gs: GeoSeries):
     """
     Returns true if `gs` contains only linestrings
     """
-
-    return contain_single_type_geometry(gs) and len(gs.lines.xy) > 0
+    return (
+        gs._column._meta.input_types == Feature_Enum.LINESTRING.value
+    ).all()
 
 
 def contains_only_polygons(gs: GeoSeries):
     """
     Returns true if `gs` contains only polygons
     """
-
-    return contain_single_type_geometry(gs) and len(gs.polygons.xy) > 0
+    return (gs._column._meta.input_types == Feature_Enum.POLYGON.value).all()
 
 
 def has_same_geometry(lhs: GeoSeries, rhs: GeoSeries):
