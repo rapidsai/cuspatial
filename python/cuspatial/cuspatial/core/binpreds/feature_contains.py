@@ -78,38 +78,57 @@ class ContainsPredicate(ContainsGeometryProcessor):
         # A closed polygon has an extra line segment that is not used in
         # counting the number of points. We need to subtract this from the
         # number of points in the polygon.
-        polygon_size_reduction = rhs.polygons.part_offset.take(
-            rhs.polygons.geometry_offset[1:]
-        ) - rhs.polygons.part_offset.take(rhs.polygons.geometry_offset[:-1])
-        return contains + intersects >= rhs.sizes - polygon_size_reduction
+        multipolygon_part_offset = rhs.polygons.part_offset.take(
+            rhs.polygons.geometry_offset
+        )
+        polygon_size_reduction = (
+            multipolygon_part_offset[1:] - multipolygon_part_offset[:-1]
+        )
+        result = contains + intersects >= rhs.sizes - polygon_size_reduction
+        return result
+
+    def _test_interior(self, lhs, rhs):
+        # We only need to test linestrings that are length 2.
+        # Divide the linestring in half and test the point for containment
+        # in the polygon.
+        size_two = rhs.sizes == 2
+        if (size_two).any():
+            center_points = _linestrings_to_center_point(rhs[size_two])
+            size_two_results = _false_series(len(lhs))
+            size_two_results.iloc[rhs.index[size_two]] = (
+                _basic_contains_count(lhs, center_points) > 0
+            )
+            return size_two_results
+        else:
+            return _false_series(len(lhs))
 
     def _compute_polygon_linestring_contains(
         self, lhs, rhs, preprocessor_result
     ):
         contains = _basic_contains_count(lhs, rhs).reset_index(drop=True)
         intersects = self._intersection_results_for_contains(lhs, rhs)
-        if (contains == 0).all() and (intersects != 0).all():
-            # The hardest case. We need to check if the linestring is
-            # contained in the boundary of the polygon, the interior,
-            # or the exterior.
-            # We only need to test linestrings that are length 2.
-            # Divide the linestring in half and test the point for containment
-            # in the polygon.
 
-            if (rhs.sizes == 2).any():
-                center_points = _linestrings_to_center_point(
-                    rhs[rhs.sizes == 2]
-                )
-                size_two_results = _false_series(len(lhs))
-                size_two_results[rhs.sizes == 2] = (
-                    _basic_contains_count(lhs, center_points) > 0
-                )
-                return size_two_results
-            else:
-                line_intersections = _false_series(len(lhs))
-                line_intersections[intersects == rhs.sizes] = True
-                return line_intersections
-        return contains + intersects >= rhs.sizes
+        # If a linestring has intersection but not containment, we need to
+        # test if the linestring is in the interior of the polygon.
+        final_result = _false_series(len(lhs))
+        intersection_with_no_containment = (contains == 0) & (intersects != 0)
+        interior_tests = self._test_interior(
+            lhs[intersection_with_no_containment].reset_index(drop=True),
+            rhs[intersection_with_no_containment].reset_index(drop=True),
+        )
+        interior_tests.index = intersection_with_no_containment[
+            intersection_with_no_containment
+        ].index
+        # LineStrings that have intersection but no containment are set
+        # according to the `intersection_with_no_containment` mask.
+        final_result[intersection_with_no_containment] = interior_tests
+        # LineStrings that do not are contained if the sum of intersecting
+        # and containing points is greater than or equal to the number of
+        # points that make up the linestring.
+        final_result[~intersection_with_no_containment] = (
+            contains + intersects >= rhs.sizes
+        )
+        return final_result
 
     def _compute_predicate(self, lhs, rhs, preprocessor_result):
         if contains_only_points(rhs):
