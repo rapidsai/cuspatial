@@ -373,7 +373,6 @@ def _points_to_multipoints(geoseries, offsets):
         points_offsets[lines_mask] = lines_series.sizes.values
         sizes[lines_mask] = 0
     sizes[points_mask] = 2
-    # TODO Inevitable host device copy
     xy = points.points.xy
     collected_offsets = cudf.concat(
         [cudf.Series([0]), sizes.cumsum()]
@@ -475,3 +474,84 @@ def _multipoints_is_degenerate(geoseries):
     ) & (y1.reset_index(drop=True) == y2.reset_index(drop=True))
     result[sizes_mask] = is_degenerate.reset_index(drop=True)
     return result
+
+
+def _lines_to_multipoints(geoseries):
+    lines_sizes = geoseries.sizes.groupby(level=0).sum()
+    offsets = cudf.concat([cudf.Series([0]), lines_sizes.cumsum()])
+    result = cuspatial.GeoSeries.from_multipoints_xy(
+        geoseries.lines.xy, offsets
+    )
+    return result
+
+
+def _points_to_multipoints_2(geoseries):
+    points_sizes = geoseries.sizes.groupby(level=0).sum()
+    offsets = cudf.concat([cudf.Series([0]), points_sizes.cumsum()])
+    result = cuspatial.GeoSeries.from_multipoints_xy(
+        geoseries.points.xy, offsets
+    )
+    return result
+
+
+def _points_and_lines_to_multipoints_2(geoseries, offsets):
+    lengths = offsets[1:].reset_index(drop=True) - offsets[:-1].reset_index(
+        drop=True
+    )
+    indices = cudf.Series(lengths.index).repeat(lengths)
+    geoseries.index = indices
+    points = geoseries[geoseries.feature_types == Feature_Enum.POINT.value]
+    points = _points_to_multipoints_2(
+        geoseries[geoseries.feature_types == Feature_Enum.POINT.value]
+    )
+    lines = _lines_to_multipoints(
+        geoseries[geoseries.feature_types == Feature_Enum.LINESTRING.value]
+    )
+    return (points, lines)
+
+
+def _pli_features_rebuild_offsets(pli, features):
+    in_sizes = (
+        features.sizes if len(features) > 0 else _zero_series(len(pli[0]) - 1)
+    )
+    offsets = cudf.Series(pli[0])
+    offset_sizes = offsets[1:].reset_index(drop=True) - offsets[
+        :-1
+    ].reset_index(drop=True)
+    in_indices = offset_sizes.index.repeat(offset_sizes)
+    # Just replacing the indices from the feature series with
+    # the corresponding indices that are specified by the offsets buffer.
+    # This is because cudf.Series.replace is extremely slow.
+    in_sizes_df = in_sizes.reset_index()
+    in_sizes_df.columns = ["index", "sizes"]
+    sizes_replacement_series = cudf.Series(in_indices).reset_index()
+    sizes_replacement_series.columns = ["index", "new_index"]
+    new_in_sizes_index = in_sizes_df.merge(
+        sizes_replacement_series, on="index"
+    )
+    in_sizes.index = new_in_sizes_index.sort_values("index")["new_index"]
+    grouped_sizes = in_sizes.groupby(level=0).sum().sort_index()
+    out_sizes = _zero_series(len(pli[0]) - 1)
+    out_sizes.iloc[grouped_sizes.index] = grouped_sizes
+    offsets = cudf.concat([cudf.Series([0]), out_sizes.cumsum()])
+    return offsets
+
+
+def _pli_points_to_multipoints(pli):
+    points = pli[1][pli[1].feature_types == Feature_Enum.POINT.value]
+    offsets = _pli_features_rebuild_offsets(pli, points)
+    xy = (
+        points.points.xy
+        if len(points.points.xy) > 0
+        else cudf.Series([0.0, 0.0])
+    )
+    multipoints = cuspatial.GeoSeries.from_multipoints_xy(xy, offsets)
+    return multipoints
+
+
+def _pli_lines_to_multipoints(pli):
+    lines = pli[1][pli[1].feature_types == Feature_Enum.LINESTRING.value]
+    offsets = _pli_features_rebuild_offsets(pli, lines)
+    xy = lines.lines.xy if len(lines.lines.xy) > 0 else cudf.Series([0.0, 0.0])
+    multipoints = cuspatial.GeoSeries.from_multipoints_xy(xy, offsets)
+    return multipoints
