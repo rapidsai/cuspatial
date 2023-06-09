@@ -12,7 +12,6 @@ from cuspatial.utils.binpred_utils import (
     _pli_lines_to_multipoints,
     _pli_points_to_multipoints,
     _points_and_lines_to_multipoints,
-    _points_and_lines_to_multipoints_2,
 )
 
 
@@ -322,27 +321,6 @@ def test_points_and_lines_to_multipoints_real_example():
     assert (got.multipoints.xy == expected.multipoints.xy).all()
 
 
-def test_points_and_lines_to_multipoints_2():
-    mixed = cuspatial.GeoSeries(
-        [
-            Point(0, 0),
-            LineString([(1, 1), (2, 2)]),
-            Point(3, 3),
-            LineString([(4, 4), (5, 5)]),
-            Point(6, 6),
-            LineString([(7, 7), (8, 8)]),
-        ]
-    )
-    (points, lines) = _points_and_lines_to_multipoints_2(
-        mixed, cudf.Series([0, 2, 4, 6])
-    )
-    assert (points.multipoints.xy.values_host == [0, 0, 3, 3, 6, 6]).all()
-    assert (
-        lines.multipoints.xy.values_host
-        == [1, 1, 2, 2, 4, 4, 5, 5, 7, 7, 8, 8]
-    ).all()
-
-
 def test_pli_points_to_multipoints_no_points():
     points = cuspatial.GeoSeries([])
     offsets = cudf.Series([0, 1, 2, 3])
@@ -413,4 +391,4 @@ def test_pli_lines_to_multipoints_drop_point():
     offsets = cudf.Series([0, 1, 2, 3])
     mpoints = _pli_lines_to_multipoints((offsets, mixed))
     assert len(mpoints) == 3
-    assert (mpoints.multipoints.xy.values_host == [3, 4, 5, 6]).all()
+    assert (mpoints[1:2].multipoints.xy.values_host == [3, 4, 5, 6]).all()

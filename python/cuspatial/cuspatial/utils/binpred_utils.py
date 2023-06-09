@@ -309,80 +309,6 @@ def _open_polygon_rings(geoseries):
     )
 
 
-def _points_to_multipoints(geoseries, offsets):
-    # TODO: This modification drops linestrings which are not used
-    # in geopandas intersection results for contains.
-    """Converts a geoseries of points and lines into a geoseries of
-    multipoints.
-
-    Given a geoseries of points and lines, this function will return a
-    geoseries of multipoints. The multipoints will contain the points
-    and lines in the same order as the original geoseries. The offsets
-    parameter groups the points and lines into multipoints. The offsets
-    parameter must be a list of integers that contains the offsets of
-    the multipoints in the original geoseries. A group of four points
-    and lines can be arranged into four sets of multipoints depending
-    on the offset used:
-
-    >>> import cuspatial
-    >>> from cuspatial.utils.binpred_utils import (
-    ...     _points_and_lines_to_multipoints
-    ... )
-    >>> from shapely.geometry import Point, LineString
-    >>> mixed = cuspatial.GeoSeries([
-    ...    Point(0, 0),
-    ...    LineString([(1, 1), (2, 2)]),
-    ...    Point(3, 3),
-    ...    LineString([(4, 4), (5, 5)]),
-    ... ])
-    >>> offsets = [0, 4]
-    >>> # Place all of the points and linestrings into a single
-    >>> # multipoint
-    >>> _points_and_lines_to_multipoints(mixed, offsets)
-    0    MULTIPOINT (0.00000 0.00000, 1.00000, 1.0000, ...
-    dtype: geometry
-    >>> offsets = [0, 1, 2, 3, 4]
-    >>> # Place each point and linestring into its own multipoint
-    >>> _points_and_lines_to_multipoints(mixed, offsets)
-    0    MULTIPOINT (0.00000 0.00000)
-    1    MULTIPOINT (1.00000, 1.00000, 2.00000, 2.00000)
-    2    MULTIPOINT (3.00000 3.00000)
-    3    MULTIPOINT (4.00000, 4.00000, 5.00000, 5.00000)
-    dtype: geometry
-    >>> offsets = [0, 2, 4]
-    >>> # Split the points and linestrings into two multipoints
-    >>> _points_and_lines_to_multipoints(mixed, offsets)
-    0    MULTIPOINT (0.00000 0.00000, 1.00000, 1.0000, ...
-    1    MULTIPOINT (3.00000 3.00000, 4.00000, 4.0000, ...
-    dtype: geometry
-    """
-    points_mask = geoseries.feature_types == Feature_Enum.POINT.value
-    lines_mask = geoseries.feature_types == Feature_Enum.LINESTRING.value
-    if (points_mask + lines_mask).sum() != len(geoseries):
-        raise ValueError("Geoseries must contain only points and lines")
-    points = geoseries[points_mask]
-    lines = geoseries[lines_mask]
-    points_offsets = _zero_series(len(geoseries))
-    points_offsets[points_mask] = 1
-    lines_series = geoseries[lines_mask]
-    lines_sizes = lines_series.sizes
-    xy = _zero_series(len(points.points.xy) + len(lines.lines.xy))
-    sizes = _zero_series(len(geoseries))
-    if (lines_sizes != 0).all():
-        lines_sizes.index = points_offsets[lines_mask].index
-        points_offsets[lines_mask] = lines_series.sizes.values
-        sizes[lines_mask] = 0
-    sizes[points_mask] = 2
-    xy = points.points.xy
-    collected_offsets = cudf.concat(
-        [cudf.Series([0]), sizes.cumsum()]
-    ).reset_index(drop=True)[offsets]
-    result = cuspatial.GeoSeries.from_multipoints_xy(
-        xy, collected_offsets // 2
-    )
-    return result
-
-
 def _points_and_lines_to_multipoints(geoseries, offsets):
     # TODO: This modification drops linestrings which are not used
     # in geopandas intersection results for contains.
@@ -474,40 +400,6 @@ def _multipoints_is_degenerate(geoseries):
     ) & (y1.reset_index(drop=True) == y2.reset_index(drop=True))
     result[sizes_mask] = is_degenerate.reset_index(drop=True)
     return result
-
-
-def _lines_to_multipoints(geoseries):
-    lines_sizes = geoseries.sizes.groupby(level=0).sum()
-    offsets = cudf.concat([cudf.Series([0]), lines_sizes.cumsum()])
-    result = cuspatial.GeoSeries.from_multipoints_xy(
-        geoseries.lines.xy, offsets
-    )
-    return result
-
-
-def _points_to_multipoints_2(geoseries):
-    points_sizes = geoseries.sizes.groupby(level=0).sum()
-    offsets = cudf.concat([cudf.Series([0]), points_sizes.cumsum()])
-    result = cuspatial.GeoSeries.from_multipoints_xy(
-        geoseries.points.xy, offsets
-    )
-    return result
-
-
-def _points_and_lines_to_multipoints_2(geoseries, offsets):
-    lengths = offsets[1:].reset_index(drop=True) - offsets[:-1].reset_index(
-        drop=True
-    )
-    indices = cudf.Series(lengths.index).repeat(lengths)
-    geoseries.index = indices
-    points = geoseries[geoseries.feature_types == Feature_Enum.POINT.value]
-    points = _points_to_multipoints_2(
-        geoseries[geoseries.feature_types == Feature_Enum.POINT.value]
-    )
-    lines = _lines_to_multipoints(
-        geoseries[geoseries.feature_types == Feature_Enum.LINESTRING.value]
-    )
-    return (points, lines)
 
 
 def _pli_features_rebuild_offsets(pli, features):

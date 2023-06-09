@@ -26,8 +26,8 @@ from cuspatial.utils.binpred_utils import (
     Polygon,
     _false_series,
     _open_polygon_rings,
+    _pli_points_to_multipoints,
     _points_and_lines_to_multipoints,
-    _points_to_multipoints,
     _zero_series,
 )
 from cuspatial.utils.column_utils import (
@@ -57,8 +57,8 @@ class ContainsPredicate(ContainsGeometryProcessor):
 
         pli_offsets = cudf.Series(pli[0])
 
-        # Convert the pli to multipoints for equality checking
-        multipoints = _points_to_multipoints(pli_features, pli_offsets)
+        # Convert the pli, only points, to multipoints for equality checking
+        multipoints = _pli_points_to_multipoints(pli_features, pli_offsets)
 
         # A point in the rhs can be one of three possible states:
         # 1. It is in the interior of the lhs
