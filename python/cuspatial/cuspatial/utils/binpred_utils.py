@@ -424,6 +424,8 @@ def _pli_features_rebuild_offsets(pli, features):
         sizes_replacement_series, on="index"
     )
     in_sizes.index = new_in_sizes_index.sort_values("index")["new_index"]
+
+    # Recompute the offsets for the new series
     grouped_sizes = in_sizes.groupby(level=0).sum().sort_index()
     out_sizes = _zero_series(len(pli[0]) - 1)
     out_sizes.iloc[grouped_sizes.index] = grouped_sizes

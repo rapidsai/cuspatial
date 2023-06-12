@@ -332,7 +332,7 @@ def test_pli_points_to_multipoints_first():
     points = cuspatial.GeoSeries([Point(1, 2)])
     offsets = cudf.Series([0, 1, 1, 1])
     mpoints = _pli_points_to_multipoints((offsets, points))
-    assert len(mpoints) == 3
+    assert (mpoints.sizes.values_host == [1, 0, 0]).all()
     assert (mpoints.multipoints.xy.values_host == [1, 2]).all()
 
 
@@ -345,7 +345,7 @@ def test_pli_points_to_multipoints_two():
     )
     offsets = cudf.Series([0, 2, 2, 2])
     mpoints = _pli_points_to_multipoints((offsets, points))
-    assert len(mpoints) == 3
+    assert (mpoints.sizes.values_host == [2, 0, 0]).all()
     assert (mpoints.multipoints.xy.values_host == [1, 2, 3, 4]).all()
 
 
@@ -360,7 +360,7 @@ def test_pli_points_to_multipoints_split():
     )
     offsets = cudf.Series([0, 2, 2, 4])
     mpoints = _pli_points_to_multipoints((offsets, points))
-    assert len(mpoints) == 3
+    assert (mpoints.sizes.values_host == [2, 0, 2]).all()
     assert (
         mpoints.multipoints.xy.values_host == [1, 2, 3, 4, 5, 6, 7, 8]
     ).all()
@@ -376,7 +376,7 @@ def test_pli_points_to_multipoints_drop_linestring():
     )
     offsets = cudf.Series([0, 1, 2, 3])
     mpoints = _pli_points_to_multipoints((offsets, mixed))
-    assert len(mpoints) == 3
+    assert (mpoints.sizes.values_host == [1, 0, 1]).all()
     assert (mpoints.multipoints.xy.values_host == [1, 2, 7, 8]).all()
 
 
@@ -390,5 +390,5 @@ def test_pli_lines_to_multipoints_drop_point():
     )
     offsets = cudf.Series([0, 1, 2, 3])
     mpoints = _pli_lines_to_multipoints((offsets, mixed))
-    assert len(mpoints) == 3
+    assert (mpoints.sizes.values_host == [0, 2, 0]).all()
     assert (mpoints[1:2].multipoints.xy.values_host == [3, 4, 5, 6]).all()

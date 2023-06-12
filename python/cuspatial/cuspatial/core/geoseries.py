@@ -200,9 +200,10 @@ class GeoSeries(cudf.Series):
                 full_sizes[1:] - full_sizes[:-1], index=self.index
             )
         elif contains_only_multipoints(self):
-            return (
+            return cudf.Series(
                 self.multipoints.geometry_offset[1:]
-                - self.multipoints.geometry_offset[:-1]
+                - self.multipoints.geometry_offset[:-1],
+                index=self.index,
             )
         elif contains_only_points(self):
             return cudf.Series(
