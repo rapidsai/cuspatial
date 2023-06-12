@@ -171,6 +171,18 @@ features = {
         LineString([(0.5, 0.0), (0.5, 1.0)]),
         LineString([(0.0, 0.5), (1.0, 0.5)]),
     ),
+    "linestring-linestring-touch-and-cross": (
+        """
+        x
+        |
+        x
+        |\\
+      x---x
+        x
+    """,
+        LineString([(0.0, 0.0), (1.0, 1.0)]),
+        LineString([(0.5, 0.5), (1.0, 0.1), (-1.0, 0.1)]),
+    ),
     "linestring-polygon-disjoint": (
         """
     point_polygon above is drawn as
@@ -493,6 +505,7 @@ linestring_linestring_dispatch_list = [
     "linestring-linestring-touch-edge",
     "linestring-linestring-touch-edge-twice",
     "linestring-linestring-crosses",
+    "linestring-linestring-touch-and-cross",
 ]
 
 linestring_polygon_dispatch_list = [
