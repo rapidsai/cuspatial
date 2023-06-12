@@ -53,11 +53,14 @@ class ContainsPredicate(ContainsGeometryProcessor):
     def _intersection_results_for_contains_linestring(self, lhs, rhs):
         pli = _basic_intersects_pli(lhs, rhs)
 
-        # Convert the pli, only points, to multipoints for equality checking
+        # Convert the pli into points and multipoint intersections.
         multipoint_points = _pli_points_to_multipoints(pli)
         multipoint_lines = _pli_lines_to_multipoints(pli)
 
-        # Point and linestring intersections are treated differently.
+        # Count the point intersections that are equal to points in the
+        # LineString
+        # Count the linestring intersections that are equal to points in
+        # the LineString
         return (
             _basic_equals_count(rhs, multipoint_points),
             _basic_equals_count(rhs, multipoint_lines),
