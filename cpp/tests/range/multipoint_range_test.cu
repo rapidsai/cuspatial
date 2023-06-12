@@ -213,6 +213,7 @@ class EmptyMultiPointRangeTest : public MultipointRangeTest<T> {
   void test_subscript_operator()
   {
 
+
   }
 
 };
