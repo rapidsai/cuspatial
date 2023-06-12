@@ -434,6 +434,10 @@ def _pli_features_rebuild_offsets(pli, features):
 
 
 def _pli_points_to_multipoints(pli):
+    """Takes a tuple with offsets in position 0 and a mixed GeoSeries in
+    position 1. Extracts the points from the mixed GeoSeries such that
+    one MultiPoint is returned for all of the Point rows that fall within
+    each of the ranges specified by the offsets argument."""
     points = pli[1][pli[1].feature_types == Feature_Enum.POINT.value]
     offsets = _pli_features_rebuild_offsets(pli, points)
     xy = (
@@ -446,6 +450,10 @@ def _pli_points_to_multipoints(pli):
 
 
 def _pli_lines_to_multipoints(pli):
+    """Takes a tuple with offsets in position 0 and a mixed GeoSeries in
+    position 1. Extracts the LineStrings from the mixed GeoSeries such that
+    one MultiPoint is returned for all of the LineString rows that fall within
+    each of the ranges specified by the offsets argument."""
     lines = pli[1][pli[1].feature_types == Feature_Enum.LINESTRING.value]
     offsets = _pli_features_rebuild_offsets(pli, lines)
     xy = lines.lines.xy if len(lines.lines.xy) > 0 else cudf.Series([0.0, 0.0])
