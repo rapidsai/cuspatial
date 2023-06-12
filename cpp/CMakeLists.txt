@@ -47,7 +47,7 @@ option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
 option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
 option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
 # Option to enable line info in CUDA device compilation to allow introspection when profiling / memchecking
-option(CUDA_ENABLE_LINEINFO "Enable the -lineinfo option for nvcc (useful for cuda-memcheck / profiler" OFF)
+option(CUDA_ENABLE_LINEINFO "Enable the -lineinfo option for nvcc (useful for cuda-memcheck / profiler" ON)
 # cudart can be statically linked or dynamically linked. The python ecosystem wants dynamic linking
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA toolkit runtime and libraries" OFF)
 
@@ -63,12 +63,12 @@ message(STATUS "CUSPATIAL: Enable the -lineinfo option for nvcc (useful for cuda
 message(STATUS "CUSPATIAL: Statically link the CUDA toolkit runtime and libraries: ${CUDA_STATIC_RUNTIME}")
 
 # Set a default build type if none was specified
-rapids_cmake_build_type("Release")
+rapids_cmake_build_type("Debug")
 set(CUSPATIAL_BUILD_TESTS ${BUILD_TESTS})
 set(CUSPATIAL_BUILD_BENCHMARKS ${BUILD_BENCHMARKS})
 
 set(CUSPATIAL_CXX_FLAGS "")
-set(CUSPATIAL_CUDA_FLAGS "")
+set(CUSPATIAL_CUDA_FLAGS "-ftemplate-backtrace-limit=0")
 set(CUSPATIAL_CXX_DEFINITIONS "")
 set(CUSPATIAL_CUDA_DEFINITIONS "")
 
