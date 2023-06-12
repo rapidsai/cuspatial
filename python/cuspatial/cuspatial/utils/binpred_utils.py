@@ -411,6 +411,8 @@ def _pli_features_rebuild_offsets(pli, features):
         :-1
     ].reset_index(drop=True)
     in_indices = offset_sizes.index.repeat(offset_sizes)
+    if len(in_indices) == 0:
+        return _zero_series(len(pli[0]))
     # Just replacing the indices from the feature series with
     # the corresponding indices that are specified by the offsets buffer.
     # This is because cudf.Series.replace is extremely slow.

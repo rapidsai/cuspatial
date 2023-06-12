@@ -26,6 +26,7 @@ from cuspatial.utils.binpred_utils import (
     Polygon,
     _false_series,
     _open_polygon_rings,
+    _pli_lines_to_multipoints,
     _pli_points_to_multipoints,
     _points_and_lines_to_multipoints,
     _zero_series,
@@ -49,25 +50,18 @@ class ContainsPredicate(ContainsGeometryProcessor):
         preprocessor_result = super()._preprocess_multipoint_rhs(lhs, rhs)
         return self._compute_predicate(lhs, rhs, preprocessor_result)
 
-    def _intersection_results_for_contains(self, lhs, rhs):
+    def _intersection_results_for_contains_linestring(self, lhs, rhs):
         pli = _basic_intersects_pli(lhs, rhs)
-        pli_features = pli[1]
-        if len(pli_features) == 0:
-            return _zero_series(len(lhs))
-
-        pli_offsets = cudf.Series(pli[0])
 
         # Convert the pli, only points, to multipoints for equality checking
-        multipoints = _pli_points_to_multipoints(pli_features, pli_offsets)
+        multipoint_points = _pli_points_to_multipoints(pli)
+        multipoint_lines = _pli_lines_to_multipoints(pli)
 
-        # A point in the rhs can be one of three possible states:
-        # 1. It is in the interior of the lhs
-        # 2. It is in the exterior of the lhs
-        # 3. It is on the boundary of the lhs
-        # This function tests if the point in the rhs is in the boundary
-        # of the lhs
-        intersect_equals_count = _basic_equals_count(rhs, multipoints)
-        return intersect_equals_count
+        # Point and linestring intersections are treated differently.
+        return (
+            _basic_equals_count(rhs, multipoint_points),
+            _basic_equals_count(rhs, multipoint_lines),
+        )
 
     def _intersection_results_for_contains_polygon(self, lhs, rhs):
         pli = _basic_intersects_pli(lhs, rhs)
@@ -82,12 +76,6 @@ class ContainsPredicate(ContainsGeometryProcessor):
             pli_features, pli_offsets
         )
 
-        # A point in the rhs can be one of three possible states:
-        # 1. It is in the interior of the lhs
-        # 2. It is in the exterior of the lhs
-        # 3. It is on the boundary of the lhs
-        # This function tests if the point in the rhs is in the boundary
-        # of the lhs
         intersect_equals_count = _basic_equals_count(rhs, multipoints)
         return intersect_equals_count
 
@@ -127,14 +115,19 @@ class ContainsPredicate(ContainsGeometryProcessor):
         # If all the intersection results are Points, and no points are outside
         # of the polygon, then the linestring is contained in the polygon.
         contains = _basic_contains_count(lhs, rhs).reset_index(drop=True)
-        intersects = self._intersection_results_for_contains(lhs, rhs)
+        (
+            point_intersects_count,
+            linestring_intersects_count,
+        ) = self._intersection_results_for_contains_linestring(lhs, rhs)
 
         # If a linestring has intersection but not containment, we need to
         # test if the linestring is in the interior of the polygon.
         final_result = _false_series(len(lhs))
-        intersection_with_no_containment = (contains == 0) & (intersects != 0)
+        intersection_with_no_containment = (contains == 0) & (
+            point_intersects_count != 0
+        )
         interior_tests = (
-            intersects[intersection_with_no_containment]
+            point_intersects_count[intersection_with_no_containment]
             == rhs.sizes[intersection_with_no_containment]
         )
         interior_tests.index = intersection_with_no_containment[
@@ -146,8 +139,16 @@ class ContainsPredicate(ContainsGeometryProcessor):
         # LineStrings that do not are contained if the sum of intersecting
         # and containing points is greater than or equal to the number of
         # points that make up the linestring.
-        final_result[~intersection_with_no_containment] = (
-            contains + intersects >= rhs.sizes
+        rhs_sizes_less_line_intersection_size = (
+            rhs.sizes - linestring_intersects_count
+        )
+        rhs_sizes_less_line_intersection_size[
+            rhs_sizes_less_line_intersection_size <= 0
+        ] = 1
+        final_result[
+            ~intersection_with_no_containment
+        ] = contains + point_intersects_count >= (
+            rhs_sizes_less_line_intersection_size
         )
         return final_result
 
