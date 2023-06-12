@@ -44,11 +44,12 @@ class LineStringLineStringCrosses(IntersectsPredicateBase):
         # intersection are in the boundary of the other
         pli = _basic_intersects_pli(rhs, lhs)
         intersections = _points_and_lines_to_multipoints(pli[1], pli[0])
-        equals = (_basic_equals_count(intersections, lhs) > 0) | (
-            _basic_equals_count(intersections, rhs) > 0
-        )
-        intersects = _basic_intersects_count(rhs, lhs) > 0
-        return intersects & ~equals
+        equals_lhs_count = _basic_equals_count(intersections, lhs)
+        equals_rhs_count = _basic_equals_count(intersections, rhs)
+        equals_lhs = equals_lhs_count != intersections.sizes
+        equals_rhs = equals_rhs_count != intersections.sizes
+        equals = equals_lhs & equals_rhs
+        return equals
 
 
 class LineStringPolygonCrosses(BinPred):

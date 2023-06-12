@@ -1,3 +1,70 @@
+# cuSpatial 23.06.00 (7 Jun 2023)
+
+## 🚨 Breaking Changes
+
+- Reorganize cuSpatial headers ([#1097](https://github.com/rapidsai/cuspatial/pull/1097)) [@harrism](https://github.com/harrism)
+- Update minimum Python version to Python 3.9 ([#1089](https://github.com/rapidsai/cuspatial/pull/1089)) [@shwina](https://github.com/shwina)
+- Move `experimental` headers into main `include/cuspatial` directory ([#1081](https://github.com/rapidsai/cuspatial/pull/1081)) [@harrism](https://github.com/harrism)
+- Improve Hausdorff Many Column Performance ([#916](https://github.com/rapidsai/cuspatial/pull/916)) [@isVoid](https://github.com/isVoid)
+
+## 🐛 Bug Fixes
+
+- Fix scatter bug due to overlapping range in `pairwise_linestring_intersection` ([#1152](https://github.com/rapidsai/cuspatial/pull/1152)) [@isVoid](https://github.com/isVoid)
+- Pin cuml dependency in notebook testing environment to nightlies ([#1110](https://github.com/rapidsai/cuspatial/pull/1110)) [@isVoid](https://github.com/isVoid)
+- Fix a bug in point-in-polygon kernel: if the point is collinear with an edge, result is asserted false ([#1108](https://github.com/rapidsai/cuspatial/pull/1108)) [@isVoid](https://github.com/isVoid)
+- Fix a bug in segment intersection primitive where two collinear segment touch at endpoints is miscomputed as a degenerate segment ([#1093](https://github.com/rapidsai/cuspatial/pull/1093)) [@isVoid](https://github.com/isVoid)
+- Update `CMAKE_CUDA_ARCHITECTURE` to use new value ([#1070](https://github.com/rapidsai/cuspatial/pull/1070)) [@isVoid](https://github.com/isVoid)
+- Bug fix in `pairwise_linestring_intersection` ([#1069](https://github.com/rapidsai/cuspatial/pull/1069)) [@isVoid](https://github.com/isVoid)
+
+## 📖 Documentation
+
+- Add documentation for `pairwise_linestring_polygon_distance`, `pairwise_polygon_distance` ([#1145](https://github.com/rapidsai/cuspatial/pull/1145)) [@isVoid](https://github.com/isVoid)
+- Make User Guide appear in Docs page header ([#1133](https://github.com/rapidsai/cuspatial/pull/1133)) [@jarmak-nv](https://github.com/jarmak-nv)
+- Add Hausdorff Clustering Notebooks ([#922](https://github.com/rapidsai/cuspatial/pull/922)) [@isVoid](https://github.com/isVoid)
+
+## 🚀 New Features
+
+- Add Benchmark to `pairwise_linestring_polygon_distance` ([#1153](https://github.com/rapidsai/cuspatial/pull/1153)) [@isVoid](https://github.com/isVoid)
+- Adds `pairwise_point_polygon_distance` benchmark ([#1131](https://github.com/rapidsai/cuspatial/pull/1131)) [@isVoid](https://github.com/isVoid)
+- Reorganize cuSpatial headers ([#1097](https://github.com/rapidsai/cuspatial/pull/1097)) [@harrism](https://github.com/harrism)
+- Python API for `pairwise_polygon_distance` ([#1074](https://github.com/rapidsai/cuspatial/pull/1074)) [@isVoid](https://github.com/isVoid)
+- Column API for `pairwise_polygon_distance` ([#1073](https://github.com/rapidsai/cuspatial/pull/1073)) [@isVoid](https://github.com/isVoid)
+- Header only API for polygon-polygon distance ([#1065](https://github.com/rapidsai/cuspatial/pull/1065)) [@isVoid](https://github.com/isVoid)
+- Python API for linestring polygon distance ([#1031](https://github.com/rapidsai/cuspatial/pull/1031)) [@isVoid](https://github.com/isVoid)
+- Column API for linestring-polygon distance ([#1030](https://github.com/rapidsai/cuspatial/pull/1030)) [@isVoid](https://github.com/isVoid)
+
+## 🛠️ Improvements
+
+- Fix `cudf::column` constructor args ([#1151](https://github.com/rapidsai/cuspatial/pull/1151)) [@trxcllnt](https://github.com/trxcllnt)
+- cuSpatial pip packages ([#1148](https://github.com/rapidsai/cuspatial/pull/1148)) [@trxcllnt](https://github.com/trxcllnt)
+- Refactor `ST_Distance` header only API ([#1143](https://github.com/rapidsai/cuspatial/pull/1143)) [@isVoid](https://github.com/isVoid)
+- Run docs nightly ([#1141](https://github.com/rapidsai/cuspatial/pull/1141)) [@AyodeAwe](https://github.com/AyodeAwe)
+- Add `multilinestring_segment_manager` for segment related methods in multilinestring ranges ([#1134](https://github.com/rapidsai/cuspatial/pull/1134)) [@isVoid](https://github.com/isVoid)
+- Improve zipcode counting notebook by adding GPU backed WKT parser ([#1130](https://github.com/rapidsai/cuspatial/pull/1130)) [@isVoid](https://github.com/isVoid)
+- Delete add_issue_to_project.yml ([#1129](https://github.com/rapidsai/cuspatial/pull/1129)) [@jarmak-nv](https://github.com/jarmak-nv)
+- Bump Gtest version following Rapids-cmake change ([#1126](https://github.com/rapidsai/cuspatial/pull/1126)) [@isVoid](https://github.com/isVoid)
+- Refactor ST_Distance Column API and Cython ([#1124](https://github.com/rapidsai/cuspatial/pull/1124)) [@isVoid](https://github.com/isVoid)
+- Reorganize src, tests, and benchmarks ([#1115](https://github.com/rapidsai/cuspatial/pull/1115)) [@harrism](https://github.com/harrism)
+- Add Legal Terms to Trajectory Clustering Notebook ([#1111](https://github.com/rapidsai/cuspatial/pull/1111)) [@isVoid](https://github.com/isVoid)
+- Enable sccache hits from local builds ([#1109](https://github.com/rapidsai/cuspatial/pull/1109)) [@AyodeAwe](https://github.com/AyodeAwe)
+- Revert to branch-23.06 for shared-action-workflows ([#1107](https://github.com/rapidsai/cuspatial/pull/1107)) [@shwina](https://github.com/shwina)
+- Update minimum Python version to Python 3.9 ([#1089](https://github.com/rapidsai/cuspatial/pull/1089)) [@shwina](https://github.com/shwina)
+- Remove usage of rapids-get-rapids-version-from-git ([#1088](https://github.com/rapidsai/cuspatial/pull/1088)) [@jjacobelli](https://github.com/jjacobelli)
+- Add `contains`predicate. ([#1086](https://github.com/rapidsai/cuspatial/pull/1086)) [@thomcom](https://github.com/thomcom)
+- Binary Predicate Test Dispatching ([#1085](https://github.com/rapidsai/cuspatial/pull/1085)) [@thomcom](https://github.com/thomcom)
+- Move `experimental` headers into main `include/cuspatial` directory ([#1081](https://github.com/rapidsai/cuspatial/pull/1081)) [@harrism](https://github.com/harrism)
+- Update clang-format to 15.0.7 ([#1072](https://github.com/rapidsai/cuspatial/pull/1072)) [@bdice](https://github.com/bdice)
+- Use ARC V2 self-hosted runners for GPU jobs ([#1066](https://github.com/rapidsai/cuspatial/pull/1066)) [@jjacobelli](https://github.com/jjacobelli)
+- Implement and Test All non-multi-Feature Spatial Predicate Combinations ([#1064](https://github.com/rapidsai/cuspatial/pull/1064)) [@thomcom](https://github.com/thomcom)
+- Reduced equals time and fixed a bug. ([#1051](https://github.com/rapidsai/cuspatial/pull/1051)) [@thomcom](https://github.com/thomcom)
+- use make_device_vector in pairwise_point_in_polygon_test ([#1049](https://github.com/rapidsai/cuspatial/pull/1049)) [@cwharris](https://github.com/cwharris)
+- Use thrust::host_vector instead of std::vector&lt;bool&gt; in tests ([#1048](https://github.com/rapidsai/cuspatial/pull/1048)) [@cwharris](https://github.com/cwharris)
+- Branch 23.06 merge 23.04 (2) ([#1035](https://github.com/rapidsai/cuspatial/pull/1035)) [@harrism](https://github.com/harrism)
+- Pairwise Multipoint Equals Count function ([#1022](https://github.com/rapidsai/cuspatial/pull/1022)) [@thomcom](https://github.com/thomcom)
+- Branch 23.06 merge 23.04 ([#1021](https://github.com/rapidsai/cuspatial/pull/1021)) [@harrism](https://github.com/harrism)
+- Add GTC 2023 Reverse GeoCoding Demo Notebook ([#1001](https://github.com/rapidsai/cuspatial/pull/1001)) [@thomcom](https://github.com/thomcom)
+- Improve Hausdorff Many Column Performance ([#916](https://github.com/rapidsai/cuspatial/pull/916)) [@isVoid](https://github.com/isVoid)
+
 # cuSpatial 23.04.00 (6 Apr 2023)
 
 ## 🚨 Breaking Changes

@@ -2,6 +2,10 @@
 
 from typing import TypeVar
 
+import cupy as cp
+
+import cudf
+
 from cuspatial.core.binpreds.basic_predicates import (
     _basic_equals_all,
     _basic_intersects,
@@ -60,7 +64,7 @@ class ContainsProperlyPredicate(ContainsGeometryProcessor):
         preprocessor_result = super()._preprocess_multipoint_rhs(lhs, rhs)
         return self._compute_predicate(lhs, rhs, preprocessor_result)
 
-    def _should_use_quadtree(self, lhs):
+    def _pip_mode(self, lhs, rhs):
         """Determine if the quadtree should be used for the binary predicate.
 
         Returns
@@ -70,18 +74,21 @@ class ContainsProperlyPredicate(ContainsGeometryProcessor):
 
         Notes
         -----
-        1. Quadtree is always used if user requests `allpairs=True`.
-        2. If the number of polygons in the lhs is less than 32, we use the
+        1. If the number of polygons in the lhs is less than 32, we use the
            brute-force algorithm because it is faster and has less memory
            overhead.
-        3. If the lhs contains more than 32 polygons, we use the quadtree
-           because it does not have a polygon-count limit.
-        4. If the lhs contains multipolygons, we use quadtree because the
-           performance between quadtree and brute-force is similar, but
-           code complexity would be higher if we did multipolygon
-           reconstruction on both code paths.
+        2. If the lhs contains multipolygons, or `allpairs=True` is specified,
+           we use quadtree because the quadtree code path already handles
+           multipolygons.
+        3. Otherwise default to pairwise to match the default GeoPandas
+           behavior.
         """
-        return len(lhs) >= 32 or has_multipolygons(lhs) or self.config.allpairs
+        if len(lhs) <= 31:
+            return "brute_force"
+        elif self.config.allpairs or has_multipolygons(lhs):
+            return "quadtree"
+        else:
+            return "pairwise"
 
     def _compute_predicate(
         self,
@@ -97,10 +104,30 @@ class ContainsProperlyPredicate(ContainsGeometryProcessor):
             raise TypeError(
                 "`.contains` can only be called with polygon series."
             )
-        use_quadtree = self._should_use_quadtree(lhs)
+        mode = self._pip_mode(lhs, preprocessor_result.final_rhs)
+        lhs_indices = lhs.index
+        # Duplicates the lhs polygon for each point in the final_rhs result
+        # that was computed by _preprocess. Will always ensure that the
+        # number of points in the rhs is equal to the number of polygons in the
+        # lhs.
+        if mode == "pairwise":
+            lhs_indices = preprocessor_result.point_indices
         pip_result = contains_properly(
-            lhs, preprocessor_result.final_rhs, quadtree=use_quadtree
+            lhs[lhs_indices], preprocessor_result.final_rhs, mode=mode
         )
+        # If the mode is pairwise or brute_force, we need to replace the
+        # `pairwise_index` of each repeated polygon with the `part_index`
+        # from the preprocessor result.
+        if "pairwise_index" in pip_result.columns:
+            pairwise_index_df = cudf.DataFrame(
+                {
+                    "pairwise_index": cp.arange(len(lhs_indices)),
+                    "part_index": rhs.point_indices,
+                }
+            )
+            pip_result = pip_result.merge(
+                pairwise_index_df, on="pairwise_index"
+            )[["part_index", "point_index"]]
         op_result = ContainsOpResult(pip_result, preprocessor_result)
         return self._postprocess(lhs, rhs, preprocessor_result, op_result)
 
@@ -168,7 +195,7 @@ class LineStringLineStringContainsProperly(BinPred):
     left and right hand side types. """
 DispatchDict = {
     (Point, Point): ContainsProperlyByIntersection,
-    (Point, MultiPoint): ImpossiblePredicate,
+    (Point, MultiPoint): ContainsProperlyByIntersection,
     (Point, LineString): ImpossiblePredicate,
     (Point, Polygon): ImpossiblePredicate,
     (MultiPoint, Point): NotImplementedPredicate,
