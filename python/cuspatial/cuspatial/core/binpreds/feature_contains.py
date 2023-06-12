@@ -100,28 +100,22 @@ class ContainsPredicate(ContainsGeometryProcessor):
     def _compute_polygon_linestring_contains(
         self, lhs, rhs, preprocessor_result
     ):
-        # No points are contained:
-        # 1. No points intersect: Not contained
-        # 2. All intersecting points are equal to points in the
-        # linestring: Contained
-
-        # Some points are contained:
-        # 1. No points intersect: Contained
-        # 2. All intersections are points, and intersecting points are equal
-        #    to points in the linestring: Contained
-
-        # All points are contained: Contained
-
-        # If all the intersection results are Points, and no points are outside
-        # of the polygon, then the linestring is contained in the polygon.
+        # Count the number of points in lhs that are properly contained by
+        # rhs
         contains = _basic_contains_count(lhs, rhs).reset_index(drop=True)
+
+        # Count the number of point intersections (line crossings) between
+        # lhs and rhs.
+        # Also count the number of perfectly overlapping linestring sections.
+        # Each linestring overlap counts as two point overlaps.
         (
             point_intersects_count,
             linestring_intersects_count,
         ) = self._intersection_results_for_contains_linestring(lhs, rhs)
 
-        # If a linestring has intersection but not containment, we need to
-        # test if the linestring is in the interior of the polygon.
+        # If a linestring has point intersection but no containment, it
+        # is contained only if the size of the linestring is equal to the
+        # number of point intersections.
         final_result = _false_series(len(lhs))
         intersection_with_no_containment = (contains == 0) & (
             point_intersects_count != 0
@@ -133,12 +127,12 @@ class ContainsPredicate(ContainsGeometryProcessor):
         interior_tests.index = intersection_with_no_containment[
             intersection_with_no_containment
         ].index
-        # LineStrings that have intersection but no containment are set
-        # according to the `intersection_with_no_containment` mask.
         final_result[intersection_with_no_containment] = interior_tests
-        # LineStrings that do not are contained if the sum of intersecting
-        # and containing points is greater than or equal to the number of
-        # points that make up the linestring.
+
+        # If the above condition is not satisfied, subtract the length of
+        # the linestring intersections from the length of the rhs linestring,
+        # then test that the sum of contained points is equal to that adjusted
+        # rhs length.
         rhs_sizes_less_line_intersection_size = (
             rhs.sizes - linestring_intersects_count
         )
@@ -147,7 +141,7 @@ class ContainsPredicate(ContainsGeometryProcessor):
         ] = 1
         final_result[
             ~intersection_with_no_containment
-        ] = contains + point_intersects_count >= (
+        ] = contains + point_intersects_count == (
             rhs_sizes_less_line_intersection_size
         )
         return final_result
