@@ -78,6 +78,8 @@ OutputIt point_in_polygon(PointRange points,
   CUSPATIAL_EXPECTS(polygons.size() <= std::numeric_limits<int32_t>::digits,
                     "Number of polygons cannot exceed 31");
 
+  if (points.size() == 0) return output;
+
   thrust::tabulate(
     rmm::exec_policy(stream), output, output + points.size(), pip_functor{points, polygons});
 
@@ -103,6 +105,8 @@ OutputIt pairwise_point_in_polygon(PointRange points,
 
   CUSPATIAL_EXPECTS(points.size() == polygons.size(),
                     "Must pass in an equal number of (multi)points and (multi)polygons");
+
+  if (points.size() == 0) return output;
 
   return thrust::transform(rmm::exec_policy(stream),
                            points.begin(),
