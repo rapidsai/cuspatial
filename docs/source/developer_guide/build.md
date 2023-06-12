@@ -46,21 +46,22 @@ Execute `./build.sh -h` for full list of available options.
 
 ## Validate Installation with C++ and Python Tests
 
-- C++ tests are located within the `$CUSPATIAL_HOME/cpp/build/gtests` directory.
-- Python tests are located within the `$CUSPATIAL_HOME/python/cuspatial/cuspatial/tests` directory.
-
 ```note
-Dev Container users:
 To manage difference between branches and build types, the build directories are located at
 `$CUSPATIAL_HOME/cpp/build/[release|debug]` depending on build type, and  `$CUSPATIAL_HOME/cpp/build/latest`.
-is a symbolic link to the most recent build directory.
+is a symbolic link to the most recent build directory. On bare metal builds, remove the extra `latest` level in
+the path below.
+```
+
+- C++ tests are located within the `$CUSPATIAL_HOME/cpp/build/latest/gtests` directory.
+- Python tests are located within the `$CUSPATIAL_HOME/python/cuspatial/cuspatial/tests` directory.
 
 Execute C++ tests:
 ```shell
-ninja -C $CUSPATIAL_HOME/cpp/build/ test
+ninja -C $CUSPATIAL_HOME/cpp/build/latest test
 ```
 
 Execute Python tests:
-```
+```shell
 pytest $CUSPATIAL_HOME/python/cuspatial/cuspatial/tests/
 ```
