@@ -24,7 +24,6 @@ from cuspatial.utils.binpred_utils import (
     MultiPoint,
     Point,
     Polygon,
-    _false_series,
     _open_polygon_rings,
     _pli_lines_to_multipoints,
     _pli_points_to_multipoints,
@@ -116,37 +115,19 @@ class ContainsPredicate(ContainsGeometryProcessor):
             linestring_intersects_count,
         ) = self._intersection_results_for_contains_linestring(lhs, rhs)
 
-        # If a linestring has point intersection but no containment, it
-        # is contained only if the size of the linestring is equal to the
-        # number of point intersections.
-        final_result = _false_series(len(lhs))
-        intersection_with_no_containment = (contains == 0) & (
-            point_intersects_count != 0
-        )
-        interior_tests = (
-            point_intersects_count[intersection_with_no_containment]
-            == rhs.sizes[intersection_with_no_containment]
-        )
-        interior_tests.index = intersection_with_no_containment[
-            intersection_with_no_containment
-        ].index
-        final_result[intersection_with_no_containment] = interior_tests
-
-        # If the above condition is not satisfied, subtract the length of
-        # the linestring intersections from the length of the rhs linestring,
-        # then test that the sum of contained points is equal to that adjusted
-        # rhs length.
+        # Subtract the length of the linestring intersections from the length
+        # of the rhs linestring, then test that the sum of contained points
+        # is equal to that adjusted rhs length.
         rhs_sizes_less_line_intersection_size = (
             rhs.sizes - linestring_intersects_count
         )
         rhs_sizes_less_line_intersection_size[
             rhs_sizes_less_line_intersection_size <= 0
         ] = 1
-        final_result[
-            ~intersection_with_no_containment
-        ] = contains + point_intersects_count == (
+        final_result = contains + point_intersects_count == (
             rhs_sizes_less_line_intersection_size
         )
+
         return final_result
 
     def _compute_predicate(self, lhs, rhs, preprocessor_result):
