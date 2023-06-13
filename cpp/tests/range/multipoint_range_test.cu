@@ -47,6 +47,13 @@ void __global__ array_access_tester(MultiPointRange multipoints,
     output_points[i] = point;
 }
 
+template <typename MultiPointRange, typename OutputIt>
+void __global__ point_accessor_tester(MultiPointRange multipoints, std::size_t i, OutputIt point)
+{
+  using T = typename MultiPointRange::element_t;
+  point   = multipoints.point(i);
+}
+
 template <typename T>
 class MultipointRangeTest : public BaseFixture {
  public:
@@ -61,6 +68,8 @@ class MultipointRangeTest : public BaseFixture {
   template <typename MultiPointRange>
   struct point_idx_to_geometry_idx {
     MultiPointRange rng;
+
+    point_idx_to_geometry_idx(MultiPointRange r) : rng(r) {}
 
     std::size_t __device__ operator()(std::size_t pidx)
     {
@@ -104,13 +113,13 @@ class MultipointRangeTest : public BaseFixture {
 
   virtual void test_num_points() = 0;
 
-  virtual void test_size() = 0;
+  void test_size() { EXPECT_EQ(this->range().size(), this->range().num_multipoints()); }
 
   virtual void test_multipoint_it() = 0;
 
-  virtual void test_begin() = 0;
+  void test_begin() { EXPECT_EQ(this->range().begin(), this->range().multipoint_begin()); }
 
-  virtual void test_end() = 0;
+  void test_end() { EXPECT_EQ(this->range().end(), this->range().multipoint_end()); }
 
   virtual void test_point_it() = 0;
 
@@ -156,7 +165,7 @@ class MultipointRangeTest : public BaseFixture {
     return offsets;
   };
 
-  rmm::device_uvector<std::size_t> copy_geoemtry_idx()
+  rmm::device_uvector<std::size_t> copy_geometry_idx()
   {
     auto rng = this->range();
     rmm::device_uvector<std::size_t> idx(rng.num_points(), this->stream());
@@ -164,6 +173,17 @@ class MultipointRangeTest : public BaseFixture {
     thrust::tabulate(
       rmm::exec_policy(this->stream()), idx.begin(), idx.end(), point_idx_to_geometry_idx{rng});
     return idx;
+  }
+
+  rmm::device_scalar<vec_2d<T>> copy_ith_point(std::size_t i)
+  {
+    auto rng = this->range();
+
+    rmm::device_scalar<vec_2d<T>> point(this->stream());
+    array_access_tester<<<1, 1, 0, this->stream()>>>(rng, i, point.data());
+    CUSPATIAL_CHECK_CUDA(this->stream());
+
+    return point;
   }
 
   rmm::device_uvector<vec_2d<T>> copy_ith_multipoint(std::size_t i)
@@ -198,18 +218,12 @@ class EmptyMultiPointRangeTest : public MultipointRangeTest<T> {
 
   void test_num_points() { EXPECT_EQ(this->range().num_points(), 0); }
 
-  void test_size() { EXPECT_EQ(this->range().size(), 0); }
-
   void test_multipoint_it()
   {
     auto leading_points = this->copy_leading_points();
     auto expected       = rmm::device_uvector<vec_2d<T>>(0, this->stream());
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(leading_points, expected);
   }
-
-  void test_begin() { EXPECT_EQ(this->range().begin(), this->range().multipoint_begin()); }
-
-  void test_end() { EXPECT_EQ(this->range().end(), this->range().multipoint_end()); }
 
   void test_point_it()
   {
@@ -227,7 +241,7 @@ class EmptyMultiPointRangeTest : public MultipointRangeTest<T> {
 
   void test_geometry_idx_from_point_idx()
   {
-    auto geometry_indices = rmm::device_uvector<std::size_t>(0, this->stream());
+    auto geometry_indices = this->copy_geometry_idx();
     auto expected         = rmm::device_uvector<std::size_t>(0, this->stream());
 
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(geometry_indices, expected);
@@ -260,8 +274,59 @@ class LengthOneMultiPointRangeTest : public MultipointRangeTest<T> {
  public:
   void make_test_multipoints()
   {
-    this->test_multipoints = make_multipoint_array<T>({{{1.0, 1.0}}});
+    auto array             = make_multipoint_array<T>({{{1.0, 1.0}}, {10.0, 10.0}});
+    this->test_multipoints = std::make_unique<decltype(array)>(std::move(array));
   }
+
+  void test_num_multipoints() { EXPECT_EQ(this->range().num_multipoints(), 1); }
+
+  void test_num_points() { EXPECT_EQ(this->range().num_points(), 2); }
+
+  void test_multipoint_it()
+  {
+    auto leading_points = this->copy_leading_points();
+    auto expected       = make_device_vector<vec_2d<T>>({1.0, 1.0});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(leading_points, expected);
+  }
+
+  void test_point_it()
+  {
+    auto points   = this->copy_all_points();
+    auto expected = make_device_vector<vec_2d<T>>({{1.0, 1.0}, {10.0, 10.0}});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(points, expected);
+  }
+
+  void test_offset_it()
+  {
+    auto offsets  = this->copy_offsets();
+    auto expected = make_device_vector<std::size_t>({0, 1});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(offsets, expected);
+  }
+
+  void test_geometry_idx_from_point_idx()
+  {
+    auto geometry_indices = this->copy_geometry_idx();
+    auto expected         = make_device_vector<std::size_t>({0});
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(geometry_indices, expected);
+  }
+
+  void test_subscript_operator()
+  {
+    auto multipoint = this->copy_ith_multipoint(0);
+    auto expected   = make_device_vector<vec_2d<T>>({{1.0, 1.0}, {10.0, 10.0}});
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(multipoint, expected);
+  }
+
+  void test_point_accessor()
+  {
+    auto point    = this->copy_ith_point(1);
+    auto expected = vec_2d<T>{10.0, 10.0};
+    EXPECT_EQ(point.value(this->stream()), expected);
+  }
+
+  void test_is_single_point_range() { EXPECT_FALSE(this->range().is_single_point_range()); }
 };
 
 template <typename T>
