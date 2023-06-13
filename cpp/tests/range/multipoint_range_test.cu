@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include "gtest/gtest.h"
 #include <cuspatial_test/base_fixture.hpp>
 #include <cuspatial_test/vector_equality.hpp>
 #include <cuspatial_test/vector_factories.cuh>
@@ -156,6 +155,7 @@ class MultipointRangeTest : public BaseFixture {
       rmm::exec_policy(this->stream()), rng.point_begin(), rng.point_end(), points.begin());
     return points;
   };
+
 
   rmm::device_uvector<std::size_t> copy_offsets()
   {
