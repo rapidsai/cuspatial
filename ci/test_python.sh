@@ -55,6 +55,7 @@ pytest \
   --cov=cuspatial \
   --cov-report=xml:"${RAPIDS_COVERAGE_DIR}/cuspatial-coverage.xml" \
   --cov-report=term \
+  -x \
   tests
 popd
 
