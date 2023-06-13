@@ -43,7 +43,7 @@ void pairwise_linestring_polygon_distance_benchmark(nvbench::state& state, nvben
   auto const num_ring_per_polygon{static_cast<std::size_t>(state.get_int64("NumRingsPerPolygon"))};
   auto const num_points_per_ring{static_cast<std::size_t>(state.get_int64("NumPointsPerRing"))};
 
-  auto params1 = test::multilinestring_generator_parameter<T>{
+  auto params1 = test::multilinestring_fixed_generator_parameter<T>{
     num_pairs, num_linestrings_per_multilinestring, num_segments_per_linestring, 1.0, {0., 0.}};
   auto params2 = test::multipolygon_generator_parameter<T>{num_pairs,
                                                            num_polygon_per_multipolygon,
@@ -66,10 +66,10 @@ void pairwise_linestring_polygon_distance_benchmark(nvbench::state& state, nvben
   state.add_element_count(num_pairs, "NumPairs");
   state.add_element_count(total_points, "NumPoints");
   state.add_global_memory_reads<T>(total_points * 2, "CoordinatesDataSize");
-  state.add_global_memory_reads<int32_t>(params1.num_multilinestrings + params1.num_linestrings() +
-                                           params2.num_multipolygons + params2.num_polygons() +
-                                           params2.num_rings() + 5,
-                                         "OffsetsDataSize");
+  state.add_global_memory_reads<int32_t>(
+    lines_range.num_multilinestrings() + lines_range.num_linestrings() +
+      poly_range.num_multipolygons() + poly_range.num_polygons() + poly_range.num_rings() + 5,
+    "OffsetsDataSize");
   state.add_global_memory_writes<T>(num_pairs);
 
   state.exec(nvbench::exec_tag::sync,

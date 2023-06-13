@@ -49,7 +49,7 @@ void pairwise_point_polygon_distance_benchmark(nvbench::state& state, nvbench::t
   auto mpoly_generator_param = multipolygon_generator_parameter<T>{
     num_pairs, num_polygons_per_multipolygon, num_holes_per_polygon, num_edges_per_ring};
 
-  auto mpoint_generator_param = multipoint_generator_parameter<T>{
+  auto mpoint_generator_param = multipoint_fixed_generator_parameter<T>{
     num_pairs, num_points_per_multipoint, vec_2d<T>{-1, -1}, vec_2d<T>{0, 0}};
 
   auto multipolygons = generate_multipolygon_array<T>(mpoly_generator_param, stream);
@@ -69,15 +69,15 @@ void pairwise_point_polygon_distance_benchmark(nvbench::state& state, nvbench::t
                                                    mpoly_generator_param.num_rings() *
                                                    mpoly_generator_param.num_polygons()),
                           "Multipolygon Complexity");
-  state.add_element_count(mpoint_generator_param.num_points(), "NumPoints (in multipoints)");
+  state.add_element_count(mpoint_view.num_points(), "NumPoints (in multipoints)");
 
-  state.add_global_memory_reads<T>(
-    mpoly_generator_param.num_coords() + mpoint_generator_param.num_points(),
-    "CoordinatesReadSize");
-  state.add_global_memory_reads<std::size_t>(
-    (mpoly_generator_param.num_rings() + 1) + (mpoly_generator_param.num_polygons() + 1) +
-      (mpoly_generator_param.num_multipolygons + 1) + (mpoint_generator_param.num_multipoints + 1),
-    "OffsetsDataSize");
+  state.add_global_memory_reads<T>(mpoly_generator_param.num_coords() + mpoint_view.num_points(),
+                                   "CoordinatesReadSize");
+  state.add_global_memory_reads<std::size_t>((mpoly_generator_param.num_rings() + 1) +
+                                               (mpoly_generator_param.num_polygons() + 1) +
+                                               (mpoly_generator_param.num_multipolygons + 1) +
+                                               (mpoint_generator_param.num_multipoints() + 1),
+                                             "OffsetsDataSize");
 
   state.add_global_memory_writes<T>(num_pairs);
 

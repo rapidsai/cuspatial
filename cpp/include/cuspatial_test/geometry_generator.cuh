@@ -20,6 +20,7 @@
 #include <cuspatial_test/vector_factories.cuh>
 
 #include <cuspatial/cuda_utils.hpp>
+#include <cuspatial/detail/utility/zero_data.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/range/multipolygon_range.cuh>
@@ -28,31 +29,41 @@
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <thrust/random/normal_distribution.h>
+#include <thrust/scan.h>
 #include <thrust/sequence.h>
 #include <thrust/tabulate.h>
+
+#include <optional>
 
 namespace cuspatial {
 namespace test {
 
 namespace detail {
+template <typename Generator>
+rmm::device_uvector<std::size_t> make_offsets(Generator gen,
+                                              std::size_t size,
+                                              rmm::cuda_stream_view stream)
+{
+  rmm::device_uvector<std::size_t> offsets(size, stream);
 
-template <typename T, typename index_t>
-struct tabulate_direction_functor {
-  vec_2d<T> __device__ operator()(index_t i)
-  {
-    return vec_2d<T>{cos(static_cast<T>(i)), sin(static_cast<T>(i))};
+  if (gen.is_random()) {
+    zero_data_async(offsets.begin(), offsets.end(), stream);
+    thrust::tabulate(rmm::exec_policy(stream), thrust::next(offsets.begin()), offsets.end(), gen);
+    thrust::inclusive_scan(rmm::exec_policy(stream),
+                           thrust::next(offsets.begin()),
+                           offsets.end(),
+                           thrust::next(offsets.begin()));
+  } else {
+    thrust::sequence(rmm::exec_policy(stream),
+                     offsets.begin(),
+                     offsets.end(),
+                     std::size_t{0},
+                     static_cast<std::size_t>(gen.mean()));
   }
-};
 
-template <typename T>
-struct random_walk_functor {
-  T segment_length;
-
-  vec_2d<T> __device__ operator()(vec_2d<T> prev, vec_2d<T> rad)
-  {
-    return prev + segment_length * rad;
-  }
-};
+  return offsets;
+}
 
 }  // namespace detail
 
@@ -279,23 +290,97 @@ auto generate_multipolygon_array(multipolygon_generator_parameter<T> params,
  *
  * @tparam T Underlying type of the coordinates
  */
-template <typename T>
-struct multilinestring_generator_parameter {
-  std::size_t num_multilinestrings;
-  std::size_t num_linestrings_per_multilinestring;
-  std::size_t num_segments_per_linestring;
-  T segment_length;
-  vec_2d<T> origin;
+template <typename CoordType>
+class multilinestring_normal_distribution_generator_parameter {
+ private:
+  static int constexpr NUM_LINESTRING_GEN_SEED = 0;
+  static int constexpr NUM_SEGMENT_GEN_SEED    = 1;
 
-  std::size_t num_linestrings()
+  std::size_t _num_multilinestrings;
+  cuspatial::test::normal_random_variable<double> _num_linestrings_per_multilinestring;
+  cuspatial::test::normal_random_variable<double> _num_segments_per_linestring;
+  CoordType _segment_length;
+  vec_2d<CoordType> _origin;
+
+ public:
+  template <typename index_t>
+  struct _direction_functor {
+    vec_2d<CoordType> __device__ operator()(index_t i)
+    {
+      return vec_2d<CoordType>{cos(static_cast<CoordType>(i)), sin(static_cast<CoordType>(i))};
+    }
+  };
+
+  struct _random_walk_functor {
+    CoordType segment_length;
+
+    vec_2d<CoordType> __device__ operator()(vec_2d<CoordType> prev, vec_2d<CoordType> rad)
+    {
+      return prev + segment_length * rad;
+    }
+  };
+
+  multilinestring_normal_distribution_generator_parameter(
+    std::size_t num_multilinestrings,
+    cuspatial::test::normal_random_variable<double> num_linestrings_per_multilinestring,
+    cuspatial::test::normal_random_variable<double> num_segments_per_linestring,
+    CoordType segment_length,
+    vec_2d<CoordType> origin)
+    : _num_multilinestrings(num_multilinestrings),
+      _num_linestrings_per_multilinestring(num_linestrings_per_multilinestring),
+      _num_segments_per_linestring(num_segments_per_linestring),
+      _segment_length(segment_length),
+      _origin(origin)
   {
-    return num_multilinestrings * num_linestrings_per_multilinestring;
   }
 
-  std::size_t num_points_per_linestring() { return num_segments_per_linestring + 1; }
+  std::size_t num_multilinestrings() { return _num_multilinestrings; }
+  auto num_linestrings_per_multilinestring() { return _num_linestrings_per_multilinestring; }
+  auto num_segments_per_linestring() { return _num_segments_per_linestring; }
+  CoordType segment_length() { return _segment_length; }
+  vec_2d<CoordType> origin() { return _origin; }
 
-  std::size_t num_segments() { return num_linestrings() * num_segments_per_linestring; }
-  std::size_t num_points() { return num_linestrings() * num_points_per_linestring(); }
+  auto num_linestrings_generator()
+  {
+    auto lower = std::max(
+      std::size_t{1}, static_cast<std::size_t>(_num_linestrings_per_multilinestring.neg_6stddev()));
+    auto upper = static_cast<std::size_t>(_num_linestrings_per_multilinestring.plus_6stddev());
+    return make_clipped_normal_distribution_value_generator(lower, upper, NUM_LINESTRING_GEN_SEED);
+  }
+
+  auto num_points_generator()
+  {
+    auto lower = std::max(std::size_t{1},
+                          static_cast<std::size_t>(_num_segments_per_linestring.neg_6stddev()));
+    auto upper = static_cast<std::size_t>(_num_segments_per_linestring.plus_6stddev());
+    return make_clipped_normal_distribution_value_generator(lower, upper, NUM_SEGMENT_GEN_SEED);
+  }
+
+  auto direction_functor() { return _direction_functor<std::size_t>{}; }
+  auto random_walk_functor() { return _random_walk_functor{}; }
+};
+
+/**
+ * @brief
+ *
+ * @tparam
+ */
+template <typename CoordType>
+struct multilinestring_fixed_generator_parameter
+  : public multilinestring_normal_distribution_generator_parameter<CoordType> {
+  multilinestring_fixed_generator_parameter(std::size_t num_multilinestrings,
+                                            std::size_t num_linestrings_per_multilinestring,
+                                            std::size_t num_segments_per_linestring,
+                                            CoordType segment_length,
+                                            vec_2d<CoordType> origin)
+    : multilinestring_normal_distribution_generator_parameter<CoordType>(
+        num_multilinestrings,
+        {static_cast<double>(num_linestrings_per_multilinestring), 0.0},
+        {static_cast<double>(num_segments_per_linestring), 0.0},
+        segment_length,
+        origin)
+  {
+  }
 };
 
 /**
@@ -322,92 +407,129 @@ struct multilinestring_generator_parameter {
  * @return The generated multilinestring array
  */
 template <typename T>
-auto generate_multilinestring_array(multilinestring_generator_parameter<T> params,
-                                    rmm::cuda_stream_view stream)
+auto generate_multilinestring_array(
+  multilinestring_normal_distribution_generator_parameter<T> params, rmm::cuda_stream_view stream)
 {
-  rmm::device_uvector<std::size_t> geometry_offset(params.num_multilinestrings + 1, stream);
-  rmm::device_uvector<std::size_t> part_offset(params.num_linestrings() + 1, stream);
-  rmm::device_uvector<vec_2d<T>> points(params.num_points(), stream);
+  auto geometry_offset = detail::make_offsets(
+    params.num_linestrings_generator(), params.num_multilinestrings() + 1, stream);
+  auto num_linestrings = geometry_offset.element(geometry_offset.size() - 1, stream);
+  auto part_offset = detail::make_offsets(params.num_points_generator(), num_linestrings, stream);
+  auto num_points  = part_offset.element(part_offset.size() - 1, stream);
 
-  thrust::sequence(rmm::exec_policy(stream),
-                   geometry_offset.begin(),
-                   geometry_offset.end(),
-                   static_cast<std::size_t>(0),
-                   params.num_linestrings_per_multilinestring);
-
-  thrust::sequence(rmm::exec_policy(stream),
-                   part_offset.begin(),
-                   part_offset.end(),
-                   static_cast<std::size_t>(0),
-                   params.num_segments_per_linestring + 1);
-
-  thrust::tabulate(rmm::exec_policy(stream),
-                   points.begin(),
-                   points.end(),
-                   detail::tabulate_direction_functor<T, std::size_t>{});
+  rmm::device_uvector<vec_2d<T>> points(num_points, stream);
+  thrust::tabulate(
+    rmm::exec_policy(stream), points.begin(), points.end(), params.direction_functor());
 
   thrust::exclusive_scan(rmm::exec_policy(stream),
                          points.begin(),
                          points.end(),
                          points.begin(),
-                         params.origin,
-                         detail::random_walk_functor<T>{params.segment_length});
+                         params.origin(),
+                         params.random_walk_functor());
 
   return make_multilinestring_array(
     std::move(geometry_offset), std::move(part_offset), std::move(points));
 }
 
 /**
- * @brief Struct to store the parameters of the multipoint aray
+ * @brief Creates a parameter set that configures the multipoint generator
  *
- * @tparam T Type of the coordinates
+ * The number of point in each multipoint is sampled from a normal distribution.
+ *
+ * @tparam CoordType The type of coordinate
  */
-template <typename T>
-struct multipoint_generator_parameter {
-  using element_t = T;
+template <typename CoordType>
+class multipoint_normal_distribution_generator_parameter {
+ protected:
+  std::size_t _num_multipoints;
+  cuspatial::test::normal_random_variable<double> _num_points_per_multipoints;
+  vec_2d<CoordType> _lower_left;
+  vec_2d<CoordType> _upper_right;
 
-  std::size_t num_multipoints;
-  std::size_t num_points_per_multipoints;
-  vec_2d<T> lower_left;
-  vec_2d<T> upper_right;
-
-  CUSPATIAL_HOST_DEVICE std::size_t num_points()
+ public:
+  multipoint_normal_distribution_generator_parameter(
+    std::size_t num_multipoints,
+    normal_random_variable<double> num_points_per_multipoints,
+    vec_2d<CoordType> lower_left,
+    vec_2d<CoordType> upper_right)
+    : _num_multipoints(num_multipoints),
+      _num_points_per_multipoints(num_points_per_multipoints),
+      _lower_left(lower_left),
+      _upper_right(upper_right)
   {
-    return num_multipoints * num_points_per_multipoints;
+  }
+
+  bool count_has_variance() { return _num_points_per_multipoints.stddev != 0.0; }
+
+  auto multipoint_count_generator()
+  {
+    auto lower = std::max(1, static_cast<int>(_num_points_per_multipoints.neg_6stddev()));
+    auto upper = static_cast<int>(_num_points_per_multipoints.plus_6stddev());
+    return make_clipped_normal_distribution_value_generator(lower, upper);
+  }
+
+  auto points_generator()
+  {
+    auto engine_x = deterministic_engine(0);
+    auto engine_y = deterministic_engine(1);
+
+    auto x_dist = make_uniform_dist(_lower_left.x, _upper_right.x);
+    auto y_dist = make_uniform_dist(_lower_left.y, _upper_right.y);
+
+    return point_generator(_lower_left, _upper_right, engine_x, engine_y, x_dist, y_dist);
+  }
+
+  std::size_t num_multipoints() { return _num_multipoints; }
+  auto num_points_per_multipoints() { return _num_points_per_multipoints; }
+  vec_2d<CoordType> lower_left() { return _lower_left; }
+  vec_2d<CoordType> upper_right() { return _upper_right; }
+};
+
+/**
+ * @brief Parameters to configure a multipoint generator to generate identical multipoint for each
+ * element
+ *
+ * Idendity function is a special case of normal distribution where deviation is 0.
+ *
+ * @tparam CoordType The type of underlying coordinates
+ */
+template <typename CoordType>
+class multipoint_fixed_generator_parameter
+  : public multipoint_normal_distribution_generator_parameter<CoordType> {
+ public:
+  multipoint_fixed_generator_parameter(std::size_t num_multipoints,
+                                       std::size_t num_points_per_multipoints,
+                                       vec_2d<CoordType> lower_left,
+                                       vec_2d<CoordType> upper_right)
+    : multipoint_normal_distribution_generator_parameter<CoordType>(
+        num_multipoints,
+        {static_cast<double>(num_points_per_multipoints), 0.0},
+        lower_left,
+        upper_right)
+  {
   }
 };
 
 /**
- * @brief Helper to generate random multipoints within a range
+ * @brief Generate a multipoint array, the number of point in each multipoint follows a normal
+ * distribution
  *
  * @tparam T The floating point type for the coordinates
  * @param params Parameters to specify for the multipoints
  * @param stream The CUDA stream to use for device memory operations and kernel launches
  * @return a cuspatial::test::multipoint_array object
  */
-template <typename T>
-auto generate_multipoint_array(multipoint_generator_parameter<T> params,
+template <typename CoordType>
+auto generate_multipoint_array(multipoint_normal_distribution_generator_parameter<CoordType> params,
                                rmm::cuda_stream_view stream)
 {
-  rmm::device_uvector<vec_2d<T>> coordinates(params.num_points(), stream);
-  rmm::device_uvector<std::size_t> offsets(params.num_multipoints + 1, stream);
+  auto offsets =
+    detail::make_offsets(params.multipoint_count_generator(), params.num_multipoints() + 1, stream);
+  auto num_points = offsets.element(offsets.size() - 1, stream);
 
-  thrust::sequence(rmm::exec_policy(stream),
-                   offsets.begin(),
-                   offsets.end(),
-                   std::size_t{0},
-                   params.num_points_per_multipoints);
-
-  auto engine_x = deterministic_engine(params.num_points());
-  auto engine_y = deterministic_engine(2 * params.num_points());
-
-  auto x_dist = make_uniform_dist(params.lower_left.x, params.upper_right.x);
-  auto y_dist = make_uniform_dist(params.lower_left.y, params.upper_right.y);
-
-  auto point_gen =
-    point_generator(params.lower_left, params.upper_right, engine_x, engine_y, x_dist, y_dist);
-
-  thrust::tabulate(rmm::exec_policy(stream), coordinates.begin(), coordinates.end(), point_gen);
+  rmm::device_uvector<vec_2d<CoordType>> coordinates(num_points, stream);
+  thrust::tabulate(
+    rmm::exec_policy(stream), coordinates.begin(), coordinates.end(), params.points_generator());
 
   return make_multipoint_array(std::move(offsets), std::move(coordinates));
 }

@@ -13,14 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "thrust/detail/advance.inl"
 #include <cuspatial_test/base_fixture.hpp>
 #include <cuspatial_test/geometry_generator.cuh>
 #include <cuspatial_test/vector_equality.hpp>
 
 #include <cuspatial/geometry/vec_2d.hpp>
+#include <rmm/exec_policy.hpp>
 
 #include <gtest/gtest-param-test.h>
 #include <type_traits>
+
+#include <fstream>
 
 using namespace cuspatial;
 using namespace cuspatial::test;
@@ -319,4 +323,53 @@ INSTANTIATE_TEST_SUITE_P(
                      ::testing::Values<std::size_t>(1, 30),   // num_polygons_per_multipolygon
                      ::testing::Values<std::size_t>(0, 100),  // num_holes_per_polygon
                      ::testing::Values<std::size_t>(3, 100)   // num_sides_per_ring
+                     ));
+
+struct MultiPointFactoryStatsValidator : public BaseFixtureWithParam<std::size_t, std::size_t> {
+  void run(multipoint_normal_distribution_generator_parameter<float> params)
+  {
+    auto got = generate_multipoint_array(params, stream());
+
+    auto [got_geometry_offsets, got_coordinates] = got.release();
+
+    auto num_geometry_counts_it =
+      make_element_count_iterator_from_offset(got_geometry_offsets.begin());
+
+    auto h = cuspatial::test::to_host<std::size_t>(got_geometry_offsets);
+
+    std::ofstream ofs("/home/coder/output.txt", std::ios::out);
+    for (std::size_t i = 0; i < h.size() - 1; ++i) {
+      ofs << h[i + 1] - h[i] << ", ";
+    }
+    ofs.close();
+
+    EXPECT_TRUE(thrust::all_of(rmm::exec_policy(stream()),
+                               num_geometry_counts_it,
+                               thrust::next(num_geometry_counts_it, params.num_multipoints()),
+                               [] __device__(auto count) { return count >= 1; }));
+    EXPECT_EQ(got_geometry_offsets.size(), params.num_multipoints() + 1);
+  }
+};
+
+TEST_P(MultiPointFactoryStatsValidator, CountsVerification)
+{
+  // Structured binding unsupported by Gtest
+  std::size_t num_multipoints            = std::get<0>(GetParam());
+  std::size_t num_points_per_multipoints = std::get<1>(GetParam());
+  double stddev                          = 20.0;
+
+  auto params = multipoint_normal_distribution_generator_parameter<float>{
+    num_multipoints,
+    cuspatial::test::normal_random_variable{static_cast<double>(num_points_per_multipoints),
+                                            stddev},
+    vec_2d<float>{0.0, 0.0},
+    vec_2d<float>{1.0, 1.0}};
+  CUSPATIAL_RUN_TEST(this->run, params);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+  MultiPointFactoryStatsValidators,
+  MultiPointFactoryStatsValidator,
+  ::testing::Combine(::testing::Values<std::size_t>(1, 1000),  // num_multipoints
+                     ::testing::Values<std::size_t>(1, 30)     // num_points_per_multipoints
                      ));
