@@ -134,7 +134,7 @@ target_compile_options(cuproj
 
 target_compile_definitions(cuproj
             PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${CUPROJ_CXX_DEFINITIONS}>"
-                   "$<BUILD_INTERFACE:$<$<COMPILE_LANGUAGE:CUDA>:${CUPROJ_CUDA_DEFINITIONS}>>"
+                   "$<$<COMPILE_LANGUAGE:CUDA>:${CUPROJ_CUDA_DEFINITIONS}>"
 )
 
 # Specify include paths for the current target and dependents
