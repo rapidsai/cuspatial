@@ -34,7 +34,7 @@ enum class direction { DIR_FWD, DIR_INV };
 template <class CoordIter,
           typename Coordinate = typename CoordIter::value_type,
           typename T          = typename Coordinate::value_type>
-void transform(projection<T> proj,
+void transform(projection<T> const& proj,
                CoordIter first,
                CoordIter last,
                CoordIter result,
@@ -44,7 +44,7 @@ void transform(projection<T> proj,
   // currently only supports forward UTM transform from WGS84
   assert(dir == direction::DIR_FWD);
 
-  auto utm     = transverse_mercator<Coordinate>{proj};
+  auto utm     = transverse_mercator<Coordinate>{proj.params_};
   auto swap    = axis_swap<Coordinate>{};
   auto radians = degrees_to_radians<Coordinate>{};
   // TODO: won't compile with T{0} for second argument for some reason. Check if compiler bug.

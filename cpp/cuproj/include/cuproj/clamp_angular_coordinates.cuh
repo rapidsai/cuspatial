@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <cuproj/projection.cuh>
+#include <cuproj/operation.cuh>
 
 #include <thrust/iterator/transform_iterator.h>
 

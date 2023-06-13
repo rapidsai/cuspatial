@@ -16,19 +16,20 @@
 
 #pragma once
 
-#include <cuproj/operation.cuh>
-
 namespace cuproj {
 
-constexpr double DEG_TO_RAD = 0.017453292519943295769236907684886;
+enum class operation_type {
+  AXIS_SWAP,
+  DEGREES_TO_RADIANS,
+  CLAMP_ANGULAR_COORDINATES,
+  RADIANS_TO_DEGREES,
+  TRANSVERSE_MERCATOR
+};
 
-template <typename Coordinate>
-struct degrees_to_radians : operation<Coordinate> {
-  __host__ __device__ Coordinate operator()(Coordinate const& coord) const override
-  {
-    using T = typename Coordinate::value_type;
-    return Coordinate{static_cast<T>(coord.x * DEG_TO_RAD), static_cast<T>(coord.y * DEG_TO_RAD)};
-  }
+// base class for all operations
+template <typename Coordinate, typename T = typename Coordinate::value_type>
+struct operation {
+  virtual __host__ __device__ Coordinate operator()(Coordinate const& c) const { return c; }
 };
 
 }  // namespace cuproj

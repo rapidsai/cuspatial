@@ -17,32 +17,18 @@
 #pragma once
 
 #include <cuproj/ellipsoid.hpp>
+#include <cuproj/operation.cuh>
 
 #include <thrust/device_vector.h>
 
 namespace cuproj {
 
-enum class operation_type {
-  AXIS_SWAP,
-  DEGREES_TO_RADIANS,
-  CLAMP_ANGULAR_COORDINATES,
-  RADIANS_TO_DEGREES,
-  TRANSVERSE_MERCATOR
-};
-
-template <typename Coordinate, typename T = typename Coordinate::value_type>
-struct operation {
-  virtual __host__ __device__ Coordinate operator()(Coordinate const& c) const { return c; }
-};
-
-template <typename Coordinate, typename T = typename Coordinate::value_type>
-struct projection {
-  __host__ projection(ellipsoid<T> const& e, int utm_zone, T lam0, T prime_meridian_offset)
+template <typename T>
+struct projection_parameters {
+  projection_parameters(ellipsoid<T> const& e, int utm_zone, T lam0, T prime_meridian_offset)
     : ellipsoid_(e), utm_zone_(utm_zone), lam0_(lam0), prime_meridian_offset_(prime_meridian_offset)
   {
   }
-
-  // thrust::device_vector<operation_type> operations_;
 
   ellipsoid<T> ellipsoid_;
   int utm_zone_;
@@ -64,6 +50,19 @@ struct projection {
   };
 
   tmerc_params tmerc_params_{};
+};
+
+template <typename Coordinate, typename T = typename Coordinate::value_type>
+struct projection {
+  projection() = delete;
+
+  __host__ projection(ellipsoid<T> const& e, int utm_zone, T lam0, T prime_meridian_offset)
+    : params_(e, utm_zone, lam0, prime_meridian_offset)
+  {
+  }
+
+  thrust::device_vector<operation_type> operations_;
+  projection_parameters<T> params_;
 };
 
 }  // namespace cuproj
