@@ -92,7 +92,7 @@ class LineStringLineStringTouches(BinPred):
         equals_lhs = _basic_equals_count(points, lhs) > 0
         equals_rhs = _basic_equals_count(points, rhs) > 0
         touches = point_intersection & (equals_lhs | equals_rhs)
-        return touches
+        return touches & ~lhs.crosses(rhs)
 
 
 class LineStringPolygonTouches(BinPred):
@@ -127,9 +127,20 @@ class PolygonPolygonTouches(BinPred):
     def _preprocess(self, lhs, rhs):
         contains_lhs_none = _basic_contains_count(lhs, rhs) == 0
         contains_rhs_none = _basic_contains_count(rhs, lhs) == 0
+        contains_lhs = lhs.contains(rhs)
+        contains_rhs = rhs.contains(lhs)
         equals = lhs.geom_equals(rhs)
-        intersects = _basic_intersects_count(lhs, rhs) > 0
-        return ~equals & contains_lhs_none & contains_rhs_none & intersects
+        intersect_count = _basic_intersects_count(lhs, rhs)
+        intersects = (intersect_count > 0) & (intersect_count < rhs.sizes - 1)
+        result = (
+            ~equals
+            & contains_lhs_none
+            & contains_rhs_none
+            & ~contains_lhs
+            & ~contains_rhs
+            & intersects
+        )
+        return result
 
 
 DispatchDict = {

@@ -153,7 +153,7 @@ fi
 if (( ${NUMARGS} == 0 )) || hasArg libcuspatial; then
     mkdir -p ${LIBCUSPATIAL_BUILD_DIR}
     cd ${LIBCUSPATIAL_BUILD_DIR}
-    cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
+    cmake --trace --debug-find -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
           ${CUSPATIAL_CMAKE_CUDA_ARCHITECTURES} \
           -DCMAKE_CXX11_ABI=ON \
           -DBUILD_TESTS=${BUILD_TESTS} \
@@ -163,10 +163,10 @@ if (( ${NUMARGS} == 0 )) || hasArg libcuspatial; then
           ${EXTRA_CMAKE_ARGS} \
           ..
 
-    cmake --build . -j ${PARALLEL_LEVEL} ${VERBOSE_FLAG}
+    cmake --trace --debug-find --build . -j ${PARALLEL_LEVEL} ${VERBOSE_FLAG}
 
     if [[ ${INSTALL_TARGET} != "" ]]; then
-        cmake --build . -j ${PARALLEL_LEVEL} --target install ${VERBOSE_FLAG}
+        cmake --trace --debug-find --build . -j ${PARALLEL_LEVEL} --target install ${VERBOSE_FLAG}
     fi
 fi
 
