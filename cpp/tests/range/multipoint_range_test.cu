@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "gtest/gtest.h"
 #include <cuspatial_test/base_fixture.hpp>
 #include <cuspatial_test/vector_equality.hpp>
 #include <cuspatial_test/vector_factories.cuh>
@@ -190,8 +191,7 @@ class MultipointRangeTest : public BaseFixture {
   {
     auto rng = this->range();
     rmm::device_scalar<std::size_t> num_points(this->stream());
-    auto count_iterator =
-      make_count_iterator_from_offset_iterator(this->range().geometry_offset_begin());
+    auto count_iterator = make_count_iterator_from_offset_iterator(this->range().offsets_begin());
     thrust::copy_n(rmm::exec_policy(this->stream()), count_iterator, 1, num_points.data());
 
     rmm::device_uvector<vec_2d<T>> multipoint(num_points.value(this->stream()), this->stream());
@@ -274,7 +274,7 @@ class LengthOneMultiPointRangeTest : public MultipointRangeTest<T> {
  public:
   void make_test_multipoints()
   {
-    auto array             = make_multipoint_array<T>({{{1.0, 1.0}}, {10.0, 10.0}});
+    auto array             = make_multipoint_array<T>({{{1.0, 1.0}, {10.0, 10.0}}});
     this->test_multipoints = std::make_unique<decltype(array)>(std::move(array));
   }
 
@@ -285,7 +285,7 @@ class LengthOneMultiPointRangeTest : public MultipointRangeTest<T> {
   void test_multipoint_it()
   {
     auto leading_points = this->copy_leading_points();
-    auto expected       = make_device_vector<vec_2d<T>>({1.0, 1.0});
+    auto expected       = make_device_vector<vec_2d<T>>({{1.0, 1.0}});
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(leading_points, expected);
   }
 
@@ -296,7 +296,7 @@ class LengthOneMultiPointRangeTest : public MultipointRangeTest<T> {
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(points, expected);
   }
 
-  void test_offset_it()
+  void test_offsets_it()
   {
     auto offsets  = this->copy_offsets();
     auto expected = make_device_vector<std::size_t>({0, 1});
@@ -329,18 +329,81 @@ class LengthOneMultiPointRangeTest : public MultipointRangeTest<T> {
   void test_is_single_point_range() { EXPECT_FALSE(this->range().is_single_point_range()); }
 };
 
+TYPED_TEST_CASE(LengthOneMultiPointRangeTest, FloatingPointTypes);
+TYPED_TEST(LengthOneMultiPointRangeTest, Test) { this->run_test(); }
+
 template <typename T>
 class LengthFiveMultiPointRangeTest : public MultipointRangeTest<T> {
  public:
   void make_test_multipoints()
   {
-    this->test_multipoints = make_multipoint_array<T>({{{0.0, 0.0}, {1.0, 1.0}},
+    auto array             = make_multipoint_array<T>({{{0.0, 0.0}, {1.0, 1.0}},
                                                        {{10.0, 10.0}},
                                                        {{20.0, 21.0}, {22.0, 23.0}},
                                                        {{30.0, 31.0}, {32.0, 33.0}, {34.0, 35.0}},
                                                        {{}}});
+    this->test_multipoints = std::make_unique<decltype(array)>(std::move(array));
   }
+
+  void test_num_multipoints() { EXPECT_EQ(this->range().num_multipoints(), 5); }
+
+  void test_num_points() { EXPECT_EQ(this->range().num_points(), 8); }
+
+  void test_multipoint_it()
+  {
+    auto leading_points = this->copy_leading_points();
+    auto expected       = make_device_vector<vec_2d<T>>(
+      {{0.0, 0.0}, {10.0, 10.0}, {20.0, 21.0}, {30.0, 31.0}, {-1, -1}});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(leading_points, expected);
+  }
+
+  void test_point_it()
+  {
+    auto points   = this->copy_all_points();
+    auto expected = make_device_vector<vec_2d<T>>({{0.0, 0.0},
+                                                   {1.0, 1.0},
+                                                   {10.0, 10.0},
+                                                   {20.0, 21.0},
+                                                   {22.0, 23.0},
+                                                   {30.0, 31.0},
+                                                   {32.0, 33.0},
+                                                   {34.0, 35.0}});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(points, expected);
+  }
+
+  void test_offsets_it()
+  {
+    auto offsets  = this->copy_offsets();
+    auto expected = make_device_vector<std::size_t>({0, 2, 3, 5, 8, 8});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(offsets, expected);
+  }
+
+  void test_geometry_idx_from_point_idx()
+  {
+    auto geometry_indices = this->copy_geometry_idx();
+    auto expected         = make_device_vector<std::size_t>({0, 0, 1, 2, 2, 3, 3, 3});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(geometry_indices, expected);
+  }
+
+  void test_subscript_operator()
+  {
+    auto second_multipoint = this->copy_ith_multipoint(2);
+    auto expected          = make_device_vector<vec_2d<T>>({{20.0, 21.0}, {22.0, 23.0}});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(second_multipoint, expected);
+  }
+
+  void test_point_accessor()
+  {
+    auto third_point = this->copy_ith_point(3);
+    auto expected    = vec_2d<T>{20.0, 21.0};
+    EXPECT_EQ(third_point.value(this->stream()), expected);
+  }
+
+  void test_is_single_point_range() { EXPECT_FALSE(this->range().is_single_point_range()); }
 };
+
+TYPED_TEST_CASE(LengthFiveMultiPointRangeTest, FloatingPointTypes);
+TYPED_TEST(LengthFiveMultiPointRangeTest, Test) { this->run_test(); }
 
 template <typename T>
 class LengthOneThousandRangeTest : public MultipointRangeTest<T> {
