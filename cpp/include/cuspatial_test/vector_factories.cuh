@@ -406,5 +406,17 @@ auto make_multipoint_array(rmm::device_uvector<IndexType> geometry_offsets,
     std::move(geometry_offsets), std::move(coords)};
 }
 
+/**
+ * @brief Factory method to construct multipoint array by moving the offsets and coordinates from
+ * `rmm::device_vector`.
+ */
+template <typename IndexType, typename T>
+auto make_multipoint_array(rmm::device_vector<IndexType> geometry_offsets,
+                           rmm::device_vector<vec_2d<T>> coords)
+{
+  return multipoint_array<rmm::device_vector<std::size_t>, rmm::device_vector<vec_2d<T>>>{
+    std::move(geometry_offsets), std::move(coords)};
+}
+
 }  // namespace test
 }  // namespace cuspatial

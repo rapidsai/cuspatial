@@ -31,6 +31,7 @@
 #include <rmm/exec_policy.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
+#include <thrust/iterator/constant_iterator.h>
 #include <thrust/sequence.h>
 
 #include <initializer_list>
@@ -407,27 +408,108 @@ TYPED_TEST(LengthFiveMultiPointRangeTest, Test) { this->run_test(); }
 template <typename T>
 class LengthOneThousandRangeTest : public MultipointRangeTest<T> {
  public:
+  std::size_t static constexpr num_multipoints          = 1000;
+  std::size_t static constexpr num_point_per_multipoint = 3;
+  std::size_t static constexpr num_points = num_multipoints * num_point_per_multipoint;
   void make_test_multipoints()
   {
-    std::size_t constexpr num_multipoints          = 1000;
-    std::size_t constexpr num_point_per_multipoint = 3;
+    rmm::device_vector<std::size_t> geometry_offsets(num_multipoints + 1);
+    rmm::device_vector<vec_2d<T>> coordinates(num_points);
 
-    rmm::device_uvector<std::size_t> geometry_offsets(num_multipoints + 1, this->stream());
-    rmm::device_uvector<vec_2d<T>> coordinates(num_multipoints * num_point_per_multipoint,
-                                               this->stream());
+    thrust::sequence(rmm::exec_policy(this->stream()),
+                     geometry_offsets.begin(),
+                     geometry_offsets.end(),
+                     0ul,
+                     num_point_per_multipoint);
 
-    thrust::sequence(
-      rmm::exec_policy(this->stream()), geometry_offsets.begin(), geometry_offsets.end(), 0, 3);
+    thrust::tabulate(rmm::exec_policy(this->stream()),
+                     coordinates.begin(),
+                     coordinates.end(),
+                     [] __device__(auto i) {
+                       return vec_2d<T>{static_cast<T>(i), 10.0};
+                     });
 
-    thrust::generate_n(rmm::exec_policy(this->stream()),
-                       geometry_offsets.begin(),
-                       geometry_offsets.end(),
-                       [] __device__() {
-                         return vec_2d<T>{0.0, 10.0};
-                       });
-
-    auto array = make_multipoint_array<T>(std::move(geometry_offsets), std::move(coordinates));
+    auto array =
+      make_multipoint_array<std::size_t, T>(std::move(geometry_offsets), std::move(coordinates));
 
     this->test_multipoints = std::make_unique<decltype(array)>(std::move(array));
   }
+
+  void test_num_multipoints() { EXPECT_EQ(this->range().num_multipoints(), num_multipoints); }
+
+  void test_num_points() { EXPECT_EQ(this->range().num_points(), num_points); }
+
+  void test_multipoint_it()
+  {
+    auto leading_points = this->copy_leading_points();
+    auto expect         = rmm::device_uvector<vec_2d<T>>(num_multipoints, this->stream());
+
+    thrust::tabulate(
+      rmm::exec_policy(this->stream()), expect.begin(), expect.end(), [] __device__(auto i) {
+        return vec_2d<T>{static_cast<T>(i) * num_point_per_multipoint, 10.0};
+      });
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(leading_points, expect);
+  }
+
+  void test_point_it()
+  {
+    auto all_points = this->copy_all_points();
+    auto expect     = rmm::device_uvector<vec_2d<T>>(num_points, this->stream());
+
+    thrust::tabulate(
+      rmm::exec_policy(this->stream()), expect.begin(), expect.end(), [] __device__(auto i) {
+        return vec_2d<T>{static_cast<T>(i), 10.0};
+      });
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(all_points, expect);
+  }
+
+  void test_offsets_it()
+  {
+    auto offsets = this->copy_offsets();
+    auto expect  = rmm::device_uvector<std::size_t>(num_multipoints + 1, this->stream());
+    thrust::sequence(rmm::exec_policy(this->stream()),
+                     expect.begin(),
+                     expect.end(),
+                     0ul,
+                     num_point_per_multipoint);
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(offsets, expect);
+  }
+
+  void test_geometry_idx_from_point_idx()
+  {
+    auto indices = this->copy_geometry_idx();
+    auto expect  = rmm::device_uvector<std::size_t>(3000, this->stream());
+    thrust::tabulate(
+      rmm::exec_policy(this->stream()), expect.begin(), expect.end(), [] __device__(auto i) {
+        return i / num_point_per_multipoint;
+      });
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(indices, expect);
+  }
+
+  void test_subscript_operator()
+  {
+    auto multipoint_five_hundred_thirty_third = this->copy_ith_multipoint(533);
+    auto expect = make_device_vector<vec_2d<T>>({{533 * num_point_per_multipoint, 10.0},
+                                                 {533 * num_point_per_multipoint + 1, 10.0},
+                                                 {533 * num_point_per_multipoint + 2, 10.0}});
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(multipoint_five_hundred_thirty_third, expect);
+  }
+
+  void test_point_accessor()
+  {
+    auto point_seventeen_hundred_seventy_six = this->copy_ith_point(1776);
+    auto expect                              = vec_2d<T>{1776, 10.0};
+
+    EXPECT_EQ(point_seventeen_hundred_seventy_six.value(this->stream()), expect);
+  }
+
+  void test_is_single_point_range() { EXPECT_FALSE(this->range().is_single_point_range()); }
 };
+
+TYPED_TEST_CASE(LengthOneThousandRangeTest, FloatingPointTypes);
+TYPED_TEST(LengthOneThousandRangeTest, Test) { this->run_test(); }
