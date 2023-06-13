@@ -50,8 +50,8 @@ void __global__ array_access_tester(MultiPointRange multipoints,
 template <typename MultiPointRange, typename OutputIt>
 void __global__ point_accessor_tester(MultiPointRange multipoints, std::size_t i, OutputIt point)
 {
-  using T = typename MultiPointRange::element_t;
-  point   = multipoints.point(i);
+  using T  = typename MultiPointRange::element_t;
+  point[0] = multipoints.point(i);
 }
 
 template <typename T>
@@ -84,29 +84,29 @@ class MultipointRangeTest : public BaseFixture {
 
   void run_test()
   {
-    // test_num_multipoints();
+    test_num_multipoints();
 
-    // test_num_points();
+    test_num_points();
 
-    // test_size();
+    test_size();
 
-    // test_multipoint_it();
+    test_multipoint_it();
 
-    // test_begin();
+    test_begin();
 
-    // test_end();
+    test_end();
 
-    // test_point_it();
+    test_point_it();
 
-    // test_offsets_it();
+    test_offsets_it();
 
-    // test_geometry_idx_from_point_idx();
+    test_geometry_idx_from_point_idx();
 
     test_subscript_operator();
 
-    // test_point_accessor();
+    test_point_accessor();
 
-    // test_is_single_point_range();
+    test_is_single_point_range();
   }
 
   virtual void test_num_multipoints() = 0;
@@ -180,7 +180,7 @@ class MultipointRangeTest : public BaseFixture {
     auto rng = this->range();
 
     rmm::device_scalar<vec_2d<T>> point(this->stream());
-    array_access_tester<<<1, 1, 0, this->stream()>>>(rng, i, point.data());
+    point_accessor_tester<<<1, 1, 0, this->stream()>>>(rng, i, point.data());
     CUSPATIAL_CHECK_CUDA(this->stream());
 
     return point;
@@ -340,7 +340,7 @@ class LengthFiveMultiPointRangeTest : public MultipointRangeTest<T> {
                                                        {{10.0, 10.0}},
                                                        {{20.0, 21.0}, {22.0, 23.0}},
                                                        {{30.0, 31.0}, {32.0, 33.0}, {34.0, 35.0}},
-                                                       {{}}});
+                                                       {}});
     this->test_multipoints = std::make_unique<decltype(array)>(std::move(array));
   }
 
@@ -426,7 +426,8 @@ class LengthOneThousandRangeTest : public MultipointRangeTest<T> {
                          return vec_2d<T>{0.0, 10.0};
                        });
 
-    this->test_multipoints =
-      make_multipoint_array<T>(std::move(geometry_offsets), std::move(coordinates));
+    auto array = make_multipoint_array<T>(std::move(geometry_offsets), std::move(coordinates));
+
+    this->test_multipoints = std::make_unique<decltype(array)>(std::move(array));
   }
 };
