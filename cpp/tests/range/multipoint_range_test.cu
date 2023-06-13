@@ -14,15 +14,18 @@
  * limitations under the License.
  */
 
-#include <cudf/detail/utilities/vector_factories.hpp>
 #include <cuspatial_test/base_fixture.hpp>
 #include <cuspatial_test/vector_equality.hpp>
 #include <cuspatial_test/vector_factories.cuh>
 
+#include <cuspatial/detail/functors.cuh>
+#include <cuspatial/error.hpp>
 #include <cuspatial/geometry/segment.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/iterator_factory.cuh>
 
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/device_scalar.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -34,30 +37,39 @@
 using namespace cuspatial;
 using namespace cuspatial::test;
 
+template <typename MultiPointRange, typename OutputIt>
+void __global__ array_access_tester(MultiPointRange multipoints,
+                                    std::size_t i,
+                                    OutputIt output_points)
+{
+  using T = typename MultiPointRange::element_t;
+  for (vec_2d<T> point : multipoints[i])
+    output_points[i] = point;
+}
+
 template <typename T>
 class MultipointRangeTest : public BaseFixture {
  public:
   struct copy_leading_point_per_multipoint {
-    template<typename MultiPointRef>
+    template <typename MultiPointRef>
     vec_2d<T> __device__ operator()(MultiPointRef multipoint)
     {
       return multipoint.size() > 0 ? multipoint[0] : vec_2d<T>{-1, -1};
     }
   };
 
-  template<typename MultiPointRange>
+  template <typename MultiPointRange>
   struct point_idx_to_geometry_idx {
-
     MultiPointRange rng;
 
     std::size_t __device__ operator()(std::size_t pidx)
     {
-        return rng.geometry_idx_from_point_idx(pidx);
+      return rng.geometry_idx_from_point_idx(pidx);
     }
   };
 
   void SetUp() { make_test_multipoints(); }
-  auto range() { return test_multipoints.range(); }
+  auto range() { return test_multipoints->range(); }
 
   virtual void make_test_multipoints() = 0;
 
@@ -83,7 +95,7 @@ class MultipointRangeTest : public BaseFixture {
 
     test_subscript_operator();
 
-    test_point();
+    test_point_accessor();
 
     test_is_single_point_range();
   }
@@ -108,7 +120,7 @@ class MultipointRangeTest : public BaseFixture {
 
   virtual void test_subscript_operator() = 0;
 
-  virtual void test_point() = 0;
+  virtual void test_point_accessor() = 0;
 
   virtual void test_is_single_point_range() = 0;
 
@@ -119,7 +131,7 @@ class MultipointRangeTest : public BaseFixture {
     rmm::device_uvector<vec_2d<T>> leading_points(rng.num_multipoints(), this->stream());
     thrust::transform(rmm::exec_policy(this->stream()),
                       rng.multipoint_begin(),
-                      rng.multipoin_end(),
+                      rng.multipoint_end(),
                       leading_points.begin(),
                       copy_leading_point_per_multipoint{});
 
@@ -135,12 +147,12 @@ class MultipointRangeTest : public BaseFixture {
     return points;
   };
 
-  rmm::device_uvector<vec_2d<T>> copy_offsets()
+  rmm::device_uvector<std::size_t> copy_offsets()
   {
     auto rng = this->range();
-    rmm::device_uvector<std::size_t> offsets(rng.num_multipoints()+1, this->stream());
+    rmm::device_uvector<std::size_t> offsets(rng.num_multipoints() + 1, this->stream());
     thrust::copy(
-      rmm::exec_policy(this->stream()), rng.offset_begin(), rng.offset_end(), offsets.begin());
+      rmm::exec_policy(this->stream()), rng.offsets_begin(), rng.offsets_end(), offsets.begin());
     return offsets;
   };
 
@@ -150,27 +162,37 @@ class MultipointRangeTest : public BaseFixture {
     rmm::device_uvector<std::size_t> idx(rng.num_points(), this->stream());
 
     thrust::tabulate(
-        rmm::exec_policy(this->stream()),
-        idx.begin(),
-        idx.end(),
-        point_idx_to_geometry_idx{rng}
-    );
+      rmm::exec_policy(this->stream()), idx.begin(), idx.end(), point_idx_to_geometry_idx{rng});
     return idx;
   }
 
   rmm::device_uvector<vec_2d<T>> copy_ith_multipoint(std::size_t i)
   {
+    auto rng = this->range();
     rmm::device_scalar<std::size_t> num_points(this->stream());
+    auto count_iterator =
+      make_count_iterator_from_offset_iterator(this->range().geometry_offset_begin());
+    thrust::copy_n(rmm::exec_policy(this->stream()), count_iterator, 1, num_points.data());
 
+    rmm::device_uvector<vec_2d<T>> multipoint(num_points.value(this->stream()), this->stream());
+    array_access_tester<<<1, 1, 0, this->stream()>>>(rng, i, multipoint.begin());
+    CUSPATIAL_CHECK_CUDA(this->stream());
+
+    return multipoint;
   }
 
-  multipoint_array<T, std::size_t> test_multipoints;
+  std::unique_ptr<multipoint_array<rmm::device_vector<std::size_t>, rmm::device_vector<vec_2d<T>>>>
+    test_multipoints;
 };
 
 template <typename T>
 class EmptyMultiPointRangeTest : public MultipointRangeTest<T> {
  public:
-  void make_test_multipoints() { this->test_multipoints = make_multipoint_array<T>({}); }
+  void make_test_multipoints()
+  {
+    auto array             = make_multipoint_array<T>({});
+    this->test_multipoints = std::make_unique<decltype(array)>(std::move(array));
+  }
 
   void test_num_multipoints() { EXPECT_EQ(this->range().num_multipoints(), 0); }
 
@@ -196,8 +218,9 @@ class EmptyMultiPointRangeTest : public MultipointRangeTest<T> {
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(points, expected);
   }
 
-  void test_offsets_it() {
-    auto offsets = this->copy_all_points();
+  void test_offsets_it()
+  {
+    auto offsets  = this->copy_offsets();
     auto expected = make_device_vector<std::size_t>({0});
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(offsets, expected);
   }
@@ -205,18 +228,32 @@ class EmptyMultiPointRangeTest : public MultipointRangeTest<T> {
   void test_geometry_idx_from_point_idx()
   {
     auto geometry_indices = rmm::device_uvector<std::size_t>(0, this->stream());
-    auto expected = rmm::device_uvector<std::size_t>(0, this->stream()) ;
+    auto expected         = rmm::device_uvector<std::size_t>(0, this->stream());
 
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(geometry_indices, expected);
   }
 
   void test_subscript_operator()
   {
-
-
+    // Range is empty, nothing to test.
+    SUCCEED();
   }
 
+  void test_point_accessor()
+  {
+    // Range is empty, nothing to test.
+    SUCCEED();
+  }
+
+  void test_is_single_point_range()
+  {
+    // Range is empty, undefined behavior.
+    SUCCEED();
+  }
 };
+
+TYPED_TEST_CASE(EmptyMultiPointRangeTest, FloatingPointTypes);
+TYPED_TEST(EmptyMultiPointRangeTest, Test) { this->run_test(); }
 
 template <typename T>
 class LengthOneMultiPointRangeTest : public MultipointRangeTest<T> {
