@@ -114,7 +114,7 @@ endif()
 # - library targets -------------------------------------------------------------------------------
 
 # cuProj
-add_subdirectory(cuproj ${CMAKE_CURRENT_BINARY_DIR}/cuproj)
+add_subdirectory(cuproj)
 
 add_library(cuspatial
     src/bounding_boxes/linestring_bounding_boxes.cu
