@@ -46,7 +46,7 @@ Execute `./build.sh -h` for full list of available options.
 
 ## Validate Installation with C++ and Python Tests
 
-```note
+```{note}
 To manage difference between branches and build types, the build directories are located at
 `$CUSPATIAL_HOME/cpp/build/[release|debug]` depending on build type, and  `$CUSPATIAL_HOME/cpp/build/latest`.
 is a symbolic link to the most recent build directory. On bare metal builds, remove the extra `latest` level in
