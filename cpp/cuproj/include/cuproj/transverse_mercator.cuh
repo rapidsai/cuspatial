@@ -69,7 +69,7 @@
 
 #include <cuproj/ellipsoid.hpp>
 #include <cuproj/operation.cuh>
-#include <cuproj/projection.cuh>
+#include <cuproj/projection_parameters.hpp>
 
 #include <thrust/iterator/transform_iterator.h>
 
@@ -149,16 +149,15 @@ template <typename Coordinate, typename T = typename Coordinate::value_type>
 struct transverse_mercator : operation<Coordinate> {
   static constexpr int ETMERC_ORDER = 6;
 
-  __host__ transverse_mercator(projection_parameters<T> const& p) : params_(p)
+  __host__ __device__ transverse_mercator(projection_parameters<T> const& params) : params_(params)
   {
-    setup(p.utm_zone_);
   }
 
-  __host__ __device__ Coordinate operator()(Coordinate const& coord) const override
+  __host__ __device__ Coordinate operator()(Coordinate const& coord) const
   {
     // so we don't have to qualify the class name everywhere.
-    auto const& tmerc_params = params_.tmerc_params_;
-    auto const& ellipsoid    = params_.ellipsoid_;
+    auto& tmerc_params = this->params_.tmerc_params_;
+    auto& ellipsoid    = this->params_.ellipsoid_;
 
     /* ell. LAT, LNG -> Gaussian LAT, LNG */
     T Cn = gatg(tmerc_params.cbg, ETMERC_ORDER, coord.y, cos(2 * coord.y), sin(2 * coord.y));
@@ -241,32 +240,30 @@ struct transverse_mercator : operation<Coordinate> {
     xy.x *= ellipsoid.a;
     xy.y *= ellipsoid.a;
 
-    xy.x = /*P->fr_meter **/ (xy.x + params_.x0);
-    xy.y = /*P->fr_meter **/ (xy.y + params_.y0);
+    xy.x = /*P->fr_meter **/ (xy.x + this->params_.x0);
+    xy.y = /*P->fr_meter **/ (xy.y + this->params_.y0);
 
     return xy;
   }
 
-  T lam0() const { return params_.lam0_; }
-
-  projection_parameters<T> params_;
-
- private:
-  void setup(int zone)
+  projection_parameters<T> setup(projection_parameters<T> const& input_params)
   {
+    params_ = input_params;
+
     // so we don't have to qualify the class name everywhere.
+    auto& params       = params_;
     auto& tmerc_params = params_.tmerc_params_;
     auto& ellipsoid    = params_.ellipsoid_;
 
     assert(ellipsoid.es > 0);
 
-    params_.x0 = static_cast<T>(500000);
-    params_.y0 = static_cast<T>(10000000);
+    params.x0 = static_cast<T>(500000);
+    params.y0 = static_cast<T>(10000000);
 
-    if (zone > 0 && zone <= 60) --zone;
-    params_.lam0_ = (zone + .5) * M_PI / 30. - M_PI;
-    params_.k0    = T{0.9996};
-    params_.phi0  = T{0};
+    if (params.utm_zone_ > 0 && params.utm_zone_ <= 60) --params.utm_zone_;
+    params.lam0_ = (params.utm_zone_ + .5) * M_PI / 30. - M_PI;
+    params.k0    = T{0.9996};
+    params.phi0  = T{0};
 
     /* third flattening */
     const T n = ellipsoid.n;
@@ -309,7 +306,7 @@ struct transverse_mercator : operation<Coordinate> {
     /* Transverse Mercator (UTM, ITM, etc) */
     np = n * n;
     /* Norm. mer. quad, K&W p.50 (96), p.19 (38b), p.5 (2) */
-    tmerc_params.Qn = params_.k0 / (1 + n) * (1 + np * (1 / 4.0 + np * (1 / 64.0 + np / 256.0)));
+    tmerc_params.Qn = params.k0 / (1 + n) * (1 + np * (1 / 4.0 + np * (1 / 64.0 + np / 256.0)));
     /* coef of trig series */
     /* utg := ell. N, E -> sph. N, E,  KW p194 (65) */
     /* gtu := sph. N, E -> ell. N, E,  KW p196 (69) */
@@ -342,13 +339,19 @@ struct transverse_mercator : operation<Coordinate> {
     tmerc_params.gtu[5] = np * (212378941 / 319334400.0);
 
     /* Gaussian latitude value of the origin latitude */
-    const T Z = gatg(
-      tmerc_params.cbg, ETMERC_ORDER, params_.phi0, cos(2 * params_.phi0), sin(2 * params_.phi0));
+    const T Z =
+      gatg(tmerc_params.cbg, ETMERC_ORDER, params.phi0, cos(2 * params.phi0), sin(2 * params.phi0));
 
     /* Origin northing minus true northing at the origin latitude */
     /* i.e. true northing = N - P->Zb                         */
     tmerc_params.Zb = -tmerc_params.Qn * (Z + clens(tmerc_params.gtu, ETMERC_ORDER, 2 * Z));
+
+    return params;
   }
+
+  T lam0() const { return this->params_.lam0_; }
+
+  projection_parameters<T> params_{};
 };
 
 }  // namespace cuproj

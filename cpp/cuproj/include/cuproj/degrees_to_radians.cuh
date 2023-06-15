@@ -24,7 +24,7 @@ constexpr double DEG_TO_RAD = 0.017453292519943295769236907684886;
 
 template <typename Coordinate>
 struct degrees_to_radians : operation<Coordinate> {
-  __host__ __device__ Coordinate operator()(Coordinate const& coord) const override
+  __host__ __device__ Coordinate operator()(Coordinate const& coord) const
   {
     using T = typename Coordinate::value_type;
     return Coordinate{static_cast<T>(coord.x * DEG_TO_RAD), static_cast<T>(coord.y * DEG_TO_RAD)};

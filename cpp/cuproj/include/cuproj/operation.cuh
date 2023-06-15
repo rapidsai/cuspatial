@@ -16,20 +16,27 @@
 
 #pragma once
 
+#include <cuproj/projection_parameters.hpp>
+
 namespace cuproj {
 
-enum class operation_type {
+enum operation_type {
   AXIS_SWAP,
   DEGREES_TO_RADIANS,
   CLAMP_ANGULAR_COORDINATES,
-  RADIANS_TO_DEGREES,
+  // RADIANS_TO_DEGREES,
   TRANSVERSE_MERCATOR
 };
 
 // base class for all operations
 template <typename Coordinate, typename T = typename Coordinate::value_type>
 struct operation {
-  virtual __host__ __device__ Coordinate operator()(Coordinate const& c) const { return c; }
+  __host__ __device__ Coordinate operator()(Coordinate const& c) const { return c; }
+
+  __host__ projection_parameters<T> setup(projection_parameters<T> const& params)
+  {
+    return params;
+  };
 };
 
 }  // namespace cuproj

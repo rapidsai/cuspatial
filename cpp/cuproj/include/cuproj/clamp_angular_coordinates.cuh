@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cuproj/operation.cuh>
+#include <cuproj/projection_parameters.hpp>
 
 #include <thrust/iterator/transform_iterator.h>
 
@@ -29,12 +30,14 @@ struct clamp_angular_coordinates : operation<Coordinate> {
   static constexpr T EPS_LAT      = 1e-12;
   static constexpr double M_TWOPI = 6.283185307179586476925286766559005;
 
-  clamp_angular_coordinates(T lam0, T prime_meridian_offset)
-    : lam0_(lam0), prime_meridian_offset_(prime_meridian_offset)
+  __host__ __device__ clamp_angular_coordinates(projection_parameters<T> const& params)
+    : lam0_(params.lam0_), prime_meridian_offset_(params.prime_meridian_offset_)
   {
   }
 
-  __host__ __device__ Coordinate operator()(Coordinate const& coord) const override
+  projection_parameters<T> setup(projection_parameters<T> const& params) { return params; }
+
+  __host__ __device__ Coordinate operator()(Coordinate const& coord) const
   {
     // check for latitude or longitude over-range
     T t = (coord.y < 0 ? -coord.y : coord.y) - M_PI_2;
@@ -61,9 +64,6 @@ struct clamp_angular_coordinates : operation<Coordinate> {
     return xy;
   }
 
-  T lam0_;
-  T prime_meridian_offset_;
-
  private:
   __host__ __device__ T clamp_longitude(T longitude) const
   {
@@ -79,6 +79,9 @@ struct clamp_angular_coordinates : operation<Coordinate> {
     // adjust back to -pi..pi range
     return longitude - M_PI;
   }
+
+  T lam0_{};
+  T prime_meridian_offset_{};
 };
 
 }  // namespace cuproj

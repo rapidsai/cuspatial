@@ -16,49 +16,130 @@
 
 #pragma once
 
+#include <cuproj/axis_swap.cuh>
+#include <cuproj/clamp_angular_coordinates.cuh>
+#include <cuproj/degrees_to_radians.cuh>
 #include <cuproj/ellipsoid.hpp>
 #include <cuproj/operation.cuh>
+#include <cuproj/projection_parameters.hpp>
+#include <cuproj/transverse_mercator.cuh>
+
+#include <rmm/cuda_stream_view.hpp>
+#include <rmm/exec_policy.hpp>
 
 #include <thrust/device_vector.h>
 
+#include <cuda/std/tuple>
+
 namespace cuproj {
 
-template <typename T>
-struct projection_parameters {
-  projection_parameters(ellipsoid<T> const& e, int utm_zone, T lam0, T prime_meridian_offset)
-    : ellipsoid_(e), utm_zone_(utm_zone), lam0_(lam0), prime_meridian_offset_(prime_meridian_offset)
+enum class direction { DIR_FWD, DIR_INV };
+
+template <typename Coordinate, typename T = typename Coordinate::value_type>
+struct pipeline {
+  pipeline(projection_parameters<T> const& params,
+           operation_type const* ops,
+           std::size_t num_stages)
+    : params_(params), d_ops(ops), num_stages(num_stages)
   {
   }
 
-  ellipsoid<T> ellipsoid_;
-  int utm_zone_;
-  T lam0_;
-  T prime_meridian_offset_;
+  __device__ Coordinate operator()(Coordinate const& c) const
+  {
+    // TODO: improve this dispatch, and consider if we can use virtual functions
+    Coordinate c_out{c};
+    thrust::for_each(thrust::seq, d_ops, d_ops + num_stages, [&](auto const& op) {
+      switch (op) {
+        case operation_type::AXIS_SWAP: {
+          auto op = axis_swap<Coordinate>{};
+          c_out   = op(c_out);
+          break;
+        }
+        case operation_type::DEGREES_TO_RADIANS: {
+          auto op = degrees_to_radians<Coordinate>{};
+          c_out   = op(c_out);
+          break;
+        }
+        // case operation_type::RADIANS_TO_DEGREES:
+        case operation_type::CLAMP_ANGULAR_COORDINATES: {
+          auto op = clamp_angular_coordinates<Coordinate>{params_};
+          c_out   = op(c_out);
+          break;
+        }
+        case operation_type::TRANSVERSE_MERCATOR: {
+          auto op = transverse_mercator<Coordinate>{params_};
+          c_out   = op(c_out);
+          break;
+        }
+      }
+    });
+    return c_out;
+  }
 
-  T k0   = 0.0;  // scaling
-  T phi0 = 0.0;  // central parallel
-  T x0   = 0.0;  // false easting
-  T y0   = 0.0;  // false northing
-
-  struct tmerc_params {
-    T Qn;     /* Merid. quad., scaled to the projection */
-    T Zb;     /* Radius vector in polar coord. systems  */
-    T cgb[6]; /* Constants for Gauss -> Geo lat */
-    T cbg[6]; /* Constants for Geo lat -> Gauss */
-    T utg[6]; /* Constants for transv. merc. -> geo */
-    T gtu[6]; /* Constants for geo -> transv. merc. */
-  };
-
-  tmerc_params tmerc_params_{};
+  projection_parameters<T> params_;
+  operation_type const* d_ops;
+  std::size_t num_stages;
 };
 
 template <typename Coordinate, typename T = typename Coordinate::value_type>
 struct projection {
   projection() = delete;
 
-  __host__ projection(ellipsoid<T> const& e, int utm_zone, T lam0, T prime_meridian_offset)
-    : params_(e, utm_zone, lam0, prime_meridian_offset)
+  __host__ projection(std::vector<operation_type> const& operations,
+                      projection_parameters<T> const& params)
+    : params_(params)
   {
+    setup(operations);
+  }
+
+  template <class CoordIter>
+  void transform(CoordIter first,
+                 CoordIter last,
+                 CoordIter result,
+                 direction dir,
+                 rmm::cuda_stream_view stream = rmm::cuda_stream_default)
+  {
+    static_assert(std::is_same_v<typename CoordIter::value_type, Coordinate>,
+                  "Coordinate type must match iterator value type");
+    // currently only supports forward UTM transform from WGS84
+    assert(dir == direction::DIR_FWD);
+
+    auto pipe = pipeline<Coordinate>{params_, operations_.data().get(), operations_.size()};
+    thrust::transform(rmm::exec_policy(stream), first, last, result, pipe);
+  }
+
+ private:
+  void setup(std::vector<operation_type> const& operations)
+  {
+    std::for_each(operations.begin(), operations.end(), [&](auto const& op) {
+      switch (op) {
+        case operation_type::AXIS_SWAP: {
+          // TODO: some ops don't have setup.  Should we make them all have setup?
+          // auto op = axis_swap<Coordinate>{};
+          // params_ = op.setup(params_);
+          break;
+        }
+        case operation_type::DEGREES_TO_RADIANS: {
+          // auto op = degrees_to_radians<Coordinate>{};
+          // params_ = op.setup(params_);
+          break;
+        }
+        // case operation_type::RADIANS_TO_DEGREES:
+        case operation_type::CLAMP_ANGULAR_COORDINATES: {
+          // auto op = clamp_angular_coordinates<Coordinate>{params_};
+          // params_ = op.setup(params_);
+          break;
+        }
+        case operation_type::TRANSVERSE_MERCATOR: {
+          auto op = transverse_mercator<Coordinate>{params_};
+          params_ = op.setup(params_);
+          break;
+        }
+      }
+    });
+
+    operations_.resize(operations.size());
+    thrust::copy(operations.begin(), operations.end(), operations_.begin());
   }
 
   thrust::device_vector<operation_type> operations_;

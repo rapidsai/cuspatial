@@ -16,7 +16,8 @@
 
 #include <cuproj/ellipsoid.hpp>
 #include <cuproj/error.hpp>
-#include <cuproj/transform.cuh>
+#include <cuproj/projection.cuh>
+// #include <cuproj/transform.cuh>
 
 #include <cuspatial/geometry/vec_2d.hpp>
 
@@ -92,10 +93,19 @@ TYPED_TEST(ProjectionTest, Test_forward_one)
   thrust::device_vector<coordinate<T>> d_out(d_in.size());
   thrust::device_vector<coordinate<T>> d_expected = expected;
 
-  cuproj::projection<coordinate<T>> tmerc_proj{ellps, 56, 0, 0};
+  cuproj::projection_parameters<T> tmerc_proj_params{ellps, 56, T{0}, T{0}};
 
-  cuproj::transform(
-    tmerc_proj, d_in.begin(), d_in.end(), d_out.begin(), cuproj::direction::DIR_FWD);
+  // TODO: provide automation for common pipelines
+  // and/or translate from PROJ strings / pipelines
+  std::vector<cuproj::operation_type> h_utm_pipeline{
+    cuproj::operation_type::AXIS_SWAP,
+    cuproj::operation_type::DEGREES_TO_RADIANS,
+    cuproj::operation_type::CLAMP_ANGULAR_COORDINATES,
+    cuproj::operation_type::TRANSVERSE_MERCATOR};
+
+  cuproj::projection<coordinate<T>> tmerc_proj{h_utm_pipeline, tmerc_proj_params};
+
+  tmerc_proj.transform(d_in.begin(), d_in.end(), d_out.begin(), cuproj::direction::DIR_FWD);
 
 #ifdef DEBUG
   std::cout << "expected " << std::setprecision(20) << expected_coords[0].xy.x << " "
@@ -174,13 +184,22 @@ TYPED_TEST(ProjectionTest, Test_forward_many)
   // semimajor and inverse flattening
   cuproj::ellipsoid<T> ellps{static_cast<T>(ellps_a), static_cast<T>(ellps_inv_flattening)};
 
-  // create a projection object
-  cuproj::projection<coordinate<T>> tmerc_proj{ellps, 56, 0, 0};
+  cuproj::projection_parameters<T> tmerc_proj_params{ellps, 56, T{0}, T{0}};
+
+  // TODO: provide automation for common pipelines
+  // and/or translate from PROJ strings / pipelines
+  std::vector<cuproj::operation_type> h_utm_pipeline{
+    cuproj::operation_type::AXIS_SWAP,
+    cuproj::operation_type::DEGREES_TO_RADIANS,
+    cuproj::operation_type::CLAMP_ANGULAR_COORDINATES,
+    cuproj::operation_type::TRANSVERSE_MERCATOR};
+
+  cuproj::projection<coordinate<T>> tmerc_proj{h_utm_pipeline, tmerc_proj_params};
+
   // create a vector of output points
   thrust::device_vector<coordinate<T>> output(input.size());
   // transform the input points to output points
-  cuproj::transform(
-    tmerc_proj, input.begin(), input.end(), output.begin(), cuproj::direction::DIR_FWD);
+  tmerc_proj.transform(input.begin(), input.end(), output.begin(), cuproj::direction::DIR_FWD);
 
   using T = TypeParam;
 
