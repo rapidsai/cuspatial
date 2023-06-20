@@ -63,7 +63,7 @@ struct clamp_angular_coordinates : operation<Coordinate> {
   __host__ __device__ Coordinate forward(Coordinate const& coord) const
   {
     // check for latitude or longitude over-range
-    T t = (coord.y < 0 ? -coord.y : coord.y) - M_PI_2;
+    // T t = (coord.y < 0 ? -coord.y : coord.y) - M_PI_2;
 
     // TODO use host-device assert
     // CUPROJ_EXPECTS(t <= EPS_LAT, "Invalid latitude");
@@ -89,24 +89,10 @@ struct clamp_angular_coordinates : operation<Coordinate> {
 
   __host__ __device__ Coordinate inverse(Coordinate const& coord) const
   {
-    // check for latitude or longitude over-range
-    T t = (coord.y < 0 ? -coord.y : coord.y) - M_PI_2;
-
-    // TODO use host-device assert
-    // CUPROJ_EXPECTS(t <= EPS_LAT, "Invalid latitude");
-    // CUPROJ_EXPECTS(coord.x <= 10 || coord.x >= -10, "Invalid longitude");
-
     Coordinate xy = coord;
 
-    /* Clamp latitude to -90..90 degree range */
-    auto half_pi = static_cast<T>(M_PI_2);
-    xy.y         = std::clamp(xy.y, -half_pi, half_pi);
-
-    // Ensure longitude is in the -pi:pi range
-    xy.x = clamp_longitude(xy.x);
-
     // Distance from central meridian, taking system zero meridian into account
-    xy.x = (xy.x - prime_meridian_offset_) - lam0_;
+    xy.x += prime_meridian_offset_ + lam0_;
 
     // Ensure longitude is in the -pi:pi range
     xy.x = clamp_longitude(xy.x);
