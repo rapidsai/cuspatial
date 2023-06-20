@@ -79,12 +79,12 @@
 namespace cuproj {
 
 template <typename T>
-inline static __host__ __device__ T gatg(const T* p1, int len_p1, T B, T cos_2B, T sin_2B)
+inline static __host__ __device__ T gatg(T const* p1, int len_p1, T B, T cos_2B, T sin_2B)
 {
   T h = 0, h1, h2 = 0;
 
-  const T two_cos_2B = 2 * cos_2B;
-  const T* p         = p1 + len_p1;
+  T const two_cos_2B = 2 * cos_2B;
+  T const* p         = p1 + len_p1;
   h1                 = *--p;
   while (p - p1) {
     h  = -h2 + two_cos_2B * h1 + *--p;
@@ -97,12 +97,12 @@ inline static __host__ __device__ T gatg(const T* p1, int len_p1, T B, T cos_2B,
 /* Complex Clenshaw summation */
 template <typename T>
 inline static __host__ __device__ T
-clenS(const T* a, int size, T sin_arg_r, T cos_arg_r, T sinh_arg_i, T cosh_arg_i, T* R, T* I)
+clenS(T const* a, int size, T sin_arg_r, T cos_arg_r, T sinh_arg_i, T cosh_arg_i, T* R, T* I)
 {
   T r, i, hr, hr1, hr2, hi, hi1, hi2;
 
   /* arguments */
-  const T* p = a + size;
+  T const* p = a + size;
   r          = 2 * cos_arg_r * cosh_arg_i;
   i          = -2 * sin_arg_r * sinh_arg_i;
 
@@ -127,11 +127,11 @@ clenS(const T* a, int size, T sin_arg_r, T cos_arg_r, T sinh_arg_i, T cosh_arg_i
 
 /* Real Clenshaw summation */
 template <typename T>
-static __host__ __device__ T clens(const T* a, int size, T arg_r)
+static __host__ __device__ T clens(T const* a, int size, T arg_r)
 {
   T r, hr, hr1, hr2, cos_arg_r;
 
-  const T* p = a + size;
+  T const* p = a + size;
   cos_arg_r  = cos(arg_r);
   r          = 2 * cos_arg_r;
 
@@ -156,89 +156,7 @@ struct transverse_mercator : operation<Coordinate> {
 
   __host__ __device__ Coordinate operator()(Coordinate const& coord) const
   {
-    // so we don't have to qualify the class name everywhere.
-    auto& tmerc_params = this->params_.tmerc_params_;
-    auto& ellipsoid    = this->params_.ellipsoid_;
-
-    /* ell. LAT, LNG -> Gaussian LAT, LNG */
-    T Cn = gatg(tmerc_params.cbg, ETMERC_ORDER, coord.y, cos(2 * coord.y), sin(2 * coord.y));
-
-    /* Gaussian LAT, LNG -> compl. sph. LAT */
-    const T sin_Cn = sin(Cn);
-    const T cos_Cn = cos(Cn);
-    const T sin_Ce = sin(coord.x);
-    const T cos_Ce = cos(coord.x);
-
-    const T cos_Cn_cos_Ce = cos_Cn * cos_Ce;
-    Cn                    = atan2(sin_Cn, cos_Cn_cos_Ce);
-
-    const T inv_denom_tan_Ce = 1. / hypot(sin_Cn, cos_Cn_cos_Ce);
-    const T tan_Ce           = sin_Ce * cos_Cn * inv_denom_tan_Ce;
-
-#if 0
-    // Variant of the above: found not to be measurably faster
-    const T sin_Ce_cos_Cn = sin_Ce*cos_Cn;
-    const T denom = sqrt(1 - sin_Ce_cos_Cn * sin_Ce_cos_Cn);
-    const T tan_Ce = sin_Ce_cos_Cn / denom;
-#endif
-
-    /* compl. sph. N, E -> ell. norm. N, E */
-    T Ce = asinh(tan_Ce); /* Replaces: Ce  = log(tan(FORTPI + Ce*0.5)); */
-
-    /*
-     *  Non-optimized version:
-     *  const T sin_arg_r  = sin(2*Cn);
-     *  const T cos_arg_r  = cos(2*Cn);
-     *
-     *  Given:
-     *      sin(2 * Cn) = 2 sin(Cn) cos(Cn)
-     *          sin(atan(y)) = y / sqrt(1 + y^2)
-     *          cos(atan(y)) = 1 / sqrt(1 + y^2)
-     *      ==> sin(2 * Cn) = 2 tan_Cn / (1 + tan_Cn^2)
-     *
-     *      cos(2 * Cn) = 2cos^2(Cn) - 1
-     *                  = 2 / (1 + tan_Cn^2) - 1
-     */
-    const T two_inv_denom_tan_Ce        = 2 * inv_denom_tan_Ce;
-    const T two_inv_denom_tan_Ce_square = two_inv_denom_tan_Ce * inv_denom_tan_Ce;
-    const T tmp_r                       = cos_Cn_cos_Ce * two_inv_denom_tan_Ce_square;
-    const T sin_arg_r                   = sin_Cn * tmp_r;
-    const T cos_arg_r                   = cos_Cn_cos_Ce * tmp_r - 1;
-
-    /*
-     *  Non-optimized version:
-     *  const T sinh_arg_i = sinh(2*Ce);
-     *  const T cosh_arg_i = cosh(2*Ce);
-     *
-     *  Given
-     *      sinh(2 * Ce) = 2 sinh(Ce) cosh(Ce)
-     *          sinh(asinh(y)) = y
-     *          cosh(asinh(y)) = sqrt(1 + y^2)
-     *      ==> sinh(2 * Ce) = 2 tan_Ce sqrt(1 + tan_Ce^2)
-     *
-     *      cosh(2 * Ce) = 2cosh^2(Ce) - 1
-     *                   = 2 * (1 + tan_Ce^2) - 1
-     *
-     * and 1+tan_Ce^2 = 1 + sin_Ce^2 * cos_Cn^2 / (sin_Cn^2 + cos_Cn^2 *
-     * cos_Ce^2) = (sin_Cn^2 + cos_Cn^2 * cos_Ce^2 + sin_Ce^2 * cos_Cn^2) /
-     * (sin_Cn^2 + cos_Cn^2 * cos_Ce^2) = 1. / (sin_Cn^2 + cos_Cn^2 * cos_Ce^2)
-     * = inv_denom_tan_Ce^2
-     *
-     */
-    const T sinh_arg_i = tan_Ce * two_inv_denom_tan_Ce;
-    const T cosh_arg_i = two_inv_denom_tan_Ce_square - 1;
-
-    T dCn, dCe;
-    Cn += clenS(
-      tmerc_params.gtu, ETMERC_ORDER, sin_arg_r, cos_arg_r, sinh_arg_i, cosh_arg_i, &dCn, &dCe);
-
-    Ce += dCe;
-    // CUPROJ_EXPECTS(fabs(Ce) <= 2.623395162778, "Coordinate transform outside projection domain");
-    Coordinate xy{0.0, 0.0};
-    xy.y = tmerc_params.Qn * Cn + tmerc_params.Zb;  // Northing
-    xy.x = tmerc_params.Qn * Ce;                    // Easting
-
-    return xy;
+    return forward(coord);
   }
 
   projection_parameters<T> setup(projection_parameters<T> const& input_params)
@@ -267,7 +185,7 @@ struct transverse_mercator : operation<Coordinate> {
     params.phi0  = T{0};
 
     /* third flattening */
-    const T n = ellipsoid.n;
+    T const n = ellipsoid.n;
     T np      = n;
 
     /* COEF. OF TRIG SERIES GEO <-> GAUSS */
@@ -340,7 +258,7 @@ struct transverse_mercator : operation<Coordinate> {
     tmerc_params.gtu[5] = np * (212378941 / 319334400.0);
 
     /* Gaussian latitude value of the origin latitude */
-    const T Z =
+    T const Z =
       gatg(tmerc_params.cbg, ETMERC_ORDER, params.phi0, cos(2 * params.phi0), sin(2 * params.phi0));
 
     /* Origin northing minus true northing at the origin latitude */
@@ -350,8 +268,169 @@ struct transverse_mercator : operation<Coordinate> {
     return params;
   }
 
-  T lam0() const { return this->params_.lam0_; }
+ private:
+  __host__ __device__ Coordinate forward(Coordinate const& coord) const
+  {
+    // so we don't have to qualify the class name everywhere.
+    auto& tmerc_params = this->params_.tmerc_params_;
+    auto& ellipsoid    = this->params_.ellipsoid_;
 
+    /* ell. LAT, LNG -> Gaussian LAT, LNG */
+    T Cn = gatg(tmerc_params.cbg, ETMERC_ORDER, coord.y, cos(2 * coord.y), sin(2 * coord.y));
+
+    /* Gaussian LAT, LNG -> compl. sph. LAT */
+    T const sin_Cn = sin(Cn);
+    T const cos_Cn = cos(Cn);
+    T const sin_Ce = sin(coord.x);
+    T const cos_Ce = cos(coord.x);
+
+    T const cos_Cn_cos_Ce = cos_Cn * cos_Ce;
+    Cn                    = atan2(sin_Cn, cos_Cn_cos_Ce);
+
+    T const inv_denom_tan_Ce = 1. / hypot(sin_Cn, cos_Cn_cos_Ce);
+    T const tan_Ce           = sin_Ce * cos_Cn * inv_denom_tan_Ce;
+
+#if 0
+    // Variant of the above: found not to be measurably faster
+    T const sin_Ce_cos_Cn = sin_Ce*cos_Cn;
+    T const denom = sqrt(1 - sin_Ce_cos_Cn * sin_Ce_cos_Cn);
+    T const tan_Ce = sin_Ce_cos_Cn / denom;
+#endif
+
+    /* compl. sph. N, E -> ell. norm. N, E */
+    T Ce = asinh(tan_Ce); /* Replaces: Ce  = log(tan(FORTPI + Ce*0.5)); */
+
+    /*
+     *  Non-optimized version:
+     *  T const sin_arg_r  = sin(2*Cn);
+     *  T const cos_arg_r  = cos(2*Cn);
+     *
+     *  Given:
+     *      sin(2 * Cn) = 2 sin(Cn) cos(Cn)
+     *          sin(atan(y)) = y / sqrt(1 + y^2)
+     *          cos(atan(y)) = 1 / sqrt(1 + y^2)
+     *      ==> sin(2 * Cn) = 2 tan_Cn / (1 + tan_Cn^2)
+     *
+     *      cos(2 * Cn) = 2cos^2(Cn) - 1
+     *                  = 2 / (1 + tan_Cn^2) - 1
+     */
+    T const two_inv_denom_tan_Ce        = 2 * inv_denom_tan_Ce;
+    T const two_inv_denom_tan_Ce_square = two_inv_denom_tan_Ce * inv_denom_tan_Ce;
+    T const tmp_r                       = cos_Cn_cos_Ce * two_inv_denom_tan_Ce_square;
+    T const sin_arg_r                   = sin_Cn * tmp_r;
+    T const cos_arg_r                   = cos_Cn_cos_Ce * tmp_r - 1;
+
+    /*
+     *  Non-optimized version:
+     *  T const sinh_arg_i = sinh(2*Ce);
+     *  T const cosh_arg_i = cosh(2*Ce);
+     *
+     *  Given
+     *      sinh(2 * Ce) = 2 sinh(Ce) cosh(Ce)
+     *          sinh(asinh(y)) = y
+     *          cosh(asinh(y)) = sqrt(1 + y^2)
+     *      ==> sinh(2 * Ce) = 2 tan_Ce sqrt(1 + tan_Ce^2)
+     *
+     *      cosh(2 * Ce) = 2cosh^2(Ce) - 1
+     *                   = 2 * (1 + tan_Ce^2) - 1
+     *
+     * and 1+tan_Ce^2 = 1 + sin_Ce^2 * cos_Cn^2 / (sin_Cn^2 + cos_Cn^2 *
+     * cos_Ce^2) = (sin_Cn^2 + cos_Cn^2 * cos_Ce^2 + sin_Ce^2 * cos_Cn^2) /
+     * (sin_Cn^2 + cos_Cn^2 * cos_Ce^2) = 1. / (sin_Cn^2 + cos_Cn^2 * cos_Ce^2)
+     * = inv_denom_tan_Ce^2
+     *
+     */
+    T const sinh_arg_i = tan_Ce * two_inv_denom_tan_Ce;
+    T const cosh_arg_i = two_inv_denom_tan_Ce_square - 1;
+
+    T dCn, dCe;
+    Cn += clenS(
+      tmerc_params.gtu, ETMERC_ORDER, sin_arg_r, cos_arg_r, sinh_arg_i, cosh_arg_i, &dCn, &dCe);
+
+    Ce += dCe;
+    // CUPROJ_EXPECTS(fabs(Ce) <= 2.623395162778, "Coordinate transform outside projection domain");
+    Coordinate xy{0.0, 0.0};
+    xy.y = tmerc_params.Qn * Cn + tmerc_params.Zb;  // Northing
+    xy.x = tmerc_params.Qn * Ce;                    // Easting
+
+    return xy;
+  }
+
+  __host__ __device__ Coordinate inverse(Coordinate const& coord) const
+  {
+    // so we don't have to qualify the class name everywhere.
+    auto& tmerc_params = this->params_.tmerc_params_;
+    auto& ellipsoid    = this->params_.ellipsoid_;
+
+    // normalize N, E
+    T Cn = (coord.y - tmerc_params.Zb) / tmerc_params.Qn;
+    T Ce = coord.x / tmerc_params.Qn;
+
+    // CUPROJ_EXPECTS(fabs(Ce) <= 2.623395162778, "Coordinate transform outside projection domain");
+    /* norm. N, E -> compl. sph. LAT, LNG */
+    T const sin_arg_r = sin(2 * Cn);
+    T const cos_arg_r = cos(2 * Cn);
+
+    // T const sinh_arg_i = sinh(2*Ce);
+    // T const cosh_arg_i = cosh(2*Ce);
+    T const exp_2_Ce          = exp(2 * Ce);
+    T const half_inv_exp_2_Ce = T{0.5} / exp_2_Ce;
+    T const sinh_arg_i        = T{0.5} * exp_2_Ce - half_inv_exp_2_Ce;
+    T const cosh_arg_i        = T{0.5} * exp_2_Ce + half_inv_exp_2_Ce;
+
+    T dCn_ignored, dCe;
+    Cn += clenS(tmerc_params.utg,
+                ETMERC_ORDER,
+                sin_arg_r,
+                cos_arg_r,
+                sinh_arg_i,
+                cosh_arg_i,
+                &dCn_ignored,
+                &dCe);
+    Ce += dCe;
+
+    // compl. sph. LAT -> Gaussian LAT, LNG
+    T const sin_Cn = sin(Cn);
+    T const cos_Cn = cos(Cn);
+
+#if 0
+        // Non-optimized version:
+        T sin_Ce, cos_Ce;
+        Ce = atan (sinh (Ce));  // Replaces: Ce = 2*(atan(exp(Ce)) - FORTPI);
+        sin_Ce = sin (Ce);
+        cos_Ce = cos (Ce);
+        Ce     = atan2 (sin_Ce, cos_Ce*cos_Cn);
+        Cn     = atan2 (sin_Cn*cos_Ce,  hypot (sin_Ce, cos_Ce*cos_Cn));
+#else
+    /*
+     *      One can divide both member of Ce = atan2(...) by cos_Ce, which
+     * gives: Ce     = atan2 (tan_Ce, cos_Cn) = atan2(sinh(Ce), cos_Cn)
+     *
+     *      and the same for Cn = atan2(...)
+     *      Cn     = atan2 (sin_Cn, hypot (sin_Ce, cos_Ce*cos_Cn)/cos_Ce)
+     *             = atan2 (sin_Cn, hypot (sin_Ce/cos_Ce, cos_Cn))
+     *             = atan2 (sin_Cn, hypot (tan_Ce, cos_Cn))
+     *             = atan2 (sin_Cn, hypot (sinhCe, cos_Cn))
+     */
+    T const sinhCe     = sinh(Ce);
+    Ce                 = atan2(sinhCe, cos_Cn);
+    T const modulus_Ce = hypot(sinhCe, cos_Cn);
+    Cn                 = atan2(sin_Cn, modulus_Ce);
+#endif
+
+    // Gaussian LAT, LNG -> ell. LAT, LNG
+
+    // Optimization of the computation of cos(2*Cn) and sin(2*Cn)
+    T const tmp      = 2 * modulus_Ce / (sinhCe * sinhCe + 1);
+    T const sin_2_Cn = sin_Cn * tmp;
+    T const cos_2_Cn = tmp * modulus_Ce - 1.;
+    // T const cos_2_Cn = cos(2 * Cn);
+    // T const sin_2_Cn = sin(2 * Cn);
+
+    return Coordinate{Ce, gatg(tmerc_params.cgb, ETMERC_ORDER, Cn, cos_2_Cn, sin_2_Cn)};
+  }
+
+  T lam0() const { return this->params_.lam0_; }
   projection_parameters<T> params_{};
 };
 
