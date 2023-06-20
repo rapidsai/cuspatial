@@ -21,13 +21,26 @@
 namespace cuproj {
 
 constexpr double DEG_TO_RAD = 0.017453292519943295769236907684886;
+constexpr double RAD_TO_DEG = 57.295779513082320876798154814105;
 
 template <typename Coordinate>
 struct degrees_to_radians : operation<Coordinate> {
   __host__ __device__ Coordinate operator()(Coordinate const& coord) const
   {
+    return forward(coord);
+  }
+
+ private:
+  __host__ __device__ Coordinate forward(Coordinate const& coord) const
+  {
     using T = typename Coordinate::value_type;
     return Coordinate{static_cast<T>(coord.x * DEG_TO_RAD), static_cast<T>(coord.y * DEG_TO_RAD)};
+  }
+
+  __host__ __device__ Coordinate inverse(Coordinate const& coord) const
+  {
+    using T = typename Coordinate::value_type;
+    return Coordinate{static_cast<T>(coord.x * RAD_TO_DEG), static_cast<T>(coord.y * RAD_TO_DEG)};
   }
 };
 
