@@ -25,19 +25,42 @@
 
 namespace cuproj {
 
+static constexpr double M_TWOPI = 6.283185307179586476925286766559005;
+
+template <typename T>
+__host__ __device__ T clamp_longitude(T longitude)
+{
+  // Let longitude slightly overshoot, to avoid spurious sign switching at the date line
+  if (fabs(longitude) < M_PI + 1e-12) return longitude;
+
+  // adjust to 0..2pi range
+  longitude += M_PI;
+
+  // remove integral # of 'revolutions'
+  longitude -= M_TWOPI * floor(longitude / M_TWOPI);
+
+  // adjust back to -pi..pi range
+  return longitude - M_PI;
+}
+
 template <typename Coordinate, typename T = typename Coordinate::value_type>
 struct clamp_angular_coordinates : operation<Coordinate> {
-  static constexpr T EPS_LAT      = 1e-12;
-  static constexpr double M_TWOPI = 6.283185307179586476925286766559005;
+  static constexpr T EPS_LAT = 1e-12;
 
   __host__ __device__ clamp_angular_coordinates(projection_parameters<T> const& params)
     : lam0_(params.lam0_), prime_meridian_offset_(params.prime_meridian_offset_)
   {
   }
 
-  projection_parameters<T> setup(projection_parameters<T> const& params) { return params; }
+  // projection_parameters<T> setup(projection_parameters<T> const& params) { return params; }
 
   __host__ __device__ Coordinate operator()(Coordinate const& coord) const
+  {
+    return forward(coord);
+  }
+
+ private:
+  __host__ __device__ Coordinate forward(Coordinate const& coord) const
   {
     // check for latitude or longitude over-range
     T t = (coord.y < 0 ? -coord.y : coord.y) - M_PI_2;
@@ -64,20 +87,31 @@ struct clamp_angular_coordinates : operation<Coordinate> {
     return xy;
   }
 
- private:
-  __host__ __device__ T clamp_longitude(T longitude) const
+  __host__ __device__ Coordinate inverse(Coordinate const& coord) const
   {
-    // Let longitude slightly overshoot, to avoid spurious sign switching at the date line
-    if (fabs(longitude) < M_PI + 1e-12) return longitude;
+    // check for latitude or longitude over-range
+    T t = (coord.y < 0 ? -coord.y : coord.y) - M_PI_2;
 
-    // adjust to 0..2pi range
-    longitude += M_PI;
+    // TODO use host-device assert
+    // CUPROJ_EXPECTS(t <= EPS_LAT, "Invalid latitude");
+    // CUPROJ_EXPECTS(coord.x <= 10 || coord.x >= -10, "Invalid longitude");
 
-    // remove integral # of 'revolutions'
-    longitude -= M_TWOPI * floor(longitude / M_TWOPI);
+    Coordinate xy = coord;
 
-    // adjust back to -pi..pi range
-    return longitude - M_PI;
+    /* Clamp latitude to -90..90 degree range */
+    auto half_pi = static_cast<T>(M_PI_2);
+    xy.y         = std::clamp(xy.y, -half_pi, half_pi);
+
+    // Ensure longitude is in the -pi:pi range
+    xy.x = clamp_longitude(xy.x);
+
+    // Distance from central meridian, taking system zero meridian into account
+    xy.x = (xy.x - prime_meridian_offset_) - lam0_;
+
+    // Ensure longitude is in the -pi:pi range
+    xy.x = clamp_longitude(xy.x);
+
+    return xy;
   }
 
   T lam0_{};

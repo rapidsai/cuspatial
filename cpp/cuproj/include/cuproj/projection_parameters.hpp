@@ -20,15 +20,23 @@
 
 namespace cuproj {
 
+enum class hemisphere { NORTH, SOUTH };
+
 template <typename T>
 struct projection_parameters {
-  projection_parameters(ellipsoid<T> const& e, int utm_zone, T lam0, T prime_meridian_offset)
-    : ellipsoid_(e), utm_zone_(utm_zone), lam0_(lam0), prime_meridian_offset_(prime_meridian_offset)
+  projection_parameters(
+    ellipsoid<T> const& e, int utm_zone, hemisphere utm_hemisphere, T lam0, T prime_meridian_offset)
+    : ellipsoid_(e),
+      utm_zone_(utm_zone),
+      utm_hemisphere_{utm_hemisphere},
+      lam0_(lam0),
+      prime_meridian_offset_(prime_meridian_offset)
   {
   }
 
   ellipsoid<T> ellipsoid_{};
-  int utm_zone_{};
+  int utm_zone_{-1};
+  hemisphere utm_hemisphere_{hemisphere::NORTH};
   T lam0_{};
   T prime_meridian_offset_{};
 
@@ -38,12 +46,12 @@ struct projection_parameters {
   T y0{};    // false northing
 
   struct tmerc_params {
-    T Qn{};     /* Merid. quad., scaled to the projection */
-    T Zb{};     /* Radius vector in polar coord. systems  */
-    T cgb[6]{}; /* Constants for Gauss -> Geo lat */
-    T cbg[6]{}; /* Constants for Geo lat -> Gauss */
-    T utg[6]{}; /* Constants for transv. merc. -> geo */
-    T gtu[6]{}; /* Constants for geo -> transv. merc. */
+    T Qn{};      // Merid. quad., scaled to the projection
+    T Zb{};      // Radius vector in polar coord. systems
+    T cgb[6]{};  // Constants for Gauss -> Geo lat
+    T cbg[6]{};  // Constants for Geo lat -> Gauss
+    T utg[6]{};  // Constants for transv. merc. -> geo
+    T gtu[6]{};  // Constants for geo -> transv. merc.
   };
 
   tmerc_params tmerc_params_{};

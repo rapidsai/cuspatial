@@ -67,6 +67,7 @@
 
 #pragma once
 
+#include <cuproj/clamp_angular_coordinates.cuh>
 #include <cuproj/ellipsoid.hpp>
 #include <cuproj/operation.cuh>
 #include <cuproj/projection_parameters.hpp>
@@ -237,12 +238,6 @@ struct transverse_mercator : operation<Coordinate> {
     xy.y = tmerc_params.Qn * Cn + tmerc_params.Zb;  // Northing
     xy.x = tmerc_params.Qn * Ce;                    // Easting
 
-    xy.x *= ellipsoid.a;
-    xy.y *= ellipsoid.a;
-
-    xy.x = /*P->fr_meter **/ (xy.x + this->params_.x0);
-    xy.y = /*P->fr_meter **/ (xy.y + this->params_.y0);
-
     return xy;
   }
 
@@ -258,9 +253,15 @@ struct transverse_mercator : operation<Coordinate> {
     assert(ellipsoid.es > 0);
 
     params.x0 = static_cast<T>(500000);
-    params.y0 = static_cast<T>(10000000);
+    params.y0 = (params.utm_hemisphere_ == hemisphere::SOUTH) ? static_cast<T>(10000000) : T{0};
 
-    if (params.utm_zone_ > 0 && params.utm_zone_ <= 60) --params.utm_zone_;
+    if (params.utm_zone_ > 0 && params.utm_zone_ <= 60) {
+      --params.utm_zone_;
+    } else {
+      params.utm_zone_ = lround((floor((clamp_longitude(params.lam0_) + M_PI) * 30. / M_PI)));
+      params.utm_zone_ = std::clamp(params.utm_zone_, 0, 59);
+    }
+
     params.lam0_ = (params.utm_zone_ + .5) * M_PI / 30. - M_PI;
     params.k0    = T{0.9996};
     params.phi0  = T{0};

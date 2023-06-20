@@ -20,6 +20,7 @@
 #include <cuproj/clamp_angular_coordinates.cuh>
 #include <cuproj/degrees_to_radians.cuh>
 #include <cuproj/ellipsoid.hpp>
+#include <cuproj/offset_scale_cartesian_coordinates.cuh>
 #include <cuproj/operation.cuh>
 #include <cuproj/projection_parameters.hpp>
 #include <cuproj/transverse_mercator.cuh>
@@ -63,6 +64,11 @@ struct pipeline {
         // case operation_type::RADIANS_TO_DEGREES:
         case operation_type::CLAMP_ANGULAR_COORDINATES: {
           auto op = clamp_angular_coordinates<Coordinate>{params_};
+          c_out   = op(c_out);
+          break;
+        }
+        case operation_type::OFFSET_SCALE_CARTESIAN_COORDINATES: {
+          auto op = offset_scale_cartesian_coordinates<Coordinate>{params_};
           c_out   = op(c_out);
           break;
         }
@@ -127,6 +133,11 @@ struct projection {
         // case operation_type::RADIANS_TO_DEGREES:
         case operation_type::CLAMP_ANGULAR_COORDINATES: {
           // auto op = clamp_angular_coordinates<Coordinate>{params_};
+          // params_ = op.setup(params_);
+          break;
+        }
+        case operation_type::OFFSET_SCALE_CARTESIAN_COORDINATES: {
+          // auto op = offset_scale_cartesian_coordinates<Coordinate>{params_};
           // params_ = op.setup(params_);
           break;
         }

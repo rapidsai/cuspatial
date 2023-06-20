@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "cuproj/projection_parameters.hpp"
 #include <cuproj/ellipsoid.hpp>
 #include <cuproj/error.hpp>
 #include <cuproj/projection.cuh>
@@ -93,15 +94,15 @@ TYPED_TEST(ProjectionTest, Test_forward_one)
   thrust::device_vector<coordinate<T>> d_out(d_in.size());
   thrust::device_vector<coordinate<T>> d_expected = expected;
 
-  cuproj::projection_parameters<T> tmerc_proj_params{ellps, 56, T{0}, T{0}};
+  cuproj::projection_parameters<T> tmerc_proj_params{
+    ellps, 56, cuproj::hemisphere::SOUTH, T{0}, T{0}};
 
-  // TODO: provide automation for common pipelines
-  // and/or translate from PROJ strings / pipelines
   std::vector<cuproj::operation_type> h_utm_pipeline{
     cuproj::operation_type::AXIS_SWAP,
     cuproj::operation_type::DEGREES_TO_RADIANS,
     cuproj::operation_type::CLAMP_ANGULAR_COORDINATES,
-    cuproj::operation_type::TRANSVERSE_MERCATOR};
+    cuproj::operation_type::TRANSVERSE_MERCATOR,
+    cuproj::operation_type::OFFSET_SCALE_CARTESIAN_COORDINATES};
 
   cuproj::projection<coordinate<T>> tmerc_proj{h_utm_pipeline, tmerc_proj_params};
 
@@ -184,7 +185,8 @@ TYPED_TEST(ProjectionTest, Test_forward_many)
   // semimajor and inverse flattening
   cuproj::ellipsoid<T> ellps{static_cast<T>(ellps_a), static_cast<T>(ellps_inv_flattening)};
 
-  cuproj::projection_parameters<T> tmerc_proj_params{ellps, 56, T{0}, T{0}};
+  cuproj::projection_parameters<T> tmerc_proj_params{
+    ellps, 56, cuproj::hemisphere::SOUTH, T{0}, T{0}};
 
   // TODO: provide automation for common pipelines
   // and/or translate from PROJ strings / pipelines
@@ -192,7 +194,8 @@ TYPED_TEST(ProjectionTest, Test_forward_many)
     cuproj::operation_type::AXIS_SWAP,
     cuproj::operation_type::DEGREES_TO_RADIANS,
     cuproj::operation_type::CLAMP_ANGULAR_COORDINATES,
-    cuproj::operation_type::TRANSVERSE_MERCATOR};
+    cuproj::operation_type::TRANSVERSE_MERCATOR,
+    cuproj::operation_type::OFFSET_SCALE_CARTESIAN_COORDINATES};
 
   cuproj::projection<coordinate<T>> tmerc_proj{h_utm_pipeline, tmerc_proj_params};
 
@@ -210,6 +213,15 @@ TYPED_TEST(ProjectionTest, Test_forward_many)
   thrust::host_vector<PJ_COORD> expected_coords(input_coords);
 
   PJ* P = proj_create_crs_to_crs(C, "EPSG:4326", "EPSG:32756", NULL);
+
+  PJ_PROJ_INFO info = proj_pj_info(P);
+
+  std::cout << "info: " << std::endl
+            << info.id << std::endl
+            << info.description << std::endl
+            << info.definition << std::endl
+            << "has_inverse: " << info.has_inverse << std::endl
+            << "accuracy: " << info.accuracy << std::endl;
 
   proj_trans_array(P, PJ_FWD, expected_coords.size(), expected_coords.data());
 
