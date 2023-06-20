@@ -214,14 +214,14 @@ TYPED_TEST(ProjectionTest, Test_forward_many)
 
   PJ* P = proj_create_crs_to_crs(C, "EPSG:4326", "EPSG:32756", NULL);
 
-  PJ_PROJ_INFO info = proj_pj_info(P);
+  /*PJ_PROJ_INFO info = proj_pj_info(P);
 
   std::cout << "info: " << std::endl
             << info.id << std::endl
             << info.description << std::endl
             << info.definition << std::endl
             << "has_inverse: " << info.has_inverse << std::endl
-            << "accuracy: " << info.accuracy << std::endl;
+            << "accuracy: " << info.accuracy << std::endl;*/
 
   proj_trans_array(P, PJ_FWD, expected_coords.size(), expected_coords.data());
 
