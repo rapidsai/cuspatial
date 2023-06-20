@@ -49,7 +49,7 @@ pushd python/cuspatial/cuspatial
 pytest \
   --cache-clear \
   --junitxml="${RAPIDS_TESTS_DIR}/junit-cuspatial.xml" \
-  --numprocesses=1 \
+  --numprocesses=8 \
   --dist=loadscope \
   --cov-config=../.coveragerc \
   --cov=cuspatial \
