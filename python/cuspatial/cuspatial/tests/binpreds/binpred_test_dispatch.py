@@ -328,11 +328,11 @@ features = {
     ),
     "linestring-polygon-cross-concave-edge": (
         """
-    -----
-    x\\-/x
-    | x |
-    |   |
-    -----
+    x  x  x
+    |\\ | /|
+    | xx- |
+    |  |  |
+    ---x---
     """,
         LineString([(0.5, 0.0), (0.5, 1.0)]),
         Polygon([(0, 0), (0, 1), (0.3, 0.4), (1, 1), (1, 0)]),
@@ -389,11 +389,11 @@ features = {
     ),
     "linestring-polygon-edge-cross-to-exterior": (
         """
-    x----
-    |   |
-    |   |-x
-    | --/
-    x----
+    x------
+    |     |
+    |    ---x
+    | --- |
+    x------
     """,
         LineString([(0.0, 1.0), (0.0, 0.0), (1.5, 0.5)]),
         point_polygon,
