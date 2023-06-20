@@ -76,9 +76,10 @@ struct point_in_polygon_functor {
     auto multipoints_range =
       make_multipoint_range(size, thrust::make_counting_iterator(0), size, points_begin);
 
-    auto multipolygon_range = make_multipolygon_range(size,
+    auto polygon_size       = poly_offsets.size() - 1;
+    auto multipolygon_range = make_multipolygon_range(polygon_size,
                                                       thrust::make_counting_iterator(0),
-                                                      size,
+                                                      polygon_size,
                                                       polygon_offsets_begin,
                                                       poly_ring_offsets.size() - 1,
                                                       ring_offsets_begin,
