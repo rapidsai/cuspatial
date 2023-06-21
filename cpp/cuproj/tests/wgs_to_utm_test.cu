@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-#include "cuproj/projection_parameters.hpp"
 #include <cuproj/ellipsoid.hpp>
 #include <cuproj/error.hpp>
 #include <cuproj/projection.cuh>
-// #include <cuproj/transform.cuh>
+#include <cuproj/projection_parameters.hpp>
 
 #include <cuspatial/geometry/vec_2d.hpp>
 
@@ -47,39 +46,13 @@ TYPED_TEST_CASE(ProjectionTest, TestTypes);
 template <typename T>
 using coordinate = typename cuspatial::vec_2d<T>;
 
-TYPED_TEST(ProjectionTest, Test_forward_one)
+template <typename T>
+void run_test(thrust::host_vector<PJ_COORD> const& input_coords,
+              thrust::host_vector<PJ_COORD> const& expected_coords,
+              cuproj::ellipsoid<T> const& ellps,
+              cuproj::direction dir,
+              T tolerance = T{0})  // 0 for 1-ulp comparison
 {
-  PJ_CONTEXT* C;
-  PJ* P;
-
-  C = proj_context_create();
-
-  P = proj_create_crs_to_crs(C, "EPSG:4326", "EPSG:32756", NULL);
-
-  double ellps_a{};
-  double ellps_b{};
-  int is_semi_minor_computed{};
-  double ellps_inv_flattening{};
-  auto wgs84   = proj_create(C, "EPSG:4326");
-  PJ* pj_ellps = proj_get_ellipsoid(C, wgs84);
-  proj_ellipsoid_get_parameters(
-    C, pj_ellps, &ellps_a, &ellps_b, &is_semi_minor_computed, &ellps_inv_flattening);
-  proj_destroy(pj_ellps);
-
-  using T = TypeParam;
-
-  std::vector<PJ_COORD> input_coords{{-28.667003, 153.090959, 0, 0}};
-  std::vector<PJ_COORD> expected_coords(input_coords);
-
-  proj_trans_array(P, PJ_FWD, expected_coords.size(), expected_coords.data());
-
-  /* Clean up */
-  proj_destroy(P);
-  proj_context_destroy(C);  // may be omitted in the single threaded case
-
-  // semimajor and inverse flattening
-  cuproj::ellipsoid<T> ellps{static_cast<T>(ellps_a), static_cast<T>(ellps_inv_flattening)};
-
   std::vector<coordinate<T>> input(input_coords.size());
   std::vector<coordinate<T>> expected(expected_coords.size());
   std::transform(input_coords.begin(), input_coords.end(), input.begin(), [](auto const& c) {
@@ -106,7 +79,7 @@ TYPED_TEST(ProjectionTest, Test_forward_one)
 
   cuproj::projection<coordinate<T>> tmerc_proj{h_utm_pipeline, tmerc_proj_params};
 
-  tmerc_proj.transform(d_in.begin(), d_in.end(), d_out.begin(), cuproj::direction::DIR_FWD);
+  tmerc_proj.transform(d_in.begin(), d_in.end(), d_out.begin(), dir);
 
 #ifdef DEBUG
   std::cout << "expected " << std::setprecision(20) << expected_coords[0].xy.x << " "
@@ -115,14 +88,48 @@ TYPED_TEST(ProjectionTest, Test_forward_one)
   std::cout << "Device: " << std::setprecision(20) << c_out.x << " " << c_out.y << std::endl;
 #endif
 
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected, d_out, tolerance);
+}
+
+template <typename T, typename HostVector>
+void run_forward_and_inverse(HostVector const& input, T tolerance = T{0})
+{
+  thrust::host_vector<PJ_COORD> input_coords{input.size()};
+  std::transform(input.begin(), input.end(), input_coords.begin(), [](coordinate<T> const& c) {
+    return PJ_COORD{c.x, c.y, 0, 0};
+  });
+  thrust::host_vector<PJ_COORD> expected_coords(input_coords);
+
+  double ellps_a{};
+  double ellps_b{};
+  int is_semi_minor_computed{};
+  double ellps_inv_flattening{};
+  PJ_CONTEXT* C = proj_context_create();
+  auto wgs84    = proj_create(C, "EPSG:4326");
+  PJ* pj_ellps  = proj_get_ellipsoid(C, wgs84);
+  proj_ellipsoid_get_parameters(
+    C, pj_ellps, &ellps_a, &ellps_b, &is_semi_minor_computed, &ellps_inv_flattening);
+  proj_destroy(pj_ellps);
+
+  // transform using PROJ
+  PJ* P = proj_create_crs_to_crs(C, "EPSG:4326", "EPSG:32756", NULL);
+  proj_trans_array(P, PJ_FWD, expected_coords.size(), expected_coords.data());
+
+  // semimajor and inverse flattening
+  cuproj::ellipsoid<T> ellps{static_cast<T>(ellps_a), static_cast<T>(ellps_inv_flattening)};
+
+  run_test(input_coords, expected_coords, ellps, cuproj::direction::FORWARD, tolerance);
+}
+
+TYPED_TEST(ProjectionTest, Test_forward_one)
+{
+  using T = TypeParam;
+  std::vector<coordinate<T>> input{{-28.667003, 153.090959}};
   // We can expect nanometer accuracy with double precision. The precision ratio of
   // double to single precision is 2^53 / 2^24 == 2^29 ~= 10^9, then we should
   // expect meter (10^9 nanometer) accuracy with single precision.
-  if constexpr (std::is_same_v<T, float>) {
-    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected, d_out, T{1.0});  // within 1 meter
-  } else {
-    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected, d_out);  // just use normal 1-ulp comparison
-  }
+  T tolerance = std::is_same_v<T, float> ? T{1.0} : T{1e-9};
+  run_forward_and_inverse<T>(input, tolerance);
 }
 
 template <typename T>
@@ -153,7 +160,7 @@ struct grid_generator {
   }
 };
 
-TYPED_TEST(ProjectionTest, Test_forward_many)
+TYPED_TEST(ProjectionTest, test_many)
 {
   using T = TypeParam;
   // generate (lat, lon) points on a grid between -60 and 60 degrees longitude and
@@ -169,90 +176,11 @@ TYPED_TEST(ProjectionTest, Test_forward_many)
 
   thrust::tabulate(rmm::exec_policy(), input.begin(), input.end(), gen);
 
-  // create PROJ context
-  PJ_CONTEXT* C = proj_context_create();
+  thrust::host_vector<coordinate<T>> h_input = input;
 
-  double ellps_a{};
-  double ellps_b{};
-  int is_semi_minor_computed{};
-  double ellps_inv_flattening{};
-  auto wgs84   = proj_create(C, "EPSG:4326");
-  PJ* pj_ellps = proj_get_ellipsoid(C, wgs84);
-  proj_ellipsoid_get_parameters(
-    C, pj_ellps, &ellps_a, &ellps_b, &is_semi_minor_computed, &ellps_inv_flattening);
-  proj_destroy(pj_ellps);
-
-  // semimajor and inverse flattening
-  cuproj::ellipsoid<T> ellps{static_cast<T>(ellps_a), static_cast<T>(ellps_inv_flattening)};
-
-  cuproj::projection_parameters<T> tmerc_proj_params{
-    ellps, 56, cuproj::hemisphere::SOUTH, T{0}, T{0}};
-
-  // TODO: provide automation for common pipelines
-  // and/or translate from PROJ strings / pipelines
-  std::vector<cuproj::operation_type> h_utm_pipeline{
-    cuproj::operation_type::AXIS_SWAP,
-    cuproj::operation_type::DEGREES_TO_RADIANS,
-    cuproj::operation_type::CLAMP_ANGULAR_COORDINATES,
-    cuproj::operation_type::TRANSVERSE_MERCATOR,
-    cuproj::operation_type::OFFSET_SCALE_CARTESIAN_COORDINATES};
-
-  cuproj::projection<coordinate<T>> tmerc_proj{h_utm_pipeline, tmerc_proj_params};
-
-  // create a vector of output points
-  thrust::device_vector<coordinate<T>> output(input.size());
-  // transform the input points to output points
-  tmerc_proj.transform(input.begin(), input.end(), output.begin(), cuproj::direction::DIR_FWD);
-
-  using T = TypeParam;
-
-  thrust::host_vector<PJ_COORD> input_coords{input.size()};
-  std::transform(input.begin(), input.end(), input_coords.begin(), [](coordinate<T> const& c) {
-    return PJ_COORD{c.x, c.y, 0, 0};
-  });
-  thrust::host_vector<PJ_COORD> expected_coords(input_coords);
-
-  PJ* P = proj_create_crs_to_crs(C, "EPSG:4326", "EPSG:32756", NULL);
-
-  /*PJ_PROJ_INFO info = proj_pj_info(P);
-
-  std::cout << "info: " << std::endl
-            << info.id << std::endl
-            << info.description << std::endl
-            << info.definition << std::endl
-            << "has_inverse: " << info.has_inverse << std::endl
-            << "accuracy: " << info.accuracy << std::endl;*/
-
-  proj_trans_array(P, PJ_FWD, expected_coords.size(), expected_coords.data());
-
-  proj_destroy(P);
-  proj_context_destroy(C);
-
-  std::vector<coordinate<T>> expected(expected_coords.size());
-  std::transform(
-    expected_coords.begin(), expected_coords.end(), expected.begin(), [](auto const& c) {
-      return coordinate<T>{static_cast<T>(c.xy.x), static_cast<T>(c.xy.y)};
-    });
-
-  thrust::device_vector<coordinate<T>> d_expected = expected;
-
-#ifdef DEBUG
-  std::cout << "expected " << std::setprecision(20) << expected_coords[0].xy.x << " "
-            << expected_coords[0].xy.y << std::endl;
-  coordinate<T> c_out = output[0];
-  std::cout << "Device: " << std::setprecision(20) << c_out.x << " " << c_out.y << std::endl;
-#endif
-
-  // Assumption: we can expect 5 nanometer (5e-9m) accuracy with double precision. The precision
-  // ratio of double to single precision is 2^53 / 2^24 == 2^29 ~= 10^9, so we should expect 5 meter
-  // (5e9 nanometer) accuracy with single precision. However we are seeing 10 meter accuracy
-  // relative to PROJ with single precision (which uses double precision internally)
-
-  // TODO: can we use double precision for key parts of the algorithm for accuracy while
-  // using single precision for the rest for performance?
-  if constexpr (std::is_same_v<T, float>) {
-    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected, output, T{10.0});  // within 10m
-  } else {
-    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected, output, T{5e-9});  // within 5nm
-  }
+  // We can expect nanometer accuracy with double precision. The precision ratio of
+  // double to single precision is 2^53 / 2^24 == 2^29 ~= 10^9, then we should
+  // expect meter (10^9 nanometer) accuracy with single precision.
+  T tolerance = std::is_same_v<T, float> ? T{10.0} : T{5e-9};
+  run_forward_and_inverse<T>(h_input, tolerance);
 }
