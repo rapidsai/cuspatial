@@ -106,11 +106,11 @@ OutputIt pairwise_point_in_polygon(PointRange points,
                 "OutputIt must be iterator to a uint8_t range.");
 
   CUSPATIAL_EXPECTS(points.num_multipoints() == points.num_points(),
-                    "Point in polygon API only support single point - single polygon tests. "
+                    "Point in polygon API only supports single point - single polygon tests. "
                     "Multipoint input is not accepted.");
 
   CUSPATIAL_EXPECTS(polygons.num_multipolygons() == polygons.num_polygons(),
-                    "Point in polygon API only support single point - single polygon tests. "
+                    "Point in polygon API only supports single point - single polygon tests. "
                     "MultiPolygon input is not accepted.");
 
   CUSPATIAL_EXPECTS(points.size() == polygons.size(),
