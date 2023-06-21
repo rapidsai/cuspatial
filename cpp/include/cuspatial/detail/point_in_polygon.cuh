@@ -66,14 +66,19 @@ OutputIt point_in_polygon(PointRange points,
 {
   using T = typename PointRange::element_t;
 
-  static_assert(points.contains_only_single_geometry() && polygons.contains_only_single_geometry(),
-                "point_in_polygon only supports single-point to single-polygon tests.");
-
   static_assert(is_same_floating_point<T, typename PolygonRange::element_t>(),
                 "points and polygons must have the same coordinate type.");
 
   static_assert(std::is_same_v<iterator_value_type<OutputIt>, int32_t>,
                 "OutputIt must point to 32 bit integer type.");
+
+  CUSPATIAL_EXPECTS(points.num_multipoints() == points.num_points(),
+                    "Point in polygon API only support single point - single polygon tests. "
+                    "Multipoint input is not accepted.");
+
+  CUSPATIAL_EXPECTS(polygons.num_multipolygons() == polygons.num_polygons(),
+                    "Point in polygon API only support single point - single polygon tests. "
+                    "MultiPolygon input is not accepted.");
 
   CUSPATIAL_EXPECTS(polygons.size() <= std::numeric_limits<int32_t>::digits,
                     "Number of polygons cannot exceed 31");
@@ -94,14 +99,19 @@ OutputIt pairwise_point_in_polygon(PointRange points,
 {
   using T = typename PointRange::element_t;
 
-  static_assert(points.contains_only_single_geometry() && polygons.contains_only_single_geometry(),
-                "pairwise_point_in_polygon only supports single-point to single-polygon tests.");
-
   static_assert(is_same_floating_point<T, typename PolygonRange::element_t>(),
                 "points and polygons must have the same coordinate type.");
 
   static_assert(std::is_same_v<iterator_value_type<OutputIt>, uint8_t>,
                 "OutputIt must be iterator to a uint8_t range.");
+
+  CUSPATIAL_EXPECTS(points.num_multipoints() == points.num_points(),
+                    "Point in polygon API only support single point - single polygon tests. "
+                    "Multipoint input is not accepted.");
+
+  CUSPATIAL_EXPECTS(polygons.num_multipolygons() == polygons.num_polygons(),
+                    "Point in polygon API only support single point - single polygon tests. "
+                    "MultiPolygon input is not accepted.");
 
   CUSPATIAL_EXPECTS(points.size() == polygons.size(),
                     "Must pass in an equal number of (multi)points and (multi)polygons");

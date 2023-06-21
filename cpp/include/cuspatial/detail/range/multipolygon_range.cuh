@@ -122,19 +122,6 @@ template <typename GeometryIterator,
           typename PartIterator,
           typename RingIterator,
           typename VecIterator>
-CUSPATIAL_HOST_DEVICE constexpr bool
-multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
-  contains_only_single_geometry()
-{
-  using index_t =
-    multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::index_t;
-  return std::is_same_v<GeometryIterator, thrust::counting_iterator<index_t>>;
-}
-
-template <typename GeometryIterator,
-          typename PartIterator,
-          typename RingIterator,
-          typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto
 multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::num_multipolygons()
 {

@@ -67,13 +67,6 @@ class multipoint_range {
                                          VecIterator points_end);
 
   /**
-   * @brief Return true if each multipoint in the geometry only contains 1 point.
-   * In this case, the geometry iterator should be initialized with a counting iterator.
-   * This function does not inspect data.
-   */
-  CUSPATIAL_HOST_DEVICE constexpr bool contains_only_single_geometry();
-
-  /**
    * @brief Returns the number of multipoints in the array.
    */
   CUSPATIAL_HOST_DEVICE auto num_multipoints();

@@ -83,13 +83,6 @@ class multipolygon_range {
                      VecIterator points_begin,
                      VecIterator points_end);
 
-  /**
-   * @brief Return true if each multipoint in the geometry only contains 1 point.
-   * In this case, the geometry iterator should be initialized with a counting iterator.
-   * This function does not inspect data.
-   */
-  CUSPATIAL_HOST_DEVICE constexpr bool contains_only_single_geometry();
-
   /// Return the number of multipolygons in the array.
   CUSPATIAL_HOST_DEVICE auto size() { return num_multipolygons(); }
 
