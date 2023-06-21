@@ -154,9 +154,12 @@ struct transverse_mercator : operation<Coordinate> {
   {
   }
 
-  __host__ __device__ Coordinate operator()(Coordinate const& coord) const
+  __host__ __device__ Coordinate operator()(Coordinate const& coord, direction dir) const
   {
-    return forward(coord);
+    if (dir == direction::FORWARD)
+      return forward(coord);
+    else
+      return inverse(coord);
   }
 
   projection_parameters<T> setup(projection_parameters<T> const& input_params)

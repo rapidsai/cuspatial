@@ -22,7 +22,7 @@ namespace cuproj {
 
 template <typename Coordinate>
 struct axis_swap : operation<Coordinate> {
-  __host__ __device__ Coordinate operator()(Coordinate const& coord) const
+  __host__ __device__ Coordinate operator()(Coordinate const& coord, direction) const
   {
     return Coordinate{coord.y, coord.x};
   }

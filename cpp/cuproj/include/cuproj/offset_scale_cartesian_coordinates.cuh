@@ -38,9 +38,12 @@ struct offset_scale_cartesian_coordinates : operation<Coordinate> {
 
   // projection_parameters<T> setup(projection_parameters<T> const& params) { return params; }
 
-  __host__ __device__ Coordinate operator()(Coordinate const& coord) const
+  __host__ __device__ Coordinate operator()(Coordinate const& coord, direction dir) const
   {
-    return forward(coord);
+    if (dir == direction::FORWARD)
+      return forward(coord);
+    else
+      return inverse(coord);
   }
 
  private:

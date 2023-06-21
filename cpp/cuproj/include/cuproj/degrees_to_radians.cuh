@@ -25,9 +25,12 @@ constexpr double RAD_TO_DEG = 57.295779513082320876798154814105;
 
 template <typename Coordinate>
 struct degrees_to_radians : operation<Coordinate> {
-  __host__ __device__ Coordinate operator()(Coordinate const& coord) const
+  __host__ __device__ Coordinate operator()(Coordinate const& coord, direction dir) const
   {
-    return forward(coord);
+    if (dir == direction::FORWARD)
+      return forward(coord);
+    else
+      return inverse(coord);
   }
 
  private:

@@ -32,49 +32,60 @@
 
 #include <cuda/std/tuple>
 
+#include <type_traits>
+
 namespace cuproj {
 
-enum class direction { DIR_FWD, DIR_INV };
-
-template <typename Coordinate, typename T = typename Coordinate::value_type>
+template <typename Coordinate,
+          direction dir = direction::FORWARD,
+          typename T    = typename Coordinate::value_type>
 struct pipeline {
+  using iterator_type = std::conditional_t<dir == direction::FORWARD,
+                                           operation_type const*,
+                                           std::reverse_iterator<operation_type const*>>;
+
   pipeline(projection_parameters<T> const& params,
            operation_type const* ops,
            std::size_t num_stages)
     : params_(params), d_ops(ops), num_stages(num_stages)
   {
+    if constexpr (dir == direction::FORWARD) {
+      first_ = d_ops;
+    } else {
+      first_ = std::reverse_iterator(d_ops + num_stages);
+    }
   }
 
   __device__ Coordinate operator()(Coordinate const& c) const
   {
-    // TODO: improve this dispatch, and consider if we can use virtual functions
+    // TODO: improve this dispatch, and consider whether we can use virtual functions
     Coordinate c_out{c};
-    thrust::for_each(thrust::seq, d_ops, d_ops + num_stages, [&](auto const& op) {
+    thrust::for_each_n(thrust::seq, first_, num_stages, [&](auto const& op) {
       switch (op) {
         case operation_type::AXIS_SWAP: {
           auto op = axis_swap<Coordinate>{};
-          c_out   = op(c_out);
+          c_out   = op(c_out, dir);
           break;
         }
         case operation_type::DEGREES_TO_RADIANS: {
           auto op = degrees_to_radians<Coordinate>{};
-          c_out   = op(c_out);
+          c_out   = op(c_out, dir);
           break;
         }
         // case operation_type::RADIANS_TO_DEGREES:
         case operation_type::CLAMP_ANGULAR_COORDINATES: {
           auto op = clamp_angular_coordinates<Coordinate>{params_};
-          c_out   = op(c_out);
+          c_out   = op(c_out, dir);
           break;
         }
         case operation_type::OFFSET_SCALE_CARTESIAN_COORDINATES: {
           auto op = offset_scale_cartesian_coordinates<Coordinate>{params_};
-          c_out   = op(c_out);
+          c_out   = op(c_out, dir);
           break;
         }
         case operation_type::TRANSVERSE_MERCATOR: {
           auto op = transverse_mercator<Coordinate>{params_};
-          c_out   = op(c_out);
+          c_out   = op(c_out, dir);
           break;
         }
       }
@@ -84,6 +95,7 @@ struct pipeline {
 
   projection_parameters<T> params_;
   operation_type const* d_ops;
+  iterator_type first_;
   std::size_t num_stages;
 };
 
@@ -107,11 +119,15 @@ struct projection {
   {
     static_assert(std::is_same_v<typename CoordIter::value_type, Coordinate>,
                   "Coordinate type must match iterator value type");
-    // currently only supports forward UTM transform from WGS84
-    assert(dir == direction::DIR_FWD);
 
-    auto pipe = pipeline<Coordinate>{params_, operations_.data().get(), operations_.size()};
-    thrust::transform(rmm::exec_policy(stream), first, last, result, pipe);
+    if (dir == direction::FORWARD) {
+      auto pipe = pipeline<Coordinate>{params_, operations_.data().get(), operations_.size()};
+      thrust::transform(rmm::exec_policy(stream), first, last, result, pipe);
+    } else {
+      auto pipe = pipeline<Coordinate, direction::INVERSE>{
+        params_, operations_.data().get(), operations_.size()};
+      thrust::transform(rmm::exec_policy(stream), first, last, result, pipe);
+    }
   }
 
  private:

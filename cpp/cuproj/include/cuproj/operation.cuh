@@ -29,10 +29,12 @@ enum operation_type {
   TRANSVERSE_MERCATOR
 };
 
+enum class direction { FORWARD, INVERSE };
+
 // base class for all operations
 template <typename Coordinate, typename T = typename Coordinate::value_type>
 struct operation {
-  __host__ __device__ Coordinate operator()(Coordinate const& c) const { return c; }
+  __host__ __device__ Coordinate operator()(Coordinate const& c, direction dir) const { return c; }
 
   __host__ projection_parameters<T> setup(projection_parameters<T> const& params)
   {
