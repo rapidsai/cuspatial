@@ -135,33 +135,13 @@ struct projection {
   {
     std::for_each(operations.begin(), operations.end(), [&](auto const& op) {
       switch (op) {
-        case operation_type::AXIS_SWAP: {
-          // TODO: some ops don't have setup.  Should we make them all have setup?
-          // auto op = axis_swap<Coordinate>{};
-          // params_ = op.setup(params_);
-          break;
-        }
-        case operation_type::DEGREES_TO_RADIANS: {
-          // auto op = degrees_to_radians<Coordinate>{};
-          // params_ = op.setup(params_);
-          break;
-        }
-        // case operation_type::RADIANS_TO_DEGREES:
-        case operation_type::CLAMP_ANGULAR_COORDINATES: {
-          // auto op = clamp_angular_coordinates<Coordinate>{params_};
-          // params_ = op.setup(params_);
-          break;
-        }
-        case operation_type::OFFSET_SCALE_CARTESIAN_COORDINATES: {
-          // auto op = offset_scale_cartesian_coordinates<Coordinate>{params_};
-          // params_ = op.setup(params_);
-          break;
-        }
         case operation_type::TRANSVERSE_MERCATOR: {
           auto op = transverse_mercator<Coordinate>{params_};
           params_ = op.setup(params_);
           break;
         }
+        // TODO: some ops don't have setup.  Should we make them all have setup?
+        default: break;
       }
     });
 
