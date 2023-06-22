@@ -14,10 +14,7 @@
  * limitations under the License.
  */
 
-#include <cuproj/ellipsoid.hpp>
-#include <cuproj/error.hpp>
-#include <cuproj/projection.cuh>
-#include <cuproj/projection_parameters.hpp>
+#include <cuproj/projection_factories.hpp>
 
 #include <cuspatial/geometry/vec_2d.hpp>
 
@@ -49,7 +46,6 @@ using coordinate = typename cuspatial::vec_2d<T>;
 template <typename T>
 void run_test(thrust::host_vector<PJ_COORD> const& input_coords,
               thrust::host_vector<PJ_COORD> const& expected_coords,
-              cuproj::ellipsoid<T> const& ellps,
               cuproj::direction dir,
               T tolerance = T{0})  // 0 for 1-ulp comparison
 {
@@ -67,19 +63,9 @@ void run_test(thrust::host_vector<PJ_COORD> const& input_coords,
   thrust::device_vector<coordinate<T>> d_out(d_in.size());
   thrust::device_vector<coordinate<T>> d_expected = expected;
 
-  cuproj::projection_parameters<T> tmerc_proj_params{
-    ellps, 56, cuproj::hemisphere::SOUTH, T{0}, T{0}};
+  auto utm_proj = make_utm_projection<coordinate<T>>(56, cuproj::hemisphere::SOUTH);
 
-  std::vector<cuproj::operation_type> h_utm_pipeline{
-    cuproj::operation_type::AXIS_SWAP,
-    cuproj::operation_type::DEGREES_TO_RADIANS,
-    cuproj::operation_type::CLAMP_ANGULAR_COORDINATES,
-    cuproj::operation_type::TRANSVERSE_MERCATOR,
-    cuproj::operation_type::OFFSET_SCALE_CARTESIAN_COORDINATES};
-
-  cuproj::projection<coordinate<T>> tmerc_proj{h_utm_pipeline, tmerc_proj_params};
-
-  tmerc_proj.transform(d_in.begin(), d_in.end(), d_out.begin(), dir);
+  utm_proj.transform(d_in.begin(), d_in.end(), d_out.begin(), dir);
 
 #ifdef DEBUG
   std::cout << "expected " << std::setprecision(20) << expected_coords[0].xy.x << " "
@@ -100,25 +86,17 @@ void run_forward_and_inverse(HostVector const& input, T tolerance = T{0})
   });
   thrust::host_vector<PJ_COORD> expected_coords(input_coords);
 
-  double ellps_a{};
-  double ellps_b{};
-  int is_semi_minor_computed{};
-  double ellps_inv_flattening{};
-  PJ_CONTEXT* C = proj_context_create();
-  auto wgs84    = proj_create(C, "EPSG:4326");
-  PJ* pj_ellps  = proj_get_ellipsoid(C, wgs84);
-  proj_ellipsoid_get_parameters(
-    C, pj_ellps, &ellps_a, &ellps_b, &is_semi_minor_computed, &ellps_inv_flattening);
-  proj_destroy(pj_ellps);
-
   // transform using PROJ
-  PJ* P = proj_create_crs_to_crs(C, "EPSG:4326", "EPSG:32756", NULL);
-  proj_trans_array(P, PJ_FWD, expected_coords.size(), expected_coords.data());
+  {
+    PJ_CONTEXT* C = proj_context_create();
+    PJ* P         = proj_create_crs_to_crs(C, "EPSG:4326", "EPSG:32756", NULL);
+    proj_trans_array(P, PJ_FWD, expected_coords.size(), expected_coords.data());
 
-  // semimajor and inverse flattening
-  cuproj::ellipsoid<T> ellps{static_cast<T>(ellps_a), static_cast<T>(ellps_inv_flattening)};
+    proj_destroy(P);
+    proj_context_destroy(C);
+  }
 
-  run_test(input_coords, expected_coords, ellps, cuproj::direction::FORWARD, tolerance);
+  run_test(input_coords, expected_coords, cuproj::direction::FORWARD, tolerance);
 }
 
 TYPED_TEST(ProjectionTest, Test_forward_one)
@@ -181,6 +159,7 @@ TYPED_TEST(ProjectionTest, test_many)
   // We can expect nanometer accuracy with double precision. The precision ratio of
   // double to single precision is 2^53 / 2^24 == 2^29 ~= 10^9, then we should
   // expect meter (10^9 nanometer) accuracy with single precision.
+  // For large arrays seem to need to relax the tolerance a bit (5nm and 10nm respectively)
   T tolerance = std::is_same_v<T, float> ? T{10.0} : T{5e-9};
   run_forward_and_inverse<T>(h_input, tolerance);
 }

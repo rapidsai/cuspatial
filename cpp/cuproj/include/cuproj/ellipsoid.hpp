@@ -25,7 +25,7 @@ template <typename T>
 struct ellipsoid {
   ellipsoid() = default;
 
-  ellipsoid(T a, T inverse_flattening) : a(a)
+  constexpr ellipsoid(T a, T inverse_flattening) : a(a)
   {
     assert(inverse_flattening != 0.0);
     b     = a * (1. - 1. / inverse_flattening);
@@ -44,5 +44,11 @@ struct ellipsoid {
   T f{};      // flattening
   T n{};      // third flattening
 };
+
+template <typename T>
+constexpr ellipsoid<T> make_ellipsoid_wgs84()
+{
+  return ellipsoid<T>{T{6378137.0}, T{298.257223563}};
+}
 
 }  // namespace cuproj
