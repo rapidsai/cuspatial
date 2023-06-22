@@ -96,8 +96,8 @@ inline static __host__ __device__ T gatg(T const* p1, int len_p1, T B, T cos_2B,
 
 // Complex Clenshaw summation
 template <typename T>
-inline static __host__ __device__ T
-clenS(T const* a, int size, T sin_arg_r, T cos_arg_r, T sinh_arg_i, T cosh_arg_i, T* R, T* I)
+inline static __host__ __device__ T clenshaw_complex(
+  T const* a, int size, T sin_arg_r, T cos_arg_r, T sinh_arg_i, T cosh_arg_i, T* R, T* I)
 {
   T r, i, hr, hr1, hr2, hi, hi1, hi2;
 
@@ -127,7 +127,7 @@ clenS(T const* a, int size, T sin_arg_r, T cos_arg_r, T sinh_arg_i, T cosh_arg_i
 
 // Real Clenshaw summation
 template <typename T>
-static __host__ __device__ T clens(T const* a, int size, T arg_r)
+static __host__ __device__ T clenshaw_real(T const* a, int size, T arg_r)
 {
   T r, hr, hr1, hr2, cos_arg_r;
 
@@ -266,7 +266,7 @@ struct transverse_mercator : operation<Coordinate> {
 
     // Origin northing minus true northing at the origin latitude
     // i.e. true northing = N - P->Zb
-    tmerc_params.Zb = -tmerc_params.Qn * (Z + clens(tmerc_params.gtu, ETMERC_ORDER, 2 * Z));
+    tmerc_params.Zb = -tmerc_params.Qn * (Z + clenshaw_real(tmerc_params.gtu, ETMERC_ORDER, 2 * Z));
 
     return params;
   }
@@ -345,7 +345,7 @@ struct transverse_mercator : operation<Coordinate> {
     T const cosh_arg_i = two_inv_denom_tan_Ce_square - 1;
 
     T dCn, dCe;
-    Cn += clenS(
+    Cn += clenshaw_complex(
       tmerc_params.gtu, ETMERC_ORDER, sin_arg_r, cos_arg_r, sinh_arg_i, cosh_arg_i, &dCn, &dCe);
 
     Ce += dCe;
@@ -383,14 +383,14 @@ struct transverse_mercator : operation<Coordinate> {
     T const cosh_arg_i        = T{0.5} * exp_2_Ce + half_inv_exp_2_Ce;
 
     T dCn_ignored, dCe;
-    Cn += clenS(tmerc_params.utg,
-                ETMERC_ORDER,
-                sin_arg_r,
-                cos_arg_r,
-                sinh_arg_i,
-                cosh_arg_i,
-                &dCn_ignored,
-                &dCe);
+    Cn += clenshaw_complex(tmerc_params.utg,
+                           ETMERC_ORDER,
+                           sin_arg_r,
+                           cos_arg_r,
+                           sinh_arg_i,
+                           cosh_arg_i,
+                           &dCn_ignored,
+                           &dCe);
     Ce += dCe;
 
     // compl. sph. LAT -> Gaussian LAT, LNG
