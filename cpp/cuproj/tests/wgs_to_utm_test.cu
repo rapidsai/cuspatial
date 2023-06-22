@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "cuproj/error.hpp"
 #include <cuproj/projection_factories.hpp>
 
 #include <cuspatial/geometry/vec_2d.hpp>
@@ -63,7 +64,7 @@ void run_test(thrust::host_vector<PJ_COORD> const& input_coords,
   thrust::device_vector<coordinate<T>> d_out(d_in.size());
   thrust::device_vector<coordinate<T>> d_expected = expected;
 
-  auto utm_proj = make_utm_projection<coordinate<T>>(56, cuproj::hemisphere::SOUTH);
+  auto utm_proj = cuproj::make_projection<coordinate<T>>("EPSG:4326", "EPSG:32756");
 
   utm_proj.transform(d_in.begin(), d_in.end(), d_out.begin(), dir);
 
@@ -99,7 +100,25 @@ void run_forward_and_inverse(HostVector const& input, T tolerance = T{0})
   run_test(input_coords, expected_coords, cuproj::direction::FORWARD, tolerance);
 }
 
-TYPED_TEST(ProjectionTest, Test_forward_one)
+TYPED_TEST(ProjectionTest, make_projection_valid_epsg)
+{
+  using T = TypeParam;
+  cuproj::make_projection<coordinate<T>>("EPSG:4326", "EPSG:32756");
+  cuproj::make_projection<coordinate<T>>("EPSG:4326", "EPSG:32601");
+}
+
+TYPED_TEST(ProjectionTest, invalid_epsg)
+{
+  using T = TypeParam;
+  EXPECT_THROW(cuproj::make_projection<coordinate<T>>("EPSG:4326", "EPSG:756"),
+               cuproj::logic_error);
+  EXPECT_THROW(cuproj::make_projection<coordinate<T>>("EPSG:32756", "EPSG:4326"),
+               cuproj::logic_error);
+  EXPECT_THROW(cuproj::make_projection<coordinate<T>>("EPSG:4326", "UTM:32756"),
+               cuproj::logic_error);
+}
+
+TYPED_TEST(ProjectionTest, one)
 {
   using T = TypeParam;
   std::vector<coordinate<T>> input{{-28.667003, 153.090959}};
@@ -138,7 +157,7 @@ struct grid_generator {
   }
 };
 
-TYPED_TEST(ProjectionTest, test_many)
+TYPED_TEST(ProjectionTest, many)
 {
   using T = TypeParam;
   // generate (lat, lon) points on a grid between -60 and 60 degrees longitude and
