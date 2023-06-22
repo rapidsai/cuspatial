@@ -36,6 +36,8 @@
 
 namespace cuproj {
 
+namespace detail {
+
 template <typename Coordinate,
           direction dir = direction::FORWARD,
           typename T    = typename Coordinate::value_type>
@@ -99,10 +101,11 @@ struct pipeline {
   std::size_t num_stages;
 };
 
-template <typename Coordinate, typename T = typename Coordinate::value_type>
-struct projection {
-  projection() = delete;
+}  // namespace detail
 
+template <typename Coordinate, typename T = typename Coordinate::value_type>
+class projection {
+ public:
   __host__ projection(std::vector<operation_type> const& operations,
                       projection_parameters<T> const& params)
     : params_(params)
@@ -121,10 +124,11 @@ struct projection {
                   "Coordinate type must match iterator value type");
 
     if (dir == direction::FORWARD) {
-      auto pipe = pipeline<Coordinate>{params_, operations_.data().get(), operations_.size()};
+      auto pipe = detail::pipeline<Coordinate, direction::FORWARD>{
+        params_, operations_.data().get(), operations_.size()};
       thrust::transform(rmm::exec_policy(stream), first, last, result, pipe);
     } else {
-      auto pipe = pipeline<Coordinate, direction::INVERSE>{
+      auto pipe = detail::pipeline<Coordinate, direction::INVERSE>{
         params_, operations_.data().get(), operations_.size()};
       thrust::transform(rmm::exec_policy(stream), first, last, result, pipe);
     }
