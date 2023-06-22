@@ -16,14 +16,14 @@
 
 #pragma once
 
-#include <cuproj/axis_swap.cuh>
-#include <cuproj/clamp_angular_coordinates.cuh>
-#include <cuproj/degrees_to_radians.cuh>
 #include <cuproj/ellipsoid.hpp>
-#include <cuproj/offset_scale_cartesian_coordinates.cuh>
-#include <cuproj/operation.cuh>
+#include <cuproj/operation/axis_swap.cuh>
+#include <cuproj/operation/clamp_angular_coordinates.cuh>
+#include <cuproj/operation/degrees_to_radians.cuh>
+#include <cuproj/operation/offset_scale_cartesian_coordinates.cuh>
+#include <cuproj/operation/operation.cuh>
+#include <cuproj/operation/transverse_mercator.cuh>
 #include <cuproj/projection_parameters.hpp>
-#include <cuproj/transverse_mercator.cuh>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>

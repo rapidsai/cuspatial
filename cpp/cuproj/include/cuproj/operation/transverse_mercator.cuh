@@ -67,9 +67,8 @@
 
 #pragma once
 
-#include <cuproj/clamp_angular_coordinates.cuh>
 #include <cuproj/ellipsoid.hpp>
-#include <cuproj/operation.cuh>
+#include <cuproj/operation/operation.cuh>
 #include <cuproj/projection_parameters.hpp>
 
 #include <thrust/iterator/transform_iterator.h>

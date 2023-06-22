@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <cuproj/operation.cuh>
+#include <cuproj/operation/operation.cuh>
 
 namespace cuproj {
 
