@@ -36,15 +36,15 @@ requirements:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     {% if cuda_major == "11" %}
-    - {{ compiler('cuda11') }} {{ cuda_version }}
+    - {{ compiler('cuda11') }} ={{ cuda_version }}
     {% else %}
-    - {{ compiler('cuda') }} {{ cuda_version }}
-    - cuda-cudart ={{ cuda_version }}
-    - cuda-cudart-dev ={{ cuda_version }}
-    - cuda-cudart-static ={{ cuda_version }}
-    - cuda-cupti ={{ cuda_version }}
-    - cuda-driver-dev {{ cuda_driver_version }}
+    - {{ compiler('cuda') }}
+    - cuda-cudart
+    - cuda-cudart-dev
+    - cuda-cupti
+    - cuda-driver-dev
     {% endif %}
+    - cuda-version ={{ cuda_version }}
     - cmake {{ cmake_version }}
     - ninja
     - sysroot_{{ target_platform }} {{ sysroot_version }}
@@ -52,12 +52,12 @@ requirements:
     {% if cuda_major == "11" %}
     - cudatoolkit ={{ cuda_version }}
     {% else %}
-    - cuda-cudart ={{ cuda_version }}
-    - cuda-cudart-dev ={{ cuda_version }}
-    - cuda-cudart-static ={{ cuda_version }}
-    - cuda-cupti ={{ cuda_version }}
-    - cuda-driver-dev {{ cuda_driver_version }}
+    - cuda-cudart
+    - cuda-cudart-dev
+    - cuda-cupti
+    - cuda-driver-dev
     {% endif %}
+    - cuda-version ={{ cuda_version }}
     - doxygen
     - gmock {{ gtest_version }}
     - gtest {{ gtest_version }}
@@ -78,8 +78,9 @@ outputs:
         - {{ compiler('cuda11') }}
         {% else %}
         - {{ compiler('cuda') }}
-        - cuda-cupti ={{ cuda_version }}
+        - cuda-cupti
         {% endif %}
+        - cuda-version ={{ cuda_version }}
     requirements:
       build:
         - cmake {{ cmake_version }}
@@ -88,8 +89,9 @@ outputs:
         {% if cuda_major == "11" %}
         - cudatoolkit {{ cuda_spec }}
         {% else %}
-        - cuda-cudart {{ cuda_spec }}
+        - cuda-cudart
         {% endif %}
+        - cuda-version ={{ cuda_version }}
         - libcudf ={{ minor_version }}*=cuda{{ cuda_major }}*
         - librmm ={{ minor_version }}*=cuda{{ cuda_major }}*
     test:
@@ -113,6 +115,7 @@ outputs:
         {% else %}
         - {{ compiler('cuda') }}
         {% endif %}
+        - cuda-version ={{ cuda_version }}
     requirements:
       build:
         - cmake {{ cmake_version }}
@@ -121,8 +124,9 @@ outputs:
         {% if cuda_major == "11" %}
         - cudatoolkit {{ cuda_spec }}
         {% else %}
-        - cuda-cudart {{ cuda_spec }}
-        - cuda-cupti ={{ cuda_version }}
+        - cuda-cudart
+        - cuda-cupti
         {% endif %}
+        - cuda-version ={{ cuda_version }}
         - gmock {{ gtest_version }}
         - gtest {{ gtest_version }}
