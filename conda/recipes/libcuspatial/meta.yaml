@@ -92,8 +92,8 @@ outputs:
         - cuda-cudart
         {% endif %}
         - cuda-version ={{ cuda_version }}
-        - libcudf ={{ minor_version }}*=cuda{{ cuda_major }}*
-        - librmm ={{ minor_version }}*=cuda{{ cuda_major }}*
+        - libcudf ={{ minor_version }}
+        - librmm ={{ minor_version }}
     test:
       commands:
         - test -f $PREFIX/lib/libcuspatial.so
