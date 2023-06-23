@@ -165,6 +165,12 @@ dependencies:
       - output_types: conda
         matrices:
           - matrix:
+              cuda: "12.0"
+            packages:
+              - cuda-version=12.0
+              - cuda-cudart-dev
+              - cuda-nvrtc-dev
+         - matrix:
               cuda: "11.8"
             packages:
               - cudatoolkit=11.8
@@ -180,14 +186,6 @@ dependencies:
               cuda: "11.2"
             packages:
               - cudatoolkit=11.2
-          - matrix:
-              cuda: "12.0"
-            packages:
-              - cuda-version=12.0
-              - cuda-cudart
-              - cuda-cudart-dev
-              - cuda-nvrtc
-              - cuda-nvrtc-dev
   develop:
     common:
       - output_types: [conda, requirements]
