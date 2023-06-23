@@ -39,10 +39,6 @@ requirements:
     - {{ compiler('cuda11') }} ={{ cuda_version }}
     {% else %}
     - {{ compiler('cuda') }}
-    - cuda-cudart
-    - cuda-cudart-dev
-    - cuda-cupti
-    - cuda-driver-dev
     {% endif %}
     - cuda-version ={{ cuda_version }}
     - cmake {{ cmake_version }}
@@ -52,9 +48,7 @@ requirements:
     {% if cuda_major == "11" %}
     - cudatoolkit ={{ cuda_version }}
     {% else %}
-    - cuda-cudart
     - cuda-cudart-dev
-    - cuda-cupti
     - cuda-driver-dev
     {% endif %}
     - cuda-version ={{ cuda_version }}
@@ -76,11 +70,7 @@ outputs:
       ignore_run_exports_from:
         {% if cuda_major == "11" %}
         - {{ compiler('cuda11') }}
-        {% else %}
-        - {{ compiler('cuda') }}
-        - cuda-cupti
         {% endif %}
-        - cuda-version ={{ cuda_version }}
     requirements:
       build:
         - cmake {{ cmake_version }}
@@ -112,10 +102,7 @@ outputs:
       ignore_run_exports_from:
         {% if cuda_major == "11" %}
         - {{ compiler('cuda11') }}
-        {% else %}
-        - {{ compiler('cuda') }}
         {% endif %}
-        - cuda-version ={{ cuda_version }}
     requirements:
       build:
         - cmake {{ cmake_version }}
@@ -125,7 +112,6 @@ outputs:
         - cudatoolkit {{ cuda_spec }}
         {% else %}
         - cuda-cudart
-        - cuda-cupti
         {% endif %}
         - cuda-version ={{ cuda_version }}
         - gmock {{ gtest_version }}
