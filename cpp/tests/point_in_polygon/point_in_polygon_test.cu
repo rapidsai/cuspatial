@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <cuspatial_test/base_fixture.hpp>
 #include <cuspatial_test/vector_equality.hpp>
 #include <cuspatial_test/vector_factories.cuh>
 
@@ -32,55 +33,61 @@
 #include <gtest/gtest.h>
 
 using namespace cuspatial;
+using namespace cuspatial::test;
 
 template <typename T>
-struct PointInPolygonTest : public ::testing::Test {
+struct PointInPolygonTest : public BaseFixture {
  public:
-  rmm::device_vector<vec_2d<T>> make_device_points(std::initializer_list<vec_2d<T>> pts)
+  void run_test(std::initializer_list<vec_2d<T>> points,
+                std::initializer_list<int> polygon_offsets,
+                std::initializer_list<int> ring_offsets,
+                std::initializer_list<vec_2d<T>> polygon_points,
+                std::initializer_list<int32_t> expected)
   {
-    return rmm::device_vector<vec_2d<T>>(pts.begin(), pts.end());
-  }
+    auto d_points          = make_device_vector<vec_2d<T>>(points);
+    auto d_polygon_offsets = make_device_vector<int>(polygon_offsets);
+    auto d_ring_offsets    = make_device_vector<int>(ring_offsets);
+    auto d_polygon_points  = make_device_vector<vec_2d<T>>(polygon_points);
 
-  rmm::device_vector<std::size_t> make_device_offsets(std::initializer_list<std::size_t> pts)
-  {
-    return rmm::device_vector<std::size_t>(pts.begin(), pts.end());
+    auto mpoints = make_multipoint_range(
+      d_points.size(), thrust::make_counting_iterator(0), d_points.size(), d_points.begin());
+    auto mpolys = make_multipolygon_range(polygon_offsets.size() - 1,
+                                          thrust::make_counting_iterator(0),
+                                          d_polygon_offsets.size() - 1,
+                                          d_polygon_offsets.begin(),
+                                          d_ring_offsets.size() - 1,
+                                          d_ring_offsets.begin(),
+                                          d_polygon_points.size(),
+                                          d_polygon_points.begin());
+
+    auto d_expected = make_device_vector(expected);
+
+    auto got = rmm::device_uvector<int32_t>(points.size(), stream());
+
+    auto ret = point_in_polygon(mpoints, mpolys, got.begin(), stream());
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected, got);
+    EXPECT_EQ(ret, got.end());
   }
 };
 
-// float and double are logically the same but would require separate tests due to precision.
-using TestTypes = ::testing::Types<float, double>;
-TYPED_TEST_CASE(PointInPolygonTest, TestTypes);
+TYPED_TEST_CASE(PointInPolygonTest, FloatingPointTypes);
 
 TYPED_TEST(PointInPolygonTest, OnePolygonOneRing)
 {
-  auto test_point        = this->make_device_points({{-2.0, 0.0},
-                                                     {2.0, 0.0},
-                                                     {0.0, -2.0},
-                                                     {0.0, 2.0},
-                                                     {-0.5, 0.0},
-                                                     {0.5, 0.0},
-                                                     {0.0, -0.5},
-                                                     {0.0, 0.5}});
-  auto poly_offsets      = this->make_device_offsets({0, 1});
-  auto poly_ring_offsets = this->make_device_offsets({0, 5});
-  auto poly_point =
-    this->make_device_points({{-1.0, -1.0}, {1.0, -1.0}, {1.0, 1.0}, {-1.0, 1.0}, {-1.0, -1.0}});
-
-  auto got      = rmm::device_vector<int32_t>(test_point.size());
-  auto expected = std::vector<int32_t>{false, false, false, false, true, true, true, true};
-
-  auto ret = point_in_polygon(test_point.begin(),
-                              test_point.end(),
-                              poly_offsets.begin(),
-                              poly_offsets.end(),
-                              poly_ring_offsets.begin(),
-                              poly_ring_offsets.end(),
-                              poly_point.begin(),
-                              poly_point.end(),
-                              got.begin());
-
-  EXPECT_EQ(got, expected);
-  EXPECT_EQ(ret, got.end());
+  CUSPATIAL_RUN_TEST(this->run_test,
+                     {{-2.0, 0.0},
+                      {2.0, 0.0},
+                      {0.0, -2.0},
+                      {0.0, 2.0},
+                      {-0.5, 0.0},
+                      {0.5, 0.0},
+                      {0.0, -0.5},
+                      {0.0, 0.5}},
+                     {0, 1},
+                     {0, 5},
+                     {{-1.0, -1.0}, {1.0, -1.0}, {1.0, 1.0}, {-1.0, 1.0}, {-1.0, -1.0}},
+                     {false, false, false, false, true, true, true, true});
 }
 
 // cuspatial expects closed rings, however algorithms may work OK with unclosed rings
@@ -90,172 +97,106 @@ TYPED_TEST(PointInPolygonTest, OnePolygonOneRing)
 // uses a polygon ring with 4 vertices so it doesn't fail polygon validation.
 TYPED_TEST(PointInPolygonTest, OnePolygonOneRingUnclosed)
 {
-  auto test_point        = this->make_device_points({{-2.0, 0.0},
-                                                     {2.0, 0.0},
-                                                     {0.0, -2.0},
-                                                     {0.0, 2.0},
-                                                     {-0.5, 0.0},
-                                                     {0.5, 0.0},
-                                                     {0.0, -0.5},
-                                                     {0.0, 0.5}});
-  auto poly_offsets      = this->make_device_offsets({0, 1});
-  auto poly_ring_offsets = this->make_device_offsets({0, 4});
-  auto poly_point = this->make_device_points({{-1.0, -1.0}, {1.0, -1.0}, {1.0, 0.0}, {1.0, 1.0}});
-
-  auto got      = rmm::device_vector<int32_t>(test_point.size());
-  auto expected = std::vector<int32_t>{false, false, false, false, false, true, true, false};
-
-  auto ret = point_in_polygon(test_point.begin(),
-                              test_point.end(),
-                              poly_offsets.begin(),
-                              poly_offsets.end(),
-                              poly_ring_offsets.begin(),
-                              poly_ring_offsets.end(),
-                              poly_point.begin(),
-                              poly_point.end(),
-                              got.begin());
-
-  EXPECT_EQ(got, expected);
-  EXPECT_EQ(ret, got.end());
+  CUSPATIAL_RUN_TEST(this->run_test,
+                     {{-2.0, 0.0},
+                      {2.0, 0.0},
+                      {0.0, -2.0},
+                      {0.0, 2.0},
+                      {-0.5, 0.0},
+                      {0.5, 0.0},
+                      {0.0, -0.5},
+                      {0.0, 0.5}},
+                     {0, 1},
+                     {0, 4},
+                     {{-1.0, -1.0}, {1.0, -1.0}, {1.0, 0.0}, {1.0, 1.0}},
+                     {false, false, false, false, false, true, true, false});
 }
 
 TYPED_TEST(PointInPolygonTest, TwoPolygonsOneRingEach)
 {
-  auto test_point = this->make_device_points({{-2.0, 0.0},
-                                              {2.0, 0.0},
-                                              {0.0, -2.0},
-                                              {0.0, 2.0},
-                                              {-0.5, 0.0},
-                                              {0.5, 0.0},
-                                              {0.0, -0.5},
-                                              {0.0, 0.5}});
+  CUSPATIAL_RUN_TEST(this->run_test,
 
-  auto poly_offsets      = this->make_device_offsets({0, 1, 2});
-  auto poly_ring_offsets = this->make_device_offsets({0, 5, 10});
-  auto poly_point        = this->make_device_points({{-1.0, -1.0},
-                                                     {-1.0, 1.0},
-                                                     {1.0, 1.0},
-                                                     {1.0, -1.0},
-                                                     {-1.0, -1.0},
-                                                     {0.0, 1.0},
-                                                     {1.0, 0.0},
-                                                     {0.0, -1.0},
-                                                     {-1.0, 0.0},
-                                                     {0.0, 1.0}});
+                     {{-2.0, 0.0},
+                      {2.0, 0.0},
+                      {0.0, -2.0},
+                      {0.0, 2.0},
+                      {-0.5, 0.0},
+                      {0.5, 0.0},
+                      {0.0, -0.5},
+                      {0.0, 0.5}},
 
-  auto got      = rmm::device_vector<int32_t>(test_point.size());
-  auto expected = std::vector<int32_t>({0b00, 0b00, 0b00, 0b00, 0b11, 0b11, 0b11, 0b11});
+                     {0, 1, 2},
+                     {0, 5, 10},
+                     {{-1.0, -1.0},
+                      {-1.0, 1.0},
+                      {1.0, 1.0},
+                      {1.0, -1.0},
+                      {-1.0, -1.0},
+                      {0.0, 1.0},
+                      {1.0, 0.0},
+                      {0.0, -1.0},
+                      {-1.0, 0.0},
+                      {0.0, 1.0}},
 
-  auto ret = point_in_polygon(test_point.begin(),
-                              test_point.end(),
-                              poly_offsets.begin(),
-                              poly_offsets.end(),
-                              poly_ring_offsets.begin(),
-                              poly_ring_offsets.end(),
-                              poly_point.begin(),
-                              poly_point.end(),
-                              got.begin());
-
-  EXPECT_EQ(got, expected);
-  EXPECT_EQ(ret, got.end());
+                     {0b00, 0b00, 0b00, 0b00, 0b11, 0b11, 0b11, 0b11});
 }
 
 TYPED_TEST(PointInPolygonTest, OnePolygonTwoRings)
 {
-  auto test_point =
-    this->make_device_points({{0.0, 0.0}, {-0.4, 0.0}, {-0.6, 0.0}, {0.0, 0.4}, {0.0, -0.6}});
-  auto poly_offsets      = this->make_device_offsets({0, 2});
-  auto poly_ring_offsets = this->make_device_offsets({0, 5, 10});
-  auto poly_point        = this->make_device_points({{-1.0, -1.0},
-                                                     {1.0, -1.0},
-                                                     {1.0, 1.0},
-                                                     {-1.0, 1.0},
-                                                     {-1.0, -1.0},
-                                                     {-0.5, -0.5},
-                                                     {-0.5, 0.5},
-                                                     {0.5, 0.5},
-                                                     {0.5, -0.5},
-                                                     {-0.5, -0.5}});
+  CUSPATIAL_RUN_TEST(this->run_test,
+                     {{0.0, 0.0}, {-0.4, 0.0}, {-0.6, 0.0}, {0.0, 0.4}, {0.0, -0.6}},
+                     {0, 2},
+                     {0, 5, 10},
+                     {{-1.0, -1.0},
+                      {1.0, -1.0},
+                      {1.0, 1.0},
+                      {-1.0, 1.0},
+                      {-1.0, -1.0},
+                      {-0.5, -0.5},
+                      {-0.5, 0.5},
+                      {0.5, 0.5},
+                      {0.5, -0.5},
+                      {-0.5, -0.5}},
 
-  auto got      = rmm::device_vector<int32_t>(test_point.size());
-  auto expected = std::vector<int32_t>{0b0, 0b0, 0b1, 0b0, 0b1};
-
-  auto ret = point_in_polygon(test_point.begin(),
-                              test_point.end(),
-                              poly_offsets.begin(),
-                              poly_offsets.end(),
-                              poly_ring_offsets.begin(),
-                              poly_ring_offsets.end(),
-                              poly_point.begin(),
-                              poly_point.end(),
-                              got.begin());
-
-  EXPECT_EQ(got, expected);
-  EXPECT_EQ(ret, got.end());
+                     {0b0, 0b0, 0b1, 0b0, 0b1});
 }
 
 TYPED_TEST(PointInPolygonTest, EdgesOfSquare)
 {
-  auto test_point        = this->make_device_points({{0.0, 0.0}});
-  auto poly_offsets      = this->make_device_offsets({0, 1, 2, 3, 4});
-  auto poly_ring_offsets = this->make_device_offsets({0, 5, 10, 15, 20});
+  CUSPATIAL_RUN_TEST(
+    this->run_test,
+    {{0.0, 0.0}},
+    {0, 1, 2, 3, 4},
+    {0, 5, 10, 15, 20},
 
-  // 0: rect on min x side
-  // 1: rect on max x side
-  // 2: rect on min y side
-  // 3: rect on max y side
-  auto poly_point = this->make_device_points(
+    // 0: rect on min x side
+    // 1: rect on max x side
+    // 2: rect on min y side
+    // 3: rect on max y side
     {{-1.0, -1.0}, {0.0, -1.0}, {0.0, 1.0},  {-1.0, 1.0},  {-1.0, -1.0}, {0.0, -1.0}, {1.0, -1.0},
      {1.0, 1.0},   {0.0, 1.0},  {0.0, -1.0}, {-1.0, -1.0}, {-1.0, 0.0},  {1.0, 0.0},  {1.0, -1.0},
-     {-1.0, 1.0},  {-1.0, 0.0}, {-1.0, 1.0}, {1.0, 1.0},   {1.0, 0.0},   {-1.0, 0.0}});
+     {-1.0, 1.0},  {-1.0, 0.0}, {-1.0, 1.0}, {1.0, 1.0},   {1.0, 0.0},   {-1.0, 0.0}},
 
-  auto expected = std::vector<int32_t>{0b0000};
-  auto got      = rmm::device_vector<int32_t>(test_point.size());
-
-  auto ret = point_in_polygon(test_point.begin(),
-                              test_point.end(),
-                              poly_offsets.begin(),
-                              poly_offsets.end(),
-                              poly_ring_offsets.begin(),
-                              poly_ring_offsets.end(),
-                              poly_point.begin(),
-                              poly_point.end(),
-                              got.begin());
-
-  EXPECT_EQ(got, expected);
-  EXPECT_EQ(ret, got.end());
+    {0b0000});
 }
 
 TYPED_TEST(PointInPolygonTest, CornersOfSquare)
 {
-  auto test_point        = this->make_device_points({{0.0, 0.0}});
-  auto poly_offsets      = this->make_device_offsets({0, 1, 2, 3, 4});
-  auto poly_ring_offsets = this->make_device_offsets({0, 5, 10, 15, 20});
+  CUSPATIAL_RUN_TEST(
+    this->run_test,
+    {{0.0, 0.0}},
+    {0, 1, 2, 3, 4},
+    {0, 5, 10, 15, 20},
 
-  // 0: min x min y corner
-  // 1: min x max y corner
-  // 2: max x min y corner
-  // 3: max x max y corner
-  auto poly_point = this->make_device_points(
+    // 0: min x min y corner
+    // 1: min x max y corner
+    // 2: max x min y corner
+    // 3: max x max y corner
     {{-1.0, -1.0}, {-1.0, 0.0}, {0.0, 0.0},  {0.0, -1.0}, {-1.0, -1.0}, {-1.0, 0.0}, {-1.0, 1.0},
      {0.0, 1.0},   {-1.0, 0.0}, {-1.0, 0.0}, {0.0, -1.0}, {0.0, 0.0},   {1.0, 0.0},  {1.0, -1.0},
-     {0.0, -1.0},  {0.0, 0.0},  {0.0, 1.0},  {1.0, 1.0},  {1.0, 0.0},   {0.0, 0.0}});
+     {0.0, -1.0},  {0.0, 0.0},  {0.0, 1.0},  {1.0, 1.0},  {1.0, 0.0},   {0.0, 0.0}},
 
-  auto expected = std::vector<int32_t>{0b0000};
-  auto got      = rmm::device_vector<int32_t>(test_point.size());
-
-  auto ret = point_in_polygon(test_point.begin(),
-                              test_point.end(),
-                              poly_offsets.begin(),
-                              poly_offsets.end(),
-                              poly_ring_offsets.begin(),
-                              poly_ring_offsets.end(),
-                              poly_point.begin(),
-                              poly_point.end(),
-                              got.begin());
-
-  EXPECT_EQ(got, expected);
-  EXPECT_EQ(ret, got.end());
+    {0b0000});
 }
 
 struct OffsetIteratorFunctor {
@@ -299,7 +240,7 @@ TYPED_TEST(PointInPolygonTest, 31PolygonSupport)
   auto constexpr num_polys       = 31;
   auto constexpr num_poly_points = num_polys * 5;
 
-  auto test_point   = this->make_device_points({{0.0, 0.0}, {2.0, 0.0}});
+  auto test_point   = make_device_vector<vec_2d<T>>({{0.0, 0.0}, {2.0, 0.0}});
   auto offsets_iter = thrust::make_counting_iterator<std::size_t>(0);
   auto poly_ring_offsets_iter =
     thrust::make_transform_iterator(offsets_iter, OffsetIteratorFunctor{});
@@ -309,103 +250,60 @@ TYPED_TEST(PointInPolygonTest, 31PolygonSupport)
     thrust::make_transform_iterator(offsets_iter, PolyPointIteratorFunctorB<T>{});
   auto poly_point_iter = make_vec_2d_iterator(poly_point_xs_iter, poly_point_ys_iter);
 
+  auto points_range = make_multipoint_range(
+    test_point.size(), thrust::make_counting_iterator(0), test_point.size(), test_point.begin());
+
+  auto polygons_range = make_multipolygon_range(num_polys,
+                                                thrust::make_counting_iterator(0),
+                                                num_polys,
+                                                offsets_iter,
+                                                num_polys,
+                                                poly_ring_offsets_iter,
+                                                num_poly_points,
+                                                poly_point_iter);
+
   auto expected =
     std::vector<int32_t>({0b1111111111111111111111111111111, 0b0000000000000000000000000000000});
   auto got = rmm::device_vector<int32_t>(test_point.size());
 
-  auto ret = point_in_polygon(test_point.begin(),
-                              test_point.end(),
-                              offsets_iter,
-                              offsets_iter + num_polys + 1,
-                              poly_ring_offsets_iter,
-                              poly_ring_offsets_iter + num_polys + 1,
-                              poly_point_iter,
-                              poly_point_iter + num_poly_points,
-                              got.begin());
+  auto ret = point_in_polygon(points_range, polygons_range, got.begin());
 
   EXPECT_EQ(got, expected);
   EXPECT_EQ(ret, got.end());
 }
 
-struct PointInPolygonErrorTest : public PointInPolygonTest<double> {};
-
 TYPED_TEST(PointInPolygonTest, SelfClosingLoopLeftEdgeMissing)
 {
-  using T                = TypeParam;
-  auto test_point        = this->make_device_points({{-2.0, 0.0}, {0.0, 0.0}, {2.0, 0.0}});
-  auto poly_offsets      = this->make_device_offsets({0, 1});
-  auto poly_ring_offsets = this->make_device_offsets({0, 4});
-  // "left" edge missing
-  auto poly_point = this->make_device_points({{-1, 1}, {1, 1}, {1, -1}, {-1, -1}});
-  auto expected   = std::vector<int32_t>{0b0, 0b1, 0b0};
-  auto got        = rmm::device_vector<int32_t>(test_point.size());
+  CUSPATIAL_RUN_TEST(this->run_test,
 
-  auto ret = point_in_polygon(test_point.begin(),
-                              test_point.end(),
-                              poly_offsets.begin(),
-                              poly_offsets.end(),
-                              poly_ring_offsets.begin(),
-                              poly_ring_offsets.end(),
-                              poly_point.begin(),
-                              poly_point.end(),
-                              got.begin());
-
-  EXPECT_EQ(expected, got);
-  EXPECT_EQ(got.end(), ret);
+                     {{-2.0, 0.0}, {0.0, 0.0}, {2.0, 0.0}},
+                     {0, 1},
+                     {0, 4},
+                     // "left" edge missing
+                     {{-1, 1}, {1, 1}, {1, -1}, {-1, -1}},
+                     {0b0, 0b1, 0b0});
 }
 
 TYPED_TEST(PointInPolygonTest, SelfClosingLoopRightEdgeMissing)
 {
-  using T                = TypeParam;
-  auto test_point        = this->make_device_points({{-2.0, 0.0}, {0.0, 0.0}, {2.0, 0.0}});
-  auto poly_offsets      = this->make_device_offsets({0, 1});
-  auto poly_ring_offsets = this->make_device_offsets({0, 4});
-  // "right" edge missing
-  auto poly_point = this->make_device_points({{1, -1}, {-1, -1}, {-1, 1}, {1, 1}});
-  auto expected   = std::vector<int32_t>{0b0, 0b1, 0b0};
-  auto got        = rmm::device_vector<int32_t>(test_point.size());
-
-  auto ret = point_in_polygon(test_point.begin(),
-                              test_point.end(),
-                              poly_offsets.begin(),
-                              poly_offsets.end(),
-                              poly_ring_offsets.begin(),
-                              poly_ring_offsets.end(),
-                              poly_point.begin(),
-                              poly_point.end(),
-                              got.begin());
-
-  EXPECT_EQ(expected, got);
-  EXPECT_EQ(got.end(), ret);
+  using T = TypeParam;
+  CUSPATIAL_RUN_TEST(this->run_test,
+                     {{-2.0, 0.0}, {0.0, 0.0}, {2.0, 0.0}},
+                     {0, 1},
+                     {0, 4},
+                     // "right" edge missing
+                     {{1, -1}, {-1, -1}, {-1, 1}, {1, 1}},
+                     {0b0, 0b1, 0b0});
 }
 
 TYPED_TEST(PointInPolygonTest, ContainsButCollinearWithBoundary)
 {
   using T = TypeParam;
-
-  auto point   = cuspatial::test::make_multipoint_array<T>({{{0.5, 0.5}}});
-  auto polygon = cuspatial::test::make_multipolygon_array<T>(
-    {0, 1},
+  CUSPATIAL_RUN_TEST(
+    this->run_test,
+    {{0.5, 0.5}},
     {0, 1},
     {0, 9},
-    {{0, 0}, {0, 1}, {1, 1}, {1, 0.5}, {1.5, 0.5}, {1.5, 1}, {2, 1}, {2, 0}, {0, 0}});
-
-  auto point_range   = point.range();
-  auto polygon_range = polygon.range();
-
-  auto res = rmm::device_uvector<int32_t>(1, rmm::cuda_stream_default);
-
-  cuspatial::point_in_polygon(point_range.point_begin(),
-                              point_range.point_end(),
-                              polygon_range.part_offset_begin(),
-                              polygon_range.part_offset_end(),
-                              polygon_range.ring_offset_begin(),
-                              polygon_range.ring_offset_end(),
-                              polygon_range.point_begin(),
-                              polygon_range.point_end(),
-                              res.begin());
-
-  auto expect = cuspatial::test::make_device_vector<int32_t>({0b1});
-
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(res, expect);
+    {{0, 0}, {0, 1}, {1, 1}, {1, 0.5}, {1.5, 0.5}, {1.5, 1}, {2, 1}, {2, 0}, {0, 0}},
+    {0b1});
 }
