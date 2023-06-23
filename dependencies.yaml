@@ -170,7 +170,7 @@ dependencies:
               - cuda-version=12.0
               - cuda-cudart-dev
               - cuda-nvrtc-dev
-         - matrix:
+          - matrix:
               cuda: "11.8"
             packages:
               - cudatoolkit=11.8

@@ -8,10 +8,8 @@ channels:
 dependencies:
 - c-compiler
 - cmake>=3.26.4
-- cuda-cudart
 - cuda-cudart-dev
 - cuda-nvcc
-- cuda-nvrtc
 - cuda-nvrtc-dev
 - cuda-version=12.0
 - cudf==23.8.*
