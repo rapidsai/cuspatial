@@ -2,4 +2,4 @@
 
 # build cuspatial with verbose output
 ./build.sh -v libcuspatial tests benchmarks --allgpuarch -n \
-    --cmake_args=\"-DNVBench_ENABLE_CUPTI=OFF\"
+    --cmake-args=\"-DNVBench_ENABLE_CUPTI=OFF\"
