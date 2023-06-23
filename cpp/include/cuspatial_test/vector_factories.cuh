@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include <cuspatial_test/test_util.cuh>
 
-#include <cuspatial/experimental/ranges/multilinestring_range.cuh>
-#include <cuspatial/experimental/ranges/multipoint_range.cuh>
-#include <cuspatial/experimental/ranges/multipolygon_range.cuh>
-#include <cuspatial/experimental/ranges/range.cuh>
+#include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/range/multilinestring_range.cuh>
+#include <cuspatial/range/multipoint_range.cuh>
+#include <cuspatial/range/multipolygon_range.cuh>
+#include <cuspatial/range/range.cuh>
 #include <cuspatial/traits.hpp>
-#include <cuspatial/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
@@ -66,6 +68,12 @@ auto make_device_uvector(std::initializer_list<T> inl,
   return res;
 }
 
+template <typename T>
+auto make_host_vector(std::initializer_list<T> inl)
+{
+  return thrust::host_vector<T>{inl.begin(), inl.end()};
+}
+
 /**
  * @brief Owning object of a multipolygon array following geoarrow layout.
  *
@@ -85,22 +93,22 @@ class multipolygon_array {
   multipolygon_array(thrust::device_vector<geometry_t> geometry_offsets_array,
                      thrust::device_vector<part_t> part_offsets_array,
                      thrust::device_vector<ring_t> ring_offsets_array,
-                     thrust::device_vector<coord_t> coordinate_offsets_array)
+                     thrust::device_vector<coord_t> coordinates_array)
     : _geometry_offsets_array(geometry_offsets_array),
       _part_offsets_array(part_offsets_array),
       _ring_offsets_array(ring_offsets_array),
-      _coordinate_offsets_array(coordinate_offsets_array)
+      _coordinates_array(coordinates_array)
   {
   }
 
   multipolygon_array(rmm::device_uvector<geometry_t>&& geometry_offsets_array,
                      rmm::device_uvector<part_t>&& part_offsets_array,
                      rmm::device_uvector<ring_t>&& ring_offsets_array,
-                     rmm::device_uvector<coord_t>&& coordinate_offsets_array)
+                     rmm::device_uvector<coord_t>&& coordinates_array)
     : _geometry_offsets_array(std::move(geometry_offsets_array)),
       _part_offsets_array(std::move(part_offsets_array)),
       _ring_offsets_array(std::move(ring_offsets_array)),
-      _coordinate_offsets_array(std::move(coordinate_offsets_array))
+      _coordinates_array(std::move(coordinates_array))
   {
   }
 
@@ -116,8 +124,8 @@ class multipolygon_array {
                               _part_offsets_array.end(),
                               _ring_offsets_array.begin(),
                               _ring_offsets_array.end(),
-                              _coordinate_offsets_array.begin(),
-                              _coordinate_offsets_array.end());
+                              _coordinates_array.begin(),
+                              _coordinates_array.end());
   }
 
   /**
@@ -128,9 +136,17 @@ class multipolygon_array {
     auto geometry_offsets   = cuspatial::test::to_host<geometry_t>(_geometry_offsets_array);
     auto part_offsets       = cuspatial::test::to_host<part_t>(_part_offsets_array);
     auto ring_offsets       = cuspatial::test::to_host<ring_t>(_ring_offsets_array);
-    auto coordinate_offsets = cuspatial::test::to_host<coord_t>(_coordinate_offsets_array);
+    auto coordinate_offsets = cuspatial::test::to_host<coord_t>(_coordinates_array);
 
     return std::tuple{geometry_offsets, part_offsets, ring_offsets, coordinate_offsets};
+  }
+
+  auto release()
+  {
+    return std::tuple{std::move(_geometry_offsets_array),
+                      std::move(_part_offsets_array),
+                      std::move(_ring_offsets_array),
+                      std::move(_coordinates_array)};
   }
 
   /**
@@ -152,7 +168,7 @@ class multipolygon_array {
   GeometryArray _geometry_offsets_array;
   PartArray _part_offsets_array;
   RingArray _ring_offsets_array;
-  CoordinateArray _coordinate_offsets_array;
+  CoordinateArray _coordinates_array;
 };
 
 template <typename IndexRange,
@@ -234,11 +250,44 @@ class multilinestring_array {
                                  _coordinate_array.end());
   }
 
+  auto release()
+  {
+    return std::tuple{std::move(_geometry_offset_array),
+                      std::move(_part_offset_array),
+                      std::move(_coordinate_array)};
+  }
+
  protected:
   GeometryArray _geometry_offset_array;
   PartArray _part_offset_array;
   CoordinateArray _coordinate_array;
 };
+
+/**
+ * @brief Construct an owning object of a multilinestring array from ranges
+ *
+ * @param geometry_inl Range of geometry offsets
+ * @param part_inl Range of part offsets
+ * @param coord_inl Ramge of coordinate
+ * @return multilinestring array object
+ */
+template <typename IndexRangeA,
+          typename IndexRangeB,
+          typename CoordRange,
+          typename IndexType = typename IndexRangeB::value_type>
+auto make_multilinestring_array(IndexRangeA geometry_inl,
+                                IndexRangeB part_inl,
+                                CoordRange coord_inl)
+{
+  using CoordType         = typename CoordRange::value_type;
+  using DeviceIndexVector = thrust::device_vector<IndexType>;
+  using DeviceCoordVector = thrust::device_vector<CoordType>;
+
+  return multilinestring_array<DeviceIndexVector, DeviceIndexVector, DeviceCoordVector>(
+    make_device_vector(std::move(geometry_inl)),
+    make_device_vector(std::move(part_inl)),
+    make_device_vector(std::move(coord_inl)));
+}
 
 /**
  * @brief Construct an owning object of a multilinestring array from initializer lists
@@ -270,8 +319,19 @@ auto make_multilinestring_array(std::initializer_list<std::size_t> geometry_inl,
 template <typename GeometryArray, typename CoordinateArray>
 class multipoint_array {
  public:
-  multipoint_array(GeometryArray geometry_offsets_array, CoordinateArray coordinate_array)
+  using geometry_t = typename GeometryArray::value_type;
+  using coord_t    = typename CoordinateArray::value_type;
+
+  multipoint_array(thrust::device_vector<geometry_t> geometry_offsets_array,
+                   thrust::device_vector<coord_t> coordinate_array)
     : _geometry_offsets(geometry_offsets_array), _coordinates(coordinate_array)
+  {
+  }
+
+  multipoint_array(rmm::device_uvector<geometry_t>&& geometry_offsets_array,
+                   rmm::device_uvector<coord_t>&& coordinate_array)
+    : _geometry_offsets(std::move(geometry_offsets_array)),
+      _coordinates(std::move(coordinate_array))
   {
   }
 
@@ -294,21 +354,37 @@ class multipoint_array {
 };
 
 /**
+ * @brief Factory method to construct multipoint array from ranges of geometry offsets and
+ * coordinates
+ */
+template <typename GeometryRange, typename CoordRange>
+auto make_multipoint_array(GeometryRange geometry_inl, CoordRange coordinates_inl)
+{
+  using IndexType         = typename GeometryRange::value_type;
+  using CoordType         = typename CoordRange::value_type;
+  using DeviceIndexVector = thrust::device_vector<IndexType>;
+  using DeviceCoordVector = thrust::device_vector<CoordType>;
+
+  return multipoint_array<DeviceIndexVector, DeviceCoordVector>{
+    make_device_vector(geometry_inl), make_device_vector(coordinates_inl)};
+}
+
+/**
  * @brief Factory method to construct multipoint array from initializer list of multipoints.
  *
  * Example: Construct an array of 2 multipoints, each with 2, 0, 1 points:
  * using P = vec_2d<float>;
- * make_multipoints_array({{P{0.0, 1.0}, P{2.0, 0.0}}, {}, {P{3.0, 4.0}}});
+ * make_multipoint_array({{P{0.0, 1.0}, P{2.0, 0.0}}, {}, {P{3.0, 4.0}}});
  *
  * Example: Construct an empty multilinestring array:
- * make_multipoints_array<float>({}); // Explicit parameter required to deduce type.
+ * make_multipoint_array<float>({}); // Explicit parameter required to deduce type.
  *
  * @tparam T Type of coordinate
  * @param inl List of multipoints
  * @return multipoints_array object
  */
 template <typename T>
-auto make_multipoints_array(std::initializer_list<std::initializer_list<vec_2d<T>>> inl)
+auto make_multipoint_array(std::initializer_list<std::initializer_list<vec_2d<T>>> inl)
 {
   std::vector<std::size_t> offsets{0};
   std::transform(inl.begin(), inl.end(), std::back_inserter(offsets), [](auto multipoint) {
@@ -322,8 +398,20 @@ auto make_multipoints_array(std::initializer_list<std::initializer_list<vec_2d<T
       return init;
     });
 
-  return multipoint_array{rmm::device_vector<std::size_t>(offsets),
-                          rmm::device_vector<vec_2d<T>>(coordinates)};
+  return multipoint_array<rmm::device_vector<std::size_t>, rmm::device_vector<vec_2d<T>>>{
+    rmm::device_vector<std::size_t>(offsets), rmm::device_vector<vec_2d<T>>(coordinates)};
+}
+
+/**
+ * @brief Factory method to construct multipoint array by moving the offsets and coordinates from
+ * `rmm::device_uvector`.
+ */
+template <typename IndexType, typename T>
+auto make_multipoint_array(rmm::device_uvector<IndexType> geometry_offsets,
+                           rmm::device_uvector<vec_2d<T>> coords)
+{
+  return multipoint_array<rmm::device_uvector<std::size_t>, rmm::device_uvector<vec_2d<T>>>{
+    std::move(geometry_offsets), std::move(coords)};
 }
 
 }  // namespace test

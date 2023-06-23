@@ -475,8 +475,9 @@ from the [doxygen_groups.h](../include/doxygen_groups.h) file.
 
     }  // namespace cuspatial
 
-You can also use the \@addtogroup with a `@{ ... @}` pair to automatically include doxygen comment
-blocks as part of a group.
+When a file contains multiple functions, classes, or structs in the same group you should instead
+use the \@addtogroup with a `@{ ... @}` pair to automatically include doxygen comment blocks as
+part of a group.
 
     namespace cuspatial {
     /**

@@ -23,35 +23,50 @@
 
 #include <rmm/device_uvector.hpp>
 
-struct TrajectoryDistanceSpeedErrorTest : public cuspatial::test::BaseFixture {
-};
+struct TrajectoryDistanceSpeedErrorTest : public cuspatial::test::BaseFixture {};
 
 TEST_F(TrajectoryDistanceSpeedErrorTest, SizeMismatch)
 {
   auto const size = 1000;
 
   {
-    auto id = cudf::column(rmm::device_uvector<cudf::size_type>(size, rmm::cuda_stream_default));
-    auto xs = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
-    auto ys = cudf::column(rmm::device_uvector<float>(size / 2, rmm::cuda_stream_default));
-    auto ts = cudf::column(rmm::device_uvector<cudf::timestamp_ms>(size, rmm::cuda_stream_default));
+    auto id = cudf::column(rmm::device_uvector<cudf::size_type>(size, rmm::cuda_stream_default),
+                           rmm::device_buffer{},
+                           0);
+    auto xs = cudf::column(
+      rmm::device_uvector<float>(size, rmm::cuda_stream_default), rmm::device_buffer{}, 0);
+    auto ys = cudf::column(
+      rmm::device_uvector<float>(size / 2, rmm::cuda_stream_default), rmm::device_buffer{}, 0);
+    auto ts = cudf::column(rmm::device_uvector<cudf::timestamp_ms>(size, rmm::cuda_stream_default),
+                           rmm::device_buffer{},
+                           0);
     EXPECT_THROW(cuspatial::trajectory_distances_and_speeds(1, id, xs, ys, ts, this->mr()),
                  cuspatial::logic_error);
   }
   {
-    auto id = cudf::column(rmm::device_uvector<int>(size / 2, rmm::cuda_stream_default));
-    auto xs = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
-    auto ys = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
-    auto ts = cudf::column(rmm::device_uvector<cudf::timestamp_ms>(size, rmm::cuda_stream_default));
+    auto id = cudf::column(
+      rmm::device_uvector<int>(size / 2, rmm::cuda_stream_default), rmm::device_buffer{}, 0);
+    auto xs = cudf::column(
+      rmm::device_uvector<float>(size, rmm::cuda_stream_default), rmm::device_buffer{}, 0);
+    auto ys = cudf::column(
+      rmm::device_uvector<float>(size, rmm::cuda_stream_default), rmm::device_buffer{}, 0);
+    auto ts = cudf::column(rmm::device_uvector<cudf::timestamp_ms>(size, rmm::cuda_stream_default),
+                           rmm::device_buffer{},
+                           0);
     EXPECT_THROW(cuspatial::trajectory_distances_and_speeds(1, id, xs, ys, ts, this->mr()),
                  cuspatial::logic_error);
   }
   {
-    auto id = cudf::column(rmm::device_uvector<int>(size / 2, rmm::cuda_stream_default));
-    auto xs = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
-    auto ys = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
+    auto id = cudf::column(
+      rmm::device_uvector<int>(size / 2, rmm::cuda_stream_default), rmm::device_buffer{}, 0);
+    auto xs = cudf::column(
+      rmm::device_uvector<float>(size, rmm::cuda_stream_default), rmm::device_buffer{}, 0);
+    auto ys = cudf::column(
+      rmm::device_uvector<float>(size, rmm::cuda_stream_default), rmm::device_buffer{}, 0);
     auto ts =
-      cudf::column(rmm::device_uvector<cudf::timestamp_ms>(size / 2, rmm::cuda_stream_default));
+      cudf::column(rmm::device_uvector<cudf::timestamp_ms>(size / 2, rmm::cuda_stream_default),
+                   rmm::device_buffer{},
+                   0);
     EXPECT_THROW(cuspatial::trajectory_distances_and_speeds(1, id, xs, ys, ts, this->mr()),
                  cuspatial::logic_error);
   }
@@ -62,29 +77,44 @@ TEST_F(TrajectoryDistanceSpeedErrorTest, TypeError)
   auto const size = 1000;
 
   {
-    auto id =
-      cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));  // not integer
-    auto xs = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
-    auto ys = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
-    auto ts = cudf::column(rmm::device_uvector<cudf::timestamp_ms>(size, rmm::cuda_stream_default));
+    auto id = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default),
+                           rmm::device_buffer{},
+                           0);  // not integer
+    auto xs = cudf::column(
+      rmm::device_uvector<float>(size, rmm::cuda_stream_default), rmm::device_buffer{}, 0);
+    auto ys = cudf::column(
+      rmm::device_uvector<float>(size, rmm::cuda_stream_default), rmm::device_buffer{}, 0);
+    auto ts = cudf::column(rmm::device_uvector<cudf::timestamp_ms>(size, rmm::cuda_stream_default),
+                           rmm::device_buffer{},
+                           0);
     EXPECT_THROW(cuspatial::trajectory_distances_and_speeds(1, id, xs, ys, ts, this->mr()),
                  cuspatial::logic_error);
   }
   {
-    auto id = cudf::column(rmm::device_uvector<int>(size, rmm::cuda_stream_default));
-    auto xs = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
-    auto ys = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
-    auto ts =
-      cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));  // not timestamp
+    auto id = cudf::column(
+      rmm::device_uvector<int>(size, rmm::cuda_stream_default), rmm::device_buffer{}, 0);
+    auto xs = cudf::column(
+      rmm::device_uvector<float>(size, rmm::cuda_stream_default), rmm::device_buffer{}, 0);
+    auto ys = cudf::column(
+      rmm::device_uvector<float>(size, rmm::cuda_stream_default), rmm::device_buffer{}, 0);
+    auto ts = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default),
+                           rmm::device_buffer{},
+                           0);  // not timestamp
     EXPECT_THROW(cuspatial::trajectory_distances_and_speeds(1, id, xs, ys, ts, this->mr()),
                  cuspatial::logic_error);
   }
   {
     // x-y type mismatch
-    auto id = cudf::column(rmm::device_uvector<cudf::size_type>(size, rmm::cuda_stream_default));
-    auto xs = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
-    auto ys = cudf::column(rmm::device_uvector<double>(size, rmm::cuda_stream_default));
-    auto ts = cudf::column(rmm::device_uvector<cudf::timestamp_ms>(size, rmm::cuda_stream_default));
+    auto id = cudf::column(rmm::device_uvector<cudf::size_type>(size, rmm::cuda_stream_default),
+                           rmm::device_buffer{},
+                           0);
+    auto xs = cudf::column(
+      rmm::device_uvector<float>(size, rmm::cuda_stream_default), rmm::device_buffer{}, 0);
+    auto ys = cudf::column(
+      rmm::device_uvector<double>(size, rmm::cuda_stream_default), rmm::device_buffer{}, 0);
+    auto ts = cudf::column(rmm::device_uvector<cudf::timestamp_ms>(size, rmm::cuda_stream_default),
+                           rmm::device_buffer{},
+                           0);
     EXPECT_THROW(cuspatial::trajectory_distances_and_speeds(1, id, xs, ys, ts, this->mr()),
                  cuspatial::logic_error);
   }
@@ -95,15 +125,21 @@ TEST_F(TrajectoryDistanceSpeedErrorTest, Nulls)
   auto const size = 1000;
 
   {
-    auto id = cudf::column(rmm::device_uvector<cudf::size_type>(size, rmm::cuda_stream_default));
-    auto xs = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
-    auto ys = cudf::column(rmm::device_uvector<float>(size, rmm::cuda_stream_default));
-    auto ts = cudf::column(rmm::device_uvector<cudf::timestamp_ms>(size, rmm::cuda_stream_default));
+    auto id = cudf::column(rmm::device_uvector<cudf::size_type>(size, rmm::cuda_stream_default),
+                           rmm::device_buffer{},
+                           0);
+    auto xs = cudf::column(
+      rmm::device_uvector<float>(size, rmm::cuda_stream_default), rmm::device_buffer{}, 0);
+    auto ys = cudf::column(
+      rmm::device_uvector<float>(size, rmm::cuda_stream_default), rmm::device_buffer{}, 0);
+    auto ts = cudf::column(rmm::device_uvector<cudf::timestamp_ms>(size, rmm::cuda_stream_default),
+                           rmm::device_buffer{},
+                           0);
 
     auto nulls = rmm::device_uvector<int>(1000, rmm::cuda_stream_default);
     cudaMemsetAsync(nulls.data(), 0xcccc, nulls.size(), rmm::cuda_stream_default.value());
     auto nulls_buffer = nulls.release();
-    id.set_null_mask(nulls_buffer);
+    id.set_null_mask(nulls_buffer, 4000);
     EXPECT_THROW(cuspatial::trajectory_distances_and_speeds(1, id, xs, ys, ts, this->mr()),
                  cuspatial::logic_error);
   }

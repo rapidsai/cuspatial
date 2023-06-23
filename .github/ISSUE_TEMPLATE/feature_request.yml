@@ -16,7 +16,7 @@
 name: Feature Request
 description: Request new or improved functionality or changes to existing cuSpatial functionality
 title: "[FEA]: "
-labels: ["feature request", "? - Needs Triage"]
+labels: ["feature request"]
 
 body:
   - type: markdown

@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 
-#include <gtest/gtest.h>
+#include <cudf_test/cudf_gtest.hpp>
 
 namespace cuspatial {
 namespace test {
@@ -54,8 +56,7 @@ class RMMResourceMixin {
  * class MyTestFixture : public cuspatial::test::BaseFixture {};
  * ```
  */
-class BaseFixture : public RMMResourceMixin, public ::testing::Test {
-};
+class BaseFixture : public RMMResourceMixin, public ::testing::Test {};
 
 /**
  * @brief Base test fixture class from which libcuspatial test with only value parameterization
@@ -67,7 +68,9 @@ class BaseFixture : public RMMResourceMixin, public ::testing::Test {
  * class MyTest : public cuspatial::test::BaseFixtureWithParam {};
  *
  * TEST_P(MyTest, TestParamterGet) {
- *  auto [a, b, c] = GetParam();
+ *  auto a = std::get<0>(GetParam());
+ *  auto b = std::get<1>(GetParam());
+ *  auto c = std::get<2>(GetParam());
  *  ...
  * }
  *
@@ -79,8 +82,7 @@ class BaseFixture : public RMMResourceMixin, public ::testing::Test {
  */
 template <typename... Ts>
 class BaseFixtureWithParam : public RMMResourceMixin,
-                             public ::testing::TestWithParam<std::tuple<Ts...>> {
-};
+                             public ::testing::TestWithParam<std::tuple<Ts...>> {};
 
 /**
  * @brief Floating point types to be used in libcuspatial tests

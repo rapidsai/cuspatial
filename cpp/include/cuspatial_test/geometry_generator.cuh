@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
+#pragma once
+
+#include <cuspatial_test/random.cuh>
 #include <cuspatial_test/vector_factories.cuh>
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/error.hpp>
-#include <cuspatial/experimental/ranges/multipolygon_range.cuh>
-#include <cuspatial/vec_2d.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/range/multipolygon_range.cuh>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
@@ -30,6 +33,28 @@
 
 namespace cuspatial {
 namespace test {
+
+namespace detail {
+
+template <typename T, typename index_t>
+struct tabulate_direction_functor {
+  vec_2d<T> __device__ operator()(index_t i)
+  {
+    return vec_2d<T>{cos(static_cast<T>(i)), sin(static_cast<T>(i))};
+  }
+};
+
+template <typename T>
+struct random_walk_functor {
+  T segment_length;
+
+  vec_2d<T> __device__ operator()(vec_2d<T> prev, vec_2d<T> rad)
+  {
+    return prev + segment_length * rad;
+  }
+};
+
+}  // namespace detail
 
 /**
  * @brief Struct to store the parameters of the multipolygon array generator
@@ -247,6 +272,144 @@ auto generate_multipolygon_array(multipolygon_generator_parameter<T> params,
                                                          std::move(part_offsets),
                                                          std::move(ring_offsets),
                                                          std::move(coordinates));
+}
+
+/**
+ * @brief Struct to store the parameters of the multilinestring generator
+ *
+ * @tparam T Underlying type of the coordinates
+ */
+template <typename T>
+struct multilinestring_generator_parameter {
+  std::size_t num_multilinestrings;
+  std::size_t num_linestrings_per_multilinestring;
+  std::size_t num_segments_per_linestring;
+  T segment_length;
+  vec_2d<T> origin;
+
+  std::size_t num_linestrings()
+  {
+    return num_multilinestrings * num_linestrings_per_multilinestring;
+  }
+
+  std::size_t num_points_per_linestring() { return num_segments_per_linestring + 1; }
+
+  std::size_t num_segments() { return num_linestrings() * num_segments_per_linestring; }
+  std::size_t num_points() { return num_linestrings() * num_points_per_linestring(); }
+};
+
+/**
+ * @brief Helper to generate linestrings used for benchmarks.
+ *
+ * The generator adopts a walking algorithm. The ith point is computed by
+ * walking (cos(i) * segment_length, sin(i) * segment_length) from the `i-1`
+ * point. The initial point of the linestring is at `(init_xy, init_xy)`.
+ *
+ * The number of line segments per linestring is constrolled by
+ * `num_segment_per_string`.
+ *
+ * Since the outreach upper bound of the linestring group is
+ * `(init_xy + total_num_segments * segment_length)`, user may control the
+ * locality of the linestring group via these five arguments.
+ *
+ * The locality of the multilinestrings is important to the computation and
+ * and carefully designing the parameters can make the multilinestrings intersect/disjoint.
+ * which could affect whether the benchmark is testing against best or worst case.
+ *
+ * @tparam T The floating point type for the coordinates
+ * @param params The parameters used to specify the generator
+ * @param stream The CUDA stream to use for device memory operations and kernel launches
+ * @return The generated multilinestring array
+ */
+template <typename T>
+auto generate_multilinestring_array(multilinestring_generator_parameter<T> params,
+                                    rmm::cuda_stream_view stream)
+{
+  rmm::device_uvector<std::size_t> geometry_offset(params.num_multilinestrings + 1, stream);
+  rmm::device_uvector<std::size_t> part_offset(params.num_linestrings() + 1, stream);
+  rmm::device_uvector<vec_2d<T>> points(params.num_points(), stream);
+
+  thrust::sequence(rmm::exec_policy(stream),
+                   geometry_offset.begin(),
+                   geometry_offset.end(),
+                   static_cast<std::size_t>(0),
+                   params.num_linestrings_per_multilinestring);
+
+  thrust::sequence(rmm::exec_policy(stream),
+                   part_offset.begin(),
+                   part_offset.end(),
+                   static_cast<std::size_t>(0),
+                   params.num_segments_per_linestring + 1);
+
+  thrust::tabulate(rmm::exec_policy(stream),
+                   points.begin(),
+                   points.end(),
+                   detail::tabulate_direction_functor<T, std::size_t>{});
+
+  thrust::exclusive_scan(rmm::exec_policy(stream),
+                         points.begin(),
+                         points.end(),
+                         points.begin(),
+                         params.origin,
+                         detail::random_walk_functor<T>{params.segment_length});
+
+  return make_multilinestring_array(
+    std::move(geometry_offset), std::move(part_offset), std::move(points));
+}
+
+/**
+ * @brief Struct to store the parameters of the multipoint aray
+ *
+ * @tparam T Type of the coordinates
+ */
+template <typename T>
+struct multipoint_generator_parameter {
+  using element_t = T;
+
+  std::size_t num_multipoints;
+  std::size_t num_points_per_multipoints;
+  vec_2d<T> lower_left;
+  vec_2d<T> upper_right;
+
+  CUSPATIAL_HOST_DEVICE std::size_t num_points()
+  {
+    return num_multipoints * num_points_per_multipoints;
+  }
+};
+
+/**
+ * @brief Helper to generate random multipoints within a range
+ *
+ * @tparam T The floating point type for the coordinates
+ * @param params Parameters to specify for the multipoints
+ * @param stream The CUDA stream to use for device memory operations and kernel launches
+ * @return a cuspatial::test::multipoint_array object
+ */
+template <typename T>
+auto generate_multipoint_array(multipoint_generator_parameter<T> params,
+                               rmm::cuda_stream_view stream)
+{
+  rmm::device_uvector<vec_2d<T>> coordinates(params.num_points(), stream);
+  rmm::device_uvector<std::size_t> offsets(params.num_multipoints + 1, stream);
+
+  thrust::sequence(rmm::exec_policy(stream),
+                   offsets.begin(),
+                   offsets.end(),
+                   std::size_t{0},
+                   params.num_points_per_multipoints);
+
+  auto engine_x = deterministic_engine(params.num_points());
+  auto engine_y = deterministic_engine(2 * params.num_points());
+
+  auto x_dist = make_uniform_dist(params.lower_left.x, params.upper_right.x);
+  auto y_dist = make_uniform_dist(params.lower_left.y, params.upper_right.y);
+
+  auto point_gen =
+    point_generator(params.lower_left, params.upper_right, engine_x, engine_y, x_dist, y_dist);
+
+  thrust::tabulate(rmm::exec_policy(stream), coordinates.begin(), coordinates.end(), point_gen);
+
+  return make_multipoint_array(std::move(offsets), std::move(coordinates));
 }
 
 }  // namespace test

@@ -5,9 +5,11 @@ from .distance import (
     directed_hausdorff_distance,
     haversine_distance,
     pairwise_linestring_distance,
+    pairwise_linestring_polygon_distance,
     pairwise_point_distance,
     pairwise_point_linestring_distance,
     pairwise_point_polygon_distance,
+    pairwise_polygon_distance,
 )
 from .filtering import points_in_spatial_window
 from .indexing import quadtree_on_points
@@ -27,9 +29,11 @@ __all__ = [
     "sinusoidal_projection",
     "pairwise_point_distance",
     "pairwise_linestring_distance",
+    "pairwise_linestring_polygon_distance",
     "pairwise_point_polygon_distance",
     "pairwise_point_linestring_distance",
     "pairwise_point_linestring_nearest_points",
+    "pairwise_polygon_distance",
     "polygon_bounding_boxes",
     "linestring_bounding_boxes",
     "point_in_polygon",

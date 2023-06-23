@@ -16,7 +16,7 @@
 name: Bug Report
 description: File a bug report for cuSpatial
 title: "[BUG]: "
-labels: ["bug", "? - Needs Triage"]
+labels: ["bug"]
 
 body:
   - type: markdown
