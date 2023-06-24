@@ -29,6 +29,7 @@ dependencies:
 - numpydoc
 - nvcc_linux-64=11.8
 - pre-commit
+- proj
 - pydata-sphinx-theme
 - pydeck
 - pytest
@@ -41,5 +42,6 @@ dependencies:
 - setuptools
 - shapely
 - sphinx<6
+- sqlite
 - sysroot_linux-64==2.17
 name: all_cuda-118_arch-x86_64
