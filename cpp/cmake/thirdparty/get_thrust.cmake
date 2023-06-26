@@ -15,6 +15,10 @@
 # Use CPM to find or clone thrust
 function(find_and_configure_thrust)
         include(${rapids-cmake-dir}/cpm/thrust.cmake)
+        include(${rapids-cmake-dir}/cpm/package_override.cmake)
+
+        set(cuspatial_patch_dir "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/patches")
+        rapids_cpm_package_override("${cuspatial_patch_dir}/thrust_override.json")
 
         rapids_cpm_thrust( NAMESPACE cuspatial
                            BUILD_EXPORT_SET cuspatial-exports
