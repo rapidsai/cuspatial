@@ -14,29 +14,32 @@
 
 # Use CPM to find or clone thrust
 function(find_and_configure_thrust)
-        include(${rapids-cmake-dir}/cpm/thrust.cmake)
-        include(${rapids-cmake-dir}/cpm/package_override.cmake)
+  include(${rapids-cmake-dir}/cpm/thrust.cmake)
+  include(${rapids-cmake-dir}/cpm/package_override.cmake)
 
-        set(cuspatial_patch_dir "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/patches")
-        rapids_cpm_package_override("${cuspatial_patch_dir}/thrust_override.json")
+  set(cuspatial_patch_dir "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/patches")
+  rapids_cpm_package_override("${cuspatial_patch_dir}/thrust_override.json")
 
-        # Make sure we install thrust into the `include/libcuspatial` subdirectory instead of the default
-        include(GNUInstallDirs)
-        set(CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/libcuspatial")
-        set(CMAKE_INSTALL_LIBDIR "${CMAKE_INSTALL_INCLUDEDIR}/lib")
+  # Make sure we install thrust into the `include/libcuspatial` subdirectory instead of the default
+  include(GNUInstallDirs)
+  set(CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/libcuspatial")
+  set(CMAKE_INSTALL_LIBDIR "${CMAKE_INSTALL_INCLUDEDIR}/lib")
 
 
-        rapids_cpm_thrust( NAMESPACE cuspatial
-                           BUILD_EXPORT_SET cuspatial-exports
-                           INSTALL_EXPORT_SET cuspatial-exports)
+  rapids_cpm_thrust(
+    NAMESPACE cuspatial
+    BUILD_EXPORT_SET cuspatial-exports
+    INSTALL_EXPORT_SET cuspatial-exports
+  )
 
-        if(Thrust_SOURCE_DIR)
-          # Store where CMake can find our custom Thrust install
-          include("${rapids-cmake-dir}/export/find_package_root.cmake")
-          rapids_export_find_package_root(
-          INSTALL Thrust
-          [=[${CMAKE_CURRENT_LIST_DIR}/../../../include/libcuspatial/lib/rapids/cmake/thrust]=] cuspatial-exports
-        )
+  if(Thrust_SOURCE_DIR)
+    # Store where CMake can find our custom Thrust install
+    include("${rapids-cmake-dir}/export/find_package_root.cmake")
+    rapids_export_find_package_root(
+    INSTALL Thrust
+    [=[${CMAKE_CURRENT_LIST_DIR}/../../../include/libcuspatial/lib/rapids/cmake/thrust]=] cuspatial-exports
+  )
+  endif()
 endfunction()
 
 find_and_configure_thrust()
