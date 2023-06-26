@@ -55,8 +55,8 @@ requirements:
     - doxygen
     - gmock {{ gtest_version }}
     - gtest {{ gtest_version }}
-    - libcudf ={{ minor_version }}*=cuda{{ cuda_major }}*
-    - librmm ={{ minor_version }}*=cuda{{ cuda_major }}*
+    - libcudf ={{ minor_version }}
+    - librmm ={{ minor_version }}
 
 outputs:
   - name: libcuspatial
