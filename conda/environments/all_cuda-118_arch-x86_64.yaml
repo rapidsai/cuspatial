@@ -8,7 +8,8 @@ channels:
 dependencies:
 - c-compiler
 - cmake>=3.26.4
-- cudatoolkit=11.8
+- cuda-version=11.8
+- cudatoolkit
 - cudf==23.8.*
 - cuml==23.8.*
 - cxx-compiler
