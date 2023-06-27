@@ -91,10 +91,10 @@ class PolygonPolygonCovers(BinPred):
 
 DispatchDict = {
     (Point, Point): CoversPredicateBase,
-    (Point, MultiPoint): NotImplementedPredicate,
+    (Point, MultiPoint): MultiPointMultiPointCovers,
     (Point, LineString): ImpossiblePredicate,
     (Point, Polygon): ImpossiblePredicate,
-    (MultiPoint, Point): NotImplementedPredicate,
+    (MultiPoint, Point): MultiPointMultiPointCovers,
     (MultiPoint, MultiPoint): MultiPointMultiPointCovers,
     (MultiPoint, LineString): NotImplementedPredicate,
     (MultiPoint, Polygon): NotImplementedPredicate,

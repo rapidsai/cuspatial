@@ -138,10 +138,10 @@ class PolygonPolygonIntersects(BinPred):
 """ Type dispatch dictionary for intersects binary predicates. """
 DispatchDict = {
     (Point, Point): IntersectsByEquals,
-    (Point, MultiPoint): NotImplementedPredicate,
+    (Point, MultiPoint): MultiPointMultiPointIntersects,
     (Point, LineString): PointLineStringIntersects,
     (Point, Polygon): PointPolygonIntersects,
-    (MultiPoint, Point): NotImplementedPredicate,
+    (MultiPoint, Point): MultiPointMultiPointIntersects,
     (MultiPoint, MultiPoint): MultiPointMultiPointIntersects,
     (MultiPoint, LineString): NotImplementedPredicate,
     (MultiPoint, Polygon): NotImplementedPredicate,

@@ -16,7 +16,7 @@ from binpred_test_dispatch import (  # noqa: F401
 import cuspatial
 
 
-def sample_test_data(features, dispatch_list, size, lib=cuspatial):
+def sample_test_data(features, dispatch_list, lib=cuspatial):
     """Creates either a cuspatial or geopandas GeoSeries object using the
     Feature objects in `features`, the list of features to sample from in
     `dispatch_list`, and the size of the resultant GeoSeries.
@@ -37,9 +37,8 @@ def sample_test_data(features, dispatch_list, size, lib=cuspatial):
 
 
 def run_test(pred, dispatch_list):
-    size = 10000
-    lhs, rhs = sample_test_data(features, dispatch_list, size, cuspatial)
-    gpdlhs, gpdrhs = sample_test_data(features, dispatch_list, size, geopandas)
+    lhs, rhs = sample_test_data(features, dispatch_list, cuspatial)
+    gpdlhs, gpdrhs = sample_test_data(features, dispatch_list, geopandas)
 
     # Reverse
     pred_fn = getattr(rhs, pred)

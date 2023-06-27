@@ -188,7 +188,6 @@ class ContainsProperlyByIntersection(BinPred):
 
 class MultiPointMultiPointContainsProperly(BinPred):
     def _preprocess(self, lhs, rhs):
-        breakpoint()
         return _basic_equals_count(rhs, lhs) == rhs.sizes
 
 
@@ -202,10 +201,10 @@ class LineStringLineStringContainsProperly(BinPred):
     left and right hand side types. """
 DispatchDict = {
     (Point, Point): ContainsProperlyByIntersection,
-    (Point, MultiPoint): ContainsProperlyByIntersection,
+    (Point, MultiPoint): MultiPointMultiPointContainsProperly,
     (Point, LineString): ImpossiblePredicate,
     (Point, Polygon): ImpossiblePredicate,
-    (MultiPoint, Point): NotImplementedPredicate,
+    (MultiPoint, Point): MultiPointMultiPointContainsProperly,
     (MultiPoint, MultiPoint): MultiPointMultiPointContainsProperly,
     (MultiPoint, LineString): NotImplementedPredicate,
     (MultiPoint, Polygon): NotImplementedPredicate,

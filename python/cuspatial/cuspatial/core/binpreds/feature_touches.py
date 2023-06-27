@@ -145,10 +145,10 @@ class PolygonPolygonTouches(BinPred):
 
 DispatchDict = {
     (Point, Point): ImpossiblePredicate,
-    (Point, MultiPoint): TouchesPredicateBase,
+    (Point, MultiPoint): ImpossiblePredicate,
     (Point, LineString): TouchesPredicateBase,
     (Point, Polygon): PointPolygonTouches,
-    (MultiPoint, Point): TouchesPredicateBase,
+    (MultiPoint, Point): ImpossiblePredicate,
     (MultiPoint, MultiPoint): ImpossiblePredicate,
     (MultiPoint, LineString): TouchesPredicateBase,
     (MultiPoint, Polygon): TouchesPredicateBase,

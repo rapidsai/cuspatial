@@ -10,6 +10,7 @@ import cudf
 from cudf import Series
 
 import cuspatial
+from cuspatial.core.binpreds.basic_predicates import _basic_equals_all
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     EqualsOpResult,
@@ -289,6 +290,16 @@ class PolygonComplexEquals(EqualsPredicateBase):
         return result
 
 
+class PointMultiPointEquals(BinPred):
+    def _preprocess(self, lhs, rhs):
+        return _basic_equals_all(rhs, lhs)
+
+
+class MultiPointPointEquals(BinPred):
+    def _preprocess(self, lhs, rhs):
+        return _basic_equals_all(lhs, rhs)
+
+
 class MultiPointMultiPointEquals(PolygonComplexEquals):
     def _compute_predicate(self, lhs, rhs, point_indices):
         lengths_equal = self._offset_equals(
@@ -349,10 +360,10 @@ class PolygonPolygonEquals(BinPred):
 """DispatchDict for Equals operations."""
 DispatchDict = {
     (Point, Point): EqualsPredicateBase,
-    (Point, MultiPoint): NotImplementedPredicate,
+    (Point, MultiPoint): PointMultiPointEquals,
     (Point, LineString): ImpossiblePredicate,
     (Point, Polygon): EqualsPredicateBase,
-    (MultiPoint, Point): NotImplementedPredicate,
+    (MultiPoint, Point): MultiPointPointEquals,
     (MultiPoint, MultiPoint): MultiPointMultiPointEquals,
     (MultiPoint, LineString): NotImplementedPredicate,
     (MultiPoint, Polygon): NotImplementedPredicate,

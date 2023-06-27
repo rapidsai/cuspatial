@@ -180,10 +180,10 @@ class LineStringLineStringContainsPredicate(BinPred):
     left and right hand side types. """
 DispatchDict = {
     (Point, Point): PointPointContains,
-    (Point, MultiPoint): ImpossiblePredicate,
+    (Point, MultiPoint): MultiPointMultiPointContains,
     (Point, LineString): ImpossiblePredicate,
     (Point, Polygon): ImpossiblePredicate,
-    (MultiPoint, Point): NotImplementedPredicate,
+    (MultiPoint, Point): MultiPointMultiPointContains,
     (MultiPoint, MultiPoint): MultiPointMultiPointContains,
     (MultiPoint, LineString): NotImplementedPredicate,
     (MultiPoint, Polygon): NotImplementedPredicate,
