@@ -235,9 +235,9 @@ OutputIt pairwise_point_polygon_distance(MultiPointRange multipoints,
  * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
  * "LegacyRandomAccessIterator"
  */
-template <class MultiLinestringRange1, class MultiLinstringRange2, class OutputIt>
+template <class MultiLinestringRange1, class MultiLinestringRange2, class OutputIt>
 OutputIt pairwise_linestring_distance(MultiLinestringRange1 multilinestrings1,
-                                      MultiLinstringRange2 multilinestrings2,
+                                      MultiLinestringRange2 multilinestrings2,
                                       OutputIt distances_first,
                                       rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 

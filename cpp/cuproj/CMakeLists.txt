@@ -84,11 +84,6 @@ rapids_cmake_support_conda_env(conda_env)
 
 rapids_cuda_init_runtime(USE_STATIC ${CUDA_STATIC_RUNTIME})
 
-rapids_find_package(
-  CUDAToolkit REQUIRED
-  BUILD_EXPORT_SET cuproj-exports
-  INSTALL_EXPORT_SET cuproj-exports
-)
 # * find CUDAToolkit package
 # * determine GPU architectures
 # * enable the CMake CUDA language
