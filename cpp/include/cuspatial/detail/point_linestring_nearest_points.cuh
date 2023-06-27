@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
+
+#include <ranger/ranger.hpp>
 
 #include <thrust/binary_search.h>
 
@@ -72,8 +74,7 @@ pairwise_point_linestring_nearest_points_kernel(OffsetIteratorA points_geometry_
     thrust::distance(points_geometry_offsets_first, points_geometry_offsets_last) - 1;
   auto num_linestring_points = thrust::distance(linestring_points_first, linestring_points_last);
 
-  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < num_pairs;
-       idx += gridDim.x * blockDim.x) {
+  for (auto idx : ranger::grid_stride_range(num_pairs)) {
     IndexType nearest_point_idx;
     IndexType nearest_part_idx;
     IndexType nearest_segment_idx;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@
 
 #include <rmm/cuda_stream_view.hpp>
 
+#include <ranger/ranger.hpp>
+
 #include <thrust/tuple.h>
 
 namespace cuspatial {
@@ -38,8 +40,7 @@ __global__ void count_intersection_and_overlaps_simple(MultiLinestringRange1 mul
                                                        OutputIt2 segment_count_it)
 {
   using T = typename MultiLinestringRange1::element_t;
-  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < multilinestrings1.num_points();
-       idx += gridDim.x * blockDim.x) {
+  for (auto idx : ranger::grid_stride_range(multilinestrings1.num_points())) {
     auto const part_idx = multilinestrings1.part_idx_from_point_idx(idx);
     if (!multilinestrings1.is_valid_segment_id(idx, part_idx)) continue;
     auto const geometry_idx = multilinestrings1.geometry_idx_from_part_idx(part_idx);
