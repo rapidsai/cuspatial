@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/geometry/vec_3d.hpp>
 
 #include <thrust/optional.h>
 
@@ -89,6 +90,18 @@ constexpr bool is_vec_2d_impl<vec_2d<T>> = true;
  */
 template <typename T>
 constexpr bool is_vec_2d = is_vec_2d_impl<std::remove_cv_t<std::remove_reference_t<T>>>;
+
+template <typename>
+constexpr bool is_vec_3d_impl = false;
+template <typename T>
+constexpr bool is_vec_3d_impl<vec_3d<T>> = true;
+/**
+ * @internal
+ * @brief Evaluates to true if T is a cuspatial::vec_3d
+ */
+template <typename T>
+constexpr bool is_vec_3d = is_vec_3d_impl<std::remove_cv_t<std::remove_reference_t<T>>>;
+
 
 /**
  * @internal

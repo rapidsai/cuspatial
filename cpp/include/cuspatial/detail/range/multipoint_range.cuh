@@ -65,8 +65,9 @@ CUSPATIAL_HOST_DEVICE multipoint_range<GeometryIterator, VecIterator>::multipoin
     _points_begin(points_begin),
     _points_end(points_end)
 {
-  static_assert(is_vec_2d<iterator_value_type<VecIterator>>,
-                "Coordinate range must be constructed with iterators to vec_2d.");
+  static_assert(is_vec_2d<iterator_value_type<VecIterator>>
+                  || is_vec_3d<iterator_value_type<VecIterator>>,
+                "Coordinate range must be constructed with iterators to vec_2d or vec_3d.");
 
   static_assert(std::is_integral_v<iterator_value_type<GeometryIterator>>,
                 "Offset range must be constructed with iterators to integers.");
