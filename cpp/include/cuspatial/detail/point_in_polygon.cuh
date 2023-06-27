@@ -20,6 +20,7 @@
 #include <cuspatial/detail/utility/validation.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/geometry/vec_3d.hpp>
 #include <cuspatial/traits.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -47,10 +48,20 @@ struct pip_functor {
   int32_t __device__ operator()(std::size_t i)
   {
     using T          = typename PointRange::element_t;
-    vec_2d<T> point  = multipoints[i][0];
+    using PointType  = typename PointRange::point_t;
     int32_t hit_mask = 0;
-    for (auto poly_idx = 0; poly_idx < multipolygons.size(); ++poly_idx)
-      hit_mask |= (is_point_in_polygon(point, multipolygons[poly_idx][0]) << poly_idx);
+
+    if constexpr (is_same<vec_2d<T>, PointType>()){
+      vec_2d<T> point  = multipoints[i][0];
+      for (auto poly_idx = 0; poly_idx < multipolygons.size(); ++poly_idx){
+        hit_mask |= (is_point_in_polygon(point, multipolygons[poly_idx][0]) << poly_idx);
+      }
+    } else{
+      vec_3d<T> point  = multipoints[i][0];
+      for (auto poly_idx = 0; poly_idx < multipolygons.size(); ++poly_idx){
+        hit_mask |= (is_point_in_polygon_spherical(point, multipolygons[poly_idx][0]) << poly_idx);
+      }
+    }
     return hit_mask;
   }
 };
@@ -98,6 +109,7 @@ OutputIt pairwise_point_in_polygon(PointRange points,
                                    rmm::cuda_stream_view stream)
 {
   using T = typename PointRange::element_t;
+  using PointType  = typename PointRange::point_t;
 
   static_assert(is_same_floating_point<T, typename PolygonRange::element_t>(),
                 "points and polygons must have the same coordinate type.");
@@ -124,8 +136,14 @@ OutputIt pairwise_point_in_polygon(PointRange points,
                            polygons.begin(),
                            output,
                            [] __device__(auto multipoint, auto multipolygon) {
-                             return is_point_in_polygon(static_cast<vec_2d<T>>(multipoint[0]),
+                              if constexpr (is_same<vec_2d<T>, PointType>()){
+                                return is_point_in_polygon(static_cast<vec_2d<T>>(multipoint[0]),
                                                         multipolygon[0]);
+                              } else {
+                                return is_point_in_polygon_spherical(
+                                        static_cast<vec_3d<T>>(multipoint[0]),
+                                        multipolygon[0]);
+                              }
                            });
 }
 

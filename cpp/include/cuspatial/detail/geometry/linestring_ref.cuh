@@ -22,6 +22,8 @@
 
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/tuple.h>
+#include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/geometry/vec_3d.hpp>
 
 namespace cuspatial {
 
@@ -47,7 +49,9 @@ CUSPATIAL_HOST_DEVICE linestring_ref<VecIterator>::linestring_ref(VecIterator be
   : _point_begin(begin), _point_end(end)
 {
   using T = iterator_vec_base_type<VecIterator>;
-  static_assert(is_same<vec_2d<T>, iterator_value_type<VecIterator>>(), "must be vec2d type");
+  static_assert(is_same<vec_2d<T>, iterator_value_type<VecIterator>>()
+                || is_same<vec_3d<T>, iterator_value_type<VecIterator>>(),
+                "must be vec2d or vec3d type");
 }
 
 template <typename VecIterator>
