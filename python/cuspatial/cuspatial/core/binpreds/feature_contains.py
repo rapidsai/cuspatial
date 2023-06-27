@@ -6,6 +6,7 @@ import cudf
 
 from cuspatial.core.binpreds.basic_predicates import (
     _basic_contains_count,
+    _basic_equals_all,
     _basic_equals_any,
     _basic_equals_count,
     _basic_intersects,
@@ -154,6 +155,11 @@ class PointPointContains(BinPred):
         return _basic_equals_any(lhs, rhs)
 
 
+class MultiPointMultiPointContains(BinPred):
+    def _preprocess(self, lhs, rhs):
+        return _basic_equals_all(rhs, lhs)
+
+
 class LineStringPointContains(BinPred):
     def _preprocess(self, lhs, rhs):
         intersects = _basic_intersects(lhs, rhs)
@@ -178,7 +184,7 @@ DispatchDict = {
     (Point, LineString): ImpossiblePredicate,
     (Point, Polygon): ImpossiblePredicate,
     (MultiPoint, Point): NotImplementedPredicate,
-    (MultiPoint, MultiPoint): NotImplementedPredicate,
+    (MultiPoint, MultiPoint): MultiPointMultiPointContains,
     (MultiPoint, LineString): NotImplementedPredicate,
     (MultiPoint, Polygon): NotImplementedPredicate,
     (LineString, Point): LineStringPointContains,

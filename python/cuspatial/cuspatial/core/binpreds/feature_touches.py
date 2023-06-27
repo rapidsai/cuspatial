@@ -149,7 +149,7 @@ DispatchDict = {
     (Point, LineString): TouchesPredicateBase,
     (Point, Polygon): PointPolygonTouches,
     (MultiPoint, Point): TouchesPredicateBase,
-    (MultiPoint, MultiPoint): TouchesPredicateBase,
+    (MultiPoint, MultiPoint): ImpossiblePredicate,
     (MultiPoint, LineString): TouchesPredicateBase,
     (MultiPoint, Polygon): TouchesPredicateBase,
     (LineString, Point): TouchesPredicateBase,

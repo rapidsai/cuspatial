@@ -78,7 +78,7 @@ DispatchDict = {
     (Point, LineString): PointLineStringDisjoint,
     (Point, Polygon): PointPolygonDisjoint,
     (MultiPoint, Point): NotImplementedPredicate,
-    (MultiPoint, MultiPoint): NotImplementedPredicate,
+    (MultiPoint, MultiPoint): PointPointDisjoint,
     (MultiPoint, LineString): NotImplementedPredicate,
     (MultiPoint, Polygon): LineStringPolygonDisjoint,
     (LineString, Point): LineStringPointDisjoint,

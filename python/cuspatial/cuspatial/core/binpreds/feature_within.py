@@ -42,6 +42,11 @@ class PointPolygonWithin(BinPred):
         return rhs.contains_properly(lhs)
 
 
+class MultiPointMultiPointWithin(BinPred):
+    def _preprocess(self, lhs, rhs):
+        return rhs.contains(lhs)
+
+
 class LineStringLineStringWithin(BinPred):
     def _preprocess(self, lhs, rhs):
         contains = rhs.contains(lhs)
@@ -64,7 +69,7 @@ DispatchDict = {
     (Point, LineString): PointLineStringWithin,
     (Point, Polygon): PointPolygonWithin,
     (MultiPoint, Point): NotImplementedPredicate,
-    (MultiPoint, MultiPoint): NotImplementedPredicate,
+    (MultiPoint, MultiPoint): MultiPointMultiPointWithin,
     (MultiPoint, LineString): WithinIntersectsPredicate,
     (MultiPoint, Polygon): PolygonPolygonWithin,
     (LineString, Point): ImpossiblePredicate,
