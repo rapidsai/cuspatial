@@ -54,6 +54,8 @@ requirements:
     - gtest {{ gtest_version }}
     - libcudf ={{ minor_version }}
     - librmm ={{ minor_version }}
+    - sqlite
+    - proj
 
 outputs:
   - name: libcuspatial
@@ -83,6 +85,8 @@ outputs:
         - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
         - libcudf ={{ minor_version }}
         - librmm ={{ minor_version }}
+        - sqlite
+        - proj
     test:
       commands:
         - test -f $PREFIX/lib/libcuspatial.so
