@@ -47,9 +47,6 @@ requirements:
   host:
     {% if cuda_major == "11" %}
     - cudatoolkit ={{ cuda_version }}
-    {% else %}
-    - cuda-cudart-dev
-    - cuda-driver-dev
     {% endif %}
     - cuda-version ={{ cuda_version }}
     - doxygen
