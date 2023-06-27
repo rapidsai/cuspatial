@@ -111,6 +111,8 @@ include(cmake/Modules/ConfigureCUDA.cmake)
 rapids_cpm_init()
 # find rapids-cmake configured thrust, not from system CCCL
 include(cmake/thirdparty/get_thrust.cmake)
+# find rapids-cmake configured libcudacxx, not from system CCCL
+include(cmake/thirdparty/get_libcudacxx.cmake)
 # find or add cuDF
 include(cmake/thirdparty/CUSPATIAL_GetCUDF.cmake)
 # find or install GoogleTest
