@@ -102,7 +102,6 @@ constexpr bool is_vec_3d_impl<vec_3d<T>> = true;
 template <typename T>
 constexpr bool is_vec_3d = is_vec_3d_impl<std::remove_cv_t<std::remove_reference_t<T>>>;
 
-
 /**
  * @internal
  * @brief returns true if T and all types Ts... are the same floating point type.

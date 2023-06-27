@@ -52,7 +52,7 @@ class alignas(4 * sizeof(T)) vec_3d {
    */
   friend std::ostream& operator<<(std::ostream& os, cuspatial::vec_3d<T> const& vec)
   {
-    return os << "(" << vec.x << "," << vec.y << "," << vec.z <<")";
+    return os << "(" << vec.x << "," << vec.y << "," << vec.z << ")";
   }
 
   /**
@@ -60,9 +60,8 @@ class alignas(4 * sizeof(T)) vec_3d {
    */
   friend bool CUSPATIAL_HOST_DEVICE operator==(vec_3d<T> const& lhs, vec_3d<T> const& rhs)
   {
-    return detail::float_equal<T>(lhs.x, rhs.x)
-            && detail::float_equal(lhs.y, rhs.y)
-            && detail::float_equal(lhs.z, rhs.z);
+    return detail::float_equal<T>(lhs.x, rhs.x) && detail::float_equal(lhs.y, rhs.y) &&
+           detail::float_equal(lhs.z, rhs.z);
   }
 
   /**
@@ -179,7 +178,7 @@ T CUSPATIAL_HOST_DEVICE dot(vec_3d<T> const& a, vec_3d<T> const& b)
 template <typename T>
 vec_3d<T> CUSPATIAL_HOST_DEVICE cross_product(vec_3d<T> const& a, vec_3d<T> const& b)
 {
-  return {a.y*b.z - a.z*b.y, a.z*b.x - a.x*b.z, a.x*b.y - a.y*b.x};
+  return {a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
 }
 
 /**

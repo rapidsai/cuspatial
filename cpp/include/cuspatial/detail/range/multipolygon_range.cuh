@@ -111,9 +111,9 @@ multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::m
     _point_begin(point_begin),
     _point_end(point_end)
 {
-  static_assert(is_vec_2d<iterator_value_type<VecIterator>>
-                  || is_vec_3d<iterator_value_type<VecIterator>>,
-                "point_begin and point_end must be iterators to floating point vec_2d types or vec_3d.");
+  static_assert(
+    is_vec_2d<iterator_value_type<VecIterator>> || is_vec_3d<iterator_value_type<VecIterator>>,
+    "point_begin and point_end must be iterators to floating point vec_2d types or vec_3d.");
 
   CUSPATIAL_EXPECTS_VALID_MULTIPOLYGON_SIZES(
     num_points(), num_multipolygons() + 1, num_polygons() + 1, num_rings() + 1);

@@ -101,46 +101,49 @@ __device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonR
 }
 
 /** @brief check if p3 is on the left side of the arc that is
-* defined but p1 and p2
-* @note: T can be float or double and T4 can be float4 or double4
-* @param p1: first point of an arc
-* @param p2: second point af an arc
-* @param p3: a point to check
-* @return bool
-*/
-template<typename T>
-__device__
-bool is_left(vec_3d<T> const p1, vec_3d<T> const& p2, vec_3d<T> const& p3){
-    vec_3d<T> po = {0, 0, 0};
-    auto ao = po - p1;
-    auto ab = p2 - p1;
-    auto ac = p3 - p1;
-    auto aoxab = cross_product(ao, ab);
-    auto w = dot(aoxab, ac);
-    
-    return w > 0;
+ * defined but p1 and p2
+ * @note: T can be float or double and T4 can be float4 or double4
+ * @param p1: first point of an arc
+ * @param p2: second point af an arc
+ * @param p3: a point to check
+ * @return bool
+ */
+template <typename T>
+__device__ bool is_left(vec_3d<T> const p1, vec_3d<T> const& p2, vec_3d<T> const& p3)
+{
+  vec_3d<T> po = {0, 0, 0};
+  auto ao      = po - p1;
+  auto ab      = p2 - p1;
+  auto ac      = p3 - p1;
+  auto aoxab   = cross_product(ao, ab);
+  auto w       = dot(aoxab, ac);
+
+  return w > 0;
 }
 
 /** @brief check if two arcs, defined with (p1, p2) and (p3, p4)
-* intersects (true or not)
-* @note: T can be float or double and T4 can be float4 or double4
-* @param p1: first point of first arc
-* @param p2: second point af first arc
-* @param p3: first point of second arc
-* @param p4: second point af second arc
-* @return bool
-*/
-template<typename T>
-__device__
-bool is_intersecting(vec_3d<T> const& p1, vec_3d<T> const& p2, vec_3d<T> const& p3, vec_3d<T> const& p4){
-    auto p1left = is_left(p3, p4, p1);
-    auto p2left = is_left(p3, p4, p2);
-    auto p3left = is_left(p1, p2, p3);
-    auto p4left = is_left(p1, p2, p4);
-    
-    auto alpha = dot(p1, p3);
+ * intersects (true or not)
+ * @note: T can be float or double and T4 can be float4 or double4
+ * @param p1: first point of first arc
+ * @param p2: second point af first arc
+ * @param p3: first point of second arc
+ * @param p4: second point af second arc
+ * @return bool
+ */
+template <typename T>
+__device__ bool is_intersecting(vec_3d<T> const& p1,
+                                vec_3d<T> const& p2,
+                                vec_3d<T> const& p3,
+                                vec_3d<T> const& p4)
+{
+  auto p1left = is_left(p3, p4, p1);
+  auto p2left = is_left(p3, p4, p2);
+  auto p3left = is_left(p1, p2, p3);
+  auto p4left = is_left(p1, p2, p4);
 
-    return (p1left != p2left) && (p3left != p4left) && alpha > 0;
+  auto alpha = dot(p1, p3);
+
+  return (p1left != p2left) && (p3left != p4left) && alpha > 0;
 }
 
 /**
@@ -158,16 +161,17 @@ bool is_intersecting(vec_3d<T> const& p1, vec_3d<T> const& p2, vec_3d<T> const& 
  * `false` if point is on the edge of the polygon.
  */
 template <typename T, class PolygonRef>
-__device__ inline bool is_point_in_polygon_spherical(vec_3d<T> const& test_point, PolygonRef const& polygon)
+__device__ inline bool is_point_in_polygon_spherical(vec_3d<T> const& test_point,
+                                                     PolygonRef const& polygon)
 {
   bool check = false, left_check = false, point_is_within = false;
   vec_3d<T> check_point;
   for (auto ring : polygon) {
     auto ring_points = multipoint_ref{ring.point_begin(), ring.point_end()};
-    vec_3d<T> b = ring_points[ring.num_segments()];
+    vec_3d<T> b      = ring_points[ring.num_segments()];
     for (vec_3d<T> a : ring_points) {
-      if (!check){
-        left_check = is_left(b, a, test_point);
+      if (!check) {
+        left_check  = is_left(b, a, test_point);
         check_point = a;
       } else {
         if (is_intersecting(b, a, test_point, check_point)) {

@@ -71,10 +71,10 @@ struct PointInPolygonTest : public BaseFixture {
   }
 
   void run_spherical_test(std::initializer_list<vec_3d<T>> points,
-                std::initializer_list<int> polygon_offsets,
-                std::initializer_list<int> ring_offsets,
-                std::initializer_list<vec_3d<T>> polygon_points,
-                std::initializer_list<int32_t> expected)
+                          std::initializer_list<int> polygon_offsets,
+                          std::initializer_list<int> ring_offsets,
+                          std::initializer_list<vec_3d<T>> polygon_points,
+                          std::initializer_list<int32_t> expected)
   {
     auto d_points          = make_device_vector<vec_3d<T>>(points);
     auto d_polygon_offsets = make_device_vector<int>(polygon_offsets);
@@ -102,7 +102,6 @@ struct PointInPolygonTest : public BaseFixture {
     EXPECT_EQ(ret, got.end());
   }
 };
-
 
 TYPED_TEST_CASE(PointInPolygonTest, FloatingPointTypes);
 
@@ -155,10 +154,10 @@ TYPED_TEST(PointInPolygonTest, OnePolygonOneRingSpherical)
                       {519.181, -5283.34, 3523.313}},
                      {0, 1},
                      {0, 4},
-                     {{-2681.925, -4311.158, 3847.346}, // San Jose
-                      {-2695.156, -4299.131, 3851.527}, // MTV
-                      {-2691.386, -4313.414, 3838.26}, // Los Gatos
-                      {-2673.88, -4319.257, 3843.883}}, // East San Jose
+                     {{-2681.925, -4311.158, 3847.346},  // San Jose
+                      {-2695.156, -4299.131, 3851.527},  // MTV
+                      {-2691.386, -4313.414, 3838.26},   // Los Gatos
+                      {-2673.88, -4319.257, 3843.883}},  // East San Jose
                      {false, false, true, true, false});
 }
 
