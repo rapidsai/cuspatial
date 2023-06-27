@@ -46,7 +46,7 @@ requirements:
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
     {% if cuda_major == "11" %}
-    - cudatoolkit ={{ cuda_version }}
+    - cudatoolkit
     {% endif %}
     - cuda-version ={{ cuda_version }}
     - doxygen
@@ -72,13 +72,15 @@ outputs:
       build:
         - cmake {{ cmake_version }}
         - ninja
+      host:
+        - cuda-version ={{ cuda_version }}
       run:
         {% if cuda_major == "11" %}
-        - cudatoolkit {{ cuda_spec }}
+        - cudatoolkit
         {% else %}
         - cuda-cudart
         {% endif %}
-        - cuda-version ={{ cuda_version }}
+        - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
         - libcudf ={{ minor_version }}
         - librmm ={{ minor_version }}
     test:
@@ -103,13 +105,15 @@ outputs:
     requirements:
       build:
         - cmake {{ cmake_version }}
+      host:
+        - cuda-version ={{ cuda_version }}
       run:
         - {{ pin_subpackage('libcuspatial', exact=True) }}
         {% if cuda_major == "11" %}
-        - cudatoolkit {{ cuda_spec }}
+        - cudatoolkit
         {% else %}
         - cuda-cudart
         {% endif %}
-        - cuda-version ={{ cuda_version }}
+        - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
         - gmock {{ gtest_version }}
         - gtest {{ gtest_version }}
