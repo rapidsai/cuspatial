@@ -109,6 +109,8 @@ include(cmake/thirdparty/get_cudf.cmake)
 if (CUSPATIAL_BUILD_TESTS)
     include(cmake/thirdparty/get_gtest.cmake)
 endif()
+# find or add ranger
+include (cmake/thirdparty/get_ranger.cmake)
 
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
@@ -201,6 +203,7 @@ target_compile_definitions(cuspatial PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${
 
 # Specify the target module library dependencies
 target_link_libraries(cuspatial PUBLIC cudf::cudf)
+target_link_libraries(cuspatial PRIVATE ranger::ranger)
 
 add_library(cuspatial::cuspatial ALIAS cuspatial)
 
