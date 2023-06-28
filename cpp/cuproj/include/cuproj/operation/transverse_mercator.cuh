@@ -77,6 +77,19 @@
 
 namespace cuproj {
 
+namespace detail {
+
+/**
+ * @brief Evaluate Gaussian<-->Geographic trigonometric series
+ *
+ * @tparam T data type
+ * @param p1  pointer to the first element of the array
+ * @param len_p1  length of the array
+ * @param B The argument to the trigonometric series
+ * @param cos_2B precomputed cos(2*B)
+ * @param sin_2B precomputed sin(2*B)
+ * @return The value of the trigonometric series at B
+ */
 template <typename T>
 inline static __host__ __device__ T gatg(T const* p1, int len_p1, T B, T cos_2B, T sin_2B)
 {
@@ -94,6 +107,22 @@ inline static __host__ __device__ T gatg(T const* p1, int len_p1, T B, T cos_2B,
 }
 
 // Complex Clenshaw summation
+/**
+ * @brief  Clenshaw summation for complex numbers
+ *
+ * @see https://en.wikipedia.org/wiki/Clenshaw_algorithm
+ *
+ * @tparam T data type
+ * @param a coefficients
+ * @param size size of coefficients
+ * @param sin_arg_r precomputed sin(arg_r)
+ * @param cos_arg_r precomputed cos(arg_r)
+ * @param sinh_arg_i precomputed sinh(arg_i)
+ * @param cosh_arg_i precomputed cosh(arg_i)
+ * @param R real part of the summation
+ * @param I imaginary part of the summation
+ * @return The real part of the summation at arg_r
+ */
 template <typename T>
 inline static __host__ __device__ T clenshaw_complex(
   T const* a, int size, T sin_arg_r, T cos_arg_r, T sinh_arg_i, T cosh_arg_i, T* R, T* I)
@@ -125,6 +154,17 @@ inline static __host__ __device__ T clenshaw_complex(
 }
 
 // Real Clenshaw summation
+/**
+ * @brief Clenshaw summation for real numbers
+ *
+ * @see https://en.wikipedia.org/wiki/Clenshaw_algorithm
+ *
+ * @tparam T data type
+ * @param a pointer to array of coefficients
+ * @param size number of coefficients
+ * @param arg_r argument value
+ * @return the summation at arg_r
+ */
 template <typename T>
 static __host__ __device__ T clenshaw_real(T const* a, int size, T arg_r)
 {
@@ -144,15 +184,29 @@ static __host__ __device__ T clenshaw_real(T const* a, int size, T arg_r)
   }
   return sin(arg_r) * hr;
 }
+}  // namespace detail
 
 template <typename Coordinate, typename T = typename Coordinate::value_type>
-struct transverse_mercator : operation<Coordinate> {
-  static constexpr int ETMERC_ORDER = 6;
+class transverse_mercator : operation<Coordinate> {
+ public:
+  static constexpr int ETMERC_ORDER = 6;  ///< 6th order series expansion
 
+  /**
+   * @brief construct a transverse mercator projection
+   *
+   * @param params projection parameters
+   */
   __host__ __device__ transverse_mercator(projection_parameters<T> const& params) : params_(params)
   {
   }
 
+  /**
+   * @brief Perform UTM projection for a single coordinate
+   *
+   * @param coord the coordinate to project
+   * @param dir direction of projection
+   * @return projected coordinate
+   */
   __host__ __device__ Coordinate operator()(Coordinate const& coord, direction dir) const
   {
     if (dir == direction::FORWARD)
@@ -161,6 +215,12 @@ struct transverse_mercator : operation<Coordinate> {
       return inverse(coord);
   }
 
+  /**
+   * @brief Set up the projection parameters for transverse mercator projection
+   *
+   * @param input_params projection parameters
+   * @return projection parameters modified for transverse mercator projection
+   */
   projection_parameters<T> setup(projection_parameters<T> const& input_params)
   {
     params_ = input_params;
@@ -190,7 +250,7 @@ struct transverse_mercator : operation<Coordinate> {
     T const n = ellipsoid.n;
     T np      = n;
 
-    // COEF. OF TRIG SERIES GEO <-> GAUSS
+    // COEFFICIENTS OF TRIG SERIES GEO <-> GAUSS
     // cgb := Gaussian -> Geodetic, KW p190 - 191 (61) - (62)
     // cbg := Geodetic -> Gaussian, KW p186 - 187 (51) - (52)
     // ETMERC_ORDER = 6th degree : Engsager and Poder: ICC2007
@@ -226,7 +286,7 @@ struct transverse_mercator : operation<Coordinate> {
     // Constants of the projections
     // Transverse Mercator (UTM, ITM, etc)
     np = n * n;
-    // Norm. mer. quad, K&W p.50 (96), p.19 (38b), p.5 (2)
+    // Norm. meridian quadrant, K&W p.50 (96), p.19 (38b), p.5 (2)
     tmerc_params.Qn = params.k0 / (1 + n) * (1 + np * (1 / 4.0 + np * (1 / 64.0 + np / 256.0)));
     // coef of trig series
     // utg := ell. N, E -> sph. N, E,  KW p194 (65)
@@ -260,17 +320,24 @@ struct transverse_mercator : operation<Coordinate> {
     tmerc_params.gtu[5] = np * (212378941 / 319334400.0);
 
     // Gaussian latitude value of the origin latitude
-    T const Z =
-      gatg(tmerc_params.cbg, ETMERC_ORDER, params.phi0, cos(2 * params.phi0), sin(2 * params.phi0));
+    T const Z = detail::gatg(
+      tmerc_params.cbg, ETMERC_ORDER, params.phi0, cos(2 * params.phi0), sin(2 * params.phi0));
 
     // Origin northing minus true northing at the origin latitude
     // i.e. true northing = N - P->Zb
-    tmerc_params.Zb = -tmerc_params.Qn * (Z + clenshaw_real(tmerc_params.gtu, ETMERC_ORDER, 2 * Z));
+    tmerc_params.Zb =
+      -tmerc_params.Qn * (Z + detail::clenshaw_real(tmerc_params.gtu, ETMERC_ORDER, 2 * Z));
 
     return params;
   }
 
  private:
+  /**
+   * @brief  Forward projection, from geographic to transverse mercator.
+   *
+   * @param coord Geographic coordinate (lat, lon) in radians.
+   * @return Transverse mercator coordinate (x, y) in meters.
+   */
   __host__ __device__ Coordinate forward(Coordinate const& coord) const
   {
     // so we don't have to qualify the class name everywhere.
@@ -278,7 +345,8 @@ struct transverse_mercator : operation<Coordinate> {
     auto& ellipsoid    = this->params_.ellipsoid_;
 
     // ell. LAT, LNG -> Gaussian LAT, LNG
-    T Cn = gatg(tmerc_params.cbg, ETMERC_ORDER, coord.y, cos(2 * coord.y), sin(2 * coord.y));
+    T Cn =
+      detail::gatg(tmerc_params.cbg, ETMERC_ORDER, coord.y, cos(2 * coord.y), sin(2 * coord.y));
 
     // Gaussian LAT, LNG -> compl. sph. LAT
     T const sin_Cn = sin(Cn);
@@ -344,7 +412,7 @@ struct transverse_mercator : operation<Coordinate> {
     T const cosh_arg_i = two_inv_denom_tan_Ce_square - 1;
 
     T dCn, dCe;
-    Cn += clenshaw_complex(
+    Cn += detail::clenshaw_complex(
       tmerc_params.gtu, ETMERC_ORDER, sin_arg_r, cos_arg_r, sinh_arg_i, cosh_arg_i, &dCn, &dCe);
 
     Ce += dCe;
@@ -357,6 +425,11 @@ struct transverse_mercator : operation<Coordinate> {
     return xy;
   }
 
+  /**
+   * @brief inverse transform, from projected to geographic coordinate
+   * @param coord projected coordinate (x, y) in meters
+   * @return geographic coordinate (lon, lat) in radians
+   */
   __host__ __device__ Coordinate inverse(Coordinate const& coord) const
   {
     // so we don't have to qualify the class name everywhere.
@@ -382,14 +455,14 @@ struct transverse_mercator : operation<Coordinate> {
     T const cosh_arg_i        = T{0.5} * exp_2_Ce + half_inv_exp_2_Ce;
 
     T dCn_ignored, dCe;
-    Cn += clenshaw_complex(tmerc_params.utg,
-                           ETMERC_ORDER,
-                           sin_arg_r,
-                           cos_arg_r,
-                           sinh_arg_i,
-                           cosh_arg_i,
-                           &dCn_ignored,
-                           &dCe);
+    Cn += detail::clenshaw_complex(tmerc_params.utg,
+                                   ETMERC_ORDER,
+                                   sin_arg_r,
+                                   cos_arg_r,
+                                   sinh_arg_i,
+                                   cosh_arg_i,
+                                   &dCn_ignored,
+                                   &dCe);
     Ce += dCe;
 
     // compl. sph. LAT -> Gaussian LAT, LNG
@@ -428,10 +501,17 @@ struct transverse_mercator : operation<Coordinate> {
     // T const cos_2_Cn = cos(2 * Cn);
     // T const sin_2_Cn = sin(2 * Cn);
 
-    return Coordinate{Ce, gatg(tmerc_params.cgb, ETMERC_ORDER, Cn, cos_2_Cn, sin_2_Cn)};
+    return Coordinate{Ce, detail::gatg(tmerc_params.cgb, ETMERC_ORDER, Cn, cos_2_Cn, sin_2_Cn)};
   }
 
+  /**
+   * @brief Get the origin longitude
+   *
+   * @return the origin longitude in radians
+   */
   T lam0() const { return this->params_.lam0_; }
+
+ private:
   projection_parameters<T> params_{};
 };
 
