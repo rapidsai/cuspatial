@@ -8,7 +8,6 @@ from cuspatial.core.binpreds.basic_predicates import (
     _basic_contains_count,
     _basic_contains_properly_any,
     _basic_equals_all,
-    _basic_equals_any,
     _basic_equals_count,
     _basic_intersects,
     _basic_intersects_count,
@@ -46,7 +45,13 @@ class TouchesPredicateBase(ContainsPredicate):
     """
 
     def _preprocess(self, lhs, rhs):
-        return _basic_equals_any(lhs, rhs)
+        breakpoint()
+        return _basic_equals_count(lhs, rhs) == rhs.sizes
+
+
+class PointLineStringTouches(BinPred):
+    def _preprocess(self, lhs, rhs):
+        return _basic_equals_count(rhs, lhs) == lhs.sizes
 
 
 class PointPolygonTouches(ContainsPredicate):
@@ -146,7 +151,7 @@ class PolygonPolygonTouches(BinPred):
 DispatchDict = {
     (Point, Point): ImpossiblePredicate,
     (Point, MultiPoint): ImpossiblePredicate,
-    (Point, LineString): TouchesPredicateBase,
+    (Point, LineString): PointLineStringTouches,
     (Point, Polygon): PointPolygonTouches,
     (MultiPoint, Point): ImpossiblePredicate,
     (MultiPoint, MultiPoint): ImpossiblePredicate,

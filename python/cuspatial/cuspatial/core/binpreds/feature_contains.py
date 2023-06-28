@@ -163,7 +163,7 @@ class MultiPointMultiPointContains(BinPred):
 class LineStringPointContains(BinPred):
     def _preprocess(self, lhs, rhs):
         intersects = _basic_intersects(lhs, rhs)
-        equals = _basic_equals_any(lhs, rhs)
+        equals = _basic_equals_count(lhs, rhs) == rhs.sizes
         return intersects & ~equals
 
 

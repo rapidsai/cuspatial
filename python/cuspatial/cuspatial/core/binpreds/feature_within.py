@@ -3,6 +3,7 @@
 from cuspatial.core.binpreds.basic_predicates import (
     _basic_equals_all,
     _basic_equals_any,
+    _basic_equals_count,
     _basic_intersects,
 )
 from cuspatial.core.binpreds.binpred_interface import (
@@ -32,7 +33,7 @@ class WithinIntersectsPredicate(BinPred):
 class PointLineStringWithin(BinPred):
     def _preprocess(self, lhs, rhs):
         intersects = lhs.intersects(rhs)
-        equals = _basic_equals_any(lhs, rhs)
+        equals = _basic_equals_count(rhs, lhs) == lhs.sizes
         return intersects & ~equals
 
 
