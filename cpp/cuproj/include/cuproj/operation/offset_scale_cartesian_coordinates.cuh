@@ -26,11 +26,22 @@
 
 namespace cuproj {
 
+/**
+ * @brief Given Cartesian coordinates (x, y) in meters, offset and scale them
+ * to the projection's origin and scale (ellipsoidal semi-major axis).
+ *
+ * @tparam Coordinate coordinate type
+ * @tparam T coordinate value type
+ */
 template <typename Coordinate, typename T = typename Coordinate::value_type>
-struct offset_scale_cartesian_coordinates : operation<Coordinate> {
-  static constexpr T EPS_LAT      = 1e-12;
-  static constexpr double M_TWOPI = 6.283185307179586476925286766559005;
-
+class offset_scale_cartesian_coordinates : operation<Coordinate> {
+ public:
+  /**
+   * @brief Constructor
+   *
+   * @param params projection parameters, including the ellipsoid semi-major axis
+   * and the projection origin
+   */
   __host__ __device__ offset_scale_cartesian_coordinates(projection_parameters<T> const& params)
     : a_(params.ellipsoid_.a), ra_(T{1.0} / a_), x0_(params.x0), y0_(params.y0)
   {
@@ -38,6 +49,13 @@ struct offset_scale_cartesian_coordinates : operation<Coordinate> {
 
   // projection_parameters<T> setup(projection_parameters<T> const& params) { return params; }
 
+  /**
+   * @brief Offset and scale a single coordinate
+   *
+   * @param coord the coordinate to offset and scale
+   * @param dir the direction of the operation, either forward or inverse
+   * @return the offset and scaled coordinate
+   */
   __host__ __device__ Coordinate operator()(Coordinate const& coord, direction dir) const
   {
     if (dir == direction::FORWARD)
@@ -47,20 +65,34 @@ struct offset_scale_cartesian_coordinates : operation<Coordinate> {
   }
 
  private:
+  /**
+   * @brief Scale a coordinate by the ellipsoid semi-major axis and offset it by
+   * the projection origin
+   *
+   * @param coord the coordinate to offset and scale
+   * @return the offset and scaled coordinate
+   */
   __host__ __device__ Coordinate forward(Coordinate const& coord) const
   {
     return coord * a_ + Coordinate{x0_, y0_};
   };
 
+  /**
+   * @brief Offset a coordinate by the projection origin and scale it by the
+   * inverse of the ellipsoid semi-major axis
+   *
+   * @param coord the coordinate to offset and scale
+   * @return the offset and scaled coordinate
+   */
   __host__ __device__ Coordinate inverse(Coordinate const& coord) const
   {
     return (coord - Coordinate{x0_, y0_}) * ra_;
   };
 
-  T a_;
-  T ra_;
-  T x0_;
-  T y0_;
+  T a_;   // ellipsoid semi-major axis
+  T ra_;  // inverse of ellipsoid semi-major axis
+  T x0_;  // projection origin x
+  T y0_;  // projection origin y
 };
 
 }  // namespace cuproj
