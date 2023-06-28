@@ -127,12 +127,13 @@ template <typename Coordinate>
 cuproj::projection<Coordinate> make_projection(std::string const& src_epsg,
                                                std::string const& dst_epsg)
 {
-  if (is_wgs_84(src_epsg)) {
-    auto [dst_zone, dst_hemisphere] = epsg_to_utm_zone(dst_epsg);
+  if (detail::is_wgs_84(src_epsg)) {
+    auto [dst_zone, dst_hemisphere] = detail::epsg_to_utm_zone(dst_epsg);
     return make_utm_projection<Coordinate>(dst_zone, dst_hemisphere);
   } else {
-    CUPROJ_EXPECTS(is_wgs_84(dst_epsg), "Source or Destination EPSG must be WGS84 (EPSG:4326)");
-    auto [src_zone, src_hemisphere] = epsg_to_utm_zone(src_epsg);
+    CUPROJ_EXPECTS(detail::is_wgs_84(dst_epsg),
+                   "Source or Destination EPSG must be WGS84 (EPSG:4326)");
+    auto [src_zone, src_hemisphere] = detail::epsg_to_utm_zone(src_epsg);
     return make_utm_projection<Coordinate>(src_zone, src_hemisphere, true);
   }
 }
