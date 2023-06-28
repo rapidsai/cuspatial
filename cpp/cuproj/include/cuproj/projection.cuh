@@ -16,104 +16,39 @@
 
 #pragma once
 
+#include <cuproj/detail/pipeline.cuh>
 #include <cuproj/ellipsoid.hpp>
-#include <cuproj/operation/axis_swap.cuh>
-#include <cuproj/operation/clamp_angular_coordinates.cuh>
-#include <cuproj/operation/degrees_to_radians.cuh>
-#include <cuproj/operation/offset_scale_cartesian_coordinates.cuh>
 #include <cuproj/operation/operation.cuh>
-#include <cuproj/operation/transverse_mercator.cuh>
 #include <cuproj/projection_parameters.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
 
 #include <thrust/device_vector.h>
-
-#include <cuda/std/tuple>
+#include <thrust/transform.h>
 
 #include <type_traits>
 
 namespace cuproj {
 
-namespace detail {
-
 /**
- * @internal
- * @brief A pipeline of projection operations applied in order to a coordinate
+ * @brief A projection transforms coordinates between coordinate reference systems
+ *
+ * Projections are constructed from a list of operations to be applied to coordinates.
+ * The operations are applied in order, either forward or inverse.
  *
  * @tparam Coordinate the coordinate type
- * @tparam dir The direction of the pipeline, FORWARD or INVERSE
  * @tparam T the coordinate value type
  */
-template <typename Coordinate,
-          direction dir = direction::FORWARD,
-          typename T    = typename Coordinate::value_type>
-struct pipeline {
-  using iterator_type = std::conditional_t<dir == direction::FORWARD,
-                                           operation_type const*,
-                                           std::reverse_iterator<operation_type const*>>;
-
-  pipeline(projection_parameters<T> const& params,
-           operation_type const* ops,
-           std::size_t num_stages)
-    : params_(params), d_ops(ops), num_stages(num_stages)
-  {
-    if constexpr (dir == direction::FORWARD) {
-      first_ = d_ops;
-    } else {
-      first_ = std::reverse_iterator(d_ops + num_stages);
-    }
-  }
-
-  __device__ Coordinate operator()(Coordinate const& c) const
-  {
-    // TODO: improve this dispatch, and consider whether we can use virtual functions
-    Coordinate c_out{c};
-    thrust::for_each_n(thrust::seq, first_, num_stages, [&](auto const& op) {
-      switch (op) {
-        case operation_type::AXIS_SWAP: {
-          auto op = axis_swap<Coordinate>{};
-          c_out   = op(c_out, dir);
-          break;
-        }
-        case operation_type::DEGREES_TO_RADIANS: {
-          auto op = degrees_to_radians<Coordinate>{};
-          c_out   = op(c_out, dir);
-          break;
-        }
-        // case operation_type::RADIANS_TO_DEGREES:
-        case operation_type::CLAMP_ANGULAR_COORDINATES: {
-          auto op = clamp_angular_coordinates<Coordinate>{params_};
-          c_out   = op(c_out, dir);
-          break;
-        }
-        case operation_type::OFFSET_SCALE_CARTESIAN_COORDINATES: {
-          auto op = offset_scale_cartesian_coordinates<Coordinate>{params_};
-          c_out   = op(c_out, dir);
-          break;
-        }
-        case operation_type::TRANSVERSE_MERCATOR: {
-          auto op = transverse_mercator<Coordinate>{params_};
-          c_out   = op(c_out, dir);
-          break;
-        }
-      }
-    });
-    return c_out;
-  }
-
-  projection_parameters<T> params_;
-  operation_type const* d_ops;
-  iterator_type first_;
-  std::size_t num_stages;
-};
-
-}  // namespace detail
-
 template <typename Coordinate, typename T = typename Coordinate::value_type>
 class projection {
  public:
+  /**
+   * @brief Construct a new projection object
+   *
+   * @param operations the list of operations to apply to coordinates
+   * @param params the projection parameters
+   */
   __host__ projection(std::vector<operation_type> const& operations,
                       projection_parameters<T> const& params)
     : params_(params)
@@ -121,6 +56,16 @@ class projection {
     setup(operations);
   }
 
+  /**
+   * @brief Transform a range of coordinates
+   *
+   * @tparam CoordIter the coordinate iterator type
+   * @param first the start of the coordinate range
+   * @param last the end of the coordinate range
+   * @param result the output coordinate range
+   * @param dir the direction of the transform, FORWARD or INVERSE
+   * @param stream the CUDA stream on which to run the transform
+   */
   template <class CoordIter>
   void transform(CoordIter first,
                  CoordIter last,

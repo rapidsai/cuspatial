@@ -32,7 +32,8 @@ enum class direction { FORWARD, INVERSE };
 
 // base class for all operations
 template <typename Coordinate, typename T = typename Coordinate::value_type>
-struct operation {
+class operation {
+ public:
   __host__ __device__ Coordinate operator()(Coordinate const& c, direction dir) const { return c; }
 
   __host__ projection_parameters<T> setup(projection_parameters<T> const& params)
