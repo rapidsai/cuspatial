@@ -42,7 +42,7 @@ requirements:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     {% if cuda_major == "11" %}
-    - {{ compiler('cuda11') }} {{ cuda_version }}
+    - {{ compiler('cuda11') }} ={{ cuda_version }}
     {% else %}
     - {{ compiler('cuda') }}
     {% endif %}
@@ -50,6 +50,10 @@ requirements:
     - ninja
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
+    {% if cuda_major == "11" %}
+    - cudatoolkit
+    {% endif %}
+    - cuda-version ={{ cuda_version }}
     - cmake {{ cmake_version }}
     - cudf ={{ minor_version }}
     - cython >=0.29,<0.30
