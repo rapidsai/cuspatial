@@ -48,6 +48,13 @@ class pipeline {
                                            operation_type const*,
                                            std::reverse_iterator<operation_type const*>>;
 
+  /**
+   * @brief Construct a new pipeline object with the given operations and parameters
+   *
+   * @param params The projection parameters
+   * @param ops The operations to apply
+   * @param num_stages The number of operations to apply
+   */
   pipeline(projection_parameters<T> const& params,
            operation_type const* ops,
            std::size_t num_stages)
@@ -60,9 +67,14 @@ class pipeline {
     }
   }
 
+  /**
+   * @brief Apply the pipeline to the given coordinate
+   *
+   * @param c The coordinate to transform
+   * @return The transformed coordinate
+   */
   __device__ Coordinate operator()(Coordinate const& c) const
   {
-    // TODO: improve this dispatch, and consider whether we can use virtual functions
     Coordinate c_out{c};
     thrust::for_each_n(thrust::seq, first_, num_stages, [&](auto const& op) {
       switch (op) {
@@ -76,7 +88,6 @@ class pipeline {
           c_out   = op(c_out, dir);
           break;
         }
-        // case operation_type::RADIANS_TO_DEGREES:
         case operation_type::CLAMP_ANGULAR_COORDINATES: {
           auto op = clamp_angular_coordinates<Coordinate>{params_};
           c_out   = op(c_out, dir);
