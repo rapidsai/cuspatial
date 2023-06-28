@@ -30,12 +30,40 @@ enum operation_type {
 
 enum class direction { FORWARD, INVERSE };
 
-// base class for all operations
+/**
+ * @brief Base class for all transform operations
+ *
+ * This class is used to define the interface for all transform operations. A transform operation
+ * is a function object that takes a coordinate and returns a coordinate. Operations are composed
+ * together to form a transform pipeline by cuproj::projection.
+ *
+ * @tparam Coordinate
+ * @tparam Coordinate::value_type
+ */
 template <typename Coordinate, typename T = typename Coordinate::value_type>
 class operation {
  public:
+  /**
+   * @brief Applies the transform operation to a coordinate
+   *
+   * @param c Coordinate to transform
+   * @param dir Direction of transform
+   * @return Coordinate
+   */
   __host__ __device__ Coordinate operator()(Coordinate const& c, direction dir) const { return c; }
 
+  /**
+   * @brief Modifies the projection parameters for the transform operation
+   *
+   * Some (but not all) operations require additional parameters to be set in the projection_params
+   * object. This function is called by cuproj::projection::setup() to allow the operation to
+   * modify the parameters as needed.
+   *
+   * The final project_parameters are passed to every operation in the transform pipeline.
+   *
+   * @param params Projection parameters
+   * @return The modified parameters
+   */
   __host__ projection_parameters<T> setup(projection_parameters<T> const& params)
   {
     return params;
