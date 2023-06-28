@@ -20,6 +20,12 @@
 
 namespace cuproj {
 
+/**
+ * @brief Enumerates the different types of transform operations
+ *
+ * This enum is used to identify the type of transform operation in the transform pipeline. Each
+ * operation_type has a corresponding class that implements the operation.
+ */
 enum operation_type {
   AXIS_SWAP,
   DEGREES_TO_RADIANS,
@@ -28,6 +34,7 @@ enum operation_type {
   TRANSVERSE_MERCATOR
 };
 
+/// Enumerates the direction of a transform operation
 enum class direction { FORWARD, INVERSE };
 
 /**
