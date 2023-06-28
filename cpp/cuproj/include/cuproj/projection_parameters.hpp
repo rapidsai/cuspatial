@@ -20,8 +20,20 @@
 
 namespace cuproj {
 
+/**
+ * @brief Hemisphere identifier for projections
+ */
 enum class hemisphere { NORTH, SOUTH };
 
+/**
+ * @brief Projection parameters
+ *
+ * Storage for parameters for projections. This is a POD type that is passed to
+  * the projection operators.
+
+ *
+ * @tparam T Coordinate value type
+ */
 template <typename T>
 struct projection_parameters {
   projection_parameters(
@@ -34,11 +46,11 @@ struct projection_parameters {
   {
   }
 
-  ellipsoid<T> ellipsoid_{};
-  int utm_zone_{-1};
-  hemisphere utm_hemisphere_{hemisphere::NORTH};
-  T lam0_{};
-  T prime_meridian_offset_{};
+  ellipsoid<T> ellipsoid_{};                      ///< Ellipsoid parameters
+  int utm_zone_{-1};                              ///< UTM zone
+  hemisphere utm_hemisphere_{hemisphere::NORTH};  ///< UTM hemisphere
+  T lam0_{};                                      ///< Central meridian
+  T prime_meridian_offset_{};                     ///< Offset from Greenwich
 
   T k0{};    // scaling
   T phi0{};  // central parallel
@@ -46,12 +58,12 @@ struct projection_parameters {
   T y0{};    // false northing
 
   struct tmerc_params {
-    T Qn{};      // Merid. quad., scaled to the projection
+    T Qn{};      // Meridian quadrant, scaled to the projection
     T Zb{};      // Radius vector in polar coord. systems
     T cgb[6]{};  // Constants for Gauss -> Geo lat
     T cbg[6]{};  // Constants for Geo lat -> Gauss
-    T utg[6]{};  // Constants for transv. merc. -> geo
-    T gtu[6]{};  // Constants for geo -> transv. merc.
+    T utg[6]{};  // Constants for transverse Mercator -> geo
+    T gtu[6]{};  // Constants for geo -> transverse Mercator
   };
 
   tmerc_params tmerc_params_{};
