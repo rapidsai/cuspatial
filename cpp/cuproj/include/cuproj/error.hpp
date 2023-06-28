@@ -30,13 +30,13 @@ namespace cuproj {
  * @{
  */
 
-/**---------------------------------------------------------------------------*
+/**
  * @brief Exception thrown when logical precondition is violated.
  *
  * This exception should not be thrown directly and is instead thrown by the
  * CUPROJ_EXPECTS macro.
  *
- *---------------------------------------------------------------------------**/
+ */
 struct logic_error : public std::logic_error {
   logic_error(char const* const message) : std::logic_error(message) {}
   logic_error(std::string const& message) : std::logic_error(message) {}
@@ -58,7 +58,7 @@ struct cuda_error : public std::runtime_error {
 #define CUPROJ_STRINGIFY_DETAIL(x) #x
 #define CUPROJ_STRINGIFY(x)        CUPROJ_STRINGIFY_DETAIL(x)
 
-/**---------------------------------------------------------------------------*
+/**
  * @brief Macro for checking (pre-)conditions that throws an exception when
  * a condition is violated.
  *
@@ -72,13 +72,13 @@ struct cuda_error : public std::runtime_error {
  * @param[in] reason String literal description of the reason that cond is
  * expected to be true
  * @throw cuproj::logic_error if the condition evaluates to false.
- *---------------------------------------------------------------------------**/
+ */
 #define CUPROJ_EXPECTS(cond, reason)                                    \
   (!!(cond)) ? static_cast<void>(0)                                     \
              : throw cuproj::logic_error("cuProj failure at: " __FILE__ \
                                          ":" CUPROJ_STRINGIFY(__LINE__) ": " reason)
 
-/**---------------------------------------------------------------------------*
+/**
  * @brief Macro for checking (pre-)conditions that throws an exception when
  * a condition is violated.
  *
@@ -97,14 +97,14 @@ struct cuda_error : public std::runtime_error {
  * @throw cuproj::logic_error if the condition evaluates to false.
  * (if on device)
  * program terminates and assertion error message is printed to stderr.
- *---------------------------------------------------------------------------**/
+ */
 #ifndef __CUDA_ARCH__
 #define CUPROJ_HOST_DEVICE_EXPECTS(cond, reason) CUPROJ_EXPECTS(cond, reason)
 #else
 #define CUPROJ_HOST_DEVICE_EXPECTS(cond, reason) cuproj_assert(cond&& reason)
 #endif
 
-/**---------------------------------------------------------------------------*
+/**
  * @brief Indicates that an erroneous code path has been taken.
  *
  * In host code, throws a `cuproj::logic_error`.
@@ -116,7 +116,7 @@ struct cuda_error : public std::runtime_error {
  * ```
  *
  * @param[in] reason String literal description of the reason
- *---------------------------------------------------------------------------**/
+ */
 #define CUPROJ_FAIL(reason)                                                      \
   throw cuproj::logic_error("cuProj failure at: " __FILE__ ":" CUPROJ_STRINGIFY( \
     __LINE__) ":"                                                                \
