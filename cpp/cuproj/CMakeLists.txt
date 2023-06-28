@@ -1,5 +1,5 @@
 #=============================================================================
-# Copyright (c) 2019-2023, NVIDIA CORPORATION.
+# Copyright (c) 2023, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,18 +14,18 @@
 # limitations under the License.
 #=============================================================================
 
-cmake_minimum_required(VERSION 3.26.4 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.23.1 FATAL_ERROR)
 
-include(../fetch_rapids.cmake)
+include(../../fetch_rapids.cmake)
 include(rapids-cmake)
 include(rapids-cpm)
 include(rapids-cuda)
 include(rapids-export)
 include(rapids-find)
 
-rapids_cuda_init_architectures(CUSPATIAL)
+rapids_cuda_init_architectures(CUPROJ)
 
-project(CUSPATIAL VERSION 23.08.00 LANGUAGES C CXX CUDA)
+project(CUPROJ VERSION 23.08.00 LANGUAGES C CXX CUDA)
 
 # Needed because GoogleBenchmark changes the state of FindThreads.cmake,
 # causing subsequent runs to have different values for the `Threads::Threads` target.
@@ -40,7 +40,7 @@ set(CMAKE_INCLUDE_SYSTEM_FLAG_CUDA "-isystem ")
 ###################################################################################################
 # - build options ---------------------------------------------------------------------------------
 
-option(BUILD_SHARED_LIBS "Build cuSpatial shared libraries" ON)
+option(BUILD_SHARED_LIBS "Build cuproj shared libraries" ON)
 option(USE_NVTX "Build with NVTX support" ON)
 option(BUILD_TESTS "Configure CMake to build tests" OFF)
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
@@ -51,105 +51,66 @@ option(CUDA_ENABLE_LINEINFO "Enable the -lineinfo option for nvcc (useful for cu
 # cudart can be statically linked or dynamically linked. The python ecosystem wants dynamic linking
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA toolkit runtime and libraries" OFF)
 
-option(CUSPATIAL_USE_CUDF_STATIC "Build and statically link cuDF" OFF)
-option(CUSPATIAL_EXCLUDE_CUDF_FROM_ALL "Exclude cuDF targets from cuSpatial's 'all' target" OFF)
-
-message(STATUS "CUSPATIAL: Build with NVTX support: ${USE_NVTX}")
-message(STATUS "CUSPATIAL: Configure CMake to build tests: ${BUILD_TESTS}")
-message(STATUS "CUSPATIAL: Configure CMake to build (google) benchmarks: ${BUILD_BENCHMARKS}")
-message(STATUS "CUSPATIAL: Build with per-thread default stream: ${PER_THREAD_DEFAULT_STREAM}")
-message(STATUS "CUSPATIAL: Disable warnings generated from deprecated declarations: ${DISABLE_DEPRECATION_WARNING}")
-message(STATUS "CUSPATIAL: Enable the -lineinfo option for nvcc (useful for cuda-memcheck / profiler: ${CUDA_ENABLE_LINEINFO}")
-message(STATUS "CUSPATIAL: Statically link the CUDA toolkit runtime and libraries: ${CUDA_STATIC_RUNTIME}")
+message(STATUS "CUPROJ: Build with NVTX support: ${USE_NVTX}")
+message(STATUS "CUPROJ: Configure CMake to build tests: ${BUILD_TESTS}")
+message(STATUS "CUPROJ: Configure CMake to build (google) benchmarks: ${BUILD_BENCHMARKS}")
+message(STATUS "CUPROJ: Build with per-thread default stream: ${PER_THREAD_DEFAULT_STREAM}")
+message(STATUS "CUPROJ: Disable warnings generated from deprecated declarations: ${DISABLE_DEPRECATION_WARNING}")
+message(STATUS "CUPROJ: Enable the -lineinfo option for nvcc (useful for cuda-memcheck / profiler: ${CUDA_ENABLE_LINEINFO}")
+message(STATUS "CUPROJ: Statically link the CUDA toolkit runtime and libraries: ${CUDA_STATIC_RUNTIME}")
 
 # Set a default build type if none was specified
 rapids_cmake_build_type("Release")
-set(CUSPATIAL_BUILD_TESTS ${BUILD_TESTS})
-set(CUSPATIAL_BUILD_BENCHMARKS ${BUILD_BENCHMARKS})
+set(CUPROJ_BUILD_TESTS ${BUILD_TESTS})
+set(CUPROJ_BUILD_BENCHMARKS ${BUILD_BENCHMARKS})
 
-set(CUSPATIAL_CXX_FLAGS "")
-set(CUSPATIAL_CUDA_FLAGS "")
-set(CUSPATIAL_CXX_DEFINITIONS "")
-set(CUSPATIAL_CUDA_DEFINITIONS "")
+set(CUPROJ_CXX_FLAGS "")
+set(CUPROJ_CUDA_FLAGS "")
+set(CUPROJ_CXX_DEFINITIONS "")
+set(CUPROJ_CUDA_DEFINITIONS "")
 
 # Set RMM logging level
 set(RMM_LOGGING_LEVEL "INFO" CACHE STRING "Choose the logging level.")
 set_property(CACHE RMM_LOGGING_LEVEL PROPERTY STRINGS "TRACE" "DEBUG" "INFO" "WARN" "ERROR" "CRITICAL" "OFF")
-message(STATUS "CUSPATIAL: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'.")
+message(STATUS "CUPROJ: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'.")
 
 ###################################################################################################
 # - conda environment -----------------------------------------------------------------------------
 
-rapids_cmake_support_conda_env(conda_env MODIFY_PREFIX_PATH)
+rapids_cmake_support_conda_env(conda_env)
 
 ###################################################################################################
 # - compiler options ------------------------------------------------------------------------------
 
 rapids_cuda_init_runtime(USE_STATIC ${CUDA_STATIC_RUNTIME})
 
-rapids_find_package(
-  CUDAToolkit REQUIRED
-  BUILD_EXPORT_SET cuspatial-exports
-  INSTALL_EXPORT_SET cuspatial-exports
-)
 # * find CUDAToolkit package
 # * determine GPU architectures
 # * enable the CMake CUDA language
 # * set other CUDA compilation flags
-include(cmake/Modules/ConfigureCUDA.cmake)
+include(cmake/modules/ConfigureCUDA.cmake)
 
 ###################################################################################################
 # - dependencies ----------------------------------------------------------------------------------
 
 # add third party dependencies using CPM
 rapids_cpm_init()
-# find rapids-cmake configured libcudacxx, not from system CCCL
-include(cmake/thirdparty/get_libcudacxx.cmake)
-# find rapids-cmake configured thrust, not from system CCCL
-include(cmake/thirdparty/get_thrust.cmake)
 # find or add cuDF
 include(cmake/thirdparty/get_cudf.cmake)
-# find or install GoogleTest
-if (CUSPATIAL_BUILD_TESTS)
+# find or install GoogleTest and Proj
+if (CUPROJ_BUILD_TESTS)
     include(cmake/thirdparty/get_gtest.cmake)
+    include(cmake/thirdparty/get_proj.cmake)
 endif()
-# find or add ranger
-include (cmake/thirdparty/get_ranger.cmake)
 
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
 
-# cuProj
-add_subdirectory(cuproj)
-
-add_library(cuspatial
-    src/bounding_boxes/linestring_bounding_boxes.cu
-    src/bounding_boxes/polygon_bounding_boxes.cu
-    src/column/geometry_column_view.cpp
-    src/distance/hausdorff.cu
-    src/distance/haversine.cu
-    src/distance/linestring_distance.cu
-    src/distance/linestring_polygon_distance.cu
-    src/distance/point_distance.cu
-    src/distance/point_linestring_distance.cu
-    src/distance/point_polygon_distance.cu
-    src/distance/polygon_distance.cu
-    src/equality/pairwise_multipoint_equals_count.cu
-    src/indexing/point_quadtree.cu
-    src/intersection/linestring_intersection.cu
-    src/join/quadtree_point_in_polygon.cu
-    src/join/quadtree_point_to_nearest_linestring.cu
-    src/join/quadtree_bbox_filtering.cu
-    src/nearest_points/point_linestring_nearest_points.cu
-    src/point_in_polygon/point_in_polygon.cu
-    src/points_in_range/points_in_range.cu
-    src/projection/sinusoidal_projection.cu
-    src/trajectory/derive_trajectories.cu
-    src/trajectory/trajectory_bounding_boxes.cu
-    src/trajectory/trajectory_distances_and_speeds.cu
+add_library(cuproj
+    src/test.cu
 )
 
-set_target_properties(cuspatial
+set_target_properties(cuproj
     PROPERTIES BUILD_RPATH                         "\$ORIGIN"
                INSTALL_RPATH                       "\$ORIGIN"
                # set target compile options
@@ -161,60 +122,49 @@ set_target_properties(cuspatial
                INTERFACE_POSITION_INDEPENDENT_CODE ON
 )
 
-target_compile_options(cuspatial
-            PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:${CUSPATIAL_CXX_FLAGS}>"
-                    "$<$<COMPILE_LANGUAGE:CUDA>:${CUSPATIAL_CUDA_FLAGS}>"
+target_compile_options(cuproj
+            PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:${CUPROJ_CXX_FLAGS}>"
+                    "$<$<COMPILE_LANGUAGE:CUDA>:${CUPROJ_CUDA_FLAGS}>"
 )
 
-target_compile_definitions(cuspatial
-            PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${CUSPATIAL_CXX_DEFINITIONS}>"
-                   "$<BUILD_INTERFACE:$<$<COMPILE_LANGUAGE:CUDA>:${CUSPATIAL_CUDA_DEFINITIONS}>>"
+target_compile_definitions(cuproj
+            PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${CUPROJ_CXX_DEFINITIONS}>"
+                   "$<$<COMPILE_LANGUAGE:CUDA>:${CUPROJ_CUDA_DEFINITIONS}>"
 )
-
-# Disable Jitify log printing. See https://github.com/NVIDIA/jitify/issues/79
-target_compile_definitions(cuspatial PRIVATE "JITIFY_PRINT_LOG=0")
 
 # Specify include paths for the current target and dependents
-target_include_directories(cuspatial
-           PUBLIC      "$<BUILD_INTERFACE:${CUSPATIAL_SOURCE_DIR}/include>"
-           PRIVATE     "$<BUILD_INTERFACE:${CUSPATIAL_SOURCE_DIR}/src>"
+target_include_directories(cuproj
+           PUBLIC      "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}/include>"
+           PRIVATE     "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}/src>"
            INTERFACE   "$<INSTALL_INTERFACE:include>")
 
-# Add Conda library, and include paths if specified
+# Add Conda library and include paths if specified
 if(TARGET conda_env)
-  target_link_libraries(cuspatial PRIVATE conda_env)
-endif()
-
-# Workaround until https://github.com/rapidsai/rapids-cmake/issues/176 is resolved
-if(NOT BUILD_SHARED_LIBS)
-  if(TARGET conda_env)
-    install(TARGETS conda_env EXPORT cuspatial-exports)
-  endif()
+    target_link_libraries(cuproj PRIVATE "$<BUILD_INTERFACE:conda_env>")
 endif()
 
 # Per-thread default stream
 if(PER_THREAD_DEFAULT_STREAM)
-    target_compile_definitions(cuspatial PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
+    target_compile_definitions(cuproj PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
 endif()
 
 # Disable NVTX if necessary
 if(NOT USE_NVTX)
-    target_compile_definitions(cuspatial PUBLIC NVTX_DISABLE)
+    target_compile_definitions(cuproj PUBLIC NVTX_DISABLE)
 endif()
 
 # Define spdlog level
-target_compile_definitions(cuspatial PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
+target_compile_definitions(cuproj PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
 
 # Specify the target module library dependencies
-target_link_libraries(cuspatial PUBLIC cudf::cudf)
-target_link_libraries(cuspatial PRIVATE ranger::ranger)
+#target_link_libraries(cuproj PUBLIC cudf::cudf)
 
-add_library(cuspatial::cuspatial ALIAS cuspatial)
+add_library(cuproj::cuproj ALIAS cuproj)
 
 ###################################################################################################
 # - add tests -------------------------------------------------------------------------------------
 
-if(CUSPATIAL_BUILD_TESTS)
+if(CUPROJ_BUILD_TESTS)
     # include CTest module -- automatically calls enable_testing()
     include(CTest)
     add_subdirectory(tests)
@@ -223,7 +173,7 @@ endif()
 ###################################################################################################
 # - add benchmarks --------------------------------------------------------------------------------
 
-if(CUSPATIAL_BUILD_BENCHMARKS)
+if(CUPROJ_BUILD_BENCHMARKS)
     # Find or install GoogleBench
     CPMFindPackage(NAME benchmark
         VERSION         1.5.3
@@ -248,36 +198,37 @@ endif()
 rapids_cmake_install_lib_dir(lib_dir)
 include(CPack)
 
-set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME cuspatial)
+set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME cuproj)
 
-install(TARGETS cuspatial
+install(TARGETS cuproj
         DESTINATION ${lib_dir}
-        EXPORT cuspatial-exports)
+        EXPORT cuproj-exports)
 
-install(DIRECTORY ${CUSPATIAL_SOURCE_DIR}/include/cuspatial
+install(DIRECTORY ${CUPROJ_SOURCE_DIR}/include/cuproj
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 set(doc_string
     [=[
-Provide targets for the cuSpatial library.
+Provide targets for the cuproj library.
 
-cuSpatial is a GPU-accelerated library for spatial data management and analytics.
+cuproj is a GPU-accelerated library for transformation of geospatial coordinates between coordinates
+reference systems.
 
 Imported Targets
 ^^^^^^^^^^^^^^^^
 
-If cuspatial is found, this module defines the following IMPORTED GLOBAL
+If cuproj is found, this module defines the following IMPORTED GLOBAL
 targets:
 
- cuspatial::cuspatial             - The main cuspatial library.
+ cuproj::cuproj             - The main cuproj library.
     ]=]
 )
 
 rapids_export(
-  INSTALL cuspatial
-  EXPORT_SET cuspatial-exports
-  GLOBAL_TARGETS cuspatial
-  NAMESPACE cuspatial::
+  INSTALL cuproj
+  EXPORT_SET cuproj-exports
+  GLOBAL_TARGETS cuproj
+  NAMESPACE cuproj::
   DOCUMENTATION doc_string
 )
 
@@ -286,10 +237,10 @@ rapids_export(
 # - build export -------------------------------------------------------------------------------
 
 rapids_export(
-  BUILD cuspatial
-  EXPORT_SET cuspatial-exports
-  GLOBAL_TARGETS cuspatial
-  NAMESPACE cuspatial::
+  BUILD cuproj
+  EXPORT_SET cuproj-exports
+  GLOBAL_TARGETS cuproj
+  NAMESPACE cuproj::
   DOCUMENTATION doc_string
 )
 
@@ -301,19 +252,19 @@ find_package(Doxygen)
 
 if(DOXYGEN_FOUND)
 
-# doc targets for cuSpatial
+# doc targets for cuproj
 add_custom_command(
-  OUTPUT CUSPATIAL_DOXYGEN
-  WORKING_DIRECTORY ${CUSPATIAL_SOURCE_DIR}/doxygen
+  OUTPUT CUPROJ_DOXYGEN
+  WORKING_DIRECTORY ${CUPROJ_SOURCE_DIR}/doxygen
   COMMAND ${DOXYGEN_EXECUTABLE} Doxyfile
   VERBATIM
-  COMMENT "Custom command for building cuspatial doxygen docs."
+  COMMENT "Custom command for building cuproj doxygen docs."
 )
 
 add_custom_target(
-  docs_cuspatial
-  DEPENDS CUSPATIAL_DOXYGEN
-  COMMENT "Custom command for building cuspatial doxygen docs."
+  docs_cuproj
+  DEPENDS CUPROJ_DOXYGEN
+  COMMENT "Custom command for building cuproj doxygen docs."
 )
 
 endif()
