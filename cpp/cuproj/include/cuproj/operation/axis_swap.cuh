@@ -20,8 +20,20 @@
 
 namespace cuproj {
 
+/**
+ * @brief Axis swap operation: swap x and y coordinates
+ *
+ * @tparam Coordinate the coordinate type
+ */
 template <typename Coordinate>
 struct axis_swap : operation<Coordinate> {
+  /**
+   * @brief Swap x and y coordinates
+   *
+   * @param coord the coordinate to swap
+   * @param dir (unused) the direction of the operation
+   * @return the swapped coordinate
+   */
   __host__ __device__ Coordinate operator()(Coordinate const& coord, direction) const
   {
     return Coordinate{coord.y, coord.x};
