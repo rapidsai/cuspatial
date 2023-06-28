@@ -5,7 +5,6 @@
 {% set cuda_version = '.'.join(environ['RAPIDS_CUDA_VERSION'].split('.')[:2]) %}
 {% set cuda_major = cuda_version.split('.')[0] %}
 {% set py_version = environ['CONDA_PY'] %}
-{% set cuda_version = '.'.join(environ['RAPIDS_CUDA_VERSION'].split('.')[:2]) %}
 {% set date_string = environ['RAPIDS_DATE_STRING'] %}
 
 package:
@@ -50,9 +49,6 @@ requirements:
     - ninja
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
-    {% if cuda_major == "11" %}
-    - cudatoolkit
-    {% endif %}
     - cuda-version ={{ cuda_version }}
     - cmake {{ cmake_version }}
     - cudf ={{ minor_version }}
