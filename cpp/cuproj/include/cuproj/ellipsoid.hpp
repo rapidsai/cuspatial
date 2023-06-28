@@ -21,10 +21,21 @@
 
 namespace cuproj {
 
+/**
+ * @brief Ellipsoid parameters
+ *
+ * @tparam T Floating point type
+ */
 template <typename T>
 struct ellipsoid {
   ellipsoid() = default;
 
+  /**
+   * @brief Construct an ellipsoid from semi-major axis and inverse flattening
+   *
+   * @param a Semi-major axis
+   * @param inverse_flattening Inverse flattening (a / (a - b), where b is the semi-minor axis)
+   */
   constexpr ellipsoid(T a, T inverse_flattening) : a(a)
   {
     assert(inverse_flattening != 0.0);
@@ -45,6 +56,12 @@ struct ellipsoid {
   T n{};      // third flattening
 };
 
+/**
+ * @brief Create the WGS84 ellipsoid
+ *
+ * @tparam T  Floating point type
+ * @return The WGS84 ellipsoid
+ */
 template <typename T>
 constexpr ellipsoid<T> make_ellipsoid_wgs84()
 {
