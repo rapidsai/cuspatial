@@ -23,7 +23,7 @@
 namespace cuproj {
 
 template <typename Coordinate, typename T = typename Coordinate::value_type>
-projection<Coordinate> make_utm_projection(int zone, hemisphere hemisphere)
+projection<Coordinate> make_utm_projection(int zone, hemisphere hemisphere, bool inverse = false)
 {
   projection_parameters<T> tmerc_proj_params{
     make_ellipsoid_wgs84<T>(), zone, hemisphere, T{0}, T{0}};
@@ -35,14 +35,20 @@ projection<Coordinate> make_utm_projection(int zone, hemisphere hemisphere)
     operation_type::TRANSVERSE_MERCATOR,
     operation_type::OFFSET_SCALE_CARTESIAN_COORDINATES};
 
+  if (inverse) { std::reverse(h_utm_pipeline.begin(), h_utm_pipeline.end()); }
+
   return projection<Coordinate>{h_utm_pipeline, tmerc_proj_params};
 }
+
+inline bool is_epsg(std::string const& epsg_str) { return epsg_str.find("EPSG:") == 0; }
+
+inline bool is_wgs_84(std::string const& epsg_str) { return epsg_str == "EPSG:4326"; }
 
 inline auto epsg_to_utm_zone(std::string const& epsg_str)
 {
   int epsg = [&]() {
     try {
-      CUPROJ_EXPECTS(epsg_str.find("EPSG:") == 0, "EPSG code must start with 'EPSG:'");
+      CUPROJ_EXPECTS(is_epsg(epsg_str), "EPSG code must start with 'EPSG:'");
       return std::stoi(epsg_str.substr(epsg_str.find_first_not_of("EPSG:")));
     } catch (std::invalid_argument const&) {
       CUPROJ_FAIL("Invalid EPSG code");
@@ -62,10 +68,14 @@ template <typename Coordinate>
 cuproj::projection<Coordinate> make_projection(std::string const& src_epsg,
                                                std::string const& dst_epsg)
 {
-  // TODO make this work forward or inverse
-  CUPROJ_EXPECTS(src_epsg == "EPSG:4326", "Source EPSG must be WGS84 (EPSG:4326)");
-  auto [dst_zone, dst_hemisphere] = epsg_to_utm_zone(dst_epsg);
-  return make_utm_projection<Coordinate>(dst_zone, dst_hemisphere);
+  if (is_wgs_84(src_epsg)) {
+    auto [dst_zone, dst_hemisphere] = epsg_to_utm_zone(dst_epsg);
+    return make_utm_projection<Coordinate>(dst_zone, dst_hemisphere);
+  } else {
+    CUPROJ_EXPECTS(is_wgs_84(dst_epsg), "Source or Destination EPSG must be WGS84 (EPSG:4326)");
+    auto [src_zone, src_hemisphere] = epsg_to_utm_zone(src_epsg);
+    return make_utm_projection<Coordinate>(src_zone, src_hemisphere, true);
+  }
 }
 
 }  // namespace cuproj

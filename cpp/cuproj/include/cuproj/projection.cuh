@@ -38,6 +38,14 @@ namespace cuproj {
 
 namespace detail {
 
+/**
+ * @internal
+ * @brief A pipeline of projection operations applied in order to a coordinate
+ *
+ * @tparam Coordinate the coordinate type
+ * @tparam dir The direction of the pipeline, FORWARD or INVERSE
+ * @tparam T the coordinate value type
+ */
 template <typename Coordinate,
           direction dir = direction::FORWARD,
           typename T    = typename Coordinate::value_type>
@@ -118,7 +126,7 @@ class projection {
                  CoordIter last,
                  CoordIter result,
                  direction dir,
-                 rmm::cuda_stream_view stream = rmm::cuda_stream_default)
+                 rmm::cuda_stream_view stream = rmm::cuda_stream_default) const
   {
     static_assert(std::is_same_v<typename CoordIter::value_type, Coordinate>,
                   "Coordinate type must match iterator value type");

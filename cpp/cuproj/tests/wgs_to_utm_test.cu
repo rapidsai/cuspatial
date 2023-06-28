@@ -45,10 +45,11 @@ template <typename T>
 using coordinate = typename cuspatial::vec_2d<T>;
 
 template <typename T>
-void run_test(thrust::host_vector<PJ_COORD> const& input_coords,
-              thrust::host_vector<PJ_COORD> const& expected_coords,
-              cuproj::direction dir,
-              T tolerance = T{0})  // 0 for 1-ulp comparison
+void run_cuproj_test(thrust::host_vector<PJ_COORD> const& input_coords,
+                     thrust::host_vector<PJ_COORD> const& expected_coords,
+                     cuproj::projection<coordinate<T>> const& proj,
+                     cuproj::direction dir,
+                     T tolerance = T{0})  // 0 for 1-ulp comparison
 {
   std::vector<coordinate<T>> input(input_coords.size());
   std::vector<coordinate<T>> expected(expected_coords.size());
@@ -64,9 +65,7 @@ void run_test(thrust::host_vector<PJ_COORD> const& input_coords,
   thrust::device_vector<coordinate<T>> d_out(d_in.size());
   thrust::device_vector<coordinate<T>> d_expected = expected;
 
-  auto utm_proj = cuproj::make_projection<coordinate<T>>("EPSG:4326", "EPSG:32756");
-
-  utm_proj.transform(d_in.begin(), d_in.end(), d_out.begin(), dir);
+  proj.transform(d_in.begin(), d_in.end(), d_out.begin(), dir);
 
 #ifdef DEBUG
   std::cout << "expected " << std::setprecision(20) << expected_coords[0].xy.x << " "
@@ -78,33 +77,64 @@ void run_test(thrust::host_vector<PJ_COORD> const& input_coords,
   CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected, d_out, tolerance);
 }
 
-template <typename T, typename HostVector>
+void run_proj_test(thrust::host_vector<PJ_COORD> const& input_coords,
+                   thrust::host_vector<PJ_COORD>& expected_coords,
+                   char const* epsg_src,
+                   char const* epsg_dst)
+{
+  PJ_CONTEXT* C = proj_context_create();
+  PJ* P         = proj_create_crs_to_crs(C, epsg_src, epsg_dst, nullptr);
+  proj_trans_array(P, PJ_FWD, expected_coords.size(), expected_coords.data());
+
+  proj_destroy(P);
+  proj_context_destroy(C);
+}
+
+template <typename T, typename HostVector, bool inverted = false>
 void run_forward_and_inverse(HostVector const& input, T tolerance = T{0})
 {
+  // note there are two notions of direction here. The direction of the construction of the
+  // projection is determined by the order of the epsg strings. The direction of the transform is
+  // determined by the direction argument to the transform method. This test runs both directions
+  // for a single projection, with the order of construction determined by the inverted template
+  // parameter. This is needed because a user may construct either a UTM->WGS84 or WGS84->UTM
+  // projection, and we want to test both directions for each.
+
   thrust::host_vector<PJ_COORD> input_coords{input.size()};
   std::transform(input.begin(), input.end(), input_coords.begin(), [](coordinate<T> const& c) {
     return PJ_COORD{c.x, c.y, 0, 0};
   });
   thrust::host_vector<PJ_COORD> expected_coords(input_coords);
 
-  // transform using PROJ
-  {
-    PJ_CONTEXT* C = proj_context_create();
-    PJ* P         = proj_create_crs_to_crs(C, "EPSG:4326", "EPSG:32756", NULL);
-    proj_trans_array(P, PJ_FWD, expected_coords.size(), expected_coords.data());
+  char const* epsg_src = "EPSG:4326";
+  char const* epsg_dst = "EPSG:32756";
 
-    proj_destroy(P);
-    proj_context_destroy(C);
-  }
+  if constexpr (inverted) {}
 
-  run_test(input_coords, expected_coords, cuproj::direction::FORWARD, tolerance);
+  auto run = [&]() {
+    run_proj_test(input_coords, expected_coords, epsg_src, epsg_dst);
+
+    auto proj = cuproj::make_projection<coordinate<T>>(epsg_src, epsg_dst);
+
+    run_cuproj_test(input_coords, expected_coords, proj, cuproj::direction::FORWARD, tolerance);
+    run_cuproj_test(expected_coords, input_coords, proj, cuproj::direction::INVERSE, tolerance);
+  };
+
+  // forward construction
+  run();
+  // invert construction
+  std::swap(input_coords, expected_coords);
+  std::swap(epsg_src, epsg_dst);
+  run();
 }
 
 TYPED_TEST(ProjectionTest, make_projection_valid_epsg)
 {
   using T = TypeParam;
   cuproj::make_projection<coordinate<T>>("EPSG:4326", "EPSG:32756");
+  cuproj::make_projection<coordinate<T>>("EPSG:32756", "EPSG:4326");
   cuproj::make_projection<coordinate<T>>("EPSG:4326", "EPSG:32601");
+  cuproj::make_projection<coordinate<T>>("EPSG:32601", "EPSG:4326");
 }
 
 TYPED_TEST(ProjectionTest, invalid_epsg)
