@@ -44,6 +44,7 @@ TYPED_TEST_CASE(ProjectionTest, TestTypes);
 template <typename T>
 using coordinate = typename cuspatial::vec_2d<T>;
 
+// run a test using the cuproj library
 template <typename T>
 void run_cuproj_test(thrust::host_vector<PJ_COORD> const& input_coords,
                      thrust::host_vector<PJ_COORD> const& expected_coords,
@@ -77,6 +78,7 @@ void run_cuproj_test(thrust::host_vector<PJ_COORD> const& input_coords,
   CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected, d_out, tolerance);
 }
 
+// run a test using the proj library for comparison
 void run_proj_test(thrust::host_vector<PJ_COORD> const& input_coords,
                    thrust::host_vector<PJ_COORD>& expected_coords,
                    char const* epsg_src,
@@ -90,6 +92,7 @@ void run_proj_test(thrust::host_vector<PJ_COORD> const& input_coords,
   proj_context_destroy(C);
 }
 
+// Run a test using the cuproj library in both directions, comparing to the proj library
 template <typename T, typename HostVector, bool inverted = false>
 void run_forward_and_inverse(HostVector const& input, T tolerance = T{0})
 {
@@ -128,6 +131,7 @@ void run_forward_and_inverse(HostVector const& input, T tolerance = T{0})
   run();
 }
 
+// Just test construction of the projection from supported EPSG codes
 TYPED_TEST(ProjectionTest, make_projection_valid_epsg)
 {
   using T = TypeParam;
@@ -137,6 +141,8 @@ TYPED_TEST(ProjectionTest, make_projection_valid_epsg)
   cuproj::make_projection<coordinate<T>>("EPSG:32601", "EPSG:4326");
 }
 
+// Test that construction of the projection from unsupported EPSG codes throws
+// expected exceptions
 TYPED_TEST(ProjectionTest, invalid_epsg)
 {
   using T = TypeParam;
@@ -148,6 +154,7 @@ TYPED_TEST(ProjectionTest, invalid_epsg)
                cuproj::logic_error);
 }
 
+// Test on a single coordinate
 TYPED_TEST(ProjectionTest, one)
 {
   using T = TypeParam;
@@ -159,6 +166,7 @@ TYPED_TEST(ProjectionTest, one)
   run_forward_and_inverse<T>(input, tolerance);
 }
 
+// Generate a grid of coordinates
 template <typename T>
 struct grid_generator {
   coordinate<T> min_corner{};
@@ -187,6 +195,7 @@ struct grid_generator {
   }
 };
 
+// Test on a grid of coordinates
 TYPED_TEST(ProjectionTest, many)
 {
   using T = TypeParam;
