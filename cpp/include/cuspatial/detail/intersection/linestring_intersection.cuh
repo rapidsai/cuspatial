@@ -237,12 +237,24 @@ linestring_intersection_result<T, index_t> pairwise_linestring_intersection(
   points.remove_if(range(point_flags.begin(), point_flags.end()), stream);
 
   if (segments.num_geoms() > 0) {
+    segments.debug_print();
     // Merge mergeable segments
     rmm::device_uvector<uint8_t> segment_flags(num_segments, stream);
     detail::find_and_combine_segment(
       segments.offset_range(), segments.geom_range(), segment_flags.begin(), stream);
 
+    std::cout << "\n\n";
+    rmm::device_uvector<int> segment_flags_int(num_segments, stream);
+    thrust::copy(rmm::exec_policy(stream),
+                 segment_flags.begin(),
+                 segment_flags.end(),
+                 segment_flags_int.begin());
+    test::print_device_vector(segment_flags_int, "segment_flags");
+    std::cout << "\n\n";
+
     segments.remove_if(range(segment_flags.begin(), segment_flags.end()), stream);
+
+    segments.debug_print();
 
     // Reusing `point_flags` for merge point on segment primitive.
     // Notice that `point_flags` contains leftovers from previous `find_duplicate_points` call.

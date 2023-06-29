@@ -2031,7 +2031,7 @@ template <typename T>
 struct coordinate_functor {
   cuspatial::vec_2d<T> __device__ operator()(std::size_t i)
   {
-    return cuspatial::vec_2d<T>{i / T{2.0}, i / T{2.0}};
+    return cuspatial::vec_2d<T>{static_cast<T>(i), static_cast<T>(i)};
   }
 };
 

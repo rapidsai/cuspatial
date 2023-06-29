@@ -55,6 +55,17 @@ class alignas(sizeof(Vertex)) segment {
   /// Return the length squared of segment.
   T CUSPATIAL_HOST_DEVICE length2() const { return dot(v2 - v1, v2 - v1); }
 
+  /// Return slope of segment.
+  T CUSPATIAL_HOST_DEVICE slope() { return (v2.y - v1.y) / (v2.x - v1.x); }
+
+  /// Return the lower left vertex of segment.
+  Vertex CUSPATIAL_HOST_DEVICE lower_left() { return v1 < v2 ? v1 : v2; }
+
+  bool CUSPATIAL_HOST_DEVICE collinear(segment<T> const& other)
+  {
+    return (v1.x - v1.y) * (other.v2.x - other.v2.y) == (v2.x - v2.y) * (other.v1.x - other.v1.y);
+  }
+
  private:
   friend std::ostream& operator<<(std::ostream& os, segment<T> const& seg)
   {

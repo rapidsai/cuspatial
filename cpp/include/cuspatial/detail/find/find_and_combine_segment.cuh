@@ -19,18 +19,20 @@
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/utility/linestring.cuh>
 #include <cuspatial/error.hpp>
+#include <cuspatial/iterator_factory.cuh>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
 
-#include <thrust/uninitialized_fill.h>
+#include <thrust/sort.h>
 
 namespace cuspatial {
 namespace detail {
 
 /**
  * @internal
- * @brief Kernel to merge segments, naive n^2 algorithm.
+ * @brief Kernel to merge segments. Each thread works on a pair of segment spaces.
+ * naive n^2 algorithm.
  */
 template <typename OffsetRange, typename SegmentRange, typename OutputIt>
 void __global__ simple_find_and_combine_segments_kernel(OffsetRange offsets,
@@ -44,6 +46,9 @@ void __global__ simple_find_and_combine_segments_kernel(OffsetRange offsets,
       merged_flag[i] = 0;
     }
 
+    // For each of the segment, loop over the rest of the segment in the space and see
+    // if it is mergeable with the current segment.
+    // Note that if the current segment is already merged. Skip checking.
     for (auto i = offsets[pair_idx]; i < offsets[pair_idx + 1] && merged_flag[i] != 1; i++) {
       for (auto j = i + 1; j < offsets[pair_idx + 1]; j++) {
         auto res = maybe_merge_segments(segments[i], segments[j]);
@@ -57,6 +62,29 @@ void __global__ simple_find_and_combine_segments_kernel(OffsetRange offsets,
   }
 }
 
+template <typename index_t, typename T>
+struct segment_comparator {
+  bool __device__ operator()(thrust::tuple<index_t, segment<T>> const& lhs,
+                             thrust::tuple<index_t, segment<T>> const& rhs) const
+  {
+    auto lhs_index   = thrust::get<0>(lhs);
+    auto rhs_index   = thrust::get<0>(rhs);
+    auto lhs_segment = thrust::get<1>(lhs);
+    auto rhs_segment = thrust::get<1>(rhs);
+
+    // Compare space id
+    if (lhs_index == rhs_index) {
+      // Compare slope
+      if (lhs_segment.collinear(rhs_segment)) {
+        // Sort by the lower left point of the segment.
+        return lhs_segment.lower_left() < rhs_segment.lower_left();
+      }
+      return lhs_segment.slope() < rhs_segment.slope();
+    }
+    return lhs_index < rhs_index;
+  }
+};
+
 /**
  * @internal
  * @brief For each pair of mergeable segment, overwrites the first segment with merged result,
@@ -68,8 +96,20 @@ void find_and_combine_segment(OffsetRange offsets,
                               OutputIt merged_flag,
                               rmm::cuda_stream_view stream)
 {
+  using index_t   = typename OffsetRange::value_type;
+  using T         = typename SegmentRange::value_type::value_type;
   auto num_spaces = offsets.size() - 1;
   if (num_spaces == 0) return;
+
+  // Construct a key iterator using the offsets of the segment and the segment itself.
+  auto space_id_iter         = make_geometry_id_iterator<index_t>(offsets.begin(), offsets.end());
+  auto space_id_segment_iter = thrust::make_zip_iterator(space_id_iter, segments.begin());
+
+  thrust::sort_by_key(rmm::exec_policy(stream),
+                      space_id_segment_iter,
+                      space_id_segment_iter + segments.size(),
+                      segments.begin(),
+                      segment_comparator<index_t, T>{});
 
   auto [threads_per_block, num_blocks] = grid_1d(num_spaces);
   simple_find_and_combine_segments_kernel<<<num_blocks, threads_per_block, 0, stream.value()>>>(
