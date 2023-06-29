@@ -37,6 +37,12 @@ enum operation_type {
 /// Enumerates the direction of a transform operation
 enum class direction { FORWARD, INVERSE };
 
+/// Returns the inverse of a direction
+direction reverse(direction dir)
+{
+  return dir == direction::FORWARD ? direction::INVERSE : direction::FORWARD;
+}
+
 /**
  * @brief Base class for all transform operations
  *

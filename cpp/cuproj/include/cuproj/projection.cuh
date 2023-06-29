@@ -48,10 +48,12 @@ class projection {
    *
    * @param operations the list of operations to apply to coordinates
    * @param params the projection parameters
+   * @param dir the default order to execute the operations, FORWARD or INVERSE
    */
   __host__ projection(std::vector<operation_type> const& operations,
-                      projection_parameters<T> const& params)
-    : params_(params)
+                      projection_parameters<T> const& params,
+                      direction dir = direction::FORWARD)
+    : params_(params), constructed_direction_(dir)
   {
     setup(operations);
   }
@@ -63,7 +65,8 @@ class projection {
    * @param first the start of the coordinate range
    * @param last the end of the coordinate range
    * @param result the output coordinate range
-   * @param dir the direction of the transform, FORWARD or INVERSE
+   * @param dir the direction of the transform, FORWARD or INVERSE. If INVERSE, the operations will
+   * run in the reverse order of the direction specified in the constructor.
    * @param stream the CUDA stream on which to run the transform
    */
   template <class CoordIter>
@@ -75,6 +78,7 @@ class projection {
   {
     static_assert(std::is_same_v<typename CoordIter::value_type, Coordinate>,
                   "Coordinate type must match iterator value type");
+    dir = (constructed_direction_ == direction::FORWARD) ? dir : reverse(dir);
 
     if (dir == direction::FORWARD) {
       auto pipe = detail::pipeline<Coordinate, direction::FORWARD>{
@@ -108,6 +112,7 @@ class projection {
 
   thrust::device_vector<operation_type> operations_;
   projection_parameters<T> params_;
+  direction constructed_direction_{direction::FORWARD};
 };
 
 }  // namespace cuproj

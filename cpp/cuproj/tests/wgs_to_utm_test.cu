@@ -64,29 +64,27 @@ void run_cuproj_test(thrust::host_vector<PJ_COORD> const& input_coords,
 
   thrust::device_vector<coordinate<T>> d_in = input;
   thrust::device_vector<coordinate<T>> d_out(d_in.size());
-  thrust::device_vector<coordinate<T>> d_expected = expected;
 
   proj.transform(d_in.begin(), d_in.end(), d_out.begin(), dir);
 
-#ifdef DEBUG
+#ifndef NDEBUG
   std::cout << "expected " << std::setprecision(20) << expected_coords[0].xy.x << " "
             << expected_coords[0].xy.y << std::endl;
   coordinate<T> c_out = d_out[0];
   std::cout << "Device: " << std::setprecision(20) << c_out.x << " " << c_out.y << std::endl;
 #endif
 
-  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected, d_out, tolerance);
+  CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected, d_out, tolerance);
 }
 
 // run a test using the proj library for comparison
-void run_proj_test(thrust::host_vector<PJ_COORD> const& input_coords,
-                   thrust::host_vector<PJ_COORD>& expected_coords,
+void run_proj_test(thrust::host_vector<PJ_COORD>& coords,
                    char const* epsg_src,
                    char const* epsg_dst)
 {
   PJ_CONTEXT* C = proj_context_create();
   PJ* P         = proj_create_crs_to_crs(C, epsg_src, epsg_dst, nullptr);
-  proj_trans_array(P, PJ_FWD, expected_coords.size(), expected_coords.data());
+  proj_trans_array(P, PJ_FWD, coords.size(), coords.data());
 
   proj_destroy(P);
   proj_context_destroy(C);
@@ -115,7 +113,8 @@ void run_forward_and_inverse(HostVector const& input, T tolerance = T{0})
   if constexpr (inverted) {}
 
   auto run = [&]() {
-    run_proj_test(input_coords, expected_coords, epsg_src, epsg_dst);
+    expected_coords = input_coords;
+    run_proj_test(expected_coords, epsg_src, epsg_dst);
 
     auto proj = cuproj::make_projection<coordinate<T>>(epsg_src, epsg_dst);
 
@@ -126,7 +125,7 @@ void run_forward_and_inverse(HostVector const& input, T tolerance = T{0})
   // forward construction
   run();
   // invert construction
-  std::swap(input_coords, expected_coords);
+  input_coords = expected_coords;
   std::swap(epsg_src, epsg_dst);
   run();
 }
@@ -148,8 +147,6 @@ TYPED_TEST(ProjectionTest, invalid_epsg)
   using T = TypeParam;
   EXPECT_THROW(cuproj::make_projection<coordinate<T>>("EPSG:4326", "EPSG:756"),
                cuproj::logic_error);
-  EXPECT_THROW(cuproj::make_projection<coordinate<T>>("EPSG:32756", "EPSG:4326"),
-               cuproj::logic_error);
   EXPECT_THROW(cuproj::make_projection<coordinate<T>>("EPSG:4326", "UTM:32756"),
                cuproj::logic_error);
 }
@@ -158,7 +155,9 @@ TYPED_TEST(ProjectionTest, invalid_epsg)
 TYPED_TEST(ProjectionTest, one)
 {
   using T = TypeParam;
-  std::vector<coordinate<T>> input{{-28.667003, 153.090959}};
+
+  coordinate<T> sydney{-33.865143, 151.209900};  // Sydney, NSW, Australia
+  std::vector<coordinate<T>> input{sydney};
   // We can expect nanometer accuracy with double precision. The precision ratio of
   // double to single precision is 2^53 / 2^24 == 2^29 ~= 10^9, then we should
   // expect meter (10^9 nanometer) accuracy with single precision.
@@ -199,14 +198,13 @@ struct grid_generator {
 TYPED_TEST(ProjectionTest, many)
 {
   using T = TypeParam;
-  // generate (lat, lon) points on a grid between -60 and 60 degrees longitude and
-  // -40 and 80 degrees latitude
-  int num_points_x         = 100;
-  int num_points_y         = 100;
-  coordinate<T> min_corner = {-26.5, -152.5};
-  coordinate<T> max_corner = {-25.5, -153.5};
+  // generate a grid of (lat, lon) coordinates around Sydney Harbour
+  coordinate<T> min_corner{-33.9, 151.2};
+  coordinate<T> max_corner{-33.7, 151.3};
+  int num_points_x = 100;
+  int num_points_y = 100;
 
-  auto gen = grid_generator<T>(min_corner, max_corner, num_points_x, num_points_y);
+  grid_generator<T> gen(min_corner, max_corner, num_points_x, num_points_y);
 
   thrust::device_vector<coordinate<T>> input(num_points_x * num_points_y);
 
@@ -217,7 +215,7 @@ TYPED_TEST(ProjectionTest, many)
   // We can expect nanometer accuracy with double precision. The precision ratio of
   // double to single precision is 2^53 / 2^24 == 2^29 ~= 10^9, then we should
   // expect meter (10^9 nanometer) accuracy with single precision.
-  // For large arrays seem to need to relax the tolerance a bit (5nm and 10nm respectively)
+  // For large arrays seem to need to relax the tolerance a bit (5nm and 10m respectively)
   T tolerance = std::is_same_v<T, float> ? T{10.0} : T{5e-9};
   run_forward_and_inverse<T>(h_input, tolerance);
 }

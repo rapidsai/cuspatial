@@ -88,12 +88,14 @@ inline auto epsg_to_utm_zone(std::string const& epsg_str)
  * @tparam Coordinate::value_type the coordinate value type
  * @param zone the UTM zone
  * @param hemisphere the UTM hemisphere
- * @param inverse if true, create a projection from UTM to WGS84 (default is false, meaning WGS84 to
- * UTM)
+ * @param dir if FORWARD, create a projection from UTM to WGS84, otherwise create a projection
+ * from WGS84 to UTM
  * @return a projection object implementing the requested transformation
  */
 template <typename Coordinate, typename T = typename Coordinate::value_type>
-projection<Coordinate> make_utm_projection(int zone, hemisphere hemisphere, bool inverse = false)
+projection<Coordinate> make_utm_projection(int zone,
+                                           hemisphere hemisphere,
+                                           direction dir = direction::FORWARD)
 {
   projection_parameters<T> tmerc_proj_params{
     make_ellipsoid_wgs84<T>(), zone, hemisphere, T{0}, T{0}};
@@ -105,9 +107,7 @@ projection<Coordinate> make_utm_projection(int zone, hemisphere hemisphere, bool
     operation_type::TRANSVERSE_MERCATOR,
     operation_type::OFFSET_SCALE_CARTESIAN_COORDINATES};
 
-  if (inverse) { std::reverse(h_utm_pipeline.begin(), h_utm_pipeline.end()); }
-
-  return projection<Coordinate>{h_utm_pipeline, tmerc_proj_params};
+  return projection<Coordinate>{h_utm_pipeline, tmerc_proj_params, dir};
 }
 
 /**
@@ -134,7 +134,7 @@ cuproj::projection<Coordinate> make_projection(std::string const& src_epsg,
     CUPROJ_EXPECTS(detail::is_wgs_84(dst_epsg),
                    "Source or Destination EPSG must be WGS84 (EPSG:4326)");
     auto [src_zone, src_hemisphere] = detail::epsg_to_utm_zone(src_epsg);
-    return make_utm_projection<Coordinate>(src_zone, src_hemisphere, true);
+    return make_utm_projection<Coordinate>(src_zone, src_hemisphere, direction::INVERSE);
   }
 }
 
