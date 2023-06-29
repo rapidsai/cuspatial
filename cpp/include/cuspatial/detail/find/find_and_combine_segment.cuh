@@ -62,6 +62,14 @@ void __global__ simple_find_and_combine_segments_kernel(OffsetRange offsets,
   }
 }
 
+/**
+ * @brief Comparator for sorting the segment range.
+ *
+ * This comparator makes sure that the segment range are sorted by the following keys:
+ * 1. Segments with the same space id are grouped together.
+ * 2. Segments within the same space are grouped by their slope.
+ * 3. Within each slope group, segments are sorted by their lower left point.
+ */
 template <typename index_t, typename T>
 struct segment_comparator {
   bool __device__ operator()(thrust::tuple<index_t, segment<T>> const& lhs,
@@ -89,6 +97,9 @@ struct segment_comparator {
  * @internal
  * @brief For each pair of mergeable segment, overwrites the first segment with merged result,
  * sets the flag for the second segment as 1.
+ *
+ * @note This function will alter the input segment range by rearranging the order of the segments
+ * within each space so that merging kernel can take place.
  */
 template <typename OffsetRange, typename SegmentRange, typename OutputIt>
 void find_and_combine_segment(OffsetRange offsets,
