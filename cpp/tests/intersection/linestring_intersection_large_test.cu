@@ -27,6 +27,7 @@
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/intersection.cuh>
 
+#include <rmm/exec_policy.hpp>
 #include <thrust/host_vector.h>
 
 template <typename T>
@@ -2024,4 +2025,33 @@ TYPED_TEST(LinestringIntersectionLargeTest, LongInput)
 
   CUSPATIAL_RUN_TEST(
     this->template verify_legal_result, multilinestrings1.range(), multilinestrings2.range());
+}
+
+template <typename T>
+struct coordinate_functor {
+  cuspatial::vec_2d<T> __device__ operator()(std::size_t i)
+  {
+    return cuspatial::vec_2d<T>{i / T{2.0}, i / T{2.0}};
+  }
+};
+
+TYPED_TEST(LinestringIntersectionLargeTest, LongInput_2)
+{
+  using P              = cuspatial::vec_2d<TypeParam>;
+  auto geometry_offset = cuspatial::test::make_device_vector({0, 1});
+  auto part_offset     = cuspatial::test::make_device_vector({0, 130});
+  auto coordinates     = rmm::device_uvector<P>(260, this->stream());
+
+  thrust::tabulate(rmm::exec_policy(this->stream()),
+                   coordinates.begin(),
+                   thrust::next(coordinates.begin(), 128),
+                   coordinate_functor<TypeParam>{});
+
+  coordinates.set_element(128, P{127.0, 0.0}, this->stream());
+  coordinates.set_element(129, P{0.0, 0.0}, this->stream());
+
+  auto rng = cuspatial::make_multilinestring_range(
+    1, geometry_offset.begin(), 1, part_offset.begin(), 130, coordinates.begin());
+
+  CUSPATIAL_RUN_TEST(this->template verify_legal_result, rng, rng);
 }
