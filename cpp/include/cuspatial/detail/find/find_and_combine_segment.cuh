@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "cuspatial_test/test_util.cuh"
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/utility/linestring.cuh>
 #include <cuspatial/error.hpp>
@@ -24,8 +23,6 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
-
-#include <rmm/device_vector.hpp>
 
 #include <thrust/sort.h>
 
