@@ -281,3 +281,25 @@ TYPED_TEST(FindAndCombineSegmentsTest, nooverlap3)
                      {0, 0},
                      {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.0, 1.0}, P{1.0, 0.0}}});
 }
+
+TYPED_TEST(FindAndCombineSegmentsTest, twospaces)
+{
+  using T       = TypeParam;
+  using index_t = std::size_t;
+  using P       = vec_2d<T>;
+  using S       = segment<T>;
+
+  auto segments = make_segment_array<index_t, T>({0, 2, 4},
+                                                 {S{P{0.0, 0.0}, P{1.0, 1.0}},
+                                                  S{P{1.0, 1.0}, P{2.0, 2.0}},
+                                                  S{P{1.0, 1.0}, P{0.0, 0.0}},
+                                                  S{P{2.0, 2.0}, P{1.0, 1.0}}});
+
+  CUSPATIAL_RUN_TEST(this->run_single_test,
+                     segments,
+                     {0, 1, 0, 1},
+                     {S{P{0.0, 0.0}, P{2.0, 2.0}},
+                      S{P{1.0, 1.0}, P{2.0, 2.0}},
+                      S{P{0.0, 0.0}, P{2.0, 2.0}},
+                      S{P{2.0, 2.0}, P{1.0, 1.0}}});
+}
