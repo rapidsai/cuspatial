@@ -303,3 +303,25 @@ TYPED_TEST(FindAndCombineSegmentsTest, twospaces)
                       S{P{0.0, 0.0}, P{2.0, 2.0}},
                       S{P{2.0, 2.0}, P{1.0, 1.0}}});
 }
+
+TYPED_TEST(FindAndCombineSegmentsTest, twospaces_non_contiguous_segments_with_empty)
+{
+  using T       = TypeParam;
+  using index_t = std::size_t;
+  using P       = vec_2d<T>;
+  using S       = segment<T>;
+
+  auto segments = make_segment_array<index_t, T>({0, 4, 4},
+                                                 {S{P{1.0, 1.0}, P{2.0, 2.0}},
+                                                  S{P{3.0, 3.0}, P{4.0, 4.0}},
+                                                  S{P{0.0, 0.0}, P{1.0, 1.0}},
+                                                  S{P{2.0, 2.0}, P{3.0, 3.0}}});
+
+  CUSPATIAL_RUN_TEST(this->run_single_test,
+                     segments,
+                     {0, 1, 1, 1},
+                     {S{P{0.0, 0.0}, P{4.0, 4.0}},
+                      S{P{1.0, 1.0}, P{2.0, 2.0}},
+                      S{P{2.0, 2.0}, P{3.0, 3.0}},
+                      S{P{3.0, 3.0}, P{4.0, 4.0}}});
+}
