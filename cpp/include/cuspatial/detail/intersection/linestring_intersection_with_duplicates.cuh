@@ -50,6 +50,18 @@ namespace detail {
 
 namespace intersection_functors {
 
+/**
+ * @brief Cast `uint8_t` to `X`
+ *
+ * @tparam X The type to cast to
+ */
+template<typename X>
+struct uchar_to_x{
+
+  X __device__ operator()(uint8_t c) {return static_cast<X>(c); }
+
+};
+
 /** @brief Functor to compute the updated offset buffer after `remove_if` operation.
  *
  *  Given the `i`th row in the `geometry_collection_offset`, find the number of all
@@ -292,11 +304,12 @@ struct linestring_intersection_intermediates {
     rmm::device_uvector<index_t> reduced_flags(num_pairs(), stream);
     auto keys_begin = make_geometry_id_iterator<index_t>(offsets->begin(), offsets->end());
 
+    auto iflags = thrust::make_transform_iterator(flags.begin(), intersection_functors::uchar_to_x<index_t>{});
     auto [keys_end, flags_end] =
       thrust::reduce_by_key(rmm::exec_policy(stream),
                             keys_begin,
                             keys_begin + flags.size(),
-                            flags.begin(),
+                            iflags,
                             reduced_keys.begin(),
                             reduced_flags.begin(),
                             thrust::equal_to<index_t>(),
@@ -309,6 +322,8 @@ struct linestring_intersection_intermediates {
     // Use `inclusive_scan` to compute the number of removed geometries in *all* previous lists.
     thrust::inclusive_scan(
       rmm::exec_policy(stream), reduced_flags.begin(), reduced_flags.end(), reduced_flags.begin());
+
+    test::print_device_vector(reduced_flags, "\n\nreduced_flags: ");
 
     // Update the offsets
     thrust::transform(

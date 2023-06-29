@@ -227,6 +227,11 @@ linestring_intersection_result<T, index_t> pairwise_linestring_intersection(
   auto num_points   = points.num_geoms();
   auto num_segments = segments.num_geoms();
 
+  std::cout << "\n\n Points before merge: \n\n";
+  points.debug_print();
+  std::cout << "\n\n";
+
+
   // Phase 3: Remove duplicate points from intermediates
   // TODO: improve memory usage by using IIFE to
   // Remove the duplicate points
@@ -237,23 +242,24 @@ linestring_intersection_result<T, index_t> pairwise_linestring_intersection(
   points.remove_if(range(point_flags.begin(), point_flags.end()), stream);
 
   if (segments.num_geoms() > 0) {
-    segments.debug_print();
+    // segments.debug_print();
     // Merge mergeable segments
     rmm::device_uvector<uint8_t> segment_flags(num_segments, stream);
     detail::find_and_combine_segment(
       segments.offset_range(), segments.geom_range(), segment_flags.begin(), stream);
 
-    std::cout << "\n\n";
-    rmm::device_uvector<int> segment_flags_int(num_segments, stream);
-    thrust::copy(rmm::exec_policy(stream),
-                 segment_flags.begin(),
-                 segment_flags.end(),
-                 segment_flags_int.begin());
-    test::print_device_vector(segment_flags_int, "segment_flags");
-    std::cout << "\n\n";
+    // std::cout << "\n\n";
+    // rmm::device_uvector<int> segment_flags_int(num_segments, stream);
+    // thrust::copy(rmm::exec_policy(stream),
+    //              segment_flags.begin(),
+    //              segment_flags.end(),
+    //              segment_flags_int.begin());
+    // test::print_device_vector(segment_flags_int, "segment_flags");
+    // std::cout << "\n\n";
 
     segments.remove_if(range(segment_flags.begin(), segment_flags.end()), stream);
 
+    std::cout << "\n\n Segments after merge: \n";
     segments.debug_print();
 
     // Reusing `point_flags` for merge point on segment primitive.
@@ -270,7 +276,21 @@ linestring_intersection_result<T, index_t> pairwise_linestring_intersection(
       stream);
 
     points.remove_if(range(point_flags.begin(), point_flags.end()), stream);
+
+    rmm::device_uvector<int> point_flags_int(point_flags.size(), stream);
+    thrust::copy(rmm::exec_policy(stream),
+                 point_flags.begin(),
+                 point_flags.end(),
+                 point_flags_int.begin());
+
+    std::cout << "\n\n" << "point_flags_nums: " << point_flags.size() << "\n";
+    test::print_device_vector(point_flags_int, "\npoint_flags: ");
   }
+
+  std::cout << "\n\n Points after merge: \n\n";
+  points.debug_print();
+  std::cout << "\n\n";
+
   // Phase 4: Assemble results as union column
   auto num_union_column_rows = points.geoms->size() + segments.geoms->size();
   auto geometry_collection_offsets =
