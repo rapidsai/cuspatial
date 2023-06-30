@@ -31,8 +31,8 @@ namespace detail {
 
 /**
  * @internal
- * @brief Kernel to merge segments. Each thread works on a pair of segment spaces.
- * naive n^2 algorithm.
+ * @brief Kernel to merge segments. Each thread works on one segment space,
+ * with a naive n^2 algorithm.
  */
 template <typename OffsetRange, typename SegmentRange, typename OutputIt>
 void __global__ simple_find_and_combine_segments_kernel(OffsetRange offsets,
