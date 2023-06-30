@@ -45,9 +45,6 @@ requirements:
     - ninja
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
-    {% if cuda_major == "11" %}
-    - cudatoolkit
-    {% endif %}
     - cuda-version ={{ cuda_version }}
     - doxygen
     - gmock {{ gtest_version }}
@@ -99,6 +96,7 @@ outputs:
       license_family: Apache
       license_file: LICENSE
       summary: libcuspatial library
+
   - name: libcuspatial-tests
     version: {{ version }}
     script: install_libcuspatial_tests.sh

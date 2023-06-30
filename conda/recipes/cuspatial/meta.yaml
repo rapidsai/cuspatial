@@ -51,9 +51,6 @@ requirements:
     - ninja
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
-    {% if cuda_major == "11" %}
-    - cudatoolkit
-    {% endif %}
     - cuda-version ={{ cuda_version }}
     - cmake {{ cmake_version }}
     - cudf ={{ minor_version }}
