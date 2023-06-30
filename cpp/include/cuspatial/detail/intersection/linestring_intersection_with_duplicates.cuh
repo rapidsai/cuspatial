@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <cuspatial_test/test_util.cuh>
-
 #include <cuspatial/detail/intersection/linestring_intersection_count.cuh>
 #include <cuspatial/detail/utility/linestring.cuh>
 #include <cuspatial/detail/utility/zero_data.cuh>
@@ -363,16 +361,6 @@ struct linestring_intersection_intermediates {
 
   /// Return the number of geometries in the intermediates
   auto num_geoms() { return geoms->size(); }
-
-  void debug_print()
-  {
-    test::print_device_vector(*offsets, "offsets: ");
-    test::print_device_vector(*geoms, "geoms: ");
-    test::print_device_vector(*lhs_linestring_ids, "lhs_linestring_ids: ");
-    test::print_device_vector(*lhs_segment_ids, "lhs_segment_ids: ");
-    test::print_device_vector(*rhs_linestring_ids, "rhs_linestring_ids: ");
-    test::print_device_vector(*rhs_segment_ids, "rhs_segment_ids: ");
-  }
 };
 
 /**
