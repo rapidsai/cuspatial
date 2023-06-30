@@ -148,6 +148,10 @@ dependencies:
               - *sysroot_aarch64
       - output_types: [requirements, pyproject]
         matrices:
+          - matrix: {cuda: "12.0"}
+            packages:
+              - cudf-cu12==23.8.*
+              - rmm-cu12==23.8.*
           - matrix: {cuda: "11.8"}
             packages: &build_python_packages_cu11
               - &cudf_cu11 cudf-cu11==23.8.*
@@ -227,6 +231,9 @@ dependencies:
       - output_types: [requirements, pyproject]
         matrices:
           - {matrix: null, packages: [*cuml_conda]}
+          - matrix: {cuda: "12.0"}
+            packages:
+              - cuml-cu12==23.8.*
           - matrix: {cuda: "11.8"}
             packages: &notebooks_packages_cu11
               - &cuml_cu11 cuml-cu11==23.8.*
@@ -265,6 +272,10 @@ dependencies:
     specific:
       - output_types: [requirements, pyproject]
         matrices:
+          - matrix: {cuda: "12.0"}
+            packages:
+              - cudf-cu12==23.8.*
+              - rmm-cu12==23.8.*
           - matrix: {cuda: "11.8"}
             packages: &run_python_packages_cu11
               - cudf-cu11==23.8.*
