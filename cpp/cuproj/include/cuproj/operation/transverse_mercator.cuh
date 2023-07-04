@@ -67,6 +67,7 @@
 
 #pragma once
 
+#include <cuproj/detail/wrap_to_pi.cuh>
 #include <cuproj/ellipsoid.hpp>
 #include <cuproj/operation/operation.cuh>
 #include <cuproj/projection_parameters.hpp>
@@ -106,7 +107,6 @@ inline static __host__ __device__ T gatg(T const* p1, int len_p1, T B, T cos_2B,
   return (B + h * sin_2B);
 }
 
-// Complex Clenshaw summation
 /**
  * @brief  Clenshaw summation for complex numbers
  *
@@ -153,7 +153,6 @@ inline static __host__ __device__ T clenshaw_complex(
   return *R;
 }
 
-// Real Clenshaw summation
 /**
  * @brief Clenshaw summation for real numbers
  *
@@ -215,6 +214,13 @@ class transverse_mercator : operation<Coordinate> {
       return inverse(coord);
   }
 
+  static constexpr T utm_central_meridian = T{500000};  // false easting center of UTM zone
+  // false northing center of UTM zone
+  static constexpr T utm_central_parallel(hemisphere h)
+  {
+    return (h == hemisphere::NORTH) ? T{0} : T{10000000};
+  }
+
   /**
    * @brief Set up the projection parameters for transverse mercator projection
    *
@@ -232,13 +238,13 @@ class transverse_mercator : operation<Coordinate> {
 
     assert(ellipsoid.es > 0);
 
-    params.x0 = static_cast<T>(500000);
-    params.y0 = (params.utm_hemisphere_ == hemisphere::SOUTH) ? static_cast<T>(10000000) : T{0};
+    params.x0 = utm_central_meridian;
+    params.y0 = utm_central_parallel(params.utm_hemisphere_);
 
     if (params.utm_zone_ > 0 && params.utm_zone_ <= 60) {
       --params.utm_zone_;
     } else {
-      params.utm_zone_ = lround((floor((clamp_longitude(params.lam0_) + M_PI) * 30. / M_PI)));
+      params.utm_zone_ = lround((floor((detail::wrap_to_pi(params.lam0_) + M_PI) * 30. / M_PI)));
       params.utm_zone_ = std::clamp(params.utm_zone_, 0, 59);
     }
 
