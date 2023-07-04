@@ -366,17 +366,14 @@ class transverse_mercator : operation<Coordinate> {
     T const inv_denom_tan_Ce = 1. / hypot(sin_Cn, cos_Cn_cos_Ce);
     T const tan_Ce           = sin_Ce * cos_Cn * inv_denom_tan_Ce;
 
-#if 0
     // Variant of the above: found not to be measurably faster
-    T const sin_Ce_cos_Cn = sin_Ce*cos_Cn;
-    T const denom = sqrt(1 - sin_Ce_cos_Cn * sin_Ce_cos_Cn);
-    T const tan_Ce = sin_Ce_cos_Cn / denom;
-#endif
+    // T const sin_Ce_cos_Cn = sin_Ce*cos_Cn;
+    // T const denom = sqrt(1 - sin_Ce_cos_Cn * sin_Ce_cos_Cn);
+    // T const tan_Ce = sin_Ce_cos_Cn / denom;
 
     // compl. sph. N, E -> ell. norm. N, E
     T Ce = asinh(tan_Ce); /* Replaces: Ce  = log(tan(FORTPI + Ce*0.5)); */
 
-    //
     //  Non-optimized version:
     //  T const sin_arg_r  = sin(2*Cn);
     //  T const cos_arg_r  = cos(2*Cn);
@@ -422,8 +419,9 @@ class transverse_mercator : operation<Coordinate> {
       tmerc_params.gtu, ETMERC_ORDER, sin_arg_r, cos_arg_r, sinh_arg_i, cosh_arg_i, &dCn, &dCe);
 
     Ce += dCe;
-    // TODO
-    // CUPROJ_EXPECTS(fabs(Ce) <= 2.623395162778, "Coordinate transform outside projection domain");
+
+    CUPROJ_HOST_DEVICE_EXPECTS(fabs(Ce) <= 2.623395162778,  // value comes from PROJ
+                               "Coordinate transform outside projection domain");
     Coordinate xy{0.0, 0.0};
     xy.y = tmerc_params.Qn * Cn + tmerc_params.Zb;  // Northing
     xy.x = tmerc_params.Qn * Ce;                    // Easting
@@ -446,8 +444,8 @@ class transverse_mercator : operation<Coordinate> {
     T Cn = (coord.y - tmerc_params.Zb) / tmerc_params.Qn;
     T Ce = coord.x / tmerc_params.Qn;
 
-    // TODO
-    // CUPROJ_EXPECTS(fabs(Ce) <= 2.623395162778, "Coordinate transform outside projection domain");
+    CUPROJ_HOST_DEVICE_EXPECTS(fabs(Ce) <= 2.623395162778,  // value comes from PROJ
+                               "Coordinate transform outside projection domain");
 
     // norm. N, E -> compl. sph. LAT, LNG
     T const sin_arg_r = sin(2 * Cn);
