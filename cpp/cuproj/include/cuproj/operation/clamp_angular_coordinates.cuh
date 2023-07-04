@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cuproj/detail/wrap_to_pi.cuh>
 #include <cuproj/operation/operation.cuh>
 #include <cuproj/projection_parameters.hpp>
 
@@ -25,33 +26,9 @@
 
 namespace cuproj {
 
-static constexpr double M_TWOPI = 6.283185307179586476925286766559005;
-
 /**
- * @brief Clamp longitude to the -pi:pi range
- *
- * @tparam T data type
- * @param longitude The longitude to clamp
- * @return The clamped longitude
- */
-template <typename T>
-__host__ __device__ T clamp_longitude(T longitude)
-{
-  // Let longitude slightly overshoot, to avoid spurious sign switching at the date line
-  if (fabs(longitude) < M_PI + 1e-12) return longitude;
-
-  // adjust to 0..2pi range
-  longitude += M_PI;
-
-  // remove integral # of 'revolutions'
-  longitude -= M_TWOPI * floor(longitude / M_TWOPI);
-
-  // adjust back to -pi..pi range
-  return longitude - M_PI;
-}
-
-/**
- * @brief Clamp angular coordinates to the valid range
+ * @brief Clamp angular coordinates to the valid range and offset by the central meridian (lam0) and
+ * an optional prime meridian offset.
  *
  * @tparam Coordinate the coordinate type
  * @tparam T the coordinate value type
@@ -59,8 +36,6 @@ __host__ __device__ T clamp_longitude(T longitude)
 template <typename Coordinate, typename T = typename Coordinate::value_type>
 class clamp_angular_coordinates : operation<Coordinate> {
  public:
-  static constexpr T EPS_LAT = 1e-12;  // epsilon for latitude
-
   /**
    * @brief Construct a new clamp angular coordinates object
    *
@@ -92,9 +67,9 @@ class clamp_angular_coordinates : operation<Coordinate> {
   /**
    * @brief Forward clamping operation
    *
-   * Offsets the longitude by the prime meridian offset and central meridian
-   * and clamps the latitude to the range -pi/2..pi/2 radians (-90..90 degrees)
-   * and the longitude to the range -pi..pi radians (-180..180 degrees)
+   * Offsets the longitude by the prime meridian offset and central meridian (lam0) and clamps the
+   * latitude to the range -pi/2..pi/2 radians (-90..90 degrees) and the longitude to the range
+   * -pi..pi radians (-180..180 degrees).
    *
    * @param coord The coordinate to clamp
    * @return The clamped coordinate
@@ -102,26 +77,21 @@ class clamp_angular_coordinates : operation<Coordinate> {
   __host__ __device__ Coordinate forward(Coordinate const& coord) const
   {
     // check for latitude or longitude over-range
-    // T t = (coord.y < 0 ? -coord.y : coord.y) - M_PI_2;
-
-    // TODO use host-device assert
-    // CUPROJ_EXPECTS(t <= EPS_LAT, "Invalid latitude");
-    // CUPROJ_EXPECTS(coord.x <= 10 || coord.x >= -10, "Invalid longitude");
+    T t = (coord.y < 0 ? -coord.y : coord.y) - M_PI_2;
+    CUPROJ_HOST_DEVICE_EXPECTS(t <= EPSILON_RADIANS<T>, "Invalid latitude");
+    CUPROJ_HOST_DEVICE_EXPECTS(coord.x <= 10 || coord.x >= -10, "Invalid longitude");
 
     Coordinate xy = coord;
 
-    /* Clamp latitude to -90..90 degree range */
+    /* Clamp latitude to -pi/2..pi/2 degree range */
     auto half_pi = static_cast<T>(M_PI_2);
     xy.y         = std::clamp(xy.y, -half_pi, half_pi);
-
-    // Ensure longitude is in the -pi:pi range
-    xy.x = clamp_longitude(xy.x);
 
     // Distance from central meridian, taking system zero meridian into account
     xy.x = (xy.x - prime_meridian_offset_) - lam0_;
 
     // Ensure longitude is in the -pi:pi range
-    xy.x = clamp_longitude(xy.x);
+    xy.x = detail::wrap_to_pi(xy.x);
 
     return xy;
   }
@@ -143,7 +113,7 @@ class clamp_angular_coordinates : operation<Coordinate> {
     xy.x += prime_meridian_offset_ + lam0_;
 
     // Ensure longitude is in the -pi:pi range
-    xy.x = clamp_longitude(xy.x);
+    xy.x = detail::wrap_to_pi(xy.x);
 
     return xy;
   }
