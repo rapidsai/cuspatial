@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "cuproj/error.hpp"
+#include <cuproj/error.hpp>
 #include <cuproj/projection_factories.hpp>
 
 #include <cuspatial/geometry/vec_2d.hpp>
@@ -92,7 +92,9 @@ void run_proj_test(thrust::host_vector<PJ_COORD>& coords,
 
 // Run a test using the cuproj library in both directions, comparing to the proj library
 template <typename T, typename HostVector, bool inverted = false>
-void run_forward_and_inverse(HostVector const& input, T tolerance = T{0})
+void run_forward_and_inverse(HostVector const& input,
+                             T tolerance                 = T{0},
+                             std::string const& utm_epsg = "EPSG:32756")
 {
   // note there are two notions of direction here. The direction of the construction of the
   // projection is determined by the order of the epsg strings. The direction of the transform is
@@ -108,7 +110,7 @@ void run_forward_and_inverse(HostVector const& input, T tolerance = T{0})
   thrust::host_vector<PJ_COORD> expected_coords(input_coords);
 
   char const* epsg_src = "EPSG:4326";
-  char const* epsg_dst = "EPSG:32756";
+  char const* epsg_dst = utm_epsg.c_str();
 
   if constexpr (inverted) {}
 
@@ -162,7 +164,7 @@ TYPED_TEST(ProjectionTest, one)
   // double to single precision is 2^53 / 2^24 == 2^29 ~= 10^9, then we should
   // expect meter (10^9 nanometer) accuracy with single precision.
   T tolerance = std::is_same_v<T, float> ? T{1.0} : T{1e-9};
-  run_forward_and_inverse<T>(input, tolerance);
+  run_forward_and_inverse<T>(input, tolerance, "EPSG:32756");
 }
 
 // Generate a grid of coordinates
@@ -195,18 +197,15 @@ struct grid_generator {
 };
 
 // Test on a grid of coordinates
-TYPED_TEST(ProjectionTest, many)
+template <typename T>
+void test_grid(coordinate<T> const& min_corner,
+               coordinate<T> max_corner,
+               int num_points_xy,
+               std::string const& utm_epsg)
 {
-  using T = TypeParam;
-  // generate a grid of (lat, lon) coordinates around Sydney Harbour
-  coordinate<T> min_corner{-33.9, 151.2};
-  coordinate<T> max_corner{-33.7, 151.3};
-  int num_points_x = 100;
-  int num_points_y = 100;
+  grid_generator<T> gen(min_corner, max_corner, num_points_xy, num_points_xy);
 
-  grid_generator<T> gen(min_corner, max_corner, num_points_x, num_points_y);
-
-  thrust::device_vector<coordinate<T>> input(num_points_x * num_points_y);
+  thrust::device_vector<coordinate<T>> input(num_points_xy * num_points_xy);
 
   thrust::tabulate(rmm::exec_policy(), input.begin(), input.end(), gen);
 
@@ -215,7 +214,63 @@ TYPED_TEST(ProjectionTest, many)
   // We can expect nanometer accuracy with double precision. The precision ratio of
   // double to single precision is 2^53 / 2^24 == 2^29 ~= 10^9, then we should
   // expect meter (10^9 nanometer) accuracy with single precision.
-  // For large arrays seem to need to relax the tolerance a bit (5nm and 10m respectively)
-  T tolerance = std::is_same_v<T, float> ? T{10.0} : T{5e-9};
+  // For large arrays seem to need to relax the tolerance a bit to match PROJ results.
+  // 1um for double and 10m for float seems like reasonable accuracy while not allowing excessive
+  // variance from PROJ results.
+  T tolerance = std::is_same_v<T, double> ? T{1e-6} : T{10};
   run_forward_and_inverse<T>(h_input, tolerance);
+}
+
+TYPED_TEST(ProjectionTest, many)
+{
+  int num_points_xy = 100;
+
+  // Test with grids of coordinates covering various locations on the globe
+  // Sydney Harbour
+  {
+    coordinate<TypeParam> min_corner{-33.9, 151.2};
+    coordinate<TypeParam> max_corner{-33.7, 151.3};
+    std::string epsg = "EPSG:32756";
+    test_grid<TypeParam>(min_corner, max_corner, num_points_xy, epsg);
+  }
+
+  // London, UK
+  {
+    coordinate<TypeParam> min_corner{51.0, -1.0};
+    coordinate<TypeParam> max_corner{52.0, 1.0};
+    std::string epsg = "EPSG:32630";
+    test_grid<TypeParam>(min_corner, max_corner, num_points_xy, epsg);
+  }
+
+  // Svalbard
+  {
+    coordinate<TypeParam> min_corner{77.0, 15.0};
+    coordinate<TypeParam> max_corner{79.0, 20.0};
+    std::string epsg = "EPSG:32633";
+    test_grid<TypeParam>(min_corner, max_corner, num_points_xy, epsg);
+  }
+
+  // Ushuaia, Argentina
+  {
+    coordinate<TypeParam> min_corner{-55.0, -70.0};
+    coordinate<TypeParam> max_corner{-53.0, -65.0};
+    std::string epsg = "EPSG:32719";
+    test_grid<TypeParam>(min_corner, max_corner, num_points_xy, epsg);
+  }
+
+  // McMurdo Station, Antarctica
+  {
+    coordinate<TypeParam> min_corner{-78.0, 165.0};
+    coordinate<TypeParam> max_corner{-77.0, 170.0};
+    std::string epsg = "EPSG:32706";
+    test_grid<TypeParam>(min_corner, max_corner, num_points_xy, epsg);
+  }
+
+  // Singapore
+  {
+    coordinate<TypeParam> min_corner{1.0, 103.0};
+    coordinate<TypeParam> max_corner{2.0, 104.0};
+    std::string epsg = "EPSG:32648";
+    test_grid<TypeParam>(min_corner, max_corner, num_points_xy, epsg);
+  }
 }
