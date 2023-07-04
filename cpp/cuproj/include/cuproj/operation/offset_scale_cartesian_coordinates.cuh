@@ -47,8 +47,6 @@ class offset_scale_cartesian_coordinates : operation<Coordinate> {
   {
   }
 
-  // projection_parameters<T> setup(projection_parameters<T> const& params) { return params; }
-
   /**
    * @brief Offset and scale a single coordinate
    *
