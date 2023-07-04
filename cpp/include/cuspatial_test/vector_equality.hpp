@@ -75,7 +75,8 @@ MATCHER(vec_2d_matcher,
       ::testing::Matches(floating_eq_by_ulp(rhs.y))(lhs.y))
     return true;
 
-  *result_listener << std::setprecision(std::numeric_limits<decltype(lhs)>::max_digits10) << lhs
+  *result_listener << std::fixed
+                   << std::setprecision(std::numeric_limits<decltype(lhs)>::max_digits10) << lhs
                    << " != " << rhs;
 
   return false;
@@ -92,7 +93,8 @@ MATCHER_P(vec_2d_near_matcher,
       ::testing::Matches(floating_eq_by_abs_error(rhs.y, abs_error))(lhs.y))
     return true;
 
-  *result_listener << std::setprecision(std::numeric_limits<decltype(lhs)>::max_digits10) << lhs
+  *result_listener << std::fixed
+                   << std::setprecision(std::numeric_limits<decltype(lhs)>::max_digits10) << lhs
                    << " != " << rhs;
 
   return false;
@@ -105,7 +107,8 @@ MATCHER(float_matcher, std::string(negation ? "are not" : "are") + " approximate
 
   if (::testing::Matches(floating_eq_by_ulp(rhs))(lhs)) return true;
 
-  *result_listener << std::setprecision(std::numeric_limits<decltype(lhs)>::max_digits10) << lhs
+  *result_listener << std::fixed
+                   << std::setprecision(std::numeric_limits<decltype(lhs)>::max_digits10) << lhs
                    << " != " << rhs;
 
   return false;
@@ -120,7 +123,8 @@ MATCHER_P(float_near_matcher,
 
   if (::testing::Matches(floating_eq_by_abs_error(rhs, abs_error))(lhs)) return true;
 
-  *result_listener << std::setprecision(std::numeric_limits<decltype(lhs)>::max_digits10) << lhs
+  *result_listener << std::fixed
+                   << std::setprecision(std::numeric_limits<decltype(lhs)>::max_digits10) << lhs
                    << " != " << rhs;
 
   return false;
