@@ -4,7 +4,6 @@
 {% set minor_version = version.split('.')[0] + '.' + version.split('.')[1] %}
 {% set cuda_version = '.'.join(environ['RAPIDS_CUDA_VERSION'].split('.')[:2]) %}
 {% set cuda_major = cuda_version.split('.')[0] %}
-{% set cuda_spec = ">=" + cuda_major ~ ",<" + (cuda_major | int + 1) ~ ".0a0" %} # i.e. >=11,<12.0a0
 {% set date_string = environ['RAPIDS_DATE_STRING'] %}
 
 package:
@@ -34,13 +33,18 @@ build:
 requirements:
   build:
     - {{ compiler('c') }}
-    - {{ compiler('cuda') }} {{ cuda_version }}
     - {{ compiler('cxx') }}
+    {% if cuda_major == "11" %}
+    - {{ compiler('cuda11') }} ={{ cuda_version }}
+    {% else %}
+    - {{ compiler('cuda') }}
+    {% endif %}
+    - cuda-version ={{ cuda_version }}
     - cmake {{ cmake_version }}
     - ninja
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
-    - cudatoolkit ={{ cuda_version }}
+    - cuda-version ={{ cuda_version }}
     - doxygen
     - gmock {{ gtest_version }}
     - gtest {{ gtest_version }}
@@ -58,14 +62,21 @@ outputs:
       string: cuda{{ cuda_major }}_{{ date_string }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
       run_exports:
         - {{ pin_subpackage("libcuspatial", max_pin="x.x") }}
-      ignore_run_exports_from:
-        - {{ compiler('cuda') }}
     requirements:
       build:
         - cmake {{ cmake_version }}
-        - ninja
+      host:
+        - cuda-version ={{ cuda_version }}
+        {% if cuda_major == "11" %}
+        - cudatoolkit
+        {% else %}
+        - cuda-cudart-dev
+        {% endif %}
       run:
-        - cudatoolkit {{ cuda_spec }}
+        - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
+        {% if cuda_major == "11" %}
+        - cudatoolkit
+        {% endif %}
         - libcudf ={{ minor_version }}
         - librmm ={{ minor_version }}
         - sqlite
@@ -79,19 +90,28 @@ outputs:
       license_family: Apache
       license_file: LICENSE
       summary: libcuspatial library
+
   - name: libcuspatial-tests
     version: {{ version }}
     script: install_libcuspatial_tests.sh
     build:
       number: {{ GIT_DESCRIBE_NUMBER }}
       string: cuda{{ cuda_major }}_{{ date_string }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
-      ignore_run_exports_from:
-        - {{ compiler('cuda') }}
     requirements:
       build:
         - cmake {{ cmake_version }}
+      host:
+        - cuda-version ={{ cuda_version }}
+        {% if cuda_major == "11" %}
+        - cudatoolkit
+        {% else %}
+        - cuda-cudart-dev
+        {% endif %}
       run:
         - {{ pin_subpackage('libcuspatial', exact=True) }}
-        - cudatoolkit {{ cuda_spec }}
+        {% if cuda_major == "11" %}
+        - cudatoolkit
+        {% endif %}
+        - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
         - gmock {{ gtest_version }}
         - gtest {{ gtest_version }}
