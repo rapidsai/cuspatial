@@ -188,23 +188,30 @@ class GeoSeries(cudf.Series):
             full_sizes = self.polygons.ring_offset.take(
                 self.polygons.part_offset.take(self.polygons.geometry_offset)
             )
-            return cudf.Series(full_sizes[1:] - full_sizes[:-1])
+            return cudf.Series(
+                full_sizes[1:] - full_sizes[:-1], index=self.index
+            )
         elif contains_only_linestrings(self):
             # Not supporting multilinestring yet
             full_sizes = self.lines.part_offset.take(
                 self.lines.geometry_offset
             )
-            return cudf.Series(full_sizes[1:] - full_sizes[:-1])
+            return cudf.Series(
+                full_sizes[1:] - full_sizes[:-1], index=self.index
+            )
         elif contains_only_multipoints(self):
-            return (
+            return cudf.Series(
                 self.multipoints.geometry_offset[1:]
-                - self.multipoints.geometry_offset[:-1]
+                - self.multipoints.geometry_offset[:-1],
+                index=self.index,
             )
         elif contains_only_points(self):
-            return cudf.Series(cp.repeat(cp.array(1), len(self)))
+            return cudf.Series(
+                cp.repeat(cp.array(1), len(self)), index=self.index
+            )
         else:
             if len(self) == 0:
-                return cudf.Series([0], dtype="int32")
+                return cudf.Series([0], dtype="int32", index=self.index)
             raise NotImplementedError(
                 "GeoSeries must contain only Points, MultiPoints, Lines, or "
                 "Polygons to return sizes."

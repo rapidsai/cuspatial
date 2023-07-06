@@ -423,3 +423,115 @@ def _multipoints_is_degenerate(geoseries):
     ) & (y1.reset_index(drop=True) == y2.reset_index(drop=True))
     result[sizes_mask] = is_degenerate.reset_index(drop=True)
     return result
+
+
+def _pli_features_rebuild_offsets(pli, features):
+    """Takes a modified pairwise_linestring_intersection (_pli) result
+    (specifically the first two elements of its result tuple: `(offsets,
+    GeoSeries)` and returns a new `offsets` buffer that corresponds with the
+    items in the GeoSeries. The GeoSeries in this call is modified from the
+    original pairwise_linestring_intersection result because it must be a
+    homogeneous GeoSeries, where the result of
+    pairwise-linestring-intersection is a mixed GeoSeries containing Points
+    and LineStrings.
+
+    The original offsets buffer at `pli[0]` refers to the geometry pair
+    from which the feature intersections from `pli[1]` were computed. The new
+    offsets buffer specifies the same thing, but now accounts for the missing
+    values (either Points or LineStrings) that are present in `pli[1]` but
+    missing in the `features` argument.
+
+    See the docs for `_pli_points_to_multipoints` and
+    `_pli_lines_to_multipoints` for the rest of the explanation.
+    """
+    in_sizes = (
+        features.sizes if len(features) > 0 else _zero_series(len(pli[0]) - 1)
+    )
+    offsets = cudf.Series(pli[0])
+    offset_sizes = offsets[1:].reset_index(drop=True) - offsets[
+        :-1
+    ].reset_index(drop=True)
+    in_indices = offset_sizes.index.repeat(offset_sizes)
+    if len(in_indices) == 0:
+        return _zero_series(len(pli[0]))
+    # Just replacing the indices from the feature series with
+    # the corresponding indices that are specified by the offsets buffer.
+    # This is because cudf.Series.replace is extremely slow.
+    in_sizes_df = in_sizes.reset_index()
+    in_sizes_df.columns = ["index", "sizes"]
+    sizes_replacement_series = cudf.Series(in_indices).reset_index()
+    sizes_replacement_series.columns = ["index", "new_index"]
+    new_in_sizes_index = in_sizes_df.merge(
+        sizes_replacement_series, on="index"
+    )
+    in_sizes.index = new_in_sizes_index.sort_values("index")["new_index"]
+
+    # Recompute the offsets for the new series
+    grouped_sizes = in_sizes.groupby(level=0).sum().sort_index()
+    out_sizes = _zero_series(len(pli[0]) - 1)
+    out_sizes.iloc[grouped_sizes.index] = grouped_sizes
+    offsets = cudf.concat([cudf.Series([0]), out_sizes.cumsum()])
+    return offsets
+
+
+def _pli_points_to_multipoints(pli):
+    """Takes a tuple (specifically the first two values returned by
+    pairwise_linestring_intersection (pli)) with offsets in position 0 and a
+    mixed GeoSeries in position 1. Extracts the points from the mixed
+    GeoSeries such that one MultiPoint is returned for all of the Point rows
+    that fall within each of the ranges specified by the offsets argument.
+
+    Example
+    -------
+    pli = (
+        cudf.Series([0, 2, 4, 6]),
+        cuspatial.GeoSeries([
+            Point(0, 0),
+            LineString([(1, 1), (2, 2)]),
+            Point(3, 3),
+            Point(4, 4),
+            Point(5, 5),
+            LineString([(6, 6), (7, 7)]),
+        ])
+    )
+    multipoints_from_points = _pli_points_to_multipoints(pli)
+    print(multipoints_from_points)
+    0                     MULTIPOINT (0.00000 0.00000)
+    1    MULTIPOINT (3.00000 3.00000, 4.00000 4.00000)
+    2                     MULTIPOINT (5.00000 5.00000)
+    dtype: geometry
+    """
+    points = pli[1][pli[1].feature_types == Feature_Enum.POINT.value]
+    offsets = _pli_features_rebuild_offsets(pli, points)
+    xy = (
+        points.points.xy
+        if len(points.points.xy) > 0
+        else cudf.Series([0.0, 0.0])
+    )
+    multipoints = cuspatial.GeoSeries.from_multipoints_xy(xy, offsets)
+    return multipoints
+
+
+def _pli_lines_to_multipoints(pli):
+    """Works identically to `_pli_points_to_multipoints`, converting the mixed
+    GeoSeries result of `pairwise_linestring_intersection` (pli) to a
+    GeoSeries of MultiPoints using only the points contained in the
+    LineString intersections from the result of
+    pairwise_linestring_intersection."""
+    lines = pli[1][pli[1].feature_types == Feature_Enum.LINESTRING.value]
+    offsets = _pli_features_rebuild_offsets(pli, lines)
+    xy = lines.lines.xy if len(lines.lines.xy) > 0 else cudf.Series([0.0, 0.0])
+    multipoints = cuspatial.GeoSeries.from_multipoints_xy(xy, offsets)
+    return multipoints
+
+
+def _lines_to_boundary_multipoints(lines):
+    starts = lines.lines.part_offset.take(lines.lines.geometry_offset[:-1])
+    ends = lines.lines.part_offset.take(lines.lines.geometry_offset[1:]) - 1
+    indices = cudf.DataFrame({"x": starts, "y": ends}).interleave_columns()
+    all_points = cuspatial.GeoSeries.from_points_xy(lines.lines.xy)
+    boundary_points = all_points.take(indices)
+    multipoints = cuspatial.GeoSeries.from_multipoints_xy(
+        boundary_points.points.xy, cp.arange(len(lines) + 1) * 2
+    )
+    return multipoints

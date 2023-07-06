@@ -45,7 +45,6 @@ class TouchesPredicateBase(ContainsPredicate):
     """
 
     def _preprocess(self, lhs, rhs):
-        breakpoint()
         return _basic_equals_count(lhs, rhs) == rhs.sizes
 
 

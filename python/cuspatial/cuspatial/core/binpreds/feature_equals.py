@@ -317,30 +317,8 @@ class MultiPointMultiPointEquals(PolygonComplexEquals):
 
 
 class LineStringLineStringEquals(PolygonComplexEquals):
-    def _compute_predicate(self, lhs, rhs, preprocessor_result):
-        """Linestrings can be compared either forward or reversed. We need
-        to compare both directions."""
-        lengths_equal = self._offset_equals(
-            lhs.lines.part_offset, rhs.lines.part_offset
-        )
-        lhs_lengths_equal = lhs[lengths_equal]
-        rhs_lengths_equal = rhs[lengths_equal]
-        lhs_reversed = self._reverse_linestrings(
-            lhs_lengths_equal.lines.xy, lhs_lengths_equal.lines.part_offset
-        )
-        forward_result = self._vertices_equals(
-            lhs_lengths_equal.lines.xy, rhs_lengths_equal.lines.xy
-        )
-        reverse_result = self._vertices_equals(
-            lhs_reversed, rhs_lengths_equal.lines.xy
-        )
-        result = forward_result | reverse_result
-        original_point_indices = cudf.Series(
-            lhs_lengths_equal.point_indices
-        ).replace(cudf.Series(lhs_lengths_equal.index))
-        return self._postprocess(
-            lhs, rhs, EqualsOpResult(result, original_point_indices)
-        )
+    def _preprocess(self, lhs, rhs):
+        return lhs.contains(rhs) & rhs.contains(lhs)
 
 
 class LineStringPointEquals(EqualsPredicateBase):

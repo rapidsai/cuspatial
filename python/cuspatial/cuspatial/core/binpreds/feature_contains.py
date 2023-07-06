@@ -169,10 +169,21 @@ class LineStringPointContains(BinPred):
 
 class LineStringLineStringContainsPredicate(BinPred):
     def _preprocess(self, lhs, rhs):
+        # Typical preprocess:
+        # Flatten all multilinestrings to linestrings
+        # Duplicate the lhs according to geometry_offset sizes
+        # Process the contains function
+        rhs_self_intersection = _basic_intersects_pli(rhs, rhs)
+        rhs_no_segments = _points_and_lines_to_multipoints(
+            rhs_self_intersection[1], rhs_self_intersection[0]
+        )
         pli = _basic_intersects_pli(lhs, rhs)
         points = _points_and_lines_to_multipoints(pli[1], pli[0])
         # Every point in B must be in the intersection
-        equals = _basic_equals_count(rhs, points) == rhs.sizes
+        equals = (
+            _basic_equals_count(points, rhs_no_segments)
+            == rhs_no_segments.sizes
+        )
         return equals
 
 
