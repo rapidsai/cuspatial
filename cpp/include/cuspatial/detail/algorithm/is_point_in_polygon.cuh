@@ -147,11 +147,10 @@ __device__ bool is_intersecting(vec_3d<T> const& p1,
 }
 
 /**
- * @brief Test if a point is inside a polygon.
+ * @brief Test if a point is inside a polygon on a spherical geometry.
  *
- * Implemented based on Eric Haines's crossings-multiply algorithm:
- * See "Crossings test" section of http://erich.realtimerendering.com/ptinpoly/
- * The improvement in addenda is also adopted to remove divisions in this kernel.
+ * Implements another "Crossings test" algorithm by picking the first point
+ * of the query polygon as the reference point
  *
  * @tparam T type of coordinate
  * @tparam PolygonRef polygon_ref type
