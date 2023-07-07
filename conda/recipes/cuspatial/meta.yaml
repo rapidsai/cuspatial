@@ -2,8 +2,9 @@
 
 {% set version = environ.get('GIT_DESCRIBE_TAG', '0.0.0.dev').lstrip('v') %}
 {% set minor_version = version.split('.')[0] + '.' + version.split('.')[1] %}
-{% set py_version = environ['CONDA_PY'] %}
 {% set cuda_version = '.'.join(environ['RAPIDS_CUDA_VERSION'].split('.')[:2]) %}
+{% set cuda_major = cuda_version.split('.')[0] %}
+{% set py_version = environ['CONDA_PY'] %}
 {% set date_string = environ['RAPIDS_DATE_STRING'] %}
 
 package:
@@ -33,16 +34,24 @@ build:
     - SCCACHE_S3_USE_SSL
     - SCCACHE_S3_NO_CREDENTIALS
   ignore_run_exports_from:
-    - {{ compiler('cuda') }}
+    {% if cuda_major == "11" %}
+    - {{ compiler('cuda11') }}
+    {% endif %}
 
 requirements:
   build:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
-    - {{ compiler('cuda') }} {{ cuda_version }}
+    {% if cuda_major == "11" %}
+    - {{ compiler('cuda11') }} ={{ cuda_version }}
+    {% else %}
+    - {{ compiler('cuda') }}
+    {% endif %}
+    - cuda-version ={{ cuda_version }}
     - ninja
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
+    - cuda-version ={{ cuda_version }}
     - cmake {{ cmake_version }}
     - cudf ={{ minor_version }}
     - cython >=0.29,<0.30
@@ -52,6 +61,10 @@ requirements:
     - scikit-build >=0.13.1
     - setuptools
   run:
+    {% if cuda_major == "11" %}
+    - cudatoolkit
+    {% endif %}
+    - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
     - cudf ={{ minor_version }}
     - geopandas >=0.11.0
     - python
