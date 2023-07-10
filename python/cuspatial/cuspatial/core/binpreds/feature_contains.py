@@ -28,6 +28,7 @@ from cuspatial.utils.binpred_utils import (
     _false_series,
     _linestrings_to_center_point,
     _open_polygon_rings,
+    _pli_lines_to_multipoints,
     _points_and_lines_to_multipoints,
     _zero_series,
 )
@@ -178,10 +179,10 @@ class LineStringLineStringContainsPredicate(BinPred):
             rhs_self_intersection[1], rhs_self_intersection[0]
         )
         pli = _basic_intersects_pli(lhs, rhs)
-        points = _points_and_lines_to_multipoints(pli[1], pli[0])
+        lines = _pli_lines_to_multipoints(pli)
         # Every point in B must be in the intersection
         equals = (
-            _basic_equals_count(points, rhs_no_segments)
+            _basic_equals_count(lines, rhs_no_segments)
             == rhs_no_segments.sizes
         )
         return equals

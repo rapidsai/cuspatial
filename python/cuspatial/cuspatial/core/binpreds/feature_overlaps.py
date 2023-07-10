@@ -48,7 +48,6 @@ class LineStringLineStringOverlaps(BinPred):
         lines = _pli_lines_to_multipoints(pli)
         lhs_not_equal = _basic_equals_count(lines, lhs) != lhs.sizes
         rhs_not_equal = _basic_equals_count(lines, rhs) != rhs.sizes
-        breakpoint()
         return (lines.sizes > 0) & lhs_not_equal & rhs_not_equal
 
 

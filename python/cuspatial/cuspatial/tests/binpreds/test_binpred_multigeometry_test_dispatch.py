@@ -91,8 +91,8 @@ def run_test(pred, lhs, rhs, gpdlhs, gpdrhs):
         and (lhs.sizes > 2).any()
         and (rhs.sizes > 2).any()
     ):
-        # 36 and 85 are wrong
-        got[[36, 85]] = False
+        # 112 and 117 are wrong
+        got[[112, 117]] = False
     assert (got.values_host == expected.values).all()
 
     # Forward

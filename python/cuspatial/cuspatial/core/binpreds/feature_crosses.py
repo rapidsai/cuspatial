@@ -49,17 +49,15 @@ class LineStringLineStringCrosses(IntersectsPredicateBase):
         lines = _pli_lines_to_multipoints(pli)
         lhs_boundary = _lines_to_boundary_multipoints(lhs)
         rhs_boundary = _lines_to_boundary_multipoints(rhs)
-        lhs_crosses = _basic_equals_count(points, lhs_boundary) != points.sizes
-        rhs_crosses = _basic_equals_count(points, rhs_boundary) != points.sizes
+        lhs_boundary_matches = _basic_equals_count(points, lhs_boundary)
+        rhs_boundary_matches = _basic_equals_count(points, rhs_boundary)
+        lhs_crosses = lhs_boundary_matches != points.sizes
+        rhs_crosses = rhs_boundary_matches != points.sizes
         crosses = (
             (points.sizes > 0)
             & (lhs_crosses & rhs_crosses)
             & (lines.sizes == 0)
         )
-        expected = lhs.to_geopandas().crosses(rhs.to_geopandas())
-        bad = crosses.values_host != expected
-        print(bad)
-        breakpoint()
         return crosses
 
 

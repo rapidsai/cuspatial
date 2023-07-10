@@ -526,12 +526,12 @@ def _pli_lines_to_multipoints(pli):
 
 
 def _lines_to_boundary_multipoints(lines):
-    starts = lines.lines.part_offset.take(lines.lines.geometry_offset[:-1])
-    ends = lines.lines.part_offset.take(lines.lines.geometry_offset[1:]) - 1
+    starts = lines.lines.part_offset[:-1]
+    ends = lines.lines.part_offset[1:] - 1
     indices = cudf.DataFrame({"x": starts, "y": ends}).interleave_columns()
     all_points = cuspatial.GeoSeries.from_points_xy(lines.lines.xy)
     boundary_points = all_points.take(indices)
     multipoints = cuspatial.GeoSeries.from_multipoints_xy(
-        boundary_points.points.xy, cp.arange(len(lines) + 1) * 2
+        boundary_points.points.xy, lines.lines.geometry_offset * 2
     )
     return multipoints
