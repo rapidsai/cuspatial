@@ -444,9 +444,10 @@ def _pli_features_rebuild_offsets(pli, features):
     See the docs for `_pli_points_to_multipoints` and
     `_pli_lines_to_multipoints` for the rest of the explanation.
     """
-    in_sizes = (
-        features.sizes if len(features) > 0 else _zero_series(len(pli[0]) - 1)
-    )
+    if len(features) == 0:
+        return _zero_series(len(pli[0]))
+
+    in_sizes = features.sizes
     offsets = cudf.Series(pli[0])
     offset_sizes = offsets[1:].reset_index(drop=True) - offsets[
         :-1

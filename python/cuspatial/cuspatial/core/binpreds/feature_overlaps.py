@@ -46,8 +46,8 @@ class LineStringLineStringOverlaps(BinPred):
     def _preprocess(self, lhs, rhs):
         pli = _basic_intersects_pli(lhs, rhs)
         lines = _pli_lines_to_multipoints(pli)
-        lhs_not_equal = _basic_equals_count(lines, lhs) != lhs.sizes
-        rhs_not_equal = _basic_equals_count(lines, rhs) != rhs.sizes
+        lhs_not_equal = _basic_equals_count(lhs, lines) != lhs.sizes
+        rhs_not_equal = _basic_equals_count(rhs, lines) != rhs.sizes
         return (lines.sizes > 0) & lhs_not_equal & rhs_not_equal
 
 
