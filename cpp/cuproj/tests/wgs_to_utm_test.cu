@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <cuproj_test/coordinate_generator.cuh>
+
 #include <cuproj/error.hpp>
 #include <cuproj/projection_factories.hpp>
 
@@ -181,35 +183,6 @@ TYPED_TEST(ProjectionTest, one)
   run_forward_and_inverse<T>(input, tolerance, "EPSG:32756");
 }
 
-// Generate a grid of coordinates
-template <typename T>
-struct grid_generator {
-  coordinate<T> min_corner{};
-  coordinate<T> max_corner{};
-  coordinate<T> spacing{};
-  int num_points_x{};
-  int num_points_y{};
-
-  grid_generator(coordinate<T> min_corner,
-                 coordinate<T> max_corner,
-                 int num_points_x,
-                 int num_points_y)
-    : min_corner(min_corner),
-      max_corner(max_corner),
-      num_points_x(num_points_x),
-      num_points_y(num_points_y)
-  {
-    spacing = coordinate<T>{(max_corner.x - min_corner.x) / num_points_x,
-                            (max_corner.y - min_corner.y) / num_points_y};
-  }
-
-  __device__ coordinate<T> operator()(int i) const
-  {
-    return min_corner +
-           coordinate<T>{(i % num_points_x) * spacing.x, (i / num_points_x) * spacing.y};
-  }
-};
-
 // Test on a grid of coordinates
 template <typename T>
 void test_grid(coordinate<T> const& min_corner,
@@ -217,11 +190,8 @@ void test_grid(coordinate<T> const& min_corner,
                int num_points_xy,
                std::string const& utm_epsg)
 {
-  grid_generator<T> gen(min_corner, max_corner, num_points_xy, num_points_xy);
-
-  thrust::device_vector<coordinate<T>> input(num_points_xy * num_points_xy);
-
-  thrust::tabulate(rmm::exec_policy(), input.begin(), input.end(), gen);
+  auto input = cuproj_test::make_grid_array<coordinate<T>, rmm::device_vector<coordinate<T>>>(
+    min_corner, max_corner, num_points_xy, num_points_xy);
 
   thrust::host_vector<coordinate<T>> h_input(input);
 
