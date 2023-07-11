@@ -34,6 +34,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <type_traits>
 
 template <typename T>
 struct ProjectionTest : public ::testing::Test {};
@@ -44,32 +45,44 @@ TYPED_TEST_CASE(ProjectionTest, TestTypes);
 template <typename T>
 using coordinate = typename cuspatial::vec_2d<T>;
 
+template <typename InVector, typename OutVector>
+void convert_coordinates(InVector const& in, OutVector& out)
+{
+  using in_coord_type  = typename InVector::value_type;
+  using out_coord_type = typename OutVector::value_type;
+
+  static_assert(
+    (std::is_same_v<out_coord_type, PJ_COORD> != std::is_same_v<in_coord_type, PJ_COORD>),
+    "Invalid coordinate vector conversion");
+
+  if constexpr (std::is_same_v<in_coord_type, PJ_COORD>) {
+    using T                       = typename out_coord_type::value_type;
+    auto proj_coord_to_coordinate = [](auto const& c) {
+      return out_coord_type{static_cast<T>(c.xy.x), static_cast<T>(c.xy.y)};
+    };
+    thrust::transform(in.begin(), in.end(), out.begin(), proj_coord_to_coordinate);
+  } else if constexpr (std::is_same_v<out_coord_type, PJ_COORD>) {
+    auto coordinate_to_proj_coord = [](auto const& c) { return PJ_COORD{c.x, c.y, 0, 0}; };
+    thrust::transform(in.begin(), in.end(), out.begin(), coordinate_to_proj_coord);
+  }
+}
+
 // run a test using the cuproj library
 template <typename T>
-void run_cuproj_test(thrust::host_vector<PJ_COORD> const& input_coords,
-                     thrust::host_vector<PJ_COORD> const& expected_coords,
+void run_cuproj_test(thrust::host_vector<coordinate<T>> const& input,
+                     thrust::host_vector<coordinate<T>> const& expected,
                      cuproj::projection<coordinate<T>> const& proj,
                      cuproj::direction dir,
                      T tolerance = T{0})  // 0 for 1-ulp comparison
 {
-  std::vector<coordinate<T>> input(input_coords.size());
-  std::vector<coordinate<T>> expected(expected_coords.size());
-  std::transform(input_coords.begin(), input_coords.end(), input.begin(), [](auto const& c) {
-    return coordinate<T>{static_cast<T>(c.xy.x), static_cast<T>(c.xy.y)};
-  });
-  std::transform(
-    expected_coords.begin(), expected_coords.end(), expected.begin(), [](auto const& c) {
-      return coordinate<T>{static_cast<T>(c.xy.x), static_cast<T>(c.xy.y)};
-    });
-
   thrust::device_vector<coordinate<T>> d_in = input;
   thrust::device_vector<coordinate<T>> d_out(d_in.size());
 
   proj.transform(d_in.begin(), d_in.end(), d_out.begin(), dir);
 
 #ifndef NDEBUG
-  std::cout << "expected " << std::setprecision(20) << expected_coords[0].xy.x << " "
-            << expected_coords[0].xy.y << std::endl;
+  std::cout << "expected " << std::setprecision(20) << expected[0].x << " " << expected[0].y
+            << std::endl;
   coordinate<T> c_out = d_out[0];
   std::cout << "Device: " << std::setprecision(20) << c_out.x << " " << c_out.y << std::endl;
 #endif
@@ -91,8 +104,8 @@ void run_proj_test(thrust::host_vector<PJ_COORD>& coords,
 }
 
 // Run a test using the cuproj library in both directions, comparing to the proj library
-template <typename T, typename HostVector, bool inverted = false>
-void run_forward_and_inverse(HostVector const& input,
+template <typename T, typename DeviceVector, bool inverted = false>
+void run_forward_and_inverse(DeviceVector const& input,
                              T tolerance                 = T{0},
                              std::string const& utm_epsg = "EPSG:32756")
 {
@@ -102,12 +115,10 @@ void run_forward_and_inverse(HostVector const& input,
   // for a single projection, with the order of construction determined by the inverted template
   // parameter. This is needed because a user may construct either a UTM->WGS84 or WGS84->UTM
   // projection, and we want to test both directions for each.
-
-  thrust::host_vector<PJ_COORD> input_coords{input.size()};
-  std::transform(input.begin(), input.end(), input_coords.begin(), [](coordinate<T> const& c) {
-    return PJ_COORD{c.x, c.y, 0, 0};
-  });
-  thrust::host_vector<PJ_COORD> expected_coords(input_coords);
+  thrust::host_vector<coordinate<T>> h_input(input.begin(), input.end());
+  thrust::host_vector<PJ_COORD> pj_input{input.size()};
+  convert_coordinates(h_input, pj_input);
+  thrust::host_vector<PJ_COORD> pj_expected(pj_input);
 
   char const* epsg_src = "EPSG:4326";
   char const* epsg_dst = utm_epsg.c_str();
@@ -115,19 +126,22 @@ void run_forward_and_inverse(HostVector const& input,
   if constexpr (inverted) {}
 
   auto run = [&]() {
-    expected_coords = input_coords;
-    run_proj_test(expected_coords, epsg_src, epsg_dst);
+    run_proj_test(pj_expected, epsg_src, epsg_dst);
+
+    thrust::host_vector<coordinate<T>> h_expected{pj_expected.size()};
+    convert_coordinates(pj_expected, h_expected);
 
     auto proj = cuproj::make_projection<coordinate<T>>(epsg_src, epsg_dst);
 
-    run_cuproj_test(input_coords, expected_coords, proj, cuproj::direction::FORWARD, tolerance);
-    run_cuproj_test(expected_coords, input_coords, proj, cuproj::direction::INVERSE, tolerance);
+    run_cuproj_test(h_input, h_expected, proj, cuproj::direction::FORWARD, tolerance);
+    run_cuproj_test(h_expected, h_input, proj, cuproj::direction::INVERSE, tolerance);
   };
 
   // forward construction
   run();
   // invert construction
-  input_coords = expected_coords;
+  pj_input = pj_expected;
+  convert_coordinates(pj_input, h_input);
   std::swap(epsg_src, epsg_dst);
   run();
 }
@@ -209,7 +223,7 @@ void test_grid(coordinate<T> const& min_corner,
 
   thrust::tabulate(rmm::exec_policy(), input.begin(), input.end(), gen);
 
-  thrust::host_vector<coordinate<T>> h_input = input;
+  thrust::host_vector<coordinate<T>> h_input(input);
 
   // We can expect nanometer accuracy with double precision. The precision ratio of
   // double to single precision is 2^53 / 2^24 == 2^29 ~= 10^9, then we should
