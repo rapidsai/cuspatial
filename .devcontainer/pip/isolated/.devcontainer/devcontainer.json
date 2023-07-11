@@ -15,12 +15,10 @@
   },
 
   "features": {
-    "ghcr.io/devcontainers/features/python:1": {},
-    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:23.6": {}
+    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:23.8": {}
   },
 
   "overrideFeatureInstallOrder": [
-    "ghcr.io/devcontainers/features/python",
     "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils"
   ],
 
@@ -31,8 +29,6 @@
   "updateContentCommand": [
     "/bin/bash", "-c", "cp -ar /workspaces/${localWorkspaceFolderBasename} /home/coder/${localWorkspaceFolderBasename} && rapids-make-vscode-workspace --update"
   ],
-  "postCreateCommand": ["rapids-make-vscode-workspace", "--update"],
-  "postAttachCommand": ["rapids-make-pip-env"],
 
   "containerEnv": {
     "DEFAULT_VIRTUAL_ENV": "rapids"

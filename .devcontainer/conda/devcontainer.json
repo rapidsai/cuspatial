@@ -15,7 +15,7 @@
   },
 
   "features": {
-    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:23.6": {}
+    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:23.8": {}
   },
 
   "overrideFeatureInstallOrder": [
@@ -25,9 +25,6 @@
   "initializeCommand": [
     "/bin/bash", "-c", "mkdir -m 0755 -p ${localWorkspaceFolder}/../.{aws,cache,config,conda/pkgs,conda/${localWorkspaceFolderBasename}/single}"
   ],
-  "updateContentCommand": ["rapids-make-vscode-workspace", "--update"],
-  "postCreateCommand": ["rapids-make-vscode-workspace", "--update"],
-  "postAttachCommand": ["rapids-make-conda-env"],
 
   "containerEnv": {
     "DEFAULT_CONDA_ENV": "rapids"

@@ -15,21 +15,16 @@
   },
 
   "features": {
-    "ghcr.io/devcontainers/features/python:1": {},
-    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:23.6": {}
+    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:23.8": {}
   },
 
   "overrideFeatureInstallOrder": [
-    "ghcr.io/devcontainers/features/python",
     "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils"
   ],
 
   "initializeCommand": [
     "/bin/bash", "-c", "mkdir -m 0755 -p ${localWorkspaceFolder}/../.{aws,cache,config/pip,local/${localWorkspaceFolderBasename}/single}"
   ],
-  "updateContentCommand": ["rapids-make-vscode-workspace", "--update"],
-  "postCreateCommand": ["rapids-make-vscode-workspace", "--update"],
-  "postAttachCommand": ["rapids-make-pip-env"],
 
   "containerEnv": {
     "PYTHONSAFEPATH": "true",
