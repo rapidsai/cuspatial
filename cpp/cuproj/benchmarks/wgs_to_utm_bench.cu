@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
+#include <cuproj/projection_factories.hpp>
+
 #include <cuproj_test/coordinate_generator.cuh>
 
-#include <cuproj/projection_factories.hpp>
+#include <benchmarks/fixture/benchmark_fixture.hpp>
+#include <benchmarks/synchronization/synchronization.hpp>
 
 #include <cuspatial/geometry/vec_2d.hpp>
 
-#include <benchmarks/fixture/rmm_pool_raii.hpp>
-
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_vector.hpp>
-
-#include <nvbench/nvbench.cuh>
 
 #include <thrust/host_vector.h>
 
@@ -35,12 +34,9 @@ template <typename T>
 using coordinate = typename cuspatial::vec_2d<T>;
 
 template <typename T>
-void wgs_to_utm_benchmark(nvbench::state& state, nvbench::type_list<T>)
+static void wgs_to_utm_benchmark(benchmark::State& state)
 {
-  // TODO: to be replaced by nvbench fixture once it's ready
-  cuspatial::rmm_pool_raii rmm_pool;
-
-  auto const grid_side{static_cast<std::size_t>(state.get_int64("GridSide"))};
+  auto const grid_side{static_cast<std::size_t>(state.range(0))};
 
   // Sydney Harbour
   coordinate<T> min_corner{-33.9, 151.2};
@@ -55,18 +51,36 @@ void wgs_to_utm_benchmark(nvbench::state& state, nvbench::type_list<T>)
 
   auto proj = cuproj::make_projection<coordinate<T>>(epsg_src, epsg_dst);
 
-  state.add_element_count(grid_side * grid_side, "NumPoints");
-
-  state.exec(nvbench::exec_tag::sync, [&proj, &input, &output](nvbench::launch& launch) {
+  for (auto _ : state) {
+    cuda_event_timer raii(state, true);
     proj.transform(input.begin(),
                    input.end(),
                    output.begin(),
                    cuproj::direction::FORWARD,
                    rmm::cuda_stream_default);
-  });
+  }
+
+  state.SetItemsProcessed(grid_side * grid_side * state.iterations());
 }
 
-using floating_point_types = nvbench::type_list<float, double>;
-NVBENCH_BENCH_TYPES(wgs_to_utm_benchmark, NVBENCH_TYPE_AXES(floating_point_types))
-  .set_type_axes_names({"CoordsType"})
-  .add_int64_axis("GridSide", {8, 32, 128, 512, 2048, 8192});
+class UtmBenchmark : public cuspatial::benchmark {
+  void SetUp(const ::benchmark::State& state) override
+  {
+    mr = std::make_shared<rmm::mr::cuda_memory_resource>();
+    rmm::mr::set_current_device_resource(mr.get());  // set default resource to cuda
+  }
+  void SetUp(::benchmark::State& st) override { SetUp(const_cast<const ::benchmark::State&>(st)); }
+};
+
+#define UTM_BENCHMARK_DEFINE(type)                                   \
+  BENCHMARK_DEFINE_F(UtmBenchmark, type)(::benchmark::State & state) \
+  {                                                                  \
+    wgs_to_utm_benchmark<type>(state);                               \
+  }                                                                  \
+  BENCHMARK_REGISTER_F(UtmBenchmark, type)                           \
+    ->Range(8, 16384)                                                \
+    ->UseManualTime()                                                \
+    ->Unit(benchmark::kMillisecond);
+
+UTM_BENCHMARK_DEFINE(float);
+UTM_BENCHMARK_DEFINE(double);

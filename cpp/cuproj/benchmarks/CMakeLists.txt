@@ -16,6 +16,44 @@
 
 ###################################################################################################
 # - compiler function -----------------------------------------------------------------------------
+
+# Use an OBJECT library so we only compile common source files only once
+add_library(cuproj_benchmark_common OBJECT
+    synchronization/synchronization.cpp)
+
+target_compile_features(cuproj_benchmark_common PUBLIC cxx_std_17 cuda_std_17)
+
+target_link_libraries(cuproj_benchmark_common
+    PUBLIC benchmark::benchmark
+           cudf::cudftestutil
+           ranger::ranger
+           cuproj)
+
+target_compile_options(cuproj_benchmark_common
+             PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${CUPROJ_CXX_FLAGS}>"
+                    "$<$<COMPILE_LANGUAGE:CUDA>:${CUPROJ_CUDA_FLAGS}>")
+
+target_include_directories(cuproj_benchmark_common
+             PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+                    "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}>"
+                    "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}/src>"
+                    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../include>")
+
+function(ConfigureBench CMAKE_BENCH_NAME)
+    add_executable(${CMAKE_BENCH_NAME} ${ARGN})
+    set_target_properties(${CMAKE_BENCH_NAME}
+        PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUPROJ_BINARY_DIR}/benchmarks>"
+                   INSTALL_RPATH "\$ORIGIN/../../../lib"
+        )
+    target_link_libraries(${CMAKE_BENCH_NAME} PRIVATE benchmark::benchmark_main cuproj_benchmark_common)
+    install(
+        TARGETS ${CMAKE_BENCH_NAME}
+        COMPONENT benchmark
+        DESTINATION bin/benchmarks/libcuproj
+        EXCLUDE_FROM_ALL
+    )
+endfunction()
+
 # This function takes in a benchmark name and benchmark source for nvbench benchmarks and handles
 # setting all of the associated properties and linking to build the benchmark
 function(ConfigureNVBench CMAKE_BENCH_NAME)
@@ -52,5 +90,5 @@ endfunction()
 ### benchmark sources #############################################################################
 ###################################################################################################
 
-ConfigureNVBench(WGS_TO_UTM_BENCH
+ConfigureBench(WGS_TO_UTM_BENCH
     wgs_to_utm_bench.cu)
