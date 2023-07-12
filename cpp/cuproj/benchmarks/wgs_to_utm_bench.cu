@@ -40,8 +40,7 @@ void wgs_to_utm_benchmark(nvbench::state& state, nvbench::type_list<T>)
   // TODO: to be replaced by nvbench fixture once it's ready
   cuspatial::rmm_pool_raii rmm_pool;
 
-  auto const num_points{static_cast<std::size_t>(state.get_int64("NumPoints"))};
-  auto const grid_size{static_cast<std::size_t>(std::sqrt(num_points))};
+  auto const grid_side{static_cast<std::size_t>(state.get_int64("GridSide"))};
 
   // Sydney Harbour
   coordinate<T> min_corner{-33.9, 151.2};
@@ -50,13 +49,13 @@ void wgs_to_utm_benchmark(nvbench::state& state, nvbench::type_list<T>)
   char const* epsg_dst = "EPSG:32756";
 
   auto input = cuproj_test::make_grid_array<coordinate<T>, rmm::device_vector<coordinate<T>>>(
-    min_corner, max_corner, grid_size, grid_size);
+    min_corner, max_corner, grid_side, grid_side);
 
   rmm::device_vector<coordinate<T>> output(input.size());
 
   auto proj = cuproj::make_projection<coordinate<T>>(epsg_src, epsg_dst);
 
-  state.add_element_count(grid_size * grid_size, "NumPoints");
+  state.add_element_count(grid_side * grid_side, "NumPoints");
 
   state.exec(nvbench::exec_tag::sync, [&proj, &input, &output](nvbench::launch& launch) {
     proj.transform(input.begin(),
@@ -70,4 +69,4 @@ void wgs_to_utm_benchmark(nvbench::state& state, nvbench::type_list<T>)
 using floating_point_types = nvbench::type_list<float, double>;
 NVBENCH_BENCH_TYPES(wgs_to_utm_benchmark, NVBENCH_TYPE_AXES(floating_point_types))
   .set_type_axes_names({"CoordsType"})
-  .add_int64_axis("NumPoints", {100, 10'000, 100'000, 100'000'000});
+  .add_int64_axis("GridSide", {8, 32, 128, 512, 2048, 8192});
