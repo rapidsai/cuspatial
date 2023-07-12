@@ -45,7 +45,7 @@ function(ConfigureBench CMAKE_BENCH_NAME)
         PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUPROJ_BINARY_DIR}/benchmarks>"
                    INSTALL_RPATH "\$ORIGIN/../../../lib"
         )
-    target_link_libraries(${CMAKE_BENCH_NAME} PRIVATE benchmark::benchmark_main cuproj_benchmark_common)
+    target_link_libraries(${CMAKE_BENCH_NAME} PRIVATE benchmark::benchmark_main cuproj_benchmark_common PROJ::proj)
     install(
         TARGETS ${CMAKE_BENCH_NAME}
         COMPONENT benchmark

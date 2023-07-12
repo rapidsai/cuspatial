@@ -16,6 +16,7 @@
 
 #include <cuproj/projection_factories.hpp>
 
+#include <cuproj_test/convert_coordinates.hpp>
 #include <cuproj_test/coordinate_generator.cuh>
 
 #include <benchmarks/fixture/benchmark_fixture.hpp>
@@ -33,19 +34,28 @@
 template <typename T>
 using coordinate = typename cuspatial::vec_2d<T>;
 
-template <typename T>
-static void wgs_to_utm_benchmark(benchmark::State& state)
-{
-  auto const grid_side{static_cast<std::size_t>(state.range(0))};
+static char const* epsg_src = "EPSG:4326";
+static char const* epsg_dst = "EPSG:32756";
 
+template <typename T>
+auto make_input(std::size_t grid_side)
+{
   // Sydney Harbour
   coordinate<T> min_corner{-33.9, 151.2};
   coordinate<T> max_corner{-33.7, 151.3};
-  char const* epsg_src = "EPSG:4326";
-  char const* epsg_dst = "EPSG:32756";
 
   auto input = cuproj_test::make_grid_array<coordinate<T>, rmm::device_vector<coordinate<T>>>(
     min_corner, max_corner, grid_side, grid_side);
+
+  return input;
+}
+
+template <typename T>
+static void cuproj_wgs_to_utm_benchmark(benchmark::State& state)
+{
+  auto const grid_side{static_cast<std::size_t>(state.range(0))};
+
+  auto input = make_input<T>(grid_side);
 
   rmm::device_vector<coordinate<T>> output(input.size());
 
@@ -63,7 +73,41 @@ static void wgs_to_utm_benchmark(benchmark::State& state)
   state.SetItemsProcessed(grid_side * grid_side * state.iterations());
 }
 
-class UtmBenchmark : public cuspatial::benchmark {
+void proj_wgs_to_utm_benchmark(benchmark::State& state)
+{
+  using T = double;
+  auto const grid_side{static_cast<std::size_t>(state.range(0))};
+
+  auto d_input = make_input<T>(grid_side);
+  auto input   = thrust::host_vector<coordinate<T>>(d_input);
+
+  std::vector<PJ_COORD> pj_input(input.size());
+  cuproj_test::convert_coordinates(input, pj_input);
+
+  PJ_CONTEXT* C = proj_context_create();
+  PJ* P         = proj_create_crs_to_crs(C, epsg_src, epsg_dst, nullptr);
+
+  for (auto _ : state) {
+    state.PauseTiming();
+    cuproj_test::convert_coordinates(input, pj_input);
+    state.ResumeTiming();
+    proj_trans_array(P, PJ_FWD, pj_input.size(), pj_input.data());
+  }
+
+  state.SetItemsProcessed(grid_side * grid_side * state.iterations());
+}
+
+class proj_utm_benchmark : public ::benchmark::Fixture {};
+
+BENCHMARK_DEFINE_F(proj_utm_benchmark, forward_double)(::benchmark::State& state)
+{
+  proj_wgs_to_utm_benchmark(state);
+}
+BENCHMARK_REGISTER_F(proj_utm_benchmark, forward_double)
+  ->Range(8, 16384)
+  ->Unit(benchmark::kMillisecond);
+
+class cuproj_utm_benchmark : public cuspatial::benchmark {
   void SetUp(const ::benchmark::State& state) override
   {
     mr = std::make_shared<rmm::mr::cuda_memory_resource>();
@@ -72,15 +116,15 @@ class UtmBenchmark : public cuspatial::benchmark {
   void SetUp(::benchmark::State& st) override { SetUp(const_cast<const ::benchmark::State&>(st)); }
 };
 
-#define UTM_BENCHMARK_DEFINE(type)                                   \
-  BENCHMARK_DEFINE_F(UtmBenchmark, type)(::benchmark::State & state) \
-  {                                                                  \
-    wgs_to_utm_benchmark<type>(state);                               \
-  }                                                                  \
-  BENCHMARK_REGISTER_F(UtmBenchmark, type)                           \
-    ->Range(8, 16384)                                                \
-    ->UseManualTime()                                                \
+#define UTM_CUPROJ_BENCHMARK_DEFINE(name, type)                              \
+  BENCHMARK_DEFINE_F(cuproj_utm_benchmark, name)(::benchmark::State & state) \
+  {                                                                          \
+    cuproj_wgs_to_utm_benchmark<type>(state);                                \
+  }                                                                          \
+  BENCHMARK_REGISTER_F(cuproj_utm_benchmark, name)                           \
+    ->Range(8, 16384)                                                        \
+    ->UseManualTime()                                                        \
     ->Unit(benchmark::kMillisecond);
 
-UTM_BENCHMARK_DEFINE(float);
-UTM_BENCHMARK_DEFINE(double);
+UTM_CUPROJ_BENCHMARK_DEFINE(forward_float, float);
+UTM_CUPROJ_BENCHMARK_DEFINE(forward_double, double);
