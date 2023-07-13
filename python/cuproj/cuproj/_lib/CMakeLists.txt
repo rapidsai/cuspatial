@@ -13,8 +13,8 @@
 # =============================================================================
 
 set(cython_sources
+    transform.pyx)
 
-    )
 set(linked_libraries cuproj::cuproj)
 
 rapids_cython_create_modules(
