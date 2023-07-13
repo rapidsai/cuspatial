@@ -29,14 +29,14 @@ project(
             # that is fixed we need to keep C.
             C CXX CUDA)
 
-option(FIND_CUPROJ_CPP "Search for existing cuspatial C++ installations before defaulting to local files"
+option(FIND_CUPROJ_CPP "Search for existing cuproj C++ installations before defaulting to local files"
        OFF)
 
 option(CUPROJ_BUILD_WHEELS "Whether this build is generating a Python wheel." OFF)
 
 # If the user requested it we attempt to find cuproj.
 if(FIND_CUPROJ_CPP)
-  find_package(cuspatial ${cuproj_version})
+  find_package(cuproj ${cuproj_version})
 else()
   set(cuproj_FOUND OFF)
 endif()
