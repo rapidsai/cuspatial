@@ -27,6 +27,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/transform.h>
 
+#include <iterator>
 #include <type_traits>
 
 namespace cuproj {
@@ -76,7 +77,7 @@ class projection {
                  direction dir,
                  rmm::cuda_stream_view stream = rmm::cuda_stream_default) const
   {
-    static_assert(std::is_same_v<typename CoordIter::value_type, Coordinate>,
+    static_assert(std::is_same_v<typename std::iterator_traits<CoordIter>::value_type, Coordinate>,
                   "Coordinate type must match iterator value type");
     dir = (constructed_direction_ == direction::FORWARD) ? dir : reverse(dir);
 

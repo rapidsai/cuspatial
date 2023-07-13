@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cuproj/detail/wrap_to_pi.cuh>
+#include <cuproj/error.hpp>
 #include <cuproj/operation/operation.cuh>
 #include <cuproj/projection_parameters.hpp>
 

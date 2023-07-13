@@ -75,6 +75,8 @@ if(NOT cuproj_FOUND)
   install(TARGETS cuproj DESTINATION ${cython_lib_dir})
 endif()
 
+add_subdirectory(cuproj/cuprojshim)
+
 include(rapids-cython)
 rapids_cython_init()
 
