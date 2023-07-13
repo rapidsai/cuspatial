@@ -65,6 +65,31 @@ files:
       key: test
     includes:
       - test_python
+  py_build_cuproj:
+    output: [pyproject]
+    pyproject_dir: python/cuproj
+    extras:
+      table: build-system
+    includes:
+      - build_cpp_cuproj
+      - build_python_cuproj
+      - build_wheels
+  py_run_cuproj:
+    output: [pyproject]
+    pyproject_dir: python/cuproj
+    extras:
+      table: project
+    includes:
+      - run_python_cuproj
+  py_test_cuproj:
+    output: [pyproject]
+    pyproject_dir: python/cuproj
+    extras:
+      table: project.optional-dependencies
+      key: test
+    includes:
+      - test_python
+
 channels:
   - rapidsai
   - rapidsai-nightly
@@ -100,6 +125,51 @@ dependencies:
             packages:
               - &gcc_aarch64 gcc_linux-aarch64=11.*
               - &sysroot_aarch64 sysroot_linux-aarch64==2.17
+      - output_types: conda
+        matrices:
+          - matrix:
+              arch: x86_64
+              cuda: "11.8"
+            packages:
+              - nvcc_linux-64=11.8
+          - matrix:
+              arch: aarch64
+              cuda: "11.8"
+            packages:
+              - nvcc_linux-aarch64=11.8
+          - matrix:
+              cuda: "12.0"
+            packages:
+              - cuda-version=12.0
+              - cuda-nvcc
+  build_cpp_cuproj:
+    common:
+      - output_types: [conda, requirements, pyproject]
+        packages:
+          - ninja
+          - cmake>=3.26.4
+      - output_types: conda
+        packages:
+          - c-compiler
+          - cxx-compiler
+          - gmock>=1.13.0
+          - gtest>=1.13.0
+          - librmm==23.8.*
+          - proj
+          - sqlite
+    specific:
+      - output_types: conda
+        matrices:
+          - matrix:
+              arch: x86_64
+            packages:
+              - *gcc_amd64
+              - *sysroot_amd64
+          - matrix:
+              arch: aarch64
+            packages:
+              - *gcc_aarch64
+              - *sysroot_aarch64
       - output_types: conda
         matrices:
           - matrix:
@@ -160,6 +230,46 @@ dependencies:
           - {matrix: {cuda: "11.4"}, packages: *build_python_packages_cu11}
           - {matrix: {cuda: "11.2"}, packages: *build_python_packages_cu11}
           - {matrix: null, packages: [*cudf_conda, *rmm_conda] }
+  build_python_cuproj:
+    common:
+      - output_types: [conda, requirements, pyproject]
+        packages:
+          - cython>=0.29,<0.30
+          - scikit-build>=0.13.1
+          - setuptools
+      - output_types: conda
+        packages:
+          - *rmm_conda
+      - output_types: requirements
+        packages:
+          # pip recognizes the index as a global option for the requirements.txt file
+          # This index is needed for cudf and rmm.
+          - --extra-index-url=https://pypi.nvidia.com
+    specific:
+      - output_types: conda
+        matrices:
+          - matrix:
+              arch: x86_64
+            packages:
+              - *gcc_amd64
+              - *sysroot_amd64
+          - matrix:
+              arch: aarch64
+            packages:
+              - *gcc_aarch64
+              - *sysroot_aarch64
+      - output_types: [requirements, pyproject]
+        matrices:
+          - matrix: {cuda: "12.0"}
+            packages:
+              - rmm-cu12==23.8.*
+          - matrix: {cuda: "11.8"}
+            packages:
+              - *rmm_cu11
+          - {matrix: {cuda: "11.5"}, packages: *build_python_packages_cu11}
+          - {matrix: {cuda: "11.4"}, packages: *build_python_packages_cu11}
+          - {matrix: {cuda: "11.2"}, packages: *build_python_packages_cu11}
+          - {matrix: null, packages: [*rmm_conda] }
   build_wheels:
     common:
       - output_types: [requirements, pyproject]
@@ -284,6 +394,29 @@ dependencies:
           - {matrix: {cuda: "11.4"}, packages: *run_python_packages_cu11}
           - {matrix: {cuda: "11.2"}, packages: *run_python_packages_cu11}
           - {matrix: null, packages: [*cudf_conda, *rmm_conda]}
+  run_python_cuproj:
+    common:
+      - output_types: conda
+        packages:
+          - *rmm_conda
+      - output_types: requirements
+        packages:
+          # pip recognizes the index as a global option for the requirements.txt file
+          # This index is needed for cudf and rmm.
+          - --extra-index-url=https://pypi.nvidia.com
+    specific:
+      - output_types: [requirements, pyproject]
+        matrices:
+          - matrix: {cuda: "12.0"}
+            packages:
+              - rmm-cu12==23.8.*
+          - matrix: {cuda: "11.8"}
+            packages:
+              - rmm-cu11==23.8.*
+          - {matrix: {cuda: "11.5"}, packages: *run_python_packages_cu11}
+          - {matrix: {cuda: "11.4"}, packages: *run_python_packages_cu11}
+          - {matrix: {cuda: "11.2"}, packages: *run_python_packages_cu11}
+          - {matrix: null, packages: [*rmm_conda]}
   test_python:
     common:
       - output_types: [conda, requirements, pyproject]
