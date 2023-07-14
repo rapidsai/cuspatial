@@ -65,7 +65,7 @@ void __global__ simple_find_and_combine_segments_kernel(OffsetRange offsets,
 /**
  * @brief Comparator for sorting the segment range.
  *
- * This comparator makes sure that the segment range are sorted by the following keys:
+ * This comparator makes sure that the segment range is sorted such that:
  * 1. Segments with the same space id are grouped together.
  * 2. Segments within the same space are grouped by their slope.
  * 3. Within each slope group, segments are sorted by their lower left point.
