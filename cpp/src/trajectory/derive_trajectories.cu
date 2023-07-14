@@ -47,10 +47,10 @@ struct derive_trajectories_dispatch {
   {
     auto cols = std::vector<std::unique_ptr<cudf::column>>{};
     cols.reserve(4);
-    cols.push_back(cudf::allocate_like(object_id, cudf::mask_allocation_policy::NEVER, mr));
-    cols.push_back(cudf::allocate_like(x, cudf::mask_allocation_policy::NEVER, mr));
-    cols.push_back(cudf::allocate_like(y, cudf::mask_allocation_policy::NEVER, mr));
-    cols.push_back(cudf::allocate_like(timestamp, cudf::mask_allocation_policy::NEVER, mr));
+    cols.push_back(cudf::allocate_like(object_id, cudf::mask_allocation_policy::NEVER, stream, mr));
+    cols.push_back(cudf::allocate_like(x, cudf::mask_allocation_policy::NEVER, stream, mr));
+    cols.push_back(cudf::allocate_like(y, cudf::mask_allocation_policy::NEVER, stream, mr));
+    cols.push_back(cudf::allocate_like(timestamp, cudf::mask_allocation_policy::NEVER, stream, mr));
 
     auto points_begin     = thrust::make_zip_iterator(x.begin<T>(), y.begin<T>());
     auto points_out_begin = thrust::make_zip_iterator(cols[1]->mutable_view().begin<T>(),

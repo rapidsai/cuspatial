@@ -54,7 +54,7 @@ struct haversine_functor {
     if (a_lon.is_empty()) { return cudf::empty_like(a_lon); }
 
     auto mask_policy = cudf::mask_allocation_policy::NEVER;
-    auto result      = cudf::allocate_like(a_lon, a_lon.size(), mask_policy, mr);
+    auto result      = cudf::allocate_like(a_lon, a_lon.size(), mask_policy, stream, mr);
 
     auto lonlat_a = cuspatial::make_vec_2d_iterator(a_lon.begin<T>(), a_lat.begin<T>());
     auto lonlat_b = cuspatial::make_vec_2d_iterator(b_lon.begin<T>(), b_lat.begin<T>());
