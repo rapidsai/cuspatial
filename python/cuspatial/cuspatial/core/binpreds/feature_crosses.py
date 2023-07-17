@@ -47,6 +47,9 @@ class LineStringLineStringCrosses(IntersectsPredicateBase):
         pli = _basic_intersects_pli(rhs, lhs)
         points = _pli_points_to_multipoints(pli)
         lines = _pli_lines_to_multipoints(pli)
+        # Optimization: only compute the subsequent boundaries and equalities
+        # of indexes that contain point intersections and do not contain line
+        # intersections.
         lhs_boundary = _lines_to_boundary_multipoints(lhs)
         rhs_boundary = _lines_to_boundary_multipoints(rhs)
         lhs_boundary_matches = _basic_equals_count(points, lhs_boundary)
