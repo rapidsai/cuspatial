@@ -6,6 +6,7 @@ from geopandas import GeoDataFrame as gpGeoDataFrame
 from geopandas.geoseries import is_geometry_type as gp_is_geometry_type
 
 import cudf
+from cudf.core.copy_types import GatherMap
 
 from cuspatial.core._column.geocolumn import GeoColumn, GeoMeta
 from cuspatial.core.geoseries import GeoSeries
@@ -181,31 +182,29 @@ class GeoDataFrame(cudf.DataFrame):
         )
         return self.__class__(result)
 
-    def _apply_boolean_mask(self, mask) -> T:
+    def _apply_boolean_mask(self, gather_map: GatherMap) -> T:
         geo_columns, data_columns = self._split_out_geometry_columns()
-        data = data_columns._apply_boolean_mask(mask)
+        data = data_columns._apply_boolean_mask(gather_map)
 
         geo = GeoDataFrame(
-            {name: geo_columns[name][mask] for name in geo_columns}
+            {name: geo_columns[name][gather_map.column] for name in geo_columns}
         )
 
         res = self.__class__._from_data(self._recombine_columns(geo, data))
         res.index = data.index
         return res
 
-    def _gather(
-        self, gather_map, keep_index=True, nullify=False, check_bounds=True
-    ):
+    def _gather(self, gather_map: GatherMap, keep_index=True):
         geo_data, cudf_data = self._split_out_geometry_columns()
         # gather cudf columns
         df = cudf.DataFrame._from_data(data=cudf_data, index=self.index)
-        cudf_gathered = cudf.DataFrame._gather(
-            df, gather_map, keep_index, nullify, check_bounds
-        )
+
+        cudf_gathered = df._gather(gather_map, keep_index=keep_index)
 
         # gather GeoColumns
         gathered = {
-            geo: geo_data[geo].iloc[gather_map] for geo in geo_data.keys()
+            geo: geo_data[geo].iloc[gather_map.column]
+            for geo in geo_data.keys()
         }
         geo_gathered = GeoDataFrame(gathered)
 
