@@ -191,7 +191,8 @@ class GeoDataFrame(cudf.DataFrame):
         )
 
         res = self.__class__._from_data(self._recombine_columns(geo, data))
-        res.index = data.index
+        if keep_index:
+            res.index = data.index
         return res
 
     def _gather(self, gather_map: GatherMap, keep_index=True):
