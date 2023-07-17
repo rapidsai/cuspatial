@@ -187,7 +187,10 @@ class GeoDataFrame(cudf.DataFrame):
         data = data_columns._apply_boolean_mask(gather_map)
 
         geo = GeoDataFrame(
-            {name: geo_columns[name][gather_map.column] for name in geo_columns}
+            {
+                name: geo_columns[name][gather_map.column]
+                for name in geo_columns
+            }
         )
 
         res = self.__class__._from_data(self._recombine_columns(geo, data))
