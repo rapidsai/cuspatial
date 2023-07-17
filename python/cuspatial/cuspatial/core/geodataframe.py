@@ -6,7 +6,7 @@ from geopandas import GeoDataFrame as gpGeoDataFrame
 from geopandas.geoseries import is_geometry_type as gp_is_geometry_type
 
 import cudf
-from cudf.core.copy_types import GatherMap, BooleanMask
+from cudf.core.copy_types import BooleanMask, GatherMap
 
 from cuspatial.core._column.geocolumn import GeoColumn, GeoMeta
 from cuspatial.core.geoseries import GeoSeries
@@ -182,15 +182,12 @@ class GeoDataFrame(cudf.DataFrame):
         )
         return self.__class__(result)
 
-    def _apply_boolean_mask(self, mask: BooleanMask) -> T:
+    def _apply_boolean_mask(self, mask: BooleanMask, keep_index=True) -> T:
         geo_columns, data_columns = self._split_out_geometry_columns()
-        data = data_columns._apply_boolean_mask(mask)
+        data = data_columns._apply_boolean_mask(mask, keep_index)
 
         geo = GeoDataFrame(
-            {
-                name: geo_columns[name][mask.column]
-                for name in geo_columns
-            }
+            {name: geo_columns[name][mask.column] for name in geo_columns}
         )
 
         res = self.__class__._from_data(self._recombine_columns(geo, data))
