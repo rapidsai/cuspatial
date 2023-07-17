@@ -1,5 +1,4 @@
-#include <cuproj/projection.cuh>
-#include <cuproj/vec_2d.cuh>
+#include <cuprojshim.hpp>
 
 namespace cuprojshim {
 
