@@ -120,9 +120,10 @@ caught during code review, or not enforced.
 In general, we recommend following
 [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines). We also
 recommend watching Sean Parent's [C++ Seasoning talk](https://www.youtube.com/watch?v=W2tWOdzgXHA),
-and we try to follow his rules: "No raw loops. No raw pointers. No raw synchronization primitives."
+and we try to follow his rules: "No raw loops. No raw pointers. No raw synchronization primitives." We also wherever possible add a fourth rule: "No raw kernels".
 
  * Prefer algorithms from STL and Thrust to raw loops.
+ * Prefer Thrust algorithms to raw kernels.
  * For device storage, prefer libcudf and RMM
    [owning data structures and views](#libcuspatial-data-structures) to raw pointers and raw memory
    allocation. When pointers are used, prefer smart pointers (e.g. `std::shared_ptr` and
@@ -130,6 +131,50 @@ and we try to follow his rules: "No raw loops. No raw pointers. No raw synchroni
  * Prefer dispatching kernels to streams instead of explicit synchronization.
 
 Documentation is discussed in the [Documentation Guide](DOCUMENTATION.md).
+
+### Loops and Grid-stride Loops
+
+Prefer algorithms over raw loops wherever possible, as mentioned above. However, avoiding raw loops is not always possible. C++ range-based for loops can make raw loops much
+clearer, and cuSpatial uses [Ranger](https://github.com/harrism/ranger) for this purpose.
+Ranger provides range helpers with iterators that can be passed to range-based for loops. Of special importance is `ranger::grid_stride_range()`, which can be used to iterate over
+a range in parallel using all threads of a CUDA grid.
+
+When writing custom kernels, grid stride ranges help ensure kernels are adaptable to a
+variety of grid shapes, most notably when there are fewer total threads than there are
+data items. Instead of:
+
+```c++
+__global__ void foo(int n, int* data) {
+  auto const idx = threadIdx.x + blockIdx.x * blockDim.x;
+  if (idx < n) return;
+
+  // process data
+}
+```
+
+A grid-stride loop ensures all of data is processed even if there are fewer than n threads:
+
+```c++
+__global__ void foo(int n, int* data) {
+  for (auto const idx = threadIdx.x + blockIdx.x * blockDim.x;
+       idx < n;
+       idx += blockDim.x * gridDim.x) {
+    // process data
+  }
+}
+```
+
+With ranger, the code is even clearer and less error prone:
+
+```c++
+#include <ranger/ranger.hpp>
+
+__global__ void foo(int n, int* data) {
+  for (auto const idx = ranger::grid_stride_range(n)) {
+    // process data
+  }
+}
+```
 
 ### Includes
 

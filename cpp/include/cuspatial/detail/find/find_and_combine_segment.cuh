@@ -24,7 +24,10 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <ranger/ranger.hpp>
+
 #include <thrust/sort.h>
+#include <thrust/uninitialized_fill.h>
 
 namespace cuspatial {
 namespace detail {
@@ -39,8 +42,7 @@ void __global__ simple_find_and_combine_segments_kernel(OffsetRange offsets,
                                                         SegmentRange segments,
                                                         OutputIt merged_flag)
 {
-  for (auto pair_idx = threadIdx.x + blockIdx.x * blockDim.x; pair_idx < offsets.size() - 1;
-       pair_idx += gridDim.x * blockDim.x) {
+  for (auto pair_idx : ranger::grid_stride_range(offsets.size() - 1)) {
     // Zero-initialize flags for all segments in current space.
     for (auto i = offsets[pair_idx]; i < offsets[pair_idx + 1]; i++) {
       merged_flag[i] = 0;

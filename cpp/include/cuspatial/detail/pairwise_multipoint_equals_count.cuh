@@ -25,6 +25,8 @@
 #include <cuspatial/range/range.cuh>
 #include <cuspatial/traits.hpp>
 
+#include <ranger/ranger.hpp>
+
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
@@ -47,8 +49,7 @@ void __global__ pairwise_multipoint_equals_count_kernel(MultiPointRangeA lhs,
 {
   using T = typename MultiPointRangeA::point_t::value_type;
 
-  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < lhs.num_points();
-       idx += gridDim.x * blockDim.x) {
+  for (auto idx : ranger::grid_stride_range(lhs.num_points())) {
     auto geometry_id    = lhs.geometry_idx_from_point_idx(idx);
     vec_2d<T> lhs_point = lhs.point_begin()[idx];
     auto rhs_multipoint = rhs[geometry_id];

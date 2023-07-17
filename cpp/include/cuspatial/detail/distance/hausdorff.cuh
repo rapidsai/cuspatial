@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
+
+#include <ranger/ranger.hpp>
 
 #include <thrust/advance.h>
 #include <thrust/binary_search.h>
@@ -87,49 +89,46 @@ __global__ void kernel_hausdorff(
   using Point = typename std::iterator_traits<PointIt>::value_type;
 
   // determine the LHS point this thread is responsible for.
-  auto const thread_idx = blockIdx.x * blockDim.x + threadIdx.x;
-  Index const lhs_p_idx = thread_idx;
+  for (auto lhs_p_idx : ranger::grid_stride_range(num_points)) {
+    auto const lhs_space_iter =
+      thrust::upper_bound(thrust::seq, space_offsets, space_offsets + num_spaces, lhs_p_idx);
+    // determine the LHS space this point belongs to.
+    Index const lhs_space_idx = thrust::distance(space_offsets, thrust::prev(lhs_space_iter));
 
-  if (lhs_p_idx >= num_points) { return; }
+    // get the coordinates of this LHS point.
+    Point const lhs_p = points[lhs_p_idx];
 
-  auto const lhs_space_iter =
-    thrust::upper_bound(thrust::seq, space_offsets, space_offsets + num_spaces, lhs_p_idx);
-  // determine the LHS space this point belongs to.
-  Index const lhs_space_idx = thrust::distance(space_offsets, thrust::prev(lhs_space_iter));
+    // loop over each RHS space, as determined by spa ce_offsets
+    for (uint32_t rhs_space_idx = 0; rhs_space_idx < num_spaces; rhs_space_idx++) {
+      // determine the begin/end offsets of points contained within this RHS space.
+      Index const rhs_p_idx_begin = space_offsets[rhs_space_idx];
+      Index const rhs_p_idx_end =
+        (rhs_space_idx + 1 == num_spaces) ? num_points : space_offsets[rhs_space_idx + 1];
 
-  // get the coordinates of this LHS point.
-  Point const lhs_p = points[lhs_p_idx];
+      // each space must contain at least one point, this initial value is just an identity value to
+      // simplify calculations. If a space contains <= 0 points, then this initial value will be
+      // written to the output, which can serve as a signal that the input is ill-formed.
+      auto min_distance_squared = std::numeric_limits<T>::max();
 
-  // loop over each RHS space, as determined by spa ce_offsets
-  for (uint32_t rhs_space_idx = 0; rhs_space_idx < num_spaces; rhs_space_idx++) {
-    // determine the begin/end offsets of points contained within this RHS space.
-    Index const rhs_p_idx_begin = space_offsets[rhs_space_idx];
-    Index const rhs_p_idx_end =
-      (rhs_space_idx + 1 == num_spaces) ? num_points : space_offsets[rhs_space_idx + 1];
+      // loop over each point in the current RHS space
+      for (uint32_t rhs_p_idx = rhs_p_idx_begin; rhs_p_idx < rhs_p_idx_end; rhs_p_idx++) {
+        // get the x and y coordinate of this RHS point
+        Point const rhs_p = thrust::raw_reference_cast(points[rhs_p_idx]);
 
-    // each space must contain at least one point, this initial value is just an identity value to
-    // simplify calculations. If a space contains <= 0 points, then this initial value will be
-    // written to the output, which can serve as a signal that the input is ill-formed.
-    auto min_distance_squared = std::numeric_limits<T>::max();
+        // get distance between the LHS and RHS point
+        auto const distance_squared = magnitude_squared(rhs_p.x - lhs_p.x, rhs_p.y - lhs_p.y);
 
-    // loop over each point in the current RHS space
-    for (uint32_t rhs_p_idx = rhs_p_idx_begin; rhs_p_idx < rhs_p_idx_end; rhs_p_idx++) {
-      // get the x and y coordinate of this RHS point
-      Point const rhs_p = thrust::raw_reference_cast(points[rhs_p_idx]);
+        // remember only smallest distance from this LHS point to any RHS point.
+        min_distance_squared = ::min(min_distance_squared, distance_squared);
+      }
 
-      // get distance between the LHS and RHS point
-      auto const distance_squared = magnitude_squared(rhs_p.x - lhs_p.x, rhs_p.y - lhs_p.y);
+      // determine the output offset for this pair of spaces (LHS, RHS)
+      Index output_idx = rhs_space_idx * num_spaces + lhs_space_idx;
 
-      // remember only smallest distance from this LHS point to any RHS point.
-      min_distance_squared = ::min(min_distance_squared, distance_squared);
+      // use atomicMax to find the maximum of the minimum distance calculated for each space pair.
+      atomicMax(&thrust::raw_reference_cast(*(results + output_idx)),
+                static_cast<T>(std::sqrt(min_distance_squared)));
     }
-
-    // determine the output offset for this pair of spaces (LHS, RHS)
-    Index output_idx = rhs_space_idx * num_spaces + lhs_space_idx;
-
-    // use atomicMax to find the maximum of the minimum distance calculated for each space pair.
-    atomicMax(&thrust::raw_reference_cast(*(results + output_idx)),
-              static_cast<T>(std::sqrt(min_distance_squared)));
   }
 }
 

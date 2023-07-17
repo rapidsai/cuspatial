@@ -30,6 +30,8 @@
 #include <rmm/exec_policy.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
+#include <ranger/ranger.hpp>
+
 #include <thrust/binary_search.h>
 #include <thrust/distance.h>
 #include <thrust/iterator/counting_iterator.h>
@@ -395,8 +397,7 @@ void __global__ pairwise_linestring_intersection_simple(MultiLinestringRange1 mu
   using types_t = uint8_t;
   using count_t = iterator_value_type<Offsets1>;
 
-  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < multilinestrings1.num_points();
-       idx += gridDim.x * blockDim.x) {
+  for (auto idx : ranger::grid_stride_range(multilinestrings1.num_points())) {
     if (auto const part_idx_opt = multilinestrings1.part_idx_from_segment_idx(idx);
         part_idx_opt.has_value()) {
       auto const part_idx           = part_idx_opt.value();
