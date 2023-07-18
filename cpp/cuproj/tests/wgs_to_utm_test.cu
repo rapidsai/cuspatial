@@ -135,8 +135,8 @@ void run_forward_and_inverse(DeviceVector const& input,
 
     auto proj = cuproj::make_projection<coordinate<T>>(epsg_src, epsg_dst);
 
-    run_cuproj_test(h_input, h_expected, proj, cuproj::direction::FORWARD, tolerance);
-    run_cuproj_test(h_expected, h_input, proj, cuproj::direction::INVERSE, tolerance);
+    run_cuproj_test(h_input, h_expected, *proj, cuproj::direction::FORWARD, tolerance);
+    run_cuproj_test(h_expected, h_input, *proj, cuproj::direction::INVERSE, tolerance);
   };
 
   // forward construction
