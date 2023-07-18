@@ -15,7 +15,7 @@
 set(cython_sources
     transform.pyx)
 
-set(linked_libraries cuproj::cuproj)
+set(linked_libraries cuprojshim cuproj::cuproj)
 
 rapids_cython_create_modules(
   CXX

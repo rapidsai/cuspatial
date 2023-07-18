@@ -1,3 +1,4 @@
+from cuproj._lib.transform import wgs84_to_utm
 
 class Transformer:
     """A transformer object to transform coordinates from one CRS to another.

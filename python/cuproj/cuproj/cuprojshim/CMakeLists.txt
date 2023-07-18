@@ -80,7 +80,7 @@ target_compile_definitions(cuprojshim
 # Specify include paths for the current target and dependents
 target_include_directories(cuprojshim
            PUBLIC      "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}/include>"
-           PRIVATE     "$<BUILD_INTERFACE:${CUPROJSHIM_SOURCE_DIR}/include>"
+           PUBLIC     "$<BUILD_INTERFACE:${CUPROJSHIM_SOURCE_DIR}/include>"
            PRIVATE     "$<BUILD_INTERFACE:${CUPROJSHIM_SOURCE_DIR}>"
            INTERFACE   "$<INSTALL_INTERFACE:include>")
 
