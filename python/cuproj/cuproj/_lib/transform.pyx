@@ -1,7 +1,6 @@
 import cupy as cp
 
 from libc.stdint cimport uintptr_t
-from libcpp.memory cimport unique_ptr
 
 from cuproj._lib.cpp.cuprojshim cimport make_projection, transform, vec_2d
 from cuproj._lib.cpp.operation cimport direction
@@ -18,9 +17,6 @@ def wgs84_to_utm(x, y, dir):
     # allocate C-contiguous array
     result_x = cp.array((size,), order='C', dtype=cp.float64)
     result_y = cp.array((size,), order='C', dtype=cp.float64)
-
-    c_x = cp.ascontiguousarray(x)
-    c_y = cp.ascontiguousarray(y)
 
     cdef projection[vec_2d[double]]* proj = \
         make_projection(b"EPSG:4326", b"EPSG:32633")
