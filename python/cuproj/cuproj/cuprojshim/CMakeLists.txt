@@ -18,10 +18,10 @@ set(cuproj_version 23.08.00)
 
 include(../../../../fetch_rapids.cmake)
 include(rapids-cuda)
-rapids_cuda_init_architectures(cuproj-shim)
+rapids_cuda_init_architectures(cuprojshim)
 
 project(
-  cuprojshim
+  CUPROJSHIM
   VERSION ${cuproj_version}
   LANGUAGES CXX CUDA)
 
