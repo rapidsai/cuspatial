@@ -19,3 +19,13 @@ cdef extern from "cuprojshim.hpp" namespace "cuprojshim" nogil:
         size_t,
         direction
     )
+
+    void transform(
+        projection[vec_2d[double]],
+        double*,
+        double*,
+        double*,
+        double*,
+        size_t,
+        direction
+    )
