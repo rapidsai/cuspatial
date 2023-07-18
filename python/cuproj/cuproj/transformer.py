@@ -6,6 +6,7 @@ CRSDispacther = {
     ("epsg:4326", "epsg:32756"): wgs84_to_utm
 }
 
+
 class Transformer:
     """A transformer object to transform coordinates from one CRS to another.
 
@@ -83,5 +84,5 @@ class Transformer:
         resx, resy = f(x, y, direction)
 
         if isfloat:
-            resx, resy = resx[0], resy[0]
+            resx, resy = resx.get()[0], resy.get()[0]
         return resx, resy
