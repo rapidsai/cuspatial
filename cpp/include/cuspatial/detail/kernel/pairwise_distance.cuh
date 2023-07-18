@@ -19,10 +19,13 @@
 #include <cuspatial/detail/utility/device_atomics.cuh>
 #include <cuspatial/detail/utility/linestring.cuh>
 
-#include <limits>
 #include <rmm/device_uvector.hpp>
 
+#include <ranger/ranger.hpp>
+
 #include <thrust/optional.h>
+
+#include <limits>
 
 namespace cuspatial {
 namespace detail {
@@ -52,8 +55,7 @@ __global__ void linestring_distance(MultiLinestringRange1 multilinestrings1,
 {
   using T = typename MultiLinestringRange1::element_t;
 
-  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < multilinestrings1.num_points();
-       idx += gridDim.x * blockDim.x) {
+  for (auto idx : ranger::grid_stride_range(multilinestrings1.num_points())) {
     auto const part_idx = multilinestrings1.part_idx_from_point_idx(idx);
     if (!multilinestrings1.is_valid_segment_id(idx, part_idx)) continue;
     auto const geometry_idx = multilinestrings1.geometry_idx_from_part_idx(part_idx);
@@ -89,15 +91,14 @@ __global__ void linestring_distance(MultiLinestringRange1 multilinestrings1,
  * set to nullopt, no distance computation will be bypassed.
  */
 template <class MultiPointRange, class MultiLinestringRange, class OutputIterator>
-void __global__ point_linestring_distance(MultiPointRange multipoints,
+__global__ void point_linestring_distance(MultiPointRange multipoints,
                                           MultiLinestringRange multilinestrings,
                                           thrust::optional<uint8_t*> intersects,
                                           OutputIterator distances)
 {
   using T = typename MultiPointRange::element_t;
 
-  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < multilinestrings.num_points();
-       idx += gridDim.x * blockDim.x) {
+  for (auto idx : ranger::grid_stride_range(multilinestrings.num_points())) {
     // Search from the part offsets array to determine the part idx of current linestring point
     auto part_idx = multilinestrings.part_idx_from_point_idx(idx);
     // Pointer to the last point in the linestring, skip iteration.
