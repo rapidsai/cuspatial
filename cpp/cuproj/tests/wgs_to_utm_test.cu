@@ -17,9 +17,8 @@
 #include <cuproj_test/coordinate_generator.cuh>
 
 #include <cuproj/error.hpp>
-#include <cuproj/projection_factories.hpp>
-
-#include <cuspatial/geometry/vec_2d.hpp>
+#include <cuproj/projection_factories.cuh>
+#include <cuproj/vec_2d.hpp>
 
 #include <cuspatial_test/vector_equality.hpp>
 
