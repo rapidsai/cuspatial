@@ -53,7 +53,7 @@ rapids_cuda_init_runtime(USE_STATIC ${CUDA_STATIC_RUNTIME})
 # * set other CUDA compilation flags
 include(../../../../cpp/cuproj/cmake/modules/ConfigureCUDA.cmake)
 
-add_library(cuprojshim STATIC cuprojshim.cu)
+add_library(cuprojshim STATIC src/cuprojshim.cu)
 
 set_target_properties(cuprojshim
     PROPERTIES BUILD_RPATH                         "\$ORIGIN"
@@ -80,10 +80,11 @@ target_compile_definitions(cuprojshim
 # Specify include paths for the current target and dependents
 target_include_directories(cuprojshim
            PUBLIC      "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}/include>"
+           PRIVATE     "$<BUILD_INTERFACE:${CUPROJSHIM_SOURCE_DIR}/include>"
            PRIVATE     "$<BUILD_INTERFACE:${CUPROJSHIM_SOURCE_DIR}>"
            INTERFACE   "$<INSTALL_INTERFACE:include>")
 
-target_link_libraries(cuprojshim cuproj rmm::rmm cuspatial::cuspatial)
+target_link_libraries(cuprojshim cuproj rmm::rmm)
 
 # Per-thread default stream
 if(PER_THREAD_DEFAULT_STREAM)

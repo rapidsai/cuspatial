@@ -1,27 +1,35 @@
 import cupy as cp
 
+from libc.stdint cimport uintptr_t
+
 from cuproj._lib.cpp.projection cimport projection
 from cuproj._lib.cpp.projection_factories cimport make_projection
 from cuproj._lib.cpp.operation cimport direction
 
+from cuproj._lib.cpp.cuprojshim cimport vec_2d, transform
+
+# Assumption: srcarr is a (N, 2) shaped cupy array
 def wgs84_to_utm(srcarr):
-    result = cp.array(srcarr.shape, dtype=cp.float64)
+    # allocate C-contiguous array
+    result = cp.array(srcarr.shape, order='C', dtype=cp.float64)
+
     cdef projection[double] proj = make_projection[double](
         b"epsg:4326", b"epsg:32633"
     )
 
-    srcarr_data = cp.ascontiguousarray(srcarr, dtype=cp.float64)
-    result_data = cp.ascontiguousarray(result, dtype=cp.float64)
+    c_srcarr = cp.asccontiguousarray(srcarr)
 
-    cdef double[::1] srcarr_arr_memview = srcarr_data
-    cdef int size = srcarr_data.shape[0]
-    cdef double[::1] result_arr_memview = result_data
+    cdef size_t num_coordinates = srcarr.shape[0]
+
+    cdef vec_2d* input_coords_begin = <vec_2d*> <uintptr_t> c_srcarr.data.ptr
+    cdef vec_2d* output_coords = <vec_2d*> <uintptr_t> result.data.ptr
 
     with nogil:
-        proj.transform(
-            &srcarr_arr_memview[0],
-            &srcarr_arr_memview[0] + size,
-            &result_arr_memview[0],
+        transform(
+            proj,
+            input_coords_begin,
+            output_coords,
+            num_coordinates,
             direction.FORWARD
         )
 
