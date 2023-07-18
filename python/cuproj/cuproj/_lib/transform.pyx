@@ -9,31 +9,37 @@ from cuproj._lib.cpp.operation cimport direction
 
 from cuproj._lib.cpp.cuprojshim cimport vec_2d, make_projection, transform
 
+cdef direction_string_to_enum(dir: str):
+    return direction.FORWARD if dir == "FORWARD" else direction.INVERSE
 
-# Assumption: srcarr is a (N, 2) shaped cupy array
-def wgs84_to_utm(srcarr):
+# Assumption: srcarr is a (N,) shaped cupy array
+def wgs84_to_utm(x, y, dir):
+    cdef int size = x.shape[0]
     # allocate C-contiguous array
-    result = cp.array(srcarr.shape, order='C', dtype=cp.float64)
+    result_x = cp.array((size,), order='C', dtype=cp.float64)
+    result_y = cp.array((size,), order='C', dtype=cp.float64)
+
+    c_x = cp.ascontiguousarray(x)
+    c_y = cp.ascontiguousarray(y)
 
     cdef unique_ptr[projection[vec_2d[double]]] proj = \
         make_projection(b"epsg:4326", b"epsg:32633")
+    cdef double* x_in = <double*> <uintptr_t> x.data.ptr
+    cdef double* y_in = <double*> <uintptr_t> y.data.ptr
+    cdef double* x_out = <double*> <uintptr_t> result_x.data.ptr
+    cdef double* y_out = <double*> <uintptr_t> result_y.data.ptr
 
-    c_srcarr = cp.asccontiguousarray(srcarr)
-
-    cdef size_t num_coordinates = srcarr.shape[0]
-
-    cdef vec_2d[double]* input_coords_begin = <vec_2d[double]*> <uintptr_t> c_srcarr.data.ptr
-    cdef vec_2d[double]* output_coords = <vec_2d[double]*> <uintptr_t> result.data.ptr
-
-    cdef direction d = direction.FORWARD
+    cdef direction d = direction_string_to_enum(dir)
 
     with nogil:
         transform(
             proj.get()[0],
-            input_coords_begin,
-            output_coords,
-            num_coordinates,
+            x_in,
+            y_in,
+            x_out,
+            y_out,
+            size,
             d
         )
 
-    return result
+    return result_x, result_y
