@@ -16,7 +16,8 @@
 
 #pragma once
 
-#include <cuproj/detail/wrap_to_pi.cuh>
+#include <cuproj/detail/utility/cuda.hpp>
+#include <cuproj/detail/wrap_to_pi.hpp>
 #include <cuproj/error.hpp>
 #include <cuproj/operation/operation.cuh>
 #include <cuproj/projection_parameters.hpp>
@@ -42,7 +43,7 @@ class clamp_angular_coordinates : operation<Coordinate> {
    *
    * @param params the projection parameters
    */
-  __host__ __device__ clamp_angular_coordinates(projection_parameters<T> const& params)
+  CUPROJ_HOST_DEVICE clamp_angular_coordinates(projection_parameters<T> const& params)
     : lam0_(params.lam0_), prime_meridian_offset_(params.prime_meridian_offset_)
   {
   }
@@ -56,7 +57,7 @@ class clamp_angular_coordinates : operation<Coordinate> {
    * @param dir The direction of the operation
    * @return The clamped coordinate
    */
-  __host__ __device__ Coordinate operator()(Coordinate const& coord, direction dir) const
+  CUPROJ_HOST_DEVICE Coordinate operator()(Coordinate const& coord, direction dir) const
   {
     if (dir == direction::FORWARD)
       return forward(coord);
@@ -75,7 +76,7 @@ class clamp_angular_coordinates : operation<Coordinate> {
    * @param coord The coordinate to clamp
    * @return The clamped coordinate
    */
-  __host__ __device__ Coordinate forward(Coordinate const& coord) const
+  CUPROJ_HOST_DEVICE Coordinate forward(Coordinate const& coord) const
   {
     // check for latitude or longitude over-range
     T t = (coord.y < 0 ? -coord.y : coord.y) - M_PI_2;
@@ -106,7 +107,7 @@ class clamp_angular_coordinates : operation<Coordinate> {
    * @param coord The coordinate to clamp
    * @return The clamped coordinate
    */
-  __host__ __device__ Coordinate inverse(Coordinate const& coord) const
+  CUPROJ_HOST_DEVICE Coordinate inverse(Coordinate const& coord) const
   {
     Coordinate xy = coord;
 

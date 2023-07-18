@@ -51,9 +51,9 @@ class projection {
    * @param params the projection parameters
    * @param dir the default order to execute the operations, FORWARD or INVERSE
    */
-  __host__ projection(std::vector<operation_type> const& operations,
-                      projection_parameters<T> const& params,
-                      direction dir = direction::FORWARD)
+  projection(std::vector<operation_type> const& operations,
+             projection_parameters<T> const& params,
+             direction dir = direction::FORWARD)
     : params_(params), constructed_direction_(dir)
   {
     setup(operations);

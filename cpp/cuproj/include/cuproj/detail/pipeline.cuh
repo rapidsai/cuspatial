@@ -23,6 +23,7 @@
 #include <cuproj/operation/operation.cuh>
 #include <cuproj/operation/transverse_mercator.cuh>
 
+#include <thrust/execution_policy.h>
 #include <thrust/for_each.h>
 
 #include <iterator>

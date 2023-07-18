@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cuproj/constants.hpp>
+#include <cuproj/detail/utility/cuda.hpp>
 
 namespace cuproj {
 
@@ -30,7 +31,7 @@ namespace detail {
  * @return The normalized angle
  */
 template <typename T>
-__host__ __device__ T wrap_to_pi(T angle)
+CUPROJ_HOST_DEVICE T wrap_to_pi(T angle)
 {
   // Let angle slightly overshoot, to avoid spurious sign switching of longitudes at the date line
   if (fabs(angle) < M_PI + EPSILON_RADIANS<T>) return angle;

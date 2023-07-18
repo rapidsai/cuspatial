@@ -20,6 +20,8 @@
 #include <cuproj/projection.cuh>
 #include <cuproj/projection_parameters.hpp>
 
+#include <memory>
+
 namespace cuproj {
 
 namespace detail {
@@ -90,12 +92,12 @@ inline auto epsg_to_utm_zone(std::string const& epsg_str)
  * @param hemisphere the UTM hemisphere
  * @param dir if FORWARD, create a projection from UTM to WGS84, otherwise create a projection
  * from WGS84 to UTM
- * @return a projection object implementing the requested transformation
+ * @return a unique_ptr to a projection object implementing the requested transformation
  */
 template <typename Coordinate, typename T = typename Coordinate::value_type>
-projection<Coordinate> make_utm_projection(int zone,
-                                           hemisphere hemisphere,
-                                           direction dir = direction::FORWARD)
+std::unique_ptr<projection<Coordinate>> make_utm_projection(int zone,
+                                                            hemisphere hemisphere,
+                                                            direction dir = direction::FORWARD)
 {
   projection_parameters<T> tmerc_proj_params{
     make_ellipsoid_wgs84<T>(), zone, hemisphere, T{0}, T{0}};
@@ -107,7 +109,7 @@ projection<Coordinate> make_utm_projection(int zone,
     operation_type::TRANSVERSE_MERCATOR,
     operation_type::OFFSET_SCALE_CARTESIAN_COORDINATES};
 
-  return projection<Coordinate>{h_utm_pipeline, tmerc_proj_params, dir};
+  return std::make_unique<projection<Coordinate>>(h_utm_pipeline, tmerc_proj_params, dir);
 }
 
 /**
@@ -121,11 +123,12 @@ projection<Coordinate> make_utm_projection(int zone,
  * @tparam Coordinate the coordinate type
  * @param src_epsg the source EPSG code
  * @param dst_epsg the destination EPSG code
- * @return a projection object implementing the transformation between the two EPSG codes
+ * @return a unique_ptr to a projection object implementing the transformation between the two EPSG
+ * codes
  */
 template <typename Coordinate>
-cuproj::projection<Coordinate> make_projection(std::string const& src_epsg,
-                                               std::string const& dst_epsg)
+std::unique_ptr<cuproj::projection<Coordinate>> make_projection(std::string const& src_epsg,
+                                                                std::string const& dst_epsg)
 {
   if (detail::is_wgs_84(src_epsg)) {
     auto [dst_zone, dst_hemisphere] = detail::epsg_to_utm_zone(dst_epsg);

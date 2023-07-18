@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include <cuproj/detail/utility/cuda.hpp>
+#include <cuproj/detail/utility/floating_point.hpp>
+
 #include <algorithm>
 #include <ostream>
 
@@ -29,7 +32,7 @@ namespace cuproj {
 /**
  * @brief A generic 2D vector type.
  *
- * This is the base type used in cuproj for both Longitude/Latitude (LonLat) coordinate pairs and
+ * This is the base type used in cuspatial for both Longitude/Latitude (LonLat) coordinate pairs and
  * Cartesian (X/Y) coordinate pairs. For LonLat pairs, the `x` member represents Longitude, and `y`
  * represents Latitude.
  *
@@ -46,7 +49,7 @@ class alignas(2 * sizeof(T)) vec_2d {
   /**
    * @brief Output stream operator for `vec_2d<T>` for human-readable formatting
    */
-  friend std::ostream& operator<<(std::ostream& os, cuproj::vec_2d<T> const& vec)
+  friend std::ostream& operator<<(std::ostream& os, vec_2d<T> const& vec)
   {
     return os << "(" << vec.x << "," << vec.y << ")";
   }
@@ -54,15 +57,15 @@ class alignas(2 * sizeof(T)) vec_2d {
   /**
    * @brief Compare two 2D vectors for equality.
    */
-  friend bool __host__ __device__ operator==(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
+  friend bool CUPROJ_HOST_DEVICE operator==(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
   {
-    return lhs.x == rhs.x && lhs.y == rhs.y;
+    return detail::float_equal<T>(lhs.x, rhs.x) && detail::float_equal(lhs.y, rhs.y);
   }
 
   /**
    * @brief Element-wise addition of two 2D vectors.
    */
-  friend vec_2d<T> __host__ __device__ operator+(vec_2d<T> const& a, vec_2d<T> const& b)
+  friend vec_2d<T> CUPROJ_HOST_DEVICE operator+(vec_2d<T> const& a, vec_2d<T> const& b)
   {
     return vec_2d<T>{a.x + b.x, a.y + b.y};
   }
@@ -70,7 +73,7 @@ class alignas(2 * sizeof(T)) vec_2d {
   /**
    * @brief Element-wise subtraction of two 2D vectors.
    */
-  friend vec_2d<T> __host__ __device__ operator-(vec_2d<T> const& a, vec_2d<T> const& b)
+  friend vec_2d<T> CUPROJ_HOST_DEVICE operator-(vec_2d<T> const& a, vec_2d<T> const& b)
   {
     return vec_2d<T>{a.x - b.x, a.y - b.y};
   }
@@ -78,7 +81,7 @@ class alignas(2 * sizeof(T)) vec_2d {
   /**
    * @brief Invert a 2D vector.
    */
-  friend vec_2d<T> __host__ __device__ operator-(vec_2d<T> const& a)
+  friend vec_2d<T> CUPROJ_HOST_DEVICE operator-(vec_2d<T> const& a)
   {
     return vec_2d<T>{-a.x, -a.y};
   }
@@ -86,7 +89,7 @@ class alignas(2 * sizeof(T)) vec_2d {
   /**
    * @brief Scale a 2D vector by a factor @p r.
    */
-  friend vec_2d<T> __host__ __device__ operator*(vec_2d<T> vec, T const& r)
+  friend vec_2d<T> CUPROJ_HOST_DEVICE operator*(vec_2d<T> vec, T const& r)
   {
     return vec_2d<T>{vec.x * r, vec.y * r};
   }
@@ -94,12 +97,12 @@ class alignas(2 * sizeof(T)) vec_2d {
   /**
    * @brief Scale a 2d vector by ratio @p r.
    */
-  friend vec_2d<T> __host__ __device__ operator*(T const& r, vec_2d<T> vec) { return vec * r; }
+  friend vec_2d<T> CUPROJ_HOST_DEVICE operator*(T const& r, vec_2d<T> vec) { return vec * r; }
 
   /**
    * @brief Translate a 2D point
    */
-  friend vec_2d<T>& __host__ __device__ operator+=(vec_2d<T>& a, vec_2d<T> const& b)
+  friend vec_2d<T>& CUPROJ_HOST_DEVICE operator+=(vec_2d<T>& a, vec_2d<T> const& b)
   {
     a.x += b.x;
     a.y += b.y;
@@ -109,7 +112,7 @@ class alignas(2 * sizeof(T)) vec_2d {
   /**
    * @brief Translate a 2D point
    */
-  friend vec_2d<T>& __host__ __device__ operator-=(vec_2d<T>& a, vec_2d<T> const& b)
+  friend vec_2d<T>& CUPROJ_HOST_DEVICE operator-=(vec_2d<T>& a, vec_2d<T> const& b)
   {
     return a += -b;
   }
@@ -119,7 +122,7 @@ class alignas(2 * sizeof(T)) vec_2d {
    *
    * Orders two points first by x, then by y.
    */
-  friend bool __host__ __device__ operator<(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
+  friend bool CUPROJ_HOST_DEVICE operator<(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
   {
     if (lhs.x < rhs.x)
       return true;
@@ -131,7 +134,7 @@ class alignas(2 * sizeof(T)) vec_2d {
   /**
    * @brief Greater than operator for two 2D points.
    */
-  friend bool __host__ __device__ operator>(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
+  friend bool CUPROJ_HOST_DEVICE operator>(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
   {
     return rhs < lhs;
   }
@@ -139,7 +142,7 @@ class alignas(2 * sizeof(T)) vec_2d {
   /**
    * @brief Less than or equal to operator for two 2D points.
    */
-  friend bool __host__ __device__ operator<=(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
+  friend bool CUPROJ_HOST_DEVICE operator<=(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
   {
     return !(lhs > rhs);
   }
@@ -147,7 +150,7 @@ class alignas(2 * sizeof(T)) vec_2d {
   /**
    * @brief Greater than or equal to operator for two 2D points.
    */
-  friend bool __host__ __device__ operator>=(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
+  friend bool CUPROJ_HOST_DEVICE operator>=(vec_2d<T> const& lhs, vec_2d<T> const& rhs)
   {
     return !(lhs < rhs);
   }
@@ -161,7 +164,7 @@ vec_2d(T x, T y) -> vec_2d<T>;
  * @brief Compute dot product of two 2D vectors.
  */
 template <typename T>
-T __host__ __device__ dot(vec_2d<T> const& a, vec_2d<T> const& b)
+T CUPROJ_HOST_DEVICE dot(vec_2d<T> const& a, vec_2d<T> const& b)
 {
   return a.x * b.x + a.y * b.y;
 }
@@ -170,7 +173,7 @@ T __host__ __device__ dot(vec_2d<T> const& a, vec_2d<T> const& b)
  * @brief Compute 2D determinant of a 2x2 matrix with column vectors @p a and @p b.
  */
 template <typename T>
-T __host__ __device__ det(vec_2d<T> const& a, vec_2d<T> const& b)
+T CUPROJ_HOST_DEVICE det(vec_2d<T> const& a, vec_2d<T> const& b)
 {
   return a.x * b.y - a.y * b.x;
 }
@@ -179,7 +182,7 @@ T __host__ __device__ det(vec_2d<T> const& a, vec_2d<T> const& b)
  * @brief Return a new vec_2d made up of the minimum x- and y-components of two input vec_2d values.
  */
 template <typename T>
-vec_2d<T> __host__ __device__ box_min(vec_2d<T> const& a, vec_2d<T> const& b)
+vec_2d<T> CUPROJ_HOST_DEVICE box_min(vec_2d<T> const& a, vec_2d<T> const& b)
 {
 #ifdef __CUDA_ARCH__
   return vec_2d<T>{::min(a.x, b.x), ::min(a.y, b.y)};
@@ -192,7 +195,7 @@ vec_2d<T> __host__ __device__ box_min(vec_2d<T> const& a, vec_2d<T> const& b)
  * @brief Return a new vec_2d made up of the minimum x- and y-components of two input vec_2d values.
  */
 template <typename T>
-vec_2d<T> __host__ __device__ box_max(vec_2d<T> const& a, vec_2d<T> const& b)
+vec_2d<T> CUPROJ_HOST_DEVICE box_max(vec_2d<T> const& a, vec_2d<T> const& b)
 {
 #ifdef __CUDA_ARCH__
   return vec_2d<T>{::max(a.x, b.x), ::max(a.y, b.y)};
@@ -205,7 +208,7 @@ vec_2d<T> __host__ __device__ box_max(vec_2d<T> const& a, vec_2d<T> const& b)
  * @brief Compute the midpoint of `first` and `second`.
  */
 template <typename T>
-vec_2d<T> __host__ __device__ midpoint(vec_2d<T> const& first, vec_2d<T> const& second)
+vec_2d<T> CUPROJ_HOST_DEVICE midpoint(vec_2d<T> const& first, vec_2d<T> const& second)
 {
   return (first + second) * T{0.5};
 }

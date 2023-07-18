@@ -67,7 +67,7 @@
 
 #pragma once
 
-#include <cuproj/detail/wrap_to_pi.cuh>
+#include <cuproj/detail/wrap_to_pi.hpp>
 #include <cuproj/ellipsoid.hpp>
 #include <cuproj/operation/operation.cuh>
 #include <cuproj/projection_parameters.hpp>
