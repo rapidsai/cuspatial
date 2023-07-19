@@ -166,6 +166,8 @@ TYPED_TEST(ProjectionTest, invalid_epsg)
                cuproj::logic_error);
   EXPECT_THROW(cuproj::make_projection<coordinate<T>>("EPSG:4326", "UTM:32756"),
                cuproj::logic_error);
+  EXPECT_THROW(cuproj::make_projection<coordinate<T>>("EPSG:32611", "EPSG:32756"),
+               cuproj::logic_error);
 }
 
 // Test on a single coordinate
@@ -173,7 +175,7 @@ TYPED_TEST(ProjectionTest, one)
 {
   using T = TypeParam;
 
-  coordinate<T> sydney{-33.865143, 151.209900};  // Sydney, NSW, Australia
+  coordinate<T> sydney{-33.858700, 151.214000};  // Sydney, NSW, Australia
   std::vector<coordinate<T>> input{sydney};
   // We can expect nanometer accuracy with double precision. The precision ratio of
   // double to single precision is 2^53 / 2^24 == 2^29 ~= 10^9, then we should
