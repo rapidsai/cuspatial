@@ -120,7 +120,7 @@ auto make_vec_2d_output_iterator(FirstIter first, SecondIter second) {
 }
 } // namespace
 
-cuproj::projection<cuproj::vec_2d<double>>*
+cuproj::projection<cuproj::vec_2d<double>> *
 make_projection(std::string const &src_epsg, std::string const &dst_epsg) {
   return cuproj::make_projection<cuproj::vec_2d<double>>(src_epsg, dst_epsg);
 }
@@ -134,6 +134,7 @@ void transform(cuproj::projection<cuproj::vec_2d<double>> const &proj,
 void transform(cuproj::projection<cuproj::vec_2d<double>> const &proj,
                double *x_in, double *y_in, double *x_out, double *y_out,
                std::size_t n, cuproj::direction dir) {
+
   auto xy_in = make_vec_2d_iterator(x_in, y_in);
   auto xy_out = make_vec_2d_output_iterator(x_out, y_out);
   proj.transform(xy_in, xy_in + n, xy_out, dir);

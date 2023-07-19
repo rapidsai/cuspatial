@@ -1,11 +1,6 @@
 import cupy as cp
 
-from cuproj._lib.transform import wgs84_to_utm
-
-CRSDispacther = {
-    ("epsg:4326", "epsg:32756"): wgs84_to_utm
-}
-
+from cuproj._lib.transform import Transformer as _Transformer
 
 class Transformer:
     """A transformer object to transform coordinates from one CRS to another.
@@ -33,6 +28,7 @@ class Transformer:
     def __init__(self, crs_from, crs_to):
         self._crs_from = crs_from
         self._crs_to = crs_to
+        self._proj = _Transformer(crs_from, crs_to)
 
     @staticmethod
     def from_crs(crs_from, crs_to):
@@ -80,8 +76,7 @@ class Transformer:
             x = cp.asarray([x], dtype='f8')
             y = cp.asarray([y], dtype='f8')
 
-        f = CRSDispacther[(self._crs_from, self._crs_to)]
-        resx, resy = f(x, y, direction)
+        resx, resy = self._proj.transform(x, y, direction)
 
         if isfloat:
             resx, resy = resx.get()[0], resy.get()[0]
