@@ -38,9 +38,9 @@ class Transformer:
         Parameters
         ----------
         crs_from : CRS
-            The source CRS.
+            int or "auth:code" string. The source CRS.
         crs_to : CRS
-            The target CRS.
+            int or "auth:code" string. The target CRS.
 
         Returns
         -------

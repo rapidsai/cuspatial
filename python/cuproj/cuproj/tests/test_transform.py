@@ -1,8 +1,54 @@
 
+import pytest
 from numpy.testing import assert_allclose
 from pyproj import Transformer
 
 from cuproj import Transformer as cuTransformer
+
+valid_crs_combos = [
+    (4326, 32756),
+    (32756, 4326),
+    (4326, 32610),
+    (32610, 4326)]
+
+invalid_crs_combos = [
+    (4326, 4326),
+    (32756, 32756),
+    (4326, 756),
+    (756, 4326)]
+
+
+def to_epsg_string(code):
+    return f"epsg:{code}"
+
+
+@pytest.mark.parametrize("crs_from, crs_to", valid_crs_combos)
+def test_valid_epsg_codes(crs_from, crs_to):
+    Transformer.from_crs(crs_from, crs_to)
+
+
+@pytest.mark.parametrize("crs_from, crs_to", valid_crs_combos)
+def test_valid_epsg_strings(crs_from, crs_to):
+    Transformer.from_crs(to_epsg_string(crs_from), to_epsg_string(crs_to))
+
+
+@pytest.mark.parametrize("crs_from, crs_to", valid_crs_combos)
+def test_valid_uppercase_epsg_strings(crs_from, crs_to):
+    Transformer.from_crs(
+        to_epsg_string(crs_from).upper(), to_epsg_string(crs_to).upper())
+
+
+@pytest.mark.parametrize("crs_from, crs_to", invalid_crs_combos)
+def test_invalid_epsg_codes(crs_from, crs_to):
+    with pytest.raises(RuntimeError):
+        cuTransformer.from_crs(crs_from, crs_to)
+
+
+@pytest.mark.parametrize("crs_from, crs_to", invalid_crs_combos)
+def test_invalid_epsg_strings(crs_from, crs_to):
+    with pytest.raises(RuntimeError):
+        cuTransformer.from_crs(
+            to_epsg_string(crs_from), to_epsg_string(crs_to))
 
 
 def test_wgs84_to_utm_one_point():
@@ -22,12 +68,14 @@ def test_wgs84_to_utm_one_point():
     assert_allclose(cuproj_x, pyproj_x)
     assert_allclose(cuproj_y, pyproj_y)
 
+
 # def grid_generator(min_corner, max_corner, num_points_x, num_points_y):
 #     spacing = ((max_corner[0] - min_corner[0]) / num_points_x,
 #                (max_corner[1] - min_corner[1]) / num_points_y)
 #     for i in range(num_points_x * num_points_y):
 #         yield (min_corner[0] + (i % num_points_x) * spacing[0],
 #                min_corner[1] + (i // num_points_x) * spacing[1])
+
 
 # # test with a grid of points around san francisco
 # def test_wgs84_to_utm_grid():

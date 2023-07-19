@@ -1,6 +1,7 @@
 import cupy as cp
 
 from libc.stdint cimport uintptr_t
+from libcpp.string cimport string
 
 from cuproj._lib.cpp.cuprojshim cimport make_projection, transform, vec_2d
 from cuproj._lib.cpp.operation cimport direction
@@ -14,8 +15,15 @@ cdef class Transformer:
     cdef projection[vec_2d[double]]* proj
 
     def __init__(self, crs_from, crs_to):
-        self.proj = make_projection(
-            crs_from.encode('utf-8'), crs_to.encode('utf-8'))
+        if (isinstance(crs_from, str) & isinstance(crs_to, str)):
+            crs_from_b = crs_from.encode('utf-8')
+            crs_to_b = crs_to.encode('utf-8')
+            self.proj = make_projection(<string> crs_from_b, <string> crs_to_b)
+        elif (isinstance(crs_from, int) & isinstance(crs_to, int)):
+            self.proj = make_projection(<int> crs_from, <int> crs_to)
+        else:
+            raise TypeError(
+                "crs_from and crs_to must be both strings or both integers")
 
     def __del__(self):
         del self.proj
