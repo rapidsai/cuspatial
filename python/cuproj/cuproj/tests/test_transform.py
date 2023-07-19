@@ -12,8 +12,8 @@ def test_wgs84_to_utm_one_point():
 
     # Transform to UTM using PyProj
     transformer = Transformer.from_crs(
-        "EPSG:4326", "EPSG:32756", always_xy=True)
-    pyproj_x, pyproj_y = transformer.transform(lon, lat)
+        "EPSG:4326", "EPSG:32756")
+    pyproj_x, pyproj_y = transformer.transform(lat, lon)
 
     # Transform to UTM using cuproj
     cu_transformer = cuTransformer.from_crs("EPSG:4326", "EPSG:32756")
