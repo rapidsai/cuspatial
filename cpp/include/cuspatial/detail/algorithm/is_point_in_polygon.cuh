@@ -99,29 +99,5 @@ __device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonR
   return point_is_within;
 }
 
-/**
- * @brief Compatibility layer with non-OOP style input
- */
-template <class Cart2d,
-          class OffsetType,
-          class OffsetIterator,
-          class Cart2dIt,
-          class OffsetItDiffType = typename std::iterator_traits<OffsetIterator>::difference_type,
-          class Cart2dItDiffType = typename std::iterator_traits<Cart2dIt>::difference_type>
-__device__ inline bool is_point_in_polygon(Cart2d const& test_point,
-                                           OffsetType poly_begin,
-                                           OffsetType poly_end,
-                                           OffsetIterator ring_offsets_first,
-                                           OffsetItDiffType const& num_rings,
-                                           Cart2dIt poly_points_first,
-                                           Cart2dItDiffType const& num_poly_points)
-{
-  auto polygon = polygon_ref{thrust::next(ring_offsets_first, poly_begin),
-                             thrust::next(ring_offsets_first, poly_end + 1),
-                             poly_points_first,
-                             thrust::next(poly_points_first, num_poly_points)};
-  return is_point_in_polygon(test_point, polygon);
-}
-
 }  // namespace detail
 }  // namespace cuspatial

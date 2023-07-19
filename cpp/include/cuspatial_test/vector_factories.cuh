@@ -93,22 +93,22 @@ class multipolygon_array {
   multipolygon_array(thrust::device_vector<geometry_t> geometry_offsets_array,
                      thrust::device_vector<part_t> part_offsets_array,
                      thrust::device_vector<ring_t> ring_offsets_array,
-                     thrust::device_vector<coord_t> coordinate_offsets_array)
+                     thrust::device_vector<coord_t> coordinates_array)
     : _geometry_offsets_array(geometry_offsets_array),
       _part_offsets_array(part_offsets_array),
       _ring_offsets_array(ring_offsets_array),
-      _coordinate_offsets_array(coordinate_offsets_array)
+      _coordinates_array(coordinates_array)
   {
   }
 
   multipolygon_array(rmm::device_uvector<geometry_t>&& geometry_offsets_array,
                      rmm::device_uvector<part_t>&& part_offsets_array,
                      rmm::device_uvector<ring_t>&& ring_offsets_array,
-                     rmm::device_uvector<coord_t>&& coordinate_offsets_array)
+                     rmm::device_uvector<coord_t>&& coordinates_array)
     : _geometry_offsets_array(std::move(geometry_offsets_array)),
       _part_offsets_array(std::move(part_offsets_array)),
       _ring_offsets_array(std::move(ring_offsets_array)),
-      _coordinate_offsets_array(std::move(coordinate_offsets_array))
+      _coordinates_array(std::move(coordinates_array))
   {
   }
 
@@ -124,8 +124,8 @@ class multipolygon_array {
                               _part_offsets_array.end(),
                               _ring_offsets_array.begin(),
                               _ring_offsets_array.end(),
-                              _coordinate_offsets_array.begin(),
-                              _coordinate_offsets_array.end());
+                              _coordinates_array.begin(),
+                              _coordinates_array.end());
   }
 
   /**
@@ -136,9 +136,17 @@ class multipolygon_array {
     auto geometry_offsets   = cuspatial::test::to_host<geometry_t>(_geometry_offsets_array);
     auto part_offsets       = cuspatial::test::to_host<part_t>(_part_offsets_array);
     auto ring_offsets       = cuspatial::test::to_host<ring_t>(_ring_offsets_array);
-    auto coordinate_offsets = cuspatial::test::to_host<coord_t>(_coordinate_offsets_array);
+    auto coordinate_offsets = cuspatial::test::to_host<coord_t>(_coordinates_array);
 
     return std::tuple{geometry_offsets, part_offsets, ring_offsets, coordinate_offsets};
+  }
+
+  auto release()
+  {
+    return std::tuple{std::move(_geometry_offsets_array),
+                      std::move(_part_offsets_array),
+                      std::move(_ring_offsets_array),
+                      std::move(_coordinates_array)};
   }
 
   /**
@@ -160,7 +168,7 @@ class multipolygon_array {
   GeometryArray _geometry_offsets_array;
   PartArray _part_offsets_array;
   RingArray _ring_offsets_array;
-  CoordinateArray _coordinate_offsets_array;
+  CoordinateArray _coordinates_array;
 };
 
 template <typename IndexRange,

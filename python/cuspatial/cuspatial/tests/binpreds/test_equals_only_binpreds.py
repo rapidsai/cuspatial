@@ -722,3 +722,28 @@ def test_linestring_orders():
     got = linestring1.geom_equals(linestring2)
     expected = gpdlinestring1.geom_equals(gpdlinestring2)
     pd.testing.assert_series_equal(expected, got.to_pandas())
+
+
+def test_linestring_indexes():
+    linestring1 = cuspatial.GeoSeries(
+        [
+            LineString([(0, 0), (1, 0), (1, 1), (0, 0)]),
+            LineString([(0, 0), (1, 1), (1, 0), (0, 0)]),
+        ]
+    )
+    linestring2 = cuspatial.GeoSeries(
+        [
+            LineString([(0, 0), (1, 0), (1, 1), (0, 0)]),
+            LineString([(0, 0), (1, 1), (1, 0), (0, 0)]),
+        ]
+    )
+    index1 = [0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
+    index2 = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]
+    linestring1 = linestring1[index1].reset_index(drop=True)
+    linestring2 = linestring2[index2].reset_index(drop=True)
+
+    gpdlinestring1 = linestring1.to_geopandas()
+    gpdlinestring2 = linestring2.to_geopandas()
+    got = linestring1.geom_equals(linestring2)
+    expected = gpdlinestring1.geom_equals(gpdlinestring2)
+    pd.testing.assert_series_equal(expected, got.to_pandas())

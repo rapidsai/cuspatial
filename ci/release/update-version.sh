@@ -31,6 +31,7 @@ function sed_runner() {
 
 # python/cpp update
 sed_runner 's/'"CUSPATIAL VERSION .* LANGUAGES"'/'"CUSPATIAL VERSION ${NEXT_FULL_TAG} LANGUAGES"'/g' cpp/CMakeLists.txt
+sed_runner 's/'"CUPROJ VERSION .* LANGUAGES"'/'"CUPROJ VERSION ${NEXT_FULL_TAG} LANGUAGES"'/g' cpp/cuproj/CMakeLists.txt
 sed_runner 's/'"cuspatial_version .*)"'/'"cuspatial_version ${NEXT_FULL_TAG})"'/g' python/cuspatial/CMakeLists.txt
 
 # RTD update
@@ -52,26 +53,29 @@ sed_runner "/TAGFILES/ s|[0-9]\+.[0-9]\+|${NEXT_SHORT_TAG}|g" cpp/doxygen/Doxyfi
 for FILE in .github/workflows/*.yaml; do
   sed_runner "/shared-action-workflows/ s/@.*/@branch-${NEXT_SHORT_TAG}/g" "${FILE}"
 done
-sed_runner "s/VERSION_NUMBER=\".*/VERSION_NUMBER=\"${NEXT_SHORT_TAG}\"/g" ci/build_docs.sh
+sed_runner "s/RAPIDS_VERSION_NUMBER=\".*/RAPIDS_VERSION_NUMBER=\"${NEXT_SHORT_TAG}\"/g" ci/build_docs.sh
 
 # Need to distutils-normalize the original version
 NEXT_SHORT_TAG_PEP440=$(python -c "from setuptools.extern import packaging; print(packaging.version.Version('${NEXT_SHORT_TAG}'))")
+NEXT_FULL_TAG_PEP440=$(python -c "from setuptools.extern import packaging; print(packaging.version.Version('${NEXT_FULL_TAG}'))")
 
-# bump rapids libraries
-for FILE in dependencies.yaml conda/environments/*.yaml; do
-  sed_runner "/-.* cudf==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
-  sed_runner "/-.* cuml==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
-  sed_runner "/-.* libcudf==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
-  sed_runner "/-.* librmm==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
-  sed_runner "/-.* rmm==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}\.*/g" ${FILE}
+DEPENDENCIES=(
+  cudf
+  cuml
+  libcudf
+  librmm
+  rmm
+)
+
+for DEP in "${DEPENDENCIES[@]}"; do
+  for FILE in dependencies.yaml conda/environments/*.yaml; do
+    sed_runner "/-.* ${DEP}==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}.*/g" ${FILE}
+  done
+  sed_runner "s/${DEP}==.*\",/${DEP}==${NEXT_SHORT_TAG_PEP440}.*\",/g" python/cuspatial/pyproject.toml
 done
+
+# Version in pyproject.toml
+sed_runner "s/^version = .*/version = \"${NEXT_FULL_TAG_PEP440}\"/g" python/cuspatial/pyproject.toml
 
 # Dependency versions in dependencies.yaml
 sed_runner "/-cu[0-9]\{2\}==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}.*/g" dependencies.yaml
-
-# Python pyproject.toml updates
-sed_runner "s/^version = .*/version = \"${NEXT_FULL_TAG}\"/g" python/cuspatial/pyproject.toml
-
-# Dependency versions in pyproject.toml
-sed_runner "s/cudf==.*\",/cudf==${NEXT_SHORT_TAG_PEP440}.*\",/g" python/cuspatial/pyproject.toml
-sed_runner "s/rmm==.*\",/rmm==${NEXT_SHORT_TAG_PEP440}.*\",/g" python/cuspatial/pyproject.toml

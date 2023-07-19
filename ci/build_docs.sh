@@ -19,7 +19,6 @@ rapids-print-env
 rapids-logger "Downloading artifacts from previous jobs"
 CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
 PYTHON_CHANNEL=$(rapids-download-conda-from-s3 python)
-VERSION_NUMBER="23.08"
 
 rapids-mamba-retry install \
   --channel "${CPP_CHANNEL}" \
@@ -27,21 +26,23 @@ rapids-mamba-retry install \
   libcuspatial \
   cuspatial
 
-rapids-logger "Build Doxygen docs"
+export RAPIDS_VERSION_NUMBER="23.08"
+export RAPIDS_DOCS_DIR="$(mktemp -d)"
+
+rapids-logger "Build CPP docs"
 pushd cpp/doxygen
 doxygen Doxyfile
+mkdir -p "${RAPIDS_DOCS_DIR}/libcuspatial/html"
+mv html/* "${RAPIDS_DOCS_DIR}/libcuspatial/html"
 popd
 
-rapids-logger "Build Sphinx docs"
+rapids-logger "Build Python docs"
 pushd docs
 sphinx-build -b dirhtml source _html -W
 sphinx-build -b text source _text -W
+mkdir -p "${RAPIDS_DOCS_DIR}/cuspatial/"{html,txt}
+mv _html/* "${RAPIDS_DOCS_DIR}/cuspatial/html"
+mv _text/* "${RAPIDS_DOCS_DIR}/cuspatial/txt"
 popd
 
-
-if [[ ${RAPIDS_BUILD_TYPE} != "pull-request" ]]; then
-  rapids-logger "Upload Docs to S3"
-  aws s3 sync --no-progress --delete docs/_html "s3://rapidsai-docs/cuspatial/${VERSION_NUMBER}/html"
-  aws s3 sync --no-progress --delete docs/_text "s3://rapidsai-docs/cuspatial/${VERSION_NUMBER}/txt"
-  aws s3 sync --no-progress --delete cpp/doxygen/html "s3://rapidsai-docs/libcuspatial/${VERSION_NUMBER}/html"
-fi
+rapids-upload-docs

@@ -65,6 +65,7 @@ class multipoint_range {
                                          GeometryIterator geometry_end,
                                          VecIterator points_begin,
                                          VecIterator points_end);
+
   /**
    * @brief Returns the number of multipoints in the array.
    */
@@ -83,22 +84,22 @@ class multipoint_range {
   /**
    * @brief Returns the iterator to the first multipoint in the multipoint array.
    */
-  auto multipoint_begin();
+  CUSPATIAL_HOST_DEVICE auto multipoint_begin();
 
   /**
    * @brief Returns the iterator past the last multipoint in the multipoint array.
    */
-  auto multipoint_end();
+  CUSPATIAL_HOST_DEVICE auto multipoint_end();
 
   /**
    * @brief Returns the iterator to the start of the multipoint array.
    */
-  auto begin() { return multipoint_begin(); }
+  CUSPATIAL_HOST_DEVICE auto begin() { return multipoint_begin(); }
 
   /**
    * @brief Returns the iterator past the last multipoint in the multipoint array.
    */
-  auto end() { return multipoint_end(); }
+  CUSPATIAL_HOST_DEVICE auto end() { return multipoint_end(); }
 
   /**
    * @brief Returns the iterator to the start of the underlying point array.
