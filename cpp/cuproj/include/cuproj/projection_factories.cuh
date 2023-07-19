@@ -42,9 +42,11 @@ inline bool is_epsg(std::string const& epsg_str) { return epsg_str.find("EPSG:")
  * @param epsg_str the EPSG code string
  * @return the integer value of the EPSG code
  */
-inline int epsg_stoi(std::string const& epsg_str)
+inline int epsg_stoi(std::string const& str)
 {
   try {
+    std::string epsg_str = str;
+    std::transform(str.begin(), str.end(), epsg_str.begin(), ::toupper);
     CUPROJ_EXPECTS(is_epsg(epsg_str), "EPSG code must start with 'EPSG:'");
     return std::stoi(epsg_str.substr(epsg_str.find_first_not_of("EPSG:")));
   } catch (std::invalid_argument const&) {
