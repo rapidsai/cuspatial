@@ -26,62 +26,55 @@ namespace cuproj {
 
 namespace detail {
 
-/**
- * @internal
- * @brief Check if the given EPSG code string is valid
- *
- * @param epsg_str the EPSG code string
- * @return true if the EPSG code is valid, false otherwise
- */
-inline bool is_epsg(std::string const& epsg_str) { return epsg_str.find("EPSG:") == 0; }
+// Class to handle string EPSG code parsing and validation
+class epsg_code {
+ public:
+  explicit epsg_code(std::string const& str) : str_(str)
+  {
+    std::transform(str_.begin(), str_.end(), str_.begin(), ::toupper);
+    CUPROJ_EXPECTS(valid_prefix(), "EPSG code must start with 'EPSG:'");
 
-/**
- * @internal
- * @brief Convert an EPSG code string to its integer value (the part after 'EPSG:')
- *
- * @param epsg_str the EPSG code string
- * @return the integer value of the EPSG code
- */
-inline int epsg_stoi(std::string const& str)
-{
-  try {
-    std::string epsg_str = str;
-    std::transform(str.begin(), str.end(), epsg_str.begin(), ::toupper);
-    CUPROJ_EXPECTS(is_epsg(epsg_str), "EPSG code must start with 'EPSG:'");
-    return std::stoi(epsg_str.substr(epsg_str.find_first_not_of("EPSG:")));
-  } catch (std::invalid_argument const&) {
-    CUPROJ_FAIL("Invalid EPSG code");
+    try {
+      epsg_ = std::stoi(str_.substr(str_.find_first_not_of("EPSG:")));
+    } catch (std::invalid_argument const&) {
+      CUPROJ_FAIL("Invalid EPSG code");
+    }
   }
-}
 
-/**
- * @internal
- * @brief Check if the given EPSG code string is for WGS84
- *
- * @param epsg_str the EPSG code string
- * @return true if the EPSG code is for WGS84, false otherwise
- */
-inline bool is_wgs_84(std::string const& epsg_str) { return epsg_str == "EPSG:4326"; }
+  explicit operator std::string() const { return str_; }
+  explicit operator int() const { return epsg_; }
 
-/**
- * @internal
- * @brief Convert an EPSG code string to a UTM zone and hemisphere
- *
- * @param epsg_str the EPSG code string
- * @return a pair of UTM zone and hemisphere
- */
-inline auto epsg_to_utm_zone(std::string const& epsg_str)
-{
-  int epsg = epsg_stoi(epsg_str);
+  /**
+   * @internal
+   * @brief Check if the EPSG code is for WGS84 (4326)
+   *
+   * @return true if the EPSG code is for WGS84, false otherwise
+   */
+  inline bool is_wgs_84() { return epsg_ == 4326; }
 
-  if (epsg >= 32601 && epsg <= 32660) {
-    return std::make_pair(epsg - 32600, hemisphere::NORTH);
-  } else if (epsg >= 32701 && epsg <= 32760) {
-    return std::make_pair(epsg - 32700, hemisphere::SOUTH);
-  } else {
-    CUPROJ_FAIL("Unsupported UTM EPSG code. Must be in range [32601, 32760] or [32701, 32760]]");
+  inline auto to_utm_zone()
+  {
+    if (epsg_ >= 32601 && epsg_ <= 32660) {
+      return std::make_pair(epsg_ - 32600, hemisphere::NORTH);
+    } else if (epsg_ >= 32701 && epsg_ <= 32760) {
+      return std::make_pair(epsg_ - 32700, hemisphere::SOUTH);
+    } else {
+      CUPROJ_FAIL("Unsupported UTM EPSG code. Must be in range [32601, 32760] or [32701, 32760]]");
+    }
   }
-}
+
+ private:
+  std::string str_;
+  int epsg_;
+
+  /**
+   * @internal
+   * @brief Check if the given EPSG code string is valid
+   *
+   * @return true if the EPSG code is valid, false otherwise
+   */
+  inline bool valid_prefix() const { return str_.find("EPSG:") == 0; }
+};
 
 }  // namespace detail
 
@@ -132,15 +125,20 @@ template <typename Coordinate>
 cuproj::projection<Coordinate>* make_projection(std::string const& src_epsg,
                                                 std::string const& dst_epsg)
 {
-  if (detail::is_wgs_84(src_epsg)) {
-    auto [dst_zone, dst_hemisphere] = detail::epsg_to_utm_zone(dst_epsg);
-    return make_utm_projection<Coordinate>(dst_zone, dst_hemisphere);
-  } else {
-    CUPROJ_EXPECTS(detail::is_wgs_84(dst_epsg),
-                   "Source or Destination EPSG must be WGS84 (EPSG:4326)");
-    auto [src_zone, src_hemisphere] = detail::epsg_to_utm_zone(src_epsg);
-    return make_utm_projection<Coordinate>(src_zone, src_hemisphere, direction::INVERSE);
-  }
+  detail::epsg_code src_code{src_epsg};
+  detail::epsg_code dst_code{dst_epsg};
+
+  auto dir = [&]() {
+    if (dst_code.is_wgs_84()) {
+      std::swap(src_code, dst_code);
+      return direction::INVERSE;
+    } else {
+      return direction::FORWARD;
+    }
+  }();
+
+  auto [dst_zone, dst_hemisphere] = dst_code.to_utm_zone();
+  return make_utm_projection<Coordinate>(dst_zone, dst_hemisphere);
 }
 
 }  // namespace cuproj
