@@ -95,9 +95,9 @@ inline auto epsg_to_utm_zone(std::string const& epsg_str)
  * @return a unique_ptr to a projection object implementing the requested transformation
  */
 template <typename Coordinate, typename T = typename Coordinate::value_type>
-std::unique_ptr<projection<Coordinate>> make_utm_projection(int zone,
-                                                            hemisphere hemisphere,
-                                                            direction dir = direction::FORWARD)
+projection<Coordinate>* make_utm_projection(int zone,
+                                            hemisphere hemisphere,
+                                            direction dir = direction::FORWARD)
 {
   projection_parameters<T> tmerc_proj_params{
     make_ellipsoid_wgs84<T>(), zone, hemisphere, T{0}, T{0}};
@@ -109,7 +109,7 @@ std::unique_ptr<projection<Coordinate>> make_utm_projection(int zone,
     operation_type::TRANSVERSE_MERCATOR,
     operation_type::OFFSET_SCALE_CARTESIAN_COORDINATES};
 
-  return std::make_unique<projection<Coordinate>>(h_utm_pipeline, tmerc_proj_params, dir);
+  return new projection<Coordinate>(h_utm_pipeline, tmerc_proj_params, dir);
 }
 
 /**
@@ -127,8 +127,8 @@ std::unique_ptr<projection<Coordinate>> make_utm_projection(int zone,
  * codes
  */
 template <typename Coordinate>
-std::unique_ptr<cuproj::projection<Coordinate>> make_projection(std::string const& src_epsg,
-                                                                std::string const& dst_epsg)
+cuproj::projection<Coordinate>* make_projection(std::string const& src_epsg,
+                                                std::string const& dst_epsg)
 {
   if (detail::is_wgs_84(src_epsg)) {
     auto [dst_zone, dst_hemisphere] = detail::epsg_to_utm_zone(dst_epsg);

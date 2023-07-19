@@ -120,7 +120,7 @@ auto make_vec_2d_output_iterator(FirstIter first, SecondIter second) {
 }
 } // namespace
 
-std::unique_ptr<cuproj::projection<cuproj::vec_2d<double>>>
+cuproj::projection<cuproj::vec_2d<double>>*
 make_projection(std::string const &src_epsg, std::string const &dst_epsg) {
   return cuproj::make_projection<cuproj::vec_2d<double>>(src_epsg, dst_epsg);
 }

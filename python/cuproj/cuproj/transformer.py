@@ -1,4 +1,11 @@
+import cupy as cp
+
 from cuproj._lib.transform import wgs84_to_utm
+
+CRSDispacther = {
+    ("epsg:4326", "epsg:32756"): wgs84_to_utm
+}
+
 
 class Transformer:
     """A transformer object to transform coordinates from one CRS to another.
@@ -63,9 +70,19 @@ class Transformer:
         tuple
             A tuple of transformed x and y coordinates.
         """
-        if direction == "FORWARD":
-            return self._transform_forward(x, y)
-        elif direction == "INVERSE":
-            return self._transform_inverse(x, y)
-        else:
+
+        if direction not in ("FORWARD", "INVERSE"):
             raise ValueError(f"Invalid direction: {direction}")
+
+        isfloat = False
+        if isinstance(x, float) and isinstance(y, float):
+            isfloat = True
+            x = cp.asarray([x], dtype='f8')
+            y = cp.asarray([y], dtype='f8')
+
+        f = CRSDispacther[(self._crs_from, self._crs_to)]
+        resx, resy = f(x, y, direction)
+
+        if isfloat:
+            resx, resy = resx.get()[0], resy.get()[0]
+        return resx, resy
