@@ -533,3 +533,111 @@ TYPED_TEST(MultilinestringRangeTest, MultilinestringAsMultipointTest6)
                      {P{1, 1}, P{0, 0}, P{6, 6}, P{6, 7}},
                      {{P{1, 1}, P{0, 0}, P{6, 6}, P{6, 7}}});
 }
+
+template <typename T>
+class MultilinestringRangeTest2 {
+  void SetUp() { make_test_multilinestring(); }
+
+  virtual void make_test_multilinestring() = 0;
+
+  auto range() { return test_multilinestring.range(); }
+
+  void run_test()
+  {
+    test_size();
+
+    test_num_multilinestrings();
+
+    test_num_linestrings();
+
+    test_num_points();
+
+    test_multilinestring_it();
+
+    test_begin();
+
+    test_end();
+
+    test_point_it();
+
+    test_part_offset_it();
+
+    test_part_idx_from_point_idx();
+
+    test_part_idx_from_segment_idx();
+
+    test_geometry_idx_from_part_idx();
+
+    test_geometry_idx_from_point_idx();
+
+    test_intra_part_idx();
+
+    test_intra_point_idx();
+
+    test_is_valid_segment_id();
+
+    test_segment();
+
+    test_multilinestring_point_count_it();
+
+    test_multilinestring_linestring_count_it();
+
+    test_array_access_operator();
+
+    test_geometry_offsets_it();
+    test_part_offsets_it();
+
+    test_as_multipoint_range();
+  }
+
+  void test_size() { EXPECT_EQ(this->range().size(), this->range().num_muiltilinestrings()); }
+
+  virtual void test_num_multilinestrings() = 0;
+
+  virtual void test_num_linestrings() = 0;
+
+  virtual void test_num_points() = 0;
+
+  virtual void test_multilinestring_it();
+
+  void test_begin() { EXPECT_EQ(this->range().begin(), this->range().multilinestring_begin()); }
+
+  void test_end() { EXPECT_EQ(this->range().end(), this->range().multilinestring_end()); }
+
+  virtual void test_point_it() = 0;
+
+  virtual void test_part_offset_it() = 0;
+
+  virtual void test_part_idx_from_point_idx() = 0;
+
+  virtual void test_part_idx_from_segment_idx() = 0;
+
+  virtual void test_geometry_idx_from_part_idx() = 0;
+
+  virtual void test_geometry_idx_from_point_idx() = 0;
+
+  virtual void test_intra_part_idx() = 0;
+
+  virtual void test_intra_point_idx() = 0;
+
+  virtual void test_is_valid_segment_id() = 0;
+
+  virtual void test_segment() = 0;
+
+  virtual void test_multilinestring_point_count_it() = 0;
+
+  virtual void test_multilinestring_linestring_count_it() = 0;
+
+  virtual void test_array_access_operator() = 0;
+
+  virtual void test_geometry_offsets_it() = 0;
+  virtual void test_part_offsets_it()     = 0;
+
+  virtual void test_as_multipoint_range() = 0;
+
+ private:
+  std::unique_ptr<multilinestring_array<rmm::device_vector<std::size_t>,
+                                        rmm::device_vector<std::size_t>,
+                                        rmm::device_vector<vec_2d<T>>>>
+    test_multilinestring;
+};
