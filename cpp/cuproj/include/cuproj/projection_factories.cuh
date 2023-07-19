@@ -129,16 +129,17 @@ cuproj::projection<Coordinate>* make_projection(std::string const& src_epsg,
   detail::epsg_code dst_code{dst_epsg};
 
   auto dir = [&]() {
-    if (dst_code.is_wgs_84()) {
-      std::swap(src_code, dst_code);
-      return direction::INVERSE;
-    } else {
+    if (src_code.is_wgs_84()) {
       return direction::FORWARD;
+    } else {
+      std::swap(src_code, dst_code);
+      CUPROJ_EXPECTS(src_code.is_wgs_84(), "Unsupported CRS combination.");
+      return direction::INVERSE;
     }
   }();
 
   auto [dst_zone, dst_hemisphere] = dst_code.to_utm_zone();
-  return make_utm_projection<Coordinate>(dst_zone, dst_hemisphere);
+  return make_utm_projection<Coordinate>(dst_zone, dst_hemisphere, dir);
 }
 
 }  // namespace cuproj
