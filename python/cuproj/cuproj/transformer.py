@@ -2,6 +2,7 @@ import cupy as cp
 
 from cuproj._lib.transform import Transformer as _Transformer
 
+
 class Transformer:
     """A transformer object to transform coordinates from one CRS to another.
 
@@ -12,8 +13,8 @@ class Transformer:
     to_crs : CRS
         The target CRS.
     skip_equivalent : bool, optional
-        If True, skip transformation if the source and target CRS are equivalent.
-        Default is False.
+        If True, skip transformation if the source and target CRS are
+        equivalent. Default is False.
 
     Examples
     --------
@@ -44,7 +45,8 @@ class Transformer:
         Returns
         -------
         Transformer
-            A transformer object to transform coordinates from one CRS to another.
+            A transformer object to transform coordinates from one CRS to
+            another.
         """
         return Transformer(crs_from, crs_to)
 

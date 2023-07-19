@@ -14,11 +14,11 @@ cdef class Transformer:
     cdef projection[vec_2d[double]]* proj
 
     def __init__(self, crs_from, crs_to):
-        self.proj = make_projection(crs_from.encode('utf-8'), crs_to.encode('utf-8'))
+        self.proj = make_projection(
+            crs_from.encode('utf-8'), crs_to.encode('utf-8'))
 
     def __del__(self):
         del self.proj
-
 
     def transform(self, x, y, dir):
         # Assumption: srcarr is a (N,) shaped cupy array
