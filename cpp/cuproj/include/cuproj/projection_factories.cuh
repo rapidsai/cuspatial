@@ -26,9 +26,13 @@ namespace cuproj {
 
 namespace detail {
 
-// Class to handle string EPSG code parsing and validation
+/**
+ * @internal
+ * @brief A class to represent EPSG codes
+ */
 class epsg_code {
  public:
+  /// Construct an epsg_code from a string
   explicit epsg_code(std::string const& str) : str_(str)
   {
     std::transform(str_.begin(), str_.end(), str_.begin(), ::toupper);
@@ -41,17 +45,16 @@ class epsg_code {
     }
   }
 
-  explicit operator std::string() const { return str_; }
-  explicit operator int() const { return epsg_; }
+  /// Construct an epsg_code from an integer
+  explicit epsg_code(int code) : str_("EPSG:" + std::to_string(code)), epsg_(code) {}
 
-  /**
-   * @internal
-   * @brief Check if the EPSG code is for WGS84 (4326)
-   *
-   * @return true if the EPSG code is for WGS84, false otherwise
-   */
-  inline bool is_wgs_84() { return epsg_ == 4326; }
+  explicit operator std::string() const { return str_; }  //< Return the EPSG code as a string
+  explicit operator int() const { return epsg_; }         //< Return the EPSG code as an integer
 
+  // Return true if the EPSG code is for WGS84 (4326), false otherwise
+  inline bool is_wgs_84() const { return epsg_ == 4326; }
+
+  /// Return a [zone, hemisphere] pair for the UTM zone corresponding to the EPSG code
   inline auto to_utm_zone()
   {
     if (epsg_ >= 32601 && epsg_ <= 32660) {
@@ -67,12 +70,7 @@ class epsg_code {
   std::string str_;
   int epsg_;
 
-  /**
-   * @internal
-   * @brief Check if the given EPSG code string is valid
-   *
-   * @return true if the EPSG code is valid, false otherwise
-   */
+  /// Return true if the EPSG code is valid, false otherwise
   inline bool valid_prefix() const { return str_.find("EPSG:") == 0; }
 };
 
@@ -122,8 +120,8 @@ projection<Coordinate>* make_utm_projection(int zone,
  * codes
  */
 template <typename Coordinate>
-cuproj::projection<Coordinate>* make_projection(std::string const& src_epsg,
-                                                std::string const& dst_epsg)
+cuproj::projection<Coordinate>* make_projection(detail::epsg_code const& src_epsg,
+                                                detail::epsg_code const& dst_epsg)
 {
   detail::epsg_code src_code{src_epsg};
   detail::epsg_code dst_code{dst_epsg};
@@ -140,6 +138,55 @@ cuproj::projection<Coordinate>* make_projection(std::string const& src_epsg,
 
   auto [dst_zone, dst_hemisphere] = dst_code.to_utm_zone();
   return make_utm_projection<Coordinate>(dst_zone, dst_hemisphere, dir);
+}
+
+/**
+ * @brief Create a projection object from EPSG codes as "EPSG:XXXX" strings
+ *
+ * @throw cuproj::logic_error if the EPSG codes describe a transformation that is not supported
+ *
+ * @note Currently only WGS84 to UTM and UTM to WGS84 are supported, so one of the EPSG codes must
+ * be "EPSG:4326" (WGS84) and the other must be a UTM EPSG code.
+ *
+ * @note Auth strings are case insensitive
+ *
+ * @tparam Coordinate the coordinate type
+ * @param src_epsg the source EPSG code
+ * @param dst_epsg the destination EPSG code
+ * @return a pointer to a projection object implementing the transformation between the two EPSG
+ * codes
+ */
+template <typename Coordinate>
+cuproj::projection<Coordinate>* make_projection(std::string const& src_epsg,
+                                                std::string const& dst_epsg)
+{
+  detail::epsg_code src_code{src_epsg};
+  detail::epsg_code dst_code{dst_epsg};
+
+  return make_projection<Coordinate>(src_code, dst_code);
+}
+
+/**
+ * @brief Create a projection object from integer EPSG codes
+ *
+ * @throw cuproj::logic_error if the EPSG codes describe a transformation that is not supported
+ *
+ * @note Currently only WGS84 to UTM and UTM to WGS84 are supported, so one of the EPSG codes must
+ * be 4326 (WGS84) and the other must be a UTM EPSG code.
+ *
+ * @tparam Coordinate the coordinate type
+ * @param src_epsg the source EPSG code
+ * @param dst_epsg the destination EPSG code
+ * @return a pointer to a projection object implementing the transformation between the two EPSG
+ * codes
+ */
+template <typename Coordinate>
+cuproj::projection<Coordinate>* make_projection(int src_epsg, int const& dst_epsg)
+{
+  detail::epsg_code src_code{src_epsg};
+  detail::epsg_code dst_code{dst_epsg};
+
+  return make_projection<Coordinate>(detail::epsg_code(src_epsg), detail::epsg_code(dst_epsg));
 }
 
 }  // namespace cuproj

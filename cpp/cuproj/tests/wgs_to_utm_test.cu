@@ -151,10 +151,18 @@ void run_forward_and_inverse(DeviceVector const& input,
 TYPED_TEST(ProjectionTest, make_projection_valid_epsg)
 {
   using T = TypeParam;
-  cuproj::make_projection<coordinate<T>>("EPSG:4326", "EPSG:32756");
-  cuproj::make_projection<coordinate<T>>("EPSG:32756", "EPSG:4326");
-  cuproj::make_projection<coordinate<T>>("EPSG:4326", "EPSG:32601");
-  cuproj::make_projection<coordinate<T>>("EPSG:32601", "EPSG:4326");
+  {  // auth:code strings
+    cuproj::make_projection<coordinate<T>>("EPSG:4326", "EPSG:32756");
+    cuproj::make_projection<coordinate<T>>("EPSG:32756", "EPSG:4326");
+    cuproj::make_projection<coordinate<T>>("EPSG:4326", "EPSG:32601");
+    cuproj::make_projection<coordinate<T>>("EPSG:32601", "EPSG:4326");
+  }
+  {  // int epsg codes
+    cuproj::make_projection<coordinate<T>>(4326, 32756);
+    cuproj::make_projection<coordinate<T>>(32756, 4326);
+    cuproj::make_projection<coordinate<T>>(4326, 32601);
+    cuproj::make_projection<coordinate<T>>(32601, 4326);
+  }
 }
 
 // Test that construction of the projection from unsupported EPSG codes throws
@@ -162,12 +170,18 @@ TYPED_TEST(ProjectionTest, make_projection_valid_epsg)
 TYPED_TEST(ProjectionTest, invalid_epsg)
 {
   using T = TypeParam;
-  EXPECT_THROW(cuproj::make_projection<coordinate<T>>("EPSG:4326", "EPSG:756"),
-               cuproj::logic_error);
-  EXPECT_THROW(cuproj::make_projection<coordinate<T>>("EPSG:4326", "UTM:32756"),
-               cuproj::logic_error);
-  EXPECT_THROW(cuproj::make_projection<coordinate<T>>("EPSG:32611", "EPSG:32756"),
-               cuproj::logic_error);
+  {  // auth:code strings
+    EXPECT_THROW(cuproj::make_projection<coordinate<T>>("EPSG:4326", "EPSG:756"),
+                 cuproj::logic_error);
+    EXPECT_THROW(cuproj::make_projection<coordinate<T>>("EPSG:4326", "UTM:32756"),
+                 cuproj::logic_error);
+    EXPECT_THROW(cuproj::make_projection<coordinate<T>>("EPSG:32611", "EPSG:32756"),
+                 cuproj::logic_error);
+  }
+  {  // int codes
+    EXPECT_THROW(cuproj::make_projection<coordinate<T>>(4326, 756), cuproj::logic_error);
+    EXPECT_THROW(cuproj::make_projection<coordinate<T>>(32611, 32756), cuproj::logic_error);
+  }
 }
 
 // Test on a single coordinate
