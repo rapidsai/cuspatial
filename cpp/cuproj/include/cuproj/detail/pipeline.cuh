@@ -29,7 +29,6 @@
 #include <iterator>
 
 namespace cuproj {
-
 namespace detail {
 
 /**
@@ -77,7 +76,6 @@ class pipeline {
   __device__ Coordinate operator()(Coordinate const& c) const
   {
     Coordinate c_out{c};
-    // printf("c_in: %f, %f\n", c.x, c.y);
     thrust::for_each_n(thrust::seq, first_, num_stages, [&](auto const& op) {
       switch (op) {
         case operation_type::AXIS_SWAP: {
@@ -106,9 +104,7 @@ class pipeline {
           break;
         }
       }
-      // printf("c_out: %f, %f\n", c_out.x, c_out.y);
     });
-    // printf("c_out: %f, %f\n", c_out.x, c_out.y);
     return c_out;
   }
 
