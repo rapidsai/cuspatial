@@ -68,6 +68,7 @@ def test_wgs84_to_utm_one_point():
     assert_allclose(cuproj_x, pyproj_x)
     assert_allclose(cuproj_y, pyproj_y)
 
+
 def grid_generator(min_corner, max_corner, num_points_lat, num_points_lon):
     spacing = ((max_corner[0] - min_corner[0]) / num_points_lat,
                (max_corner[1] - min_corner[1]) / num_points_lon)
