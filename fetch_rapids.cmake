@@ -11,7 +11,18 @@
 # or implied. See the License for the specific language governing permissions and limitations under
 # the License.
 # =============================================================================
-file(DOWNLOAD https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-23.08/RAPIDS.cmake
-     ${CMAKE_BINARY_DIR}/RAPIDS.cmake
-)
-include(${CMAKE_BINARY_DIR}/RAPIDS.cmake)
+if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/CUSPATIAL_RAPIDS.cmake)
+
+  # TODO: TEMPORARY
+  if(NOT rapids-cmake-repo)
+    set(rapids-cmake-repo trxcllnt/rapids-cmake)
+  endif()
+  if(NOT rapids-cmake-branch)
+    set(rapids-cmake-branch fix/support_conda_env-modify-cmake_prefix_path-envvar)
+  endif()
+
+  file(DOWNLOAD https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-23.08/RAPIDS.cmake
+       ${CMAKE_BINARY_DIR}/CUSPATIAL_RAPIDS.cmake
+  )
+endif()
+include(${CMAKE_BINARY_DIR}/CUSPATIAL_RAPIDS.cmake)
