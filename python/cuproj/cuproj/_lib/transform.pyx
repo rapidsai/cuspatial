@@ -29,12 +29,12 @@ cdef class Transformer:
         del self.proj
 
     def transform(self, x, y, dir):
-        # Assumption: srcarr is a (N,) shaped cupy array
+        # Assumption: x and y are (N,) shaped cupy array
         cdef int size = x.shape[0]
 
         # allocate C-contiguous array
-        result_x = cp.array((size,), order='C', dtype=cp.float64)
-        result_y = cp.array((size,), order='C', dtype=cp.float64)
+        result_x = cp.ndarray((size,), order='C', dtype=cp.float64)
+        result_y = cp.ndarray((size,), order='C', dtype=cp.float64)
 
         cdef double* x_in = <double*> <uintptr_t> x.data.ptr
         cdef double* y_in = <double*> <uintptr_t> y.data.ptr

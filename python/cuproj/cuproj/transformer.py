@@ -2,6 +2,7 @@ import cupy as cp
 
 from cuproj._lib.transform import Transformer as _Transformer
 
+from collections.abc import Iterable
 
 class Transformer:
     """A transformer object to transform coordinates from one CRS to another.
@@ -77,6 +78,9 @@ class Transformer:
             isfloat = True
             x = cp.asarray([x], dtype='f8')
             y = cp.asarray([y], dtype='f8')
+        elif isinstance(x, Iterable) and isinstance(y, Iterable):
+            x = cp.asarray(x, dtype='f8')
+            y = cp.asarray(y, dtype='f8')
 
         resx, resy = self._proj.transform(x, y, direction)
 
