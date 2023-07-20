@@ -1,4 +1,6 @@
 
+import cupy as cp
+import numpy as np
 import pytest
 from cupy.testing import assert_allclose
 from pyproj import Transformer
@@ -77,31 +79,46 @@ def grid_generator(min_corner, max_corner, num_points_lat, num_points_lon):
                min_corner[1] + (i // num_points_lon) * spacing[1])
 
 
-# test with a grid of points around san francisco
-def test_wgs84_to_utm_grid():
-    # San Francisco bounding box
-    min_corner = (37.7081, -122.5149)
-    max_corner = (37.8324, -122.3573)
+grid_corners = [
+    # San Francisco
+    ((37.7081, -122.5149), (37.8324, -122.3573), "EPSG:32610"),
+    # Sydney
+    ((-33.9, 151.2), (-33.7, 151.3), "EPSG:32756"),
+    # London
+    ((51.3, -0.5), (51.6, 0.3), "EPSG:32630"),
+    # New York City
+    ((40.4774, -74.2591), (40.9176, -73.7004), "EPSG:32618"),
+    # Ushuaia, Argentina
+    ((-54.9, -68.4), (-54.7, -68.1), "EPSG:32719"),
+    # McMurdo Station, Antarctica
+    ((-77.9, 166.4), (-77.7, 166.7), "EPSG:32706"),
+    # Singapore
+    ((1.2, 103.6), (1.5, 104.0), "EPSG:32648")]
 
+container_types = [list, tuple, np.asarray, cp.asarray]
+
+
+# test with grids of points
+# test with various container types (host and device)
+@pytest.mark.parametrize("container_type", container_types)
+@pytest.mark.parametrize("min_corner, max_corner, crs_to", grid_corners)
+def test_wgs84_to_utm_grid(container_type, min_corner, max_corner, crs_to):
     # Define the number of points in the grid
-    num_points_x = 2
-    num_points_y = 2
+    num_points_x = 100
+    num_points_y = 100
 
     # Transform to UTM using PyProj
     transformer = Transformer.from_crs(
-        "EPSG:4326", "EPSG:32756")
+        "EPSG:4326", crs_to)
     pyproj_x, pyproj_y = transformer.transform(
         *zip(*grid_generator(
             min_corner, max_corner, num_points_x, num_points_y)))
 
-    print(f"pyproj_x: {pyproj_x}")
-    print(f"pyproj_y: {pyproj_y}")
-
     # Transform to UTM using cuproj
-    cu_transformer = cuTransformer.from_crs("EPSG:4326", "EPSG:32756")
+    cu_transformer = cuTransformer.from_crs("EPSG:4326", crs_to)
     cuproj_x, cuproj_y = cu_transformer.transform(
-        *zip(*grid_generator(
-            min_corner, max_corner, num_points_x, num_points_y)))
+        *map(container_type, zip(*grid_generator(
+            min_corner, max_corner, num_points_x, num_points_y))))
 
     assert_allclose(cuproj_x, pyproj_x)
     assert_allclose(cuproj_y, pyproj_y)
