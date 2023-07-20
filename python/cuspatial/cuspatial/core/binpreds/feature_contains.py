@@ -170,17 +170,26 @@ class LineStringPointContains(BinPred):
 
 class LineStringLineStringContainsPredicate(BinPred):
     def _preprocess(self, lhs, rhs):
-        # Typical preprocess:
-        # Flatten all multilinestrings to linestrings
-        # Duplicate the lhs according to geometry_offset sizes
-        # Process the contains function
+        # rhs_self_intersection is rhs where all colinear segments
+        # are compacted into a single segment. This is necessary
+        # because the intersection of lhs and rhs below will
+        # compact colinear segments into a single segment, so
+        # vertices in rhs will be lost and not countable.
+        # Consider the following example:
+        # lhs = [(0, 0), (1, 1)]
+        # rhs = [(0, 0), (0.5, 0.5), (1, 1)]
+        # The intersection of lhs and rhs is [(0, 0), (1, 1)].
+        # rhs is contained by lhs if all of the vertices in the
+        # intersection are in rhs. However, the intersection
+        # does not contain the vertex (0.5, 0.5) in the original rhs.
         rhs_self_intersection = _basic_intersects_pli(rhs, rhs)
         rhs_no_segments = _points_and_lines_to_multipoints(
             rhs_self_intersection[1], rhs_self_intersection[0]
         )
+        # Now intersect lhs and rhs and collect only the segments.
         pli = _basic_intersects_pli(lhs, rhs)
         lines = _pli_lines_to_multipoints(pli)
-        # Every point in B must be in the intersection
+        # Every segment in B must be in the intersection segments.
         equals = (
             _basic_equals_count(lines, rhs_no_segments)
             == rhs_no_segments.sizes

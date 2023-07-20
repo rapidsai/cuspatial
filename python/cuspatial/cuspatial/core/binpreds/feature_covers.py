@@ -41,7 +41,6 @@ class MultiPointMultiPointCovers(BinPred):
     def _preprocess(self, lhs, rhs):
         # A multipoint A covers another multipoint B iff
         # every point in B is in A.
-        # Count the number of points from rhs in lhs
         return lhs.contains(rhs)
 
 
