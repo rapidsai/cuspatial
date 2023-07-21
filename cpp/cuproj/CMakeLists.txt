@@ -175,13 +175,8 @@ endif()
 
 if(CUPROJ_BUILD_BENCHMARKS)
     # Find or install GoogleBench
-    CPMFindPackage(NAME benchmark
-        VERSION         1.5.3
-        GIT_REPOSITORY  https://github.com/google/benchmark.git
-        GIT_TAG         v1.5.3
-        GIT_SHALLOW     TRUE
-        OPTIONS         "BENCHMARK_ENABLE_TESTING OFF"
-                        "BENCHMARK_ENABLE_INSTALL OFF")
+    include(${rapids-cmake-dir}/cpm/gbench.cmake)
+    rapids_cpm_gbench()
 
     # Find or install NVBench Temporarily force downloading of fmt because current versions of nvbench
     # do not support the latest version of fmt, which is automatically pulled into our conda
