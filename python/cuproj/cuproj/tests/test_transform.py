@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 from cupy.testing import assert_allclose
 from pyproj import Transformer
+from pyproj.enums import TransformDirection
 
 from cuproj import Transformer as cuTransformer
 
@@ -90,11 +91,8 @@ grid_corners = [
 container_types = [list, tuple, np.asarray, cp.asarray]
 
 
-# test with grids of points
-# test with various container types (host and device)
-@pytest.mark.parametrize("container_type", container_types)
-@pytest.mark.parametrize("min_corner, max_corner, crs_to", grid_corners)
-def test_wgs84_to_utm_grid(container_type, min_corner, max_corner, crs_to):
+def run_forward_and_inverse_transforms(
+        container_type, min_corner, max_corner, crs_to):
     # Define the number of points in the grid
     num_points_x = 100
     num_points_y = 100
@@ -108,14 +106,45 @@ def test_wgs84_to_utm_grid(container_type, min_corner, max_corner, crs_to):
     pyproj_x, pyproj_y = transformer.transform(*grid)
 
     # Transform to UTM using cuproj
-
-    cu_grid = cp.meshgrid(
-        cp.linspace(min_corner[0], max_corner[0], num_points_y),
-        cp.linspace(min_corner[1], max_corner[1], num_points_x))
-    cu_grid = [np.ravel(grid[0]), np.ravel(grid[1])]
-
+    cu_grid = container_type(grid)
     cu_transformer = cuTransformer.from_crs("EPSG:4326", crs_to)
     cuproj_x, cuproj_y = cu_transformer.transform(*cu_grid)
 
     assert_allclose(cuproj_x, pyproj_x)
     assert_allclose(cuproj_y, pyproj_y)
+
+    # Transform back to WGS84 using PyProj
+    #transformer = Transformer.from_crs(crs_to, "EPSG:4326")
+    pyproj_x_back, pyproj_y_back = transformer.transform(
+            pyproj_x, pyproj_y, direction=TransformDirection.INVERSE)
+
+    # Transform back to WGS84 using cuproj
+    #cu_transformer = cuTransformer.from_crs(crs_to, "EPSG:4326")
+    cuproj_x_back, cuproj_y_back = cu_transformer.transform(
+        cuproj_x, cuproj_y, direction="INVERSE")
+
+    assert_allclose(cuproj_x_back, pyproj_x_back)
+    assert_allclose(cuproj_y_back, pyproj_y_back)
+
+    # Also test inverse construction
+
+    # Transform back to WGS84 using PyProj
+    transformer = Transformer.from_crs(crs_to, "EPSG:4326")
+    pyproj_x_back, pyproj_y_back = transformer.transform(
+            pyproj_x, pyproj_y)
+
+    # Transform back to WGS84 using cuproj
+    cu_transformer = cuTransformer.from_crs(crs_to, "EPSG:4326")
+    cuproj_x_back, cuproj_y_back = cu_transformer.transform(
+        cuproj_x, cuproj_y)
+
+    assert_allclose(cuproj_x_back, pyproj_x_back)
+    assert_allclose(cuproj_y_back, pyproj_y_back)
+
+# test with grids of points
+@pytest.mark.parametrize("container_type", container_types)
+# test with various container types (host and device)
+@pytest.mark.parametrize("min_corner, max_corner, crs_to", grid_corners)
+def test_wgs84_to_utm_grid(container_type, min_corner, max_corner, crs_to):
+    run_forward_and_inverse_transforms(
+        container_type, min_corner, max_corner, crs_to)
