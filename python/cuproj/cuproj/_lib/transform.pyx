@@ -29,15 +29,29 @@ cdef class Transformer:
         del self.proj
 
     def transform(self, x, y, dir):
-        # Assumption: x and y are (N,) shaped cupy array
+        if not hasattr(x, "__cuda_array_interface__"):
+            raise TypeError("x must be a __cuda_array_interface__ compliant object")
+        if not hasattr(y, "__cuda_array_interface__"):
+            raise TypeError("y must be a __cuda_array_interface__ compliant object")
+        if (len(x.shape) != 1):
+            raise TypeError("x must be a 1D array")
+        if (len(y.shape) != 1):
+            raise TypeError("y must be a 1D array")
+        if (x.shape[0] != y.shape[0]):
+            raise TypeError("x and y must have the same length")
+        if (x.dtype != cp.float64):
+            raise TypeError("x must be of type float64")
+        if (y.dtype != cp.float64):
+            raise TypeError("y must be of type float64")
+
         cdef int size = x.shape[0]
 
         # allocate C-contiguous array
         result_x = cp.ndarray((size,), order='C', dtype=cp.float64)
         result_y = cp.ndarray((size,), order='C', dtype=cp.float64)
 
-        cdef double* x_in = <double*> <uintptr_t> x.data.ptr
-        cdef double* y_in = <double*> <uintptr_t> y.data.ptr
+        cdef double* x_in = <double*> <uintptr_t> x.__cuda_array_interface__['data'][0]
+        cdef double* y_in = <double*> <uintptr_t> y.__cuda_array_interface__['data'][0]
         cdef double* x_out = <double*> <uintptr_t> result_x.data.ptr
         cdef double* y_out = <double*> <uintptr_t> result_y.data.ptr
 

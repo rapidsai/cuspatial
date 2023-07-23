@@ -1,11 +1,14 @@
 
 import cupy as cp
 import numpy as np
+import geopandas as gpd
+import cuspatial
+from shapely.geometry import Point
+
 import pytest
 from cupy.testing import assert_allclose
 from pyproj import Transformer
 from pyproj.enums import TransformDirection
-
 from cuproj import Transformer as cuTransformer
 
 valid_crs_combos = [
@@ -145,3 +148,26 @@ def run_forward_and_inverse_transforms(
 def test_wgs84_to_utm_grid(container_type, min_corner, max_corner, crs_to):
     run_forward_and_inverse_transforms(
         container_type, min_corner, max_corner, crs_to)
+
+
+# test __cuda_array_interface__ support by using cuspatial geoseries as input
+def test_geoseries_input():
+    s = gpd.GeoSeries(
+        [
+            Point(grid_corners[0][0]),
+            Point(grid_corners[0][1]),
+        ]
+    )
+
+    gs = cuspatial.from_geopandas(s)
+
+    # Transform to UTM using PyProj
+    transformer = Transformer.from_crs("EPSG:4326", grid_corners[0][2])
+    pyproj_x, pyproj_y = transformer.transform(s.x.values, s.y.values)
+
+    # Transform to UTM using cuproj
+    cu_transformer = cuTransformer.from_crs("EPSG:4326", grid_corners[0][2])
+    cuproj_x, cuproj_y = cu_transformer.transform(gs.x.values, gs.y.values)
+
+    assert_allclose(cuproj_x, pyproj_x)
+    assert_allclose(cuproj_y, pyproj_y)
