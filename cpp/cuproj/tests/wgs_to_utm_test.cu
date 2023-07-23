@@ -105,7 +105,7 @@ void run_proj_test(thrust::host_vector<PJ_COORD>& coords,
 }
 
 // Run a test using the cuproj library in both directions, comparing to the proj library
-template <typename T, typename DeviceVector, bool inverted = false>
+template <typename T, typename DeviceVector>
 void run_forward_and_inverse(DeviceVector const& input,
                              T tolerance                 = T{0},
                              std::string const& utm_epsg = "EPSG:32756")
@@ -123,8 +123,6 @@ void run_forward_and_inverse(DeviceVector const& input,
 
   char const* epsg_src = "EPSG:4326";
   char const* epsg_dst = utm_epsg.c_str();
-
-  if constexpr (inverted) {}
 
   auto run = [&]() {
     run_proj_test(pj_expected, epsg_src, epsg_dst);
