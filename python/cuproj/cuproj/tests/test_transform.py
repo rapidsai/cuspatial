@@ -71,14 +71,6 @@ def test_wgs84_to_utm_one_point():
     assert_allclose(cuproj_y, pyproj_y)
 
 
-def grid_generator(min_corner, max_corner, num_points_lat, num_points_lon):
-    spacing = ((max_corner[0] - min_corner[0]) / num_points_lat,
-               (max_corner[1] - min_corner[1]) / num_points_lon)
-    for i in range(num_points_lat * num_points_lon):
-        yield (min_corner[0] + (i % num_points_lon) * spacing[0],
-               min_corner[1] + (i // num_points_lon) * spacing[1])
-
-
 grid_corners = [
     # San Francisco
     ((37.7081, -122.5149), (37.8324, -122.3573), "EPSG:32610"),
@@ -107,18 +99,23 @@ def test_wgs84_to_utm_grid(container_type, min_corner, max_corner, crs_to):
     num_points_x = 100
     num_points_y = 100
 
+    grid = np.meshgrid(np.linspace(min_corner[0], max_corner[0], num_points_y),
+                       np.linspace(min_corner[1], max_corner[1], num_points_x))
+    grid = [np.ravel(grid[0]), np.ravel(grid[1])]
+
     # Transform to UTM using PyProj
-    transformer = Transformer.from_crs(
-        "EPSG:4326", crs_to)
-    pyproj_x, pyproj_y = transformer.transform(
-        *zip(*grid_generator(
-            min_corner, max_corner, num_points_x, num_points_y)))
+    transformer = Transformer.from_crs("EPSG:4326", crs_to)
+    pyproj_x, pyproj_y = transformer.transform(*grid)
 
     # Transform to UTM using cuproj
+
+    cu_grid = cp.meshgrid(
+        cp.linspace(min_corner[0], max_corner[0], num_points_y),
+        cp.linspace(min_corner[1], max_corner[1], num_points_x))
+    cu_grid = [np.ravel(grid[0]), np.ravel(grid[1])]
+
     cu_transformer = cuTransformer.from_crs("EPSG:4326", crs_to)
-    cuproj_x, cuproj_y = cu_transformer.transform(
-        *map(container_type, zip(*grid_generator(
-            min_corner, max_corner, num_points_x, num_points_y))))
+    cuproj_x, cuproj_y = cu_transformer.transform(*cu_grid)
 
     assert_allclose(cuproj_x, pyproj_x)
     assert_allclose(cuproj_y, pyproj_y)
