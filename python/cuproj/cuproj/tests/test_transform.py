@@ -93,7 +93,6 @@ container_types = [list, tuple, np.asarray, cp.asarray]
 
 def run_forward_and_inverse_transforms(
         container_type, min_corner, max_corner, crs_to):
-    # Define the number of points in the grid
     num_points_x = 100
     num_points_y = 100
 
@@ -114,19 +113,17 @@ def run_forward_and_inverse_transforms(
     assert_allclose(cuproj_y, pyproj_y)
 
     # Transform back to WGS84 using PyProj
-    #transformer = Transformer.from_crs(crs_to, "EPSG:4326")
     pyproj_x_back, pyproj_y_back = transformer.transform(
             pyproj_x, pyproj_y, direction=TransformDirection.INVERSE)
 
     # Transform back to WGS84 using cuproj
-    #cu_transformer = cuTransformer.from_crs(crs_to, "EPSG:4326")
     cuproj_x_back, cuproj_y_back = cu_transformer.transform(
         cuproj_x, cuproj_y, direction="INVERSE")
 
     assert_allclose(cuproj_x_back, pyproj_x_back)
     assert_allclose(cuproj_y_back, pyproj_y_back)
 
-    # Also test inverse construction
+    # Also test inverse-constructed Transformers
 
     # Transform back to WGS84 using PyProj
     transformer = Transformer.from_crs(crs_to, "EPSG:4326")
