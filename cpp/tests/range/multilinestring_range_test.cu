@@ -19,9 +19,9 @@
 #include <cuspatial_test/vector_equality.hpp>
 #include <cuspatial_test/vector_factories.cuh>
 
+#include <cuspatial/detail/utility/zero_data.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 
-#include <limits>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_scalar.hpp>
 #include <rmm/device_uvector.hpp>
@@ -29,9 +29,11 @@
 #include <rmm/exec_policy.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
+#include <thrust/sequence.h>
 #include <thrust/tabulate.h>
 
 #include <initializer_list>
+#include <limits>
 
 using namespace cuspatial;
 using namespace cuspatial::test;
@@ -1140,3 +1142,222 @@ class MultilinestringRangeOneTest : public MultilinestringRangeTestBase<T> {
 
 TYPED_TEST_CASE(MultilinestringRangeOneTest, FloatingPointTypes);
 TYPED_TEST(MultilinestringRangeOneTest, OneTest) { this->run_test(); }
+
+template <typename T>
+class MultilinestringRangeOneThousandTest : public MultilinestringRangeTestBase<T> {
+ public:
+  struct make_points_functor {
+    vec_2d<T> __device__ operator()(std::size_t i)
+    {
+      auto part_idx        = i / 2;
+      auto intra_point_idx = i % 2;
+      return vec_2d<T>{static_cast<T>(part_idx * 10 + intra_point_idx),
+                       static_cast<T>(part_idx * 10 + intra_point_idx)};
+    }
+  };
+
+  void make_test_multilinestring()
+  {
+    rmm::device_vector<std::size_t> geometry_offset(1001);
+    rmm::device_vector<std::size_t> part_offset(1001);
+    rmm::device_vector<vec_2d<T>> points(2000);
+
+    thrust::sequence(
+      rmm::exec_policy(this->stream()), geometry_offset.begin(), geometry_offset.end());
+
+    thrust::sequence(
+      rmm::exec_policy(this->stream()), part_offset.begin(), part_offset.end(), 0, 2);
+
+    thrust::tabulate(
+      rmm::exec_policy(this->stream()), points.begin(), points.end(), make_points_functor{});
+
+    auto array = make_multilinestring_array(
+      std::move(geometry_offset), std::move(part_offset), std::move(points));
+
+    this->test_multilinestring = std::make_unique<decltype(array)>(std::move(array));
+  }
+
+  void test_num_multilinestrings() { EXPECT_EQ(this->range().num_multilinestrings(), 1000); }
+
+  void test_num_linestrings() { EXPECT_EQ(this->range().num_linestrings(), 1000); }
+
+  void test_num_points() { EXPECT_EQ(this->range().num_points(), 2000); }
+
+  void test_multilinestring_it()
+  {
+    auto leading_points = this->copy_leading_points();
+    auto expected       = rmm::device_uvector<vec_2d<T>>(1000, this->stream());
+
+    thrust::tabulate(rmm::exec_policy(this->stream()),
+                     expected.begin(),
+                     expected.end(),
+                     [] __device__(std::size_t i) {
+                       return vec_2d<T>{i * T{10.}, i * T{10.}};
+                     });
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(leading_points, expected);
+  }
+
+  void test_point_it()
+  {
+    auto all_points = this->copy_all_points();
+    auto expected   = rmm::device_uvector<vec_2d<T>>(2000, this->stream());
+
+    thrust::tabulate(
+      rmm::exec_policy(this->stream()), expected.begin(), expected.end(), make_points_functor{});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(all_points, expected);
+  }
+
+  void test_part_offset_it()
+  {
+    auto part_offset = this->copy_part_offset();
+    auto expected    = rmm::device_uvector<std::size_t>(1001, this->stream());
+
+    thrust::sequence(rmm::exec_policy(this->stream()), expected.begin(), expected.end(), 0, 2);
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(part_offset, expected);
+  }
+
+  void test_part_idx_from_point_idx()
+  {
+    auto part_idx = this->copy_part_idx_from_point_idx();
+    auto expected = rmm::device_uvector<std::size_t>(2000, this->stream());
+
+    thrust::tabulate(rmm::exec_policy(this->stream()),
+                     expected.begin(),
+                     expected.end(),
+                     [] __device__(std::size_t i) { return i / 2; });
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(part_idx, expected);
+  }
+
+  void test_part_idx_from_segment_idx()
+  {
+    auto part_idx = this->copy_part_idx_from_segment_idx();
+    auto expected = rmm::device_uvector<std::size_t>(2000, this->stream());
+
+    thrust::tabulate(rmm::exec_policy(this->stream()),
+                     expected.begin(),
+                     expected.end(),
+                     [] __device__(std::size_t i) {
+                       return i % 2 == 0 ? i / 2 : std::numeric_limits<std::size_t>::max();
+                     });
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(part_idx, expected);
+  }
+
+  void test_geometry_idx_from_point_idx()
+  {
+    auto geometry_idx = this->copy_geometry_idx_from_point_idx();
+    auto expected     = rmm::device_uvector<std::size_t>(2000, this->stream());
+
+    thrust::tabulate(rmm::exec_policy(this->stream()),
+                     expected.begin(),
+                     expected.end(),
+                     [] __device__(std::size_t i) { return i / 2; });
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(geometry_idx, expected);
+  }
+
+  void test_intra_part_idx()
+  {
+    auto intra_part_idx = this->copy_intra_part_idx();
+    auto expected       = rmm::device_uvector<std::size_t>(1000, this->stream());
+
+    detail::zero_data_async(expected.begin(), expected.end(), this->stream());
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(intra_part_idx, expected);
+  }
+
+  void test_intra_point_idx()
+  {
+    auto intra_point_idx = this->copy_intra_point_idx();
+    auto expected        = rmm::device_uvector<std::size_t>(2000, this->stream());
+
+    thrust::tabulate(rmm::exec_policy(this->stream()),
+                     expected.begin(),
+                     expected.end(),
+                     [] __device__(std::size_t i) { return i % 2; });
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(intra_point_idx, expected);
+  }
+
+  void test_is_valid_segment_id()
+  {
+    auto is_valid_segment_id = this->copy_is_valid_segment_id();
+    auto expected            = rmm::device_uvector<uint8_t>(2000, this->stream());
+
+    thrust::tabulate(rmm::exec_policy(this->stream()),
+                     expected.begin(),
+                     expected.end(),
+                     [] __device__(std::size_t i) { return (i + 1) % 2; });
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(is_valid_segment_id, expected);
+  }
+
+  void test_segment()
+  {
+    auto segments = this->copy_segments();
+    auto expected = rmm::device_uvector<segment<T>>(2000, this->stream());
+
+    thrust::tabulate(
+      rmm::exec_policy(this->stream()),
+      expected.begin(),
+      expected.end(),
+      [] __device__(std::size_t i) {
+        auto part_idx        = i / 2;
+        auto intra_point_idx = i % 2;
+        return i % 2 == 0
+                 ? segment<T>{vec_2d<T>{static_cast<T>(part_idx * 10 + intra_point_idx),
+                                        static_cast<T>(part_idx * 10 + intra_point_idx)},
+                              vec_2d<T>{static_cast<T>(part_idx * 10 + intra_point_idx + 1),
+                                        static_cast<T>(part_idx * 10 + intra_point_idx + 1)}}
+                 : segment<T>{vec_2d<T>{-1, -1}, vec_2d<T>{-1, -1}};
+      });
+    CUSPATIAL_EXPECT_VEC2D_PAIRS_EQUIVALENT(segments, expected);
+  }
+
+  void test_multilinestring_point_count_it()
+  {
+    auto multilinestring_point_count = this->copy_multilinestring_point_count();
+    auto expected                    = rmm::device_uvector<std::size_t>(1000, this->stream());
+
+    thrust::fill(rmm::exec_policy(this->stream()), expected.begin(), expected.end(), 2);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(multilinestring_point_count, expected);
+  }
+
+  void test_multilinestring_linestring_count_it()
+  {
+    auto multilinestring_linestring_count = this->copy_multilinestring_linestring_count();
+    auto expected                         = rmm::device_uvector<std::size_t>(1000, this->stream());
+
+    thrust::fill(rmm::exec_policy(this->stream()), expected.begin(), expected.end(), 1);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(multilinestring_linestring_count, expected);
+  }
+
+  void test_array_access_operator()
+  {
+    auto all_points = this->copy_all_points_of_ith_multilinestring(513);
+    auto expected   = make_device_vector<vec_2d<T>>({{5130, 5130}, {5131, 5131}});
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(all_points, expected);
+  }
+
+  void test_geometry_offset_it()
+  {
+    auto geometry_offsets = this->copy_geometry_offsets();
+    auto expected         = rmm::device_uvector<std::size_t>(1001, this->stream());
+
+    thrust::sequence(rmm::exec_policy(this->stream()), expected.begin(), expected.end());
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(geometry_offsets, expected);
+  }
+
+  void test_part_offsets_it()
+  {
+    auto part_offsets = this->copy_part_offsets();
+    auto expected     = rmm::device_uvector<std::size_t>(1001, this->stream());
+
+    thrust::sequence(rmm::exec_policy(this->stream()), expected.begin(), expected.end(), 0, 2);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(part_offsets, expected);
+  }
+};
+
+TYPED_TEST_CASE(MultilinestringRangeOneThousandTest, FloatingPointTypes);
+TYPED_TEST(MultilinestringRangeOneThousandTest, OneThousandTest) { this->run_test(); }

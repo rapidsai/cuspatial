@@ -280,13 +280,11 @@ auto make_multilinestring_array(IndexRangeA geometry_inl,
                                 CoordRange coord_inl)
 {
   using CoordType         = typename CoordRange::value_type;
-  using DeviceIndexVector = thrust::device_vector<IndexType>;
-  using DeviceCoordVector = thrust::device_vector<CoordType>;
+  using DeviceIndexVector = rmm::device_vector<IndexType>;
+  using DeviceCoordVector = rmm::device_vector<CoordType>;
 
   return multilinestring_array<DeviceIndexVector, DeviceIndexVector, DeviceCoordVector>(
-    make_device_vector(std::move(geometry_inl)),
-    make_device_vector(std::move(part_inl)),
-    make_device_vector(std::move(coord_inl)));
+    std::move(geometry_inl), std::move(part_inl), std::move(coord_inl));
 }
 
 /**
