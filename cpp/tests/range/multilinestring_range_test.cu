@@ -41,7 +41,6 @@ using namespace cuspatial::test;
 template <typename MultiLineStringRange, typename OutputIt>
 void __global__ array_access_tester(MultiLineStringRange mls, std::size_t i, OutputIt output_points)
 {
-  using T = typename MultiLineStringRange::element_t;
   thrust::copy(thrust::seq, mls[i].point_begin(), mls[i].point_end(), output_points);
 }
 
@@ -589,15 +588,6 @@ class MultilinestringRangeTestBase : public BaseFixture {
     std::size_t __device__ operator()(std::size_t point_idx)
     {
       return _rng.geometry_idx_from_point_idx(point_idx);
-    }
-  };
-
-  template <typename MultiLineStringRange>
-  struct intra_index_functor {
-    MultiLineStringRange _rng;
-    std::size_t __device__ operator()(std::size_t segment_idx)
-    {
-      return _rng.geometry_idx_from_segment_idx(segment_idx);
     }
   };
 

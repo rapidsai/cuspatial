@@ -22,9 +22,12 @@
 #include <cuspatial/geometry/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/device_scalar.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+
+#include <thrust/tabulate.h>
 
 #include <initializer_list>
 
@@ -121,10 +124,14 @@ struct MultipolygonRangeTest : public BaseFixture {
                                                       multipolygon_coordinates);
     auto rng                = multipolygon_array.range().as_multilinestring_range();
 
-    auto got =
-      make_multilinestring_array(range(rng.geometry_offsets_begin(), rng.geometry_offsets_end()),
-                                 range(rng.part_offsets_begin(), rng.part_offsets_end()),
-                                 range(rng.point_begin(), rng.point_end()));
+    auto geometry_offsets =
+      rmm::device_vector<std::size_t>(rng.geometry_offset_begin(), rng.geometry_offset_end());
+    auto part_offsets =
+      rmm::device_vector<std::size_t>(rng.part_offset_begin(), rng.part_offset_end());
+    auto points = rmm::device_vector<vec_2d<T>>(rng.point_begin(), rng.point_end());
+
+    auto got = make_multilinestring_array(
+      std::move(geometry_offsets), std::move(part_offsets), std::move(points));
 
     auto expected = make_multilinestring_array(
       multilinestring_geometry_offset, multilinestring_part_offset, multilinestring_coordinates);
@@ -482,7 +489,7 @@ TYPED_TEST(MultipolygonRangeTest, MultipolygonSegmentCount_ContainsEmptyPart)
                      {6, 3});
 }
 
-TYPED_TEST(MultipolygonRangeTest, MultipolygonAsMultilinestring1)
+TYPED_TEST(MultipolygonRangeTest, MultipolygonAsMultipolygon1)
 {
   CUSPATIAL_RUN_TEST(this->test_multipolygon_as_multilinestring,
                      {0, 1, 2},
@@ -494,7 +501,7 @@ TYPED_TEST(MultipolygonRangeTest, MultipolygonAsMultilinestring1)
                      {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}});
 }
 
-TYPED_TEST(MultipolygonRangeTest, MultipolygonAsMultilinestring2)
+TYPED_TEST(MultipolygonRangeTest, MultipolygonAsMultipolygon2)
 {
   CUSPATIAL_RUN_TEST(this->test_multipolygon_as_multilinestring,
                      {0, 1, 2},
@@ -528,7 +535,7 @@ TYPED_TEST(MultipolygonRangeTest, MultipolygonAsMultilinestring2)
                       {20, 20}});
 }
 
-TYPED_TEST(MultipolygonRangeTest, MultipolygonAsMultilinestring3)
+TYPED_TEST(MultipolygonRangeTest, MultipolygonAsMultipolygon3)
 {
   CUSPATIAL_RUN_TEST(this->test_multipolygon_as_multilinestring,
                      {0, 1, 2},
@@ -638,3 +645,373 @@ TYPED_TEST(MultipolygonRangeTest, MultipolygonAsMultiPoint3)
                       {21, 21},
                       {20, 20}});
 }
+
+template <typename MultiPolygonRange, typename PointOutputIt>
+__global__ void array_access_tester(MultiPolygonRange rng, std::size_t i, PointOutputIt output)
+{
+  thrust::copy(thrust::seq, rng[i].point_begin(), rng[i].point_end(), output);
+}
+
+template <typename T>
+class MultipolygonRangeTestBase : public BaseFixture {
+ public:
+  struct copy_leading_point_functor {
+    template <typename MultiPolygonRef>
+    __device__ vec_2d<T> operator()(MultiPolygonRef mpolygon)
+    {
+      return mpolygon.size() > 0 ? mpolygon[0].point_begin()[0] : vec_2d<T>{-1, -1};
+    }
+  };
+
+  template <typename MultiPolygonRange>
+  struct ring_idx_from_point_idx_functor {
+    MultiPolygonRange mpolygons;
+    __device__ std::size_t operator()(std::size_t point_idx)
+    {
+      return mpolygons.ring_idx_from_point_idx(point_idx);
+    }
+  };
+
+  template <typename MultiPolygonRange>
+  struct part_idx_from_ring_idx_functor {
+    MultiPolygonRange mpolygons;
+    __device__ std::size_t operator()(std::size_t ring_idx)
+    {
+      return mpolygons.part_idx_from_ring_idx(ring_idx);
+    }
+  };
+
+  template <typename MultiPolygonRange>
+  struct geometry_idx_from_part_idx_functor {
+    MultiPolygonRange mpolygons;
+    __device__ std::size_t operator()(std::size_t part_idx)
+    {
+      return mpolygons.geometry_idx_from_part_idx(part_idx);
+    }
+  };
+
+  void SetUp() { make_test_multipolygon(); }
+
+  virtual void make_test_multipolygon() = 0;
+
+  auto range() { return test_multipolygon->range(); }
+
+  void run_test()
+  {
+    test_size();
+
+    test_num_multipolygons();
+
+    test_num_polygons();
+
+    test_num_rings();
+
+    test_num_points();
+
+    test_multipolygon_it();
+
+    test_begin();
+
+    test_end();
+
+    test_point_it();
+
+    test_geometry_offsets_it();
+
+    test_part_offset_it();
+
+    test_ring_offset_it();
+
+    test_ring_idx_from_point_idx();
+
+    test_part_idx_from_ring_idx();
+
+    test_geometry_idx_from_part_idx();
+
+    test_array_access_operator();
+
+    test_multipolygon_point_count_it();
+
+    test_multipolygon_ring_count_it();
+  }
+
+  void test_size() { EXPECT_EQ(range().size(), range().num_multipolygons()); };
+
+  virtual void test_num_multipolygons() = 0;
+
+  virtual void test_num_polygons() = 0;
+
+  virtual void test_num_rings() = 0;
+
+  virtual void test_num_points() = 0;
+
+  virtual void test_multipolygon_it() = 0;
+
+  void test_begin() { EXPECT_EQ(range().begin(), range().multipolygon_begin()); }
+
+  void test_end() { EXPECT_EQ(range().end(), range().multipolygon_end()); }
+
+  virtual void test_point_it() = 0;
+
+  virtual void test_geometry_offsets_it() = 0;
+
+  virtual void test_part_offset_it() = 0;
+
+  virtual void test_ring_offset_it() = 0;
+
+  virtual void test_ring_idx_from_point_idx() = 0;
+
+  virtual void test_part_idx_from_ring_idx() = 0;
+
+  virtual void test_geometry_idx_from_part_idx() = 0;
+
+  virtual void test_array_access_operator() = 0;
+
+  virtual void test_multipolygon_point_count_it() = 0;
+
+  virtual void test_multipolygon_ring_count_it() = 0;
+
+  // helper method to access multipolygon range
+  rmm::device_uvector<vec_2d<T>> copy_leading_point_multipolygon()
+  {
+    auto rng      = range();
+    auto d_points = rmm::device_uvector<vec_2d<T>>(rng.num_multipolygons(), stream());
+    thrust::copy(rmm::exec_policy(stream()), rng.point_begin(), rng.point_end(), d_points.begin());
+    return d_points;
+  }
+
+  rmm::device_uvector<vec_2d<T>> copy_all_points()
+  {
+    auto rng      = range();
+    auto d_points = rmm::device_uvector<vec_2d<T>>(rng.num_points(), stream());
+    thrust::copy(rmm::exec_policy(stream()), rng.point_begin(), rng.point_end(), d_points.begin());
+    return d_points;
+  }
+
+  rmm::device_uvector<std::size_t> copy_geometry_offsets()
+  {
+    auto rng       = range();
+    auto d_offsets = rmm::device_uvector<std::size_t>(rng.num_multipolygons() + 1, stream());
+    thrust::copy(rmm::exec_policy(stream()),
+                 rng.geometry_offset_begin(),
+                 rng.geometry_offset_end(),
+                 d_offsets.begin());
+    return d_offsets;
+  }
+
+  rmm::device_uvector<std::size_t> copy_part_offsets()
+  {
+    auto rng       = range();
+    auto d_offsets = rmm::device_uvector<std::size_t>(rng.num_polygons() + 1, stream());
+    thrust::copy(rmm::exec_policy(stream()),
+                 rng.part_offset_begin(),
+                 rng.part_offset_end(),
+                 d_offsets.begin());
+    return d_offsets;
+  }
+
+  rmm::device_uvector<std::size_t> copy_ring_offsets()
+  {
+    auto rng       = range();
+    auto d_offsets = rmm::device_uvector<std::size_t>(rng.num_rings() + 1, stream());
+    thrust::copy(rmm::exec_policy(stream()),
+                 rng.ring_offset_begin(),
+                 rng.ring_offset_end(),
+                 d_offsets.begin());
+    return d_offsets;
+  }
+
+  rmm::device_uvector<std::size_t> copy_ring_idx_from_point_idx()
+  {
+    auto rng        = range();
+    auto d_ring_idx = rmm::device_uvector<std::size_t>(rng.num_points(), stream());
+    thrust::tabulate(rmm::exec_policy(stream()),
+                     d_ring_idx.begin(),
+                     d_ring_idx.end(),
+                     ring_idx_from_point_idx_functor<decltype(rng)>{rng});
+    return d_ring_idx;
+  }
+
+  rmm::device_uvector<std::size_t> copy_part_idx_from_ring_idx()
+  {
+    auto rng        = range();
+    auto d_part_idx = rmm::device_uvector<std::size_t>(rng.num_rings(), stream());
+    thrust::tabulate(rmm::exec_policy(stream()),
+                     d_part_idx.begin(),
+                     d_part_idx.end(),
+                     part_idx_from_ring_idx_functor<decltype(rng)>{rng});
+    return d_part_idx;
+  }
+
+  rmm::device_uvector<std::size_t> copy_geometry_idx_from_part_idx()
+  {
+    auto rng            = range();
+    auto d_geometry_idx = rmm::device_uvector<std::size_t>(rng.num_polygons(), stream());
+    thrust::tabulate(rmm::exec_policy(stream()),
+                     d_geometry_idx.begin(),
+                     d_geometry_idx.end(),
+                     geometry_idx_from_part_idx_functor<decltype(rng)>{rng});
+    return d_geometry_idx;
+  }
+
+  rmm::device_uvector<vec_2d<T>> copy_all_points_of_ith_multipolygon(std::size_t i)
+  {
+    auto rng = this->range();
+    rmm::device_scalar<std::size_t> num_points(stream());
+
+    thrust::copy_n(
+      rmm::exec_policy(stream()), rng.multipolygon_point_count_begin() + i, 1, num_points.data());
+
+    auto d_all_points = rmm::device_uvector<vec_2d<T>>(num_points.value(stream()), stream());
+
+    array_access_tester<<<1, 1, 0, stream()>>>(rng, i, d_all_points.data());
+    return d_all_points;
+  }
+
+  rmm::device_uvector<std::size_t> copy_multipolygon_point_count()
+  {
+    auto rng           = this->range();
+    auto d_point_count = rmm::device_uvector<std::size_t>(rng.num_multipolygons(), stream());
+    thrust::copy(rmm::exec_policy(stream()),
+                 rng.multipolygon_point_count_begin(),
+                 rng.multipolygon_point_count_end(),
+                 d_point_count.begin());
+    return d_point_count;
+  }
+
+  rmm::device_uvector<std::size_t> copy_multipolygon_ring_count()
+  {
+    auto rng          = this->range();
+    auto d_ring_count = rmm::device_uvector<std::size_t>(rng.num_multipolygons(), stream());
+    thrust::copy(rmm::exec_policy(stream()),
+                 rng.multipolygon_ring_count_begin(),
+                 rng.multipolygon_ring_count_end(),
+                 d_ring_count.begin());
+    return d_ring_count;
+  }
+
+ protected:
+  std::unique_ptr<multipolygon_array<rmm::device_vector<std::size_t>,
+                                     rmm::device_vector<std::size_t>,
+                                     rmm::device_vector<std::size_t>,
+                                     rmm::device_vector<vec_2d<T>>>>
+    test_multipolygon;
+};
+
+template <typename T>
+class MultipolygonRangeEmptyTest : public MultipolygonRangeTestBase<T> {
+  void make_test_multipolygon()
+  {
+    auto geometry_offsets = make_device_vector<std::size_t>({0});
+    auto part_offsets     = make_device_vector<std::size_t>({0});
+    auto ring_offsets     = make_device_vector<std::size_t>({0});
+    auto coordinates      = make_device_vector<vec_2d<T>>({});
+
+    this->test_multipolygon = std::make_unique<multipolygon_array<rmm::device_vector<std::size_t>,
+                                                                  rmm::device_vector<std::size_t>,
+                                                                  rmm::device_vector<std::size_t>,
+                                                                  rmm::device_vector<vec_2d<T>>>>(
+      std::move(geometry_offsets),
+      std::move(part_offsets),
+      std::move(ring_offsets),
+      std::move(coordinates));
+  }
+
+  void test_num_multipolygons() { EXPECT_EQ(this->range().num_multipolygons(), 0); }
+
+  void test_num_polygons() { EXPECT_EQ(this->range().num_polygons(), 0); }
+
+  void test_num_rings() { EXPECT_EQ(this->range().num_rings(), 0); }
+
+  void test_num_points() { EXPECT_EQ(this->range().num_points(), 0); }
+
+  void test_multipolygon_it()
+  {
+    rmm::device_uvector<vec_2d<T>> d_points = this->copy_leading_point_multipolygon();
+    rmm::device_uvector<vec_2d<T>> expected(0, this->stream());
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_points, expected);
+  }
+
+  void test_point_it()
+  {
+    rmm::device_uvector<vec_2d<T>> d_points = this->copy_all_points();
+    rmm::device_uvector<vec_2d<T>> expected(0, this->stream());
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_points, expected);
+  }
+
+  void test_geometry_offsets_it()
+  {
+    rmm::device_uvector<std::size_t> d_offsets = this->copy_geometry_offsets();
+    auto expected                              = make_device_vector<std::size_t>({0});
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_offsets, expected);
+  }
+
+  void test_part_offset_it()
+  {
+    rmm::device_uvector<std::size_t> d_offsets = this->copy_part_offsets();
+    auto expected                              = make_device_vector<std::size_t>({0});
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_offsets, expected);
+  }
+
+  void test_ring_offset_it()
+  {
+    rmm::device_uvector<std::size_t> d_offsets = this->copy_ring_offsets();
+    auto expected                              = make_device_vector<std::size_t>({0});
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_offsets, expected);
+  }
+
+  void test_ring_idx_from_point_idx()
+  {
+    rmm::device_uvector<std::size_t> d_ring_idx = this->copy_ring_idx_from_point_idx();
+    auto expected                               = make_device_vector<std::size_t>({});
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_ring_idx, expected);
+  }
+
+  void test_part_idx_from_ring_idx()
+  {
+    rmm::device_uvector<std::size_t> d_part_idx = this->copy_part_idx_from_ring_idx();
+    auto expected                               = make_device_vector<std::size_t>({});
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_part_idx, expected);
+  }
+
+  void test_geometry_idx_from_part_idx()
+  {
+    rmm::device_uvector<std::size_t> d_geometry_idx = this->copy_geometry_idx_from_part_idx();
+    auto expected                                   = make_device_vector<std::size_t>({});
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_geometry_idx, expected);
+  }
+
+  void test_array_access_operator()
+  {
+    // Nothing to access
+    SUCCEED();
+  }
+
+  void test_multipolygon_point_count_it()
+  {
+    rmm::device_uvector<std::size_t> d_point_count = this->copy_multipolygon_point_count();
+    rmm::device_uvector<std::size_t> expected(0, this->stream());
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_point_count, expected);
+  }
+
+  void test_multipolygon_ring_count_it()
+  {
+    rmm::device_uvector<std::size_t> d_ring_count = this->copy_multipolygon_ring_count();
+    rmm::device_uvector<std::size_t> expected(0, this->stream());
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_ring_count, expected);
+  }
+};
+
+TYPED_TEST_CASE(MultipolygonRangeEmptyTest, FloatingPointTypes);
+
+TYPED_TEST(MultipolygonRangeEmptyTest, EmptyMultipolygonRange) { this->run_test(); }
