@@ -181,43 +181,4 @@ vec_3d<T> CUSPATIAL_HOST_DEVICE cross_product(vec_3d<T> const& a, vec_3d<T> cons
   return {a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
 }
 
-/**
- * @brief Return a new vec_3d made up of the minimum x- and y-components of two input vec_3d values.
- */
-template <typename T>
-vec_3d<T> CUSPATIAL_HOST_DEVICE box_min(vec_3d<T> const& a, vec_3d<T> const& b)
-{
-#ifdef __CUDA_ARCH__
-  return vec_3d<T>{::min(a.x, b.x), ::min(a.y, b.y), ::min(a.z, b.z)};
-#else
-  return vec_3d<T>{std::min(a.x, b.x), std::min(a.y, b.y), std::min(a.z, b.z)};
-#endif
-}
-
-/**
- * @brief Return a new vec_3d made up of the minimum x- and y-components of two input vec_3d values.
- */
-template <typename T>
-vec_3d<T> CUSPATIAL_HOST_DEVICE box_max(vec_3d<T> const& a, vec_3d<T> const& b)
-{
-#ifdef __CUDA_ARCH__
-  return vec_3d<T>{::max(a.x, b.x), ::max(a.y, b.y), ::max(a.z, b.z)};
-#else
-  return vec_3d<T>{std::max(a.x, b.x), std::max(a.y, b.y), std::max(a.z, b.z)};
-#endif
-}
-
-/**
- * @brief Compute the midpoint of `first` and `second`.
- */
-template <typename T>
-vec_3d<T> CUSPATIAL_HOST_DEVICE midpoint(vec_3d<T> const& first, vec_3d<T> const& second)
-{
-  return (first + second) * T{0.5};
-}
-
-/**
- * @} // end of doxygen group
- */
-
 }  // namespace cuspatial
