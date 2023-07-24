@@ -22,13 +22,25 @@
 #include <cuspatial/geometry/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/device_scalar.hpp>
+#include <rmm/device_uvector.hpp>
+#include <rmm/device_vector.hpp>
 #include <rmm/exec_policy.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+
+#include <thrust/tabulate.h>
 
 #include <initializer_list>
 
 using namespace cuspatial;
 using namespace cuspatial::test;
+
+template <typename MultiLineStringRange, typename OutputIt>
+void __global__ array_access_tester(MultiLineStringRange mls, std::size_t i, OutputIt output_points)
+{
+  using T = typename MultiLineStringRange::element_t;
+  thrust::copy(thrust::seq, mls[i].point_begin(), mls[i].point_end(), output_points);
+}
 
 template <typename T>
 struct MultilinestringRangeTest : public BaseFixture {
@@ -535,12 +547,90 @@ TYPED_TEST(MultilinestringRangeTest, MultilinestringAsMultipointTest6)
 }
 
 template <typename T>
-class MultilinestringRangeTest2 {
+class MultilinestringRangeTestBase : public BaseFixture {
+ public:
+  struct copy_leading_point_per_multilinestring {
+    template <typename MultiLineStringRef>
+    vec_2d<T> __device__ operator()(MultiLineStringRef m)
+    {
+      return m.size() > 0 ? m[0].point_begin()[0] : vec_2d<T>{-1, -1};
+    }
+  };
+
+  template <typename MultiLineStringRange>
+  struct part_idx_from_point_idx_functor {
+    MultiLineStringRange _rng;
+    std::size_t __device__ operator()(std::size_t point_idx)
+    {
+      return _rng.part_idx_from_point_idx(point_idx);
+    }
+  };
+
+  template <typename MultiLineStringRange>
+  struct part_idx_from_segment_idx_functor {
+    MultiLineStringRange _rng;
+    std::size_t __device__ operator()(std::size_t segment_idx)
+    {
+      auto opt = _rng.part_idx_from_segment_idx(segment_idx);
+      if (opt.has_value()) {
+        return opt.value();
+      } else {
+        return std::numeric_limits<std::size_t>::max();
+      }
+    }
+  };
+
+  template <typename MultiLineStringRange>
+  struct geometry_idx_from_point_idx_functor {
+    MultiLineStringRange _rng;
+    std::size_t __device__ operator()(std::size_t point_idx)
+    {
+      return _rng.geometry_idx_from_point_idx(point_idx);
+    }
+  };
+
+  template <typename MultiLineStringRange>
+  struct intra_index_functor {
+    MultiLineStringRange _rng;
+    std::size_t __device__ operator()(std::size_t segment_idx)
+    {
+      return _rng.geometry_idx_from_segment_idx(segment_idx);
+    }
+  };
+
+  template <typename MultiLineStringRange>
+  struct intra_part_idx_functor {
+    MultiLineStringRange _rng;
+    std::size_t __device__ operator()(std::size_t i) { return _rng.intra_part_idx(i); }
+  };
+
+  template <typename MultiLineStringRange>
+  struct intra_point_idx_functor {
+    MultiLineStringRange _rng;
+    std::size_t __device__ operator()(std::size_t i) { return _rng.intra_point_idx(i); }
+  };
+
+  template <typename MultiLineStringRange>
+  struct is_valid_segment_id_functor {
+    MultiLineStringRange _rng;
+    bool __device__ operator()(std::size_t i)
+    {
+      auto part_idx = _rng.part_idx_from_point_idx(i);
+      return _rng.is_valid_segment_id(i, part_idx);
+    }
+  };
+
+  template <typename MultiLineStringRange>
+  struct segment_functor {
+    MultiLineStringRange _rng;
+    segment<T> __device__ operator()(std::size_t i) { return _rng.segment(i); }
+  };
+
   void SetUp() { make_test_multilinestring(); }
 
   virtual void make_test_multilinestring() = 0;
 
-  auto range() { return test_multilinestring.range(); }
+  auto range() { return test_multilinestring->range(); }
 
   void run_test()
   {
@@ -566,8 +656,6 @@ class MultilinestringRangeTest2 {
 
     test_part_idx_from_segment_idx();
 
-    test_geometry_idx_from_part_idx();
-
     test_geometry_idx_from_point_idx();
 
     test_intra_part_idx();
@@ -585,12 +673,11 @@ class MultilinestringRangeTest2 {
     test_array_access_operator();
 
     test_geometry_offsets_it();
-    test_part_offsets_it();
 
-    test_as_multipoint_range();
+    test_part_offsets_it();
   }
 
-  void test_size() { EXPECT_EQ(this->range().size(), this->range().num_muiltilinestrings()); }
+  void test_size() { EXPECT_EQ(this->range().size(), this->range().num_multilinestrings()); }
 
   virtual void test_num_multilinestrings() = 0;
 
@@ -598,7 +685,7 @@ class MultilinestringRangeTest2 {
 
   virtual void test_num_points() = 0;
 
-  virtual void test_multilinestring_it();
+  virtual void test_multilinestring_it() = 0;
 
   void test_begin() { EXPECT_EQ(this->range().begin(), this->range().multilinestring_begin()); }
 
@@ -611,8 +698,6 @@ class MultilinestringRangeTest2 {
   virtual void test_part_idx_from_point_idx() = 0;
 
   virtual void test_part_idx_from_segment_idx() = 0;
-
-  virtual void test_geometry_idx_from_part_idx() = 0;
 
   virtual void test_geometry_idx_from_point_idx() = 0;
 
@@ -631,13 +716,304 @@ class MultilinestringRangeTest2 {
   virtual void test_array_access_operator() = 0;
 
   virtual void test_geometry_offsets_it() = 0;
-  virtual void test_part_offsets_it()     = 0;
 
-  virtual void test_as_multipoint_range() = 0;
+  virtual void test_part_offsets_it() = 0;
 
- private:
+  // Helper functions to be used by all subclass (test cases).
+  rmm::device_uvector<vec_2d<T>> copy_leading_points()
+  {
+    auto rng             = this->range();
+    auto d_leading_point = rmm::device_uvector<vec_2d<T>>(rng.num_multilinestrings(), stream());
+    thrust::transform(rmm::exec_policy(stream()),
+                      rng.begin(),
+                      rng.end(),
+                      d_leading_point.begin(),
+                      copy_leading_point_per_multilinestring());
+    return d_leading_point;
+  }
+
+  rmm::device_uvector<vec_2d<T>> copy_all_points()
+  {
+    auto rng          = this->range();
+    auto d_all_points = rmm::device_uvector<vec_2d<T>>(rng.num_points(), stream());
+    thrust::copy(
+      rmm::exec_policy(stream()), rng.point_begin(), rng.point_end(), d_all_points.begin());
+    return d_all_points;
+  }
+
+  rmm::device_uvector<std::size_t> copy_part_offset()
+  {
+    auto rng           = this->range();
+    auto d_part_offset = rmm::device_uvector<std::size_t>(rng.num_multilinestrings() + 1, stream());
+    thrust::copy(rmm::exec_policy(stream()),
+                 rng.part_offset_begin(),
+                 rng.part_offset_end(),
+                 d_part_offset.begin());
+    return d_part_offset;
+  }
+
+  rmm::device_uvector<std::size_t> copy_part_idx_from_point_idx()
+  {
+    auto rng        = this->range();
+    auto d_part_idx = rmm::device_uvector<std::size_t>(rng.num_points(), stream());
+    auto f          = part_idx_from_point_idx_functor<decltype(rng)>{rng};
+    thrust::tabulate(rmm::exec_policy(stream()), d_part_idx.begin(), d_part_idx.end(), f);
+    return d_part_idx;
+  }
+
+  rmm::device_uvector<std::size_t> copy_part_idx_from_segment_idx()
+  {
+    auto rng        = this->range();
+    auto d_part_idx = rmm::device_uvector<std::size_t>(rng.num_points(), stream());
+    auto f          = part_idx_from_segment_idx_functor<decltype(rng)>{rng};
+
+    thrust::tabulate(rmm::exec_policy(stream()), d_part_idx.begin(), d_part_idx.end(), f);
+    return d_part_idx;
+  }
+
+  rmm::device_uvector<std::size_t> copy_geometry_idx_from_point_idx()
+  {
+    auto rng            = this->range();
+    auto d_geometry_idx = rmm::device_uvector<std::size_t>(rng.num_points(), stream());
+    thrust::tabulate(rmm::exec_policy(stream()),
+                     d_geometry_idx.begin(),
+                     d_geometry_idx.end(),
+                     geometry_idx_from_point_idx_functor<decltype(rng)>{rng});
+    return d_geometry_idx;
+  }
+
+  rmm::device_uvector<std::size_t> copy_intra_part_idx()
+  {
+    auto rng              = this->range();
+    auto d_intra_part_idx = rmm::device_uvector<std::size_t>(rng.num_points(), stream());
+    thrust::tabulate(rmm::exec_policy(stream()),
+                     d_intra_part_idx.begin(),
+                     d_intra_part_idx.end(),
+                     intra_part_idx_functor<decltype(rng)>{rng});
+    return d_intra_part_idx;
+  }
+
+  rmm::device_uvector<std::size_t> copy_intra_point_idx()
+  {
+    auto rng               = this->range();
+    auto d_intra_point_idx = rmm::device_uvector<std::size_t>(rng.num_points(), stream());
+    thrust::tabulate(rmm::exec_policy(stream()),
+                     d_intra_point_idx.begin(),
+                     d_intra_point_idx.end(),
+                     intra_point_idx_functor<decltype(rng)>{rng});
+    return d_intra_point_idx;
+  }
+
+  rmm::device_uvector<uint8_t> copy_is_valid_segment_id()
+  {
+    auto rng                   = this->range();
+    auto d_is_valid_segment_id = rmm::device_uvector<uint8_t>(rng.num_points(), stream());
+    thrust::tabulate(rmm::exec_policy(stream()),
+                     d_is_valid_segment_id.begin(),
+                     d_is_valid_segment_id.end(),
+                     is_valid_segment_id_functor<decltype(rng)>{rng});
+    return d_is_valid_segment_id;
+  }
+
+  rmm::device_uvector<segment<T>> copy_segments()
+  {
+    auto rng        = this->range();
+    auto d_segments = rmm::device_uvector<segment<T>>(rng.num_points(), stream());
+    thrust::tabulate(rmm::exec_policy(stream()),
+                     d_segments.begin(),
+                     d_segments.end(),
+                     segment_functor<decltype(rng)>{rng});
+    return d_segments;
+  }
+
+  rmm::device_uvector<std::size_t> copy_multilinestring_point_count()
+  {
+    auto rng = this->range();
+    auto d_multilinestring_point_count =
+      rmm::device_uvector<std::size_t>(rng.num_multilinestrings(), stream());
+    thrust::copy(rmm::exec_policy(stream()),
+                 rng.multilinestring_point_count_begin(),
+                 rng.multilinestring_point_count_end(),
+                 d_multilinestring_point_count.begin());
+    return d_multilinestring_point_count;
+  }
+
+  rmm::device_uvector<std::size_t> copy_multilinestring_linestring_count()
+  {
+    auto rng = this->range();
+    auto d_multilinestring_linestring_count =
+      rmm::device_uvector<std::size_t>(rng.num_multilinestrings(), stream());
+    thrust::copy(rmm::exec_policy(stream()),
+                 rng.multilinestring_linestring_count_begin(),
+                 rng.multilinestring_linestring_count_end(),
+                 d_multilinestring_linestring_count.begin());
+    return d_multilinestring_linestring_count;
+  }
+
+  rmm::device_uvector<vec_2d<T>> copy_all_points_of_ith_multipoint(std::size_t i)
+  {
+    auto rng = this->range();
+    rmm::device_scalar<std::size_t> num_points(stream());
+
+    thrust::copy_n(rmm::exec_policy(stream()),
+                   rng.multilinestring_point_count_begin() + i,
+                   1,
+                   num_points.data());
+
+    auto d_all_points = rmm::device_uvector<vec_2d<T>>(num_points.value(stream()), stream());
+
+    array_access_tester<<<1, 1, 0, stream()>>>(rng, i, d_all_points.data());
+    return d_all_points;
+  }
+
+  rmm::device_uvector<std::size_t> copy_geometry_offsets()
+  {
+    auto rng = this->range();
+    auto d_geometry_offsets =
+      rmm::device_uvector<std::size_t>(rng.num_multilinestrings() + 1, stream());
+    thrust::copy(rmm::exec_policy(stream()),
+                 rng.geometry_offsets_begin(),
+                 rng.geometry_offsets_end(),
+                 d_geometry_offsets.begin());
+    return d_geometry_offsets;
+  }
+
+  rmm::device_uvector<std::size_t> copy_part_offsets()
+  {
+    auto rng            = this->range();
+    auto d_part_offsets = rmm::device_uvector<std::size_t>(rng.num_linestrings() + 1, stream());
+    thrust::copy(rmm::exec_policy(stream()),
+                 rng.part_offsets_begin(),
+                 rng.part_offsets_end(),
+                 d_part_offsets.begin());
+    return d_part_offsets;
+  }
+
+ protected:
   std::unique_ptr<multilinestring_array<rmm::device_vector<std::size_t>,
                                         rmm::device_vector<std::size_t>,
                                         rmm::device_vector<vec_2d<T>>>>
     test_multilinestring;
 };
+
+template <typename T>
+class MultilinestringRangeEmptyTest : public MultilinestringRangeTestBase<T> {
+  void make_test_multilinestring()
+  {
+    auto array                 = make_multilinestring_array<T>({0}, {0}, {});
+    this->test_multilinestring = std::make_unique<decltype(array)>(std::move(array));
+  }
+
+  void test_num_multilinestrings() { EXPECT_EQ(this->range().num_multilinestrings(), 0); }
+
+  void test_num_linestrings() { EXPECT_EQ(this->range().num_linestrings(), 0); }
+
+  void test_num_points() { EXPECT_EQ(this->range().num_points(), 0); }
+
+  void test_multilinestring_it()
+  {
+    auto leading_points = this->copy_leading_points();
+    auto expected       = rmm::device_uvector<vec_2d<T>>(0, this->stream());
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(leading_points, expected);
+  }
+
+  void test_point_it()
+  {
+    auto all_points = this->copy_all_points();
+    auto expected   = rmm::device_uvector<vec_2d<T>>(0, this->stream());
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(all_points, expected);
+  }
+
+  void test_part_offset_it()
+  {
+    auto part_offset = this->copy_part_offset();
+    auto expected    = make_device_vector<std::size_t>({0});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(part_offset, expected);
+  }
+
+  void test_part_idx_from_point_idx()
+  {
+    auto part_idx = this->copy_part_idx_from_point_idx();
+    auto expected = rmm::device_vector<std::size_t>(0);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(part_idx, expected);
+  }
+
+  void test_part_idx_from_segment_idx()
+  {
+    auto part_idx = this->copy_part_idx_from_segment_idx();
+    auto expected = rmm::device_vector<std::size_t>(0);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(part_idx, expected);
+  }
+
+  void test_geometry_idx_from_point_idx()
+  {
+    auto geometry_idx = this->copy_geometry_idx_from_point_idx();
+    auto expected     = rmm::device_vector<std::size_t>(0);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(geometry_idx, expected);
+  }
+
+  void test_intra_part_idx()
+  {
+    auto intra_part_idx = this->copy_intra_part_idx();
+    auto expected       = rmm::device_vector<std::size_t>(0);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(intra_part_idx, expected);
+  }
+
+  void test_intra_point_idx()
+  {
+    auto intra_point_idx = this->copy_intra_point_idx();
+    auto expected        = rmm::device_vector<std::size_t>(0);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(intra_point_idx, expected);
+  }
+
+  void test_is_valid_segment_id()
+  {
+    auto is_valid_segment_id = this->copy_is_valid_segment_id();
+    auto expected            = rmm::device_vector<uint8_t>(0);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(is_valid_segment_id, expected);
+  }
+
+  void test_segment()
+  {
+    auto segments = this->copy_segments();
+    auto expected = rmm::device_vector<segment<T>>(0);
+    CUSPATIAL_EXPECT_VEC2D_PAIRS_EQUIVALENT(segments, expected);
+  }
+
+  void test_multilinestring_point_count_it()
+  {
+    auto multilinestring_point_count = this->copy_multilinestring_point_count();
+    auto expected                    = rmm::device_vector<std::size_t>(0);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(multilinestring_point_count, expected);
+  }
+
+  void test_multilinestring_linestring_count_it()
+  {
+    auto multilinestring_linestring_count = this->copy_multilinestring_linestring_count();
+    auto expected                         = rmm::device_vector<std::size_t>(0);
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(multilinestring_linestring_count, expected);
+  }
+
+  void test_array_access_operator()
+  {
+    // Nothing to access
+    SUCCEED();
+  }
+
+  void test_geometry_offsets_it()
+  {
+    auto geometry_offsets = this->copy_geometry_offsets();
+    auto expected         = make_device_vector<std::size_t>({0});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(geometry_offsets, expected);
+  }
+
+  void test_part_offsets_it()
+  {
+    auto part_offsets = this->copy_part_offsets();
+    auto expected     = make_device_vector<std::size_t>({0});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(part_offsets, expected);
+  }
+};
+
+TYPED_TEST_CASE(MultilinestringRangeEmptyTest, FloatingPointTypes);
+TYPED_TEST(MultilinestringRangeEmptyTest, EmptyTest) { this->run_test(); }

@@ -144,8 +144,7 @@ class multilinestring_range {
 
   /// Returns the segment given a segment index.
   template <typename IndexType>
-  CUSPATIAL_HOST_DEVICE thrust::pair<vec_2d<element_t>, vec_2d<element_t>> segment(
-    IndexType segment_idx);
+  CUSPATIAL_HOST_DEVICE auto segment(IndexType segment_idx);
 
   /// Returns an iterator to the counts of points per multilinestring
   CUSPATIAL_HOST_DEVICE auto multilinestring_point_count_begin();
