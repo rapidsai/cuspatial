@@ -167,7 +167,7 @@ def test_geoseries_input():
 
     # Transform to UTM using cuproj
     cu_transformer = cuTransformer.from_crs("EPSG:4326", grid_corners[0][2])
-    cuproj_x, cuproj_y = cu_transformer.transform(gs.x.values, gs.y.values)
+    cuproj_x, cuproj_y = cu_transformer.transform(gs.points.x, gs.points.y)
 
     assert_allclose(cuproj_x, pyproj_x)
     assert_allclose(cuproj_y, pyproj_y)
