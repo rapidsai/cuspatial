@@ -21,6 +21,7 @@
 
 #include <cuspatial/geometry/vec_2d.hpp>
 
+#include <limits>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_scalar.hpp>
 #include <rmm/device_uvector.hpp>
@@ -623,7 +624,13 @@ class MultilinestringRangeTestBase : public BaseFixture {
   template <typename MultiLineStringRange>
   struct segment_functor {
     MultiLineStringRange _rng;
-    segment<T> __device__ operator()(std::size_t i) { return _rng.segment(i); }
+    segment<T> __device__ operator()(std::size_t i)
+    {
+      auto part_idx = _rng.part_idx_from_point_idx(i);
+      return _rng.is_valid_segment_id(i, part_idx)
+               ? _rng.segment(i)
+               : segment<T>{vec_2d<T>{-1, -1}, vec_2d<T>{-1, -1}};
+    }
   };
 
   void SetUp() { make_test_multilinestring(); }
@@ -672,9 +679,7 @@ class MultilinestringRangeTestBase : public BaseFixture {
 
     test_array_access_operator();
 
-    test_geometry_offsets_it();
-
-    test_part_offsets_it();
+    test_geometry_offset_it();
   }
 
   void test_size() { EXPECT_EQ(this->range().size(), this->range().num_multilinestrings()); }
@@ -692,6 +697,8 @@ class MultilinestringRangeTestBase : public BaseFixture {
   void test_end() { EXPECT_EQ(this->range().end(), this->range().multilinestring_end()); }
 
   virtual void test_point_it() = 0;
+
+  virtual void test_geometry_offset_it() = 0;
 
   virtual void test_part_offset_it() = 0;
 
@@ -715,10 +722,6 @@ class MultilinestringRangeTestBase : public BaseFixture {
 
   virtual void test_array_access_operator() = 0;
 
-  virtual void test_geometry_offsets_it() = 0;
-
-  virtual void test_part_offsets_it() = 0;
-
   // Helper functions to be used by all subclass (test cases).
   rmm::device_uvector<vec_2d<T>> copy_leading_points()
   {
@@ -741,10 +744,22 @@ class MultilinestringRangeTestBase : public BaseFixture {
     return d_all_points;
   }
 
+  rmm::device_uvector<std::size_t> copy_geometry_offsets()
+  {
+    auto rng = this->range();
+    auto d_geometry_offsets =
+      rmm::device_uvector<std::size_t>(rng.num_multilinestrings() + 1, stream());
+    thrust::copy(rmm::exec_policy(stream()),
+                 rng.geometry_offset_begin(),
+                 rng.geometry_offset_end(),
+                 d_geometry_offsets.begin());
+    return d_geometry_offsets;
+  }
+
   rmm::device_uvector<std::size_t> copy_part_offset()
   {
     auto rng           = this->range();
-    auto d_part_offset = rmm::device_uvector<std::size_t>(rng.num_multilinestrings() + 1, stream());
+    auto d_part_offset = rmm::device_uvector<std::size_t>(rng.num_linestrings() + 1, stream());
     thrust::copy(rmm::exec_policy(stream()),
                  rng.part_offset_begin(),
                  rng.part_offset_end(),
@@ -785,7 +800,7 @@ class MultilinestringRangeTestBase : public BaseFixture {
   rmm::device_uvector<std::size_t> copy_intra_part_idx()
   {
     auto rng              = this->range();
-    auto d_intra_part_idx = rmm::device_uvector<std::size_t>(rng.num_points(), stream());
+    auto d_intra_part_idx = rmm::device_uvector<std::size_t>(rng.num_linestrings(), stream());
     thrust::tabulate(rmm::exec_policy(stream()),
                      d_intra_part_idx.begin(),
                      d_intra_part_idx.end(),
@@ -850,7 +865,7 @@ class MultilinestringRangeTestBase : public BaseFixture {
     return d_multilinestring_linestring_count;
   }
 
-  rmm::device_uvector<vec_2d<T>> copy_all_points_of_ith_multipoint(std::size_t i)
+  rmm::device_uvector<vec_2d<T>> copy_all_points_of_ith_multilinestring(std::size_t i)
   {
     auto rng = this->range();
     rmm::device_scalar<std::size_t> num_points(stream());
@@ -864,29 +879,6 @@ class MultilinestringRangeTestBase : public BaseFixture {
 
     array_access_tester<<<1, 1, 0, stream()>>>(rng, i, d_all_points.data());
     return d_all_points;
-  }
-
-  rmm::device_uvector<std::size_t> copy_geometry_offsets()
-  {
-    auto rng = this->range();
-    auto d_geometry_offsets =
-      rmm::device_uvector<std::size_t>(rng.num_multilinestrings() + 1, stream());
-    thrust::copy(rmm::exec_policy(stream()),
-                 rng.geometry_offsets_begin(),
-                 rng.geometry_offsets_end(),
-                 d_geometry_offsets.begin());
-    return d_geometry_offsets;
-  }
-
-  rmm::device_uvector<std::size_t> copy_part_offsets()
-  {
-    auto rng            = this->range();
-    auto d_part_offsets = rmm::device_uvector<std::size_t>(rng.num_linestrings() + 1, stream());
-    thrust::copy(rmm::exec_policy(stream()),
-                 rng.part_offsets_begin(),
-                 rng.part_offsets_end(),
-                 d_part_offsets.begin());
-    return d_part_offsets;
   }
 
  protected:
@@ -1000,7 +992,7 @@ class MultilinestringRangeEmptyTest : public MultilinestringRangeTestBase<T> {
     SUCCEED();
   }
 
-  void test_geometry_offsets_it()
+  void test_geometry_offset_it()
   {
     auto geometry_offsets = this->copy_geometry_offsets();
     auto expected         = make_device_vector<std::size_t>({0});
@@ -1017,3 +1009,134 @@ class MultilinestringRangeEmptyTest : public MultilinestringRangeTestBase<T> {
 
 TYPED_TEST_CASE(MultilinestringRangeEmptyTest, FloatingPointTypes);
 TYPED_TEST(MultilinestringRangeEmptyTest, EmptyTest) { this->run_test(); }
+
+template <typename T>
+class MultilinestringRangeOneTest : public MultilinestringRangeTestBase<T> {
+  void make_test_multilinestring()
+  {
+    auto array = make_multilinestring_array<T>(
+      {0, 2}, {0, 2, 5}, {{10, 10}, {20, 20}, {100, 100}, {200, 200}, {300, 300}});
+    this->test_multilinestring = std::make_unique<decltype(array)>(std::move(array));
+  }
+
+  void test_num_multilinestrings() { EXPECT_EQ(this->range().num_multilinestrings(), 1); }
+
+  void test_num_linestrings() { EXPECT_EQ(this->range().num_linestrings(), 2); }
+
+  void test_num_points() { EXPECT_EQ(this->range().num_points(), 5); }
+
+  void test_multilinestring_it()
+  {
+    auto leading_points = this->copy_leading_points();
+    auto expected       = make_device_vector<vec_2d<T>>({{10, 10}});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(leading_points, expected);
+  }
+
+  void test_point_it()
+  {
+    auto all_points = this->copy_all_points();
+    auto expected =
+      make_device_vector<vec_2d<T>>({{10, 10}, {20, 20}, {100, 100}, {200, 200}, {300, 300}});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(all_points, expected);
+  }
+
+  void test_part_offset_it()
+  {
+    auto part_offset = this->copy_part_offset();
+    auto expected    = make_device_vector<std::size_t>({0, 2, 5});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(part_offset, expected);
+  }
+
+  void test_part_idx_from_point_idx()
+  {
+    auto part_idx = this->copy_part_idx_from_point_idx();
+    auto expected = make_device_vector<std::size_t>({0, 0, 1, 1, 1});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(part_idx, expected);
+  }
+
+  void test_part_idx_from_segment_idx()
+  {
+    auto part_idx = this->copy_part_idx_from_segment_idx();
+    auto expected = make_device_vector<std::size_t>(
+      {0, std::numeric_limits<std::size_t>::max(), 1, 1, std::numeric_limits<std::size_t>::max()});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(part_idx, expected);
+  }
+
+  void test_geometry_idx_from_point_idx()
+  {
+    auto geometry_idx = this->copy_geometry_idx_from_point_idx();
+    auto expected     = make_device_vector<std::size_t>({0, 0, 0, 0, 0});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(geometry_idx, expected);
+  }
+
+  void test_intra_part_idx()
+  {
+    auto intra_part_idx = this->copy_intra_part_idx();
+    auto expected       = make_device_vector<std::size_t>({0, 1});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(intra_part_idx, expected);
+  }
+
+  void test_intra_point_idx()
+  {
+    auto intra_point_idx = this->copy_intra_point_idx();
+    auto expected        = make_device_vector<std::size_t>({0, 1, 0, 1, 2});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(intra_point_idx, expected);
+  }
+
+  void test_is_valid_segment_id()
+  {
+    auto is_valid_segment_id = this->copy_is_valid_segment_id();
+    auto expected            = make_device_vector<uint8_t>({1, 0, 1, 1, 0});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(is_valid_segment_id, expected);
+  }
+
+  void test_segment()
+  {
+    auto segments = this->copy_segments();
+    auto expected = make_device_vector<segment<T>>({{{10, 10}, {20, 20}},
+                                                    {{-1, -1}, {-1, -1}},
+                                                    {{100, 100}, {200, 200}},
+                                                    {{200, 200}, {300, 300}},
+                                                    {{-1, -1}, {-1, -1}}});
+    CUSPATIAL_EXPECT_VEC2D_PAIRS_EQUIVALENT(segments, expected);
+  }
+
+  void test_multilinestring_point_count_it()
+  {
+    auto multilinestring_point_count = this->copy_multilinestring_point_count();
+    auto expected                    = make_device_vector<std::size_t>({5});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(multilinestring_point_count, expected);
+  }
+
+  void test_multilinestring_linestring_count_it()
+  {
+    auto multilinestring_linestring_count = this->copy_multilinestring_linestring_count();
+    auto expected                         = make_device_vector<std::size_t>({2});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(multilinestring_linestring_count, expected);
+  }
+
+  void test_array_access_operator()
+  {
+    auto all_points = this->copy_all_points_of_ith_multilinestring(0);
+    auto expected =
+      make_device_vector<vec_2d<T>>({{10, 10}, {20, 20}, {100, 100}, {200, 200}, {300, 300}});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(all_points, expected);
+  }
+
+  void test_geometry_offset_it()
+  {
+    auto geometry_offsets = this->copy_geometry_offsets();
+    auto expected         = make_device_vector<std::size_t>({0, 2});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(geometry_offsets, expected);
+  }
+
+  void test_part_offsets_it()
+  {
+    auto part_offsets = this->copy_part_offsets();
+    auto expected     = make_device_vector<std::size_t>({0, 2, 5});
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(part_offsets, expected);
+  }
+};
+
+TYPED_TEST_CASE(MultilinestringRangeOneTest, FloatingPointTypes);
+TYPED_TEST(MultilinestringRangeOneTest, OneTest) { this->run_test(); }
