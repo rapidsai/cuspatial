@@ -22,6 +22,7 @@ from shapely.geometry import (
 import cudf
 from cudf._typing import ColumnLike
 from cudf.core.column.column import as_column
+from cudf.core.copy_types import GatherMap
 
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import ColumnType, GeoColumn
@@ -922,10 +923,10 @@ class GeoSeries(cudf.Series):
             aligned_right,
         )
 
-    def _gather(
-        self, gather_map, keep_index=True, nullify=False, check_bounds=True
-    ):
-        return self.iloc[gather_map]
+    def _gather(self, gather_map: GatherMap, keep_index=True):
+        # TODO: This could use the information to avoid reprocessing
+        # in iloc
+        return self.iloc[gather_map.column]
 
     # def reset_index(self, drop=False, inplace=False, name=None):
     def reset_index(
