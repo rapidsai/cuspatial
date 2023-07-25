@@ -56,7 +56,7 @@ def test_valid_epsg_mixed_ints_strings(crs_from, crs_to):
 def test_valid_epsg_tuples(crs_from, crs_to):
     Transformer.from_crs(("EPSG", crs_from), ("EPSG", crs_to))
     Transformer.from_crs(("EPSG", crs_from), crs_to)
-    Transformer.from_crs(("EPSG", crs_from), to_epsg_string(crs_to))
+    Transformer.from_crs(("epsg", crs_from), to_epsg_string(crs_to))
     Transformer.from_crs(("EPSG", crs_from), str(crs_to))
     with pytest.raises(RuntimeError):
         Transformer.from_crs(("RPG", crs_from), crs_to)  # invalid authority
