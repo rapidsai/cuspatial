@@ -279,7 +279,7 @@ TYPED_TEST(FindAndCombineSegmentsTest, nooverlap3)
   CUSPATIAL_RUN_TEST(this->run_single_test,
                      segments,
                      {0, 0},
-                     {S{P{0.0, 0.0}, P{1.0, 1.0}}, S{P{0.0, 1.0}, P{1.0, 0.0}}});
+                     {S{P{0.0, 1.0}, P{1.0, 0.0}}, S{P{0.0, 0.0}, P{1.0, 1.0}}});
 }
 
 TYPED_TEST(FindAndCombineSegmentsTest, twospaces)
