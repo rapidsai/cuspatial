@@ -25,9 +25,6 @@ namespace cuprojshim {
 template cuproj::projection<cuproj::vec_2d<float>>* make_projection<float>(
   std::string const& src_epsg, std::string const& dst_epsg);
 
-template cuproj::projection<cuproj::vec_2d<float>>* make_projection<float>(int src_epsg,
-                                                                           int dst_epsg);
-
 template void transform<float>(cuproj::projection<cuproj::vec_2d<float>> const& proj,
                                cuproj::vec_2d<float>* xy_in,
                                cuproj::vec_2d<float>* xy_out,
@@ -46,9 +43,6 @@ template void transform<float>(cuproj::projection<cuproj::vec_2d<float>> const& 
 
 template cuproj::projection<cuproj::vec_2d<double>>* make_projection<double>(
   std::string const& src_epsg, std::string const& dst_epsg);
-
-template cuproj::projection<cuproj::vec_2d<double>>* make_projection<double>(int src_epsg,
-                                                                             int dst_epsg);
 
 template void transform<double>(cuproj::projection<cuproj::vec_2d<double>> const& proj,
                                 cuproj::vec_2d<double>* xy_in,

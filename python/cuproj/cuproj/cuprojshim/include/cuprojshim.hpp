@@ -28,9 +28,6 @@ cuproj::projection<cuproj::vec_2d<T>>* make_projection(std::string const& src_ep
                                                        std::string const& dst_epsg);
 
 template <typename T>
-cuproj::projection<cuproj::vec_2d<T>>* make_projection(int src_epsg, int dst_epsg);
-
-template <typename T>
 void transform(cuproj::projection<cuproj::vec_2d<T>> const& proj,
                cuproj::vec_2d<T>* xy_in,
                cuproj::vec_2d<T>* xy_out,
