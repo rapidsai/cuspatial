@@ -16,34 +16,37 @@ cdef class Transformer:
     cdef projection[vec_2d[double]]* proj_64
 
     def __init__(self, crs_from, crs_to):
-        if (isinstance(crs_from, int)
+        if isinstance(crs_from, int):
             crs_from = str(crs_from)
-        elif (isinstance(crs_from, tuple))
+        elif isinstance(crs_from, tuple):
             crs_from = str.join(":", crs_from)
 
-        if (isinstance(crs_to, int))
+        if isinstance(crs_to, int):
             crs_to = str(crs_to)
-        elif (isinstance(crs_to, tuple))
+        elif isinstance(crs_to, tuple):
             crs_to = str.join(":", crs_to)
 
         if (not isinstance(crs_from, str) or not isinstance(crs_to, str)):
             raise TypeError(
                 "crs_from and crs_to must be strings or integers")
 
-
         crs_from_b = crs_from.encode('utf-8')
         crs_to_b = crs_to.encode('utf-8')
-        self.proj_32 = make_projection[float](<string> crs_from_b, <string> crs_to_b)
-        self.proj_64 = make_projection[double](<string> crs_from_b, <string> crs_to_b)
+        self.proj_32 = make_projection[float](
+            <string> crs_from_b, <string> crs_to_b)
+        self.proj_64 = make_projection[double](
+            <string> crs_from_b, <string> crs_to_b)
 
     def __del__(self):
         del self.proj
 
     def transform(self, x, y, dir):
         if not hasattr(x, "__cuda_array_interface__"):
-            raise TypeError("x must be a __cuda_array_interface__ compliant object")
+            raise TypeError(
+                "x must be a __cuda_array_interface__ compliant object")
         if not hasattr(y, "__cuda_array_interface__"):
-            raise TypeError("y must be a __cuda_array_interface__ compliant object")
+            raise TypeError(
+                "y must be a __cuda_array_interface__ compliant object")
         if (len(x.shape) != 1):
             raise TypeError("x must be a 1D array")
         if (len(y.shape) != 1):
@@ -53,7 +56,7 @@ cdef class Transformer:
         if isinstance(x.dtype, cp.floating):
             raise TypeError("x must be of floating point type")
         if isinstance(y.dtype, cp.floating):
-            raise TypeError("y must be of floting point type")
+            raise TypeError("y must be of floating point type")
         if (x.dtype != y.dtype):
             raise TypeError("x and y must have the same dtype")
 
@@ -67,8 +70,10 @@ cdef class Transformer:
         cdef int size = x.shape[0]
         result_x = cp.ndarray((size,), order='C', dtype=x.dtype)
         result_y = cp.ndarray((size,), order='C', dtype=y.dtype)
-        cdef float* x_in = <float*> <uintptr_t> x.__cuda_array_interface__['data'][0]
-        cdef float* y_in = <float*> <uintptr_t> y.__cuda_array_interface__['data'][0]
+        cdef float* x_in = \
+            <float*> <uintptr_t> x.__cuda_array_interface__['data'][0]
+        cdef float* y_in = \
+            <float*> <uintptr_t> y.__cuda_array_interface__['data'][0]
         cdef float* x_out = <float*> <uintptr_t> result_x.data.ptr
         cdef float* y_out = <float*> <uintptr_t> result_y.data.ptr
 
@@ -82,8 +87,7 @@ cdef class Transformer:
                 x_out,
                 y_out,
                 size,
-                d
-            )
+                d)
 
         return result_x, result_y
 
@@ -91,8 +95,10 @@ cdef class Transformer:
         cdef int size = x.shape[0]
         result_x = cp.ndarray((size,), order='C', dtype=cp.float64)
         result_y = cp.ndarray((size,), order='C', dtype=cp.float64)
-        cdef double* x_in = <double*> <uintptr_t> x.__cuda_array_interface__['data'][0]
-        cdef double* y_in = <double*> <uintptr_t> y.__cuda_array_interface__['data'][0]
+        cdef double* x_in = \
+            <double*> <uintptr_t> x.__cuda_array_interface__['data'][0]
+        cdef double* y_in = \
+            <double*> <uintptr_t> y.__cuda_array_interface__['data'][0]
         cdef double* x_out = <double*> <uintptr_t> result_x.data.ptr
         cdef double* y_out = <double*> <uintptr_t> result_y.data.ptr
 
@@ -106,7 +112,6 @@ cdef class Transformer:
                 x_out,
                 y_out,
                 size,
-                d
-            )
+                d)
 
         return result_x, result_y

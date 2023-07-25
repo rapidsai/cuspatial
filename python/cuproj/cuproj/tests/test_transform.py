@@ -1,14 +1,14 @@
 
 import cupy as cp
-import numpy as np
 import geopandas as gpd
-import cuspatial
-from shapely.geometry import Point
-
+import numpy as np
 import pytest
 from cupy.testing import assert_allclose
 from pyproj import Transformer
 from pyproj.enums import TransformDirection
+from shapely.geometry import Point
+
+import cuspatial
 from cuproj import Transformer as cuTransformer
 
 valid_crs_combos = [
@@ -59,7 +59,7 @@ def test_valid_epsg_tuples(crs_from, crs_to):
     Transformer.from_crs(("EPSG", crs_from), to_epsg_string(crs_to))
     Transformer.from_crs(("EPSG", crs_from), str(crs_to))
     with pytest.raises(RuntimeError):
-        Transformer.from_crs(("RPG", crs_from), crs_to) # invalid authority
+        Transformer.from_crs(("RPG", crs_from), crs_to)  # invalid authority
 
 
 @pytest.mark.parametrize("crs_from, crs_to", invalid_crs_combos)
@@ -139,7 +139,7 @@ def run_forward_and_inverse_transforms(
 
     # Transform back to WGS84 using PyProj
     pyproj_x_back, pyproj_y_back = transformer.transform(
-            pyproj_x, pyproj_y, direction=TransformDirection.INVERSE)
+        pyproj_x, pyproj_y, direction=TransformDirection.INVERSE)
 
     # Transform back to WGS84 using cuproj
     cuproj_x_back, cuproj_y_back = cu_transformer.transform(
@@ -153,7 +153,7 @@ def run_forward_and_inverse_transforms(
     # Transform back to WGS84 using PyProj
     transformer = Transformer.from_crs(crs_to, "EPSG:4326")
     pyproj_x_back, pyproj_y_back = transformer.transform(
-            pyproj_x, pyproj_y)
+        pyproj_x, pyproj_y)
 
     # Transform back to WGS84 using cuproj
     cu_transformer = cuTransformer.from_crs(crs_to, "EPSG:4326")
@@ -163,13 +163,15 @@ def run_forward_and_inverse_transforms(
     assert_allclose(cuproj_x_back, pyproj_x_back, atol=atol)
     assert_allclose(cuproj_y_back, pyproj_y_back, atol=atol)
 
+
 # test float and double
 @pytest.mark.parametrize("dtype", [cp.float32, cp.float64])
 # test with grids of points
 @pytest.mark.parametrize("container_type", container_types)
 # test with various container types (host and device)
 @pytest.mark.parametrize("min_corner, max_corner, crs_to", grid_corners)
-def test_wgs84_to_utm_grid(dtype, container_type, min_corner, max_corner, crs_to):
+def test_wgs84_to_utm_grid(dtype, container_type,
+                           min_corner, max_corner, crs_to):
     run_forward_and_inverse_transforms(
         dtype, container_type, min_corner, max_corner, crs_to)
 
