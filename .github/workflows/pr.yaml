@@ -75,20 +75,14 @@ jobs:
   wheel-build:
     needs: checks
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux-build.yml@branch-23.10
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-build.yaml@branch-23.10
     with:
       build_type: pull-request
-      package-dir: python/cuspatial
-      package-name: cuspatial
-      skbuild-configure-options: "-DCUSPATIAL_BUILD_WHEELS=ON"
+      script: ci/build_wheel.sh
   wheel-tests:
     needs: wheel-build
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux-test.yml@branch-23.10
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-test.yaml@branch-23.10
     with:
       build_type: pull-request
-      package-name: cuspatial
-      test-smoketest: "python ./ci/wheel_smoke_test.py"
-      test-unittest: "python -m pytest -n 8 ./python/cuspatial/cuspatial/tests"
-      test-before-amd64: "apt update && DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libgdal-dev && python -m pip install --no-binary fiona 'fiona>=1.8.19,<1.9'"
-      test-before-arm64: "apt update && DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libgdal-dev && python -m pip install --no-binary fiona 'fiona>=1.8.19,<1.9'"
+      script: ci/test_wheel.sh
