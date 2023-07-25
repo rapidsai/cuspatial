@@ -44,6 +44,24 @@ def test_valid_uppercase_epsg_strings(crs_from, crs_to):
         to_epsg_string(crs_from).upper(), to_epsg_string(crs_to).upper())
 
 
+@pytest.mark.parametrize("crs_from, crs_to", valid_crs_combos)
+def test_valid_epsg_mixed_ints_strings(crs_from, crs_to):
+    Transformer.from_crs(to_epsg_string(crs_from), crs_to)
+    Transformer.from_crs(str(crs_from), crs_to)
+    Transformer.from_crs(crs_from, to_epsg_string(crs_to))
+    Transformer.from_crs(crs_from, str(crs_to))
+
+
+@pytest.mark.parametrize("crs_from, crs_to", valid_crs_combos)
+def test_valid_epsg_tuples(crs_from, crs_to):
+    Transformer.from_crs(("EPSG", crs_from), ("EPSG", crs_to))
+    Transformer.from_crs(("EPSG", crs_from), crs_to)
+    Transformer.from_crs(("EPSG", crs_from), to_epsg_string(crs_to))
+    Transformer.from_crs(("EPSG", crs_from), str(crs_to))
+    with pytest.raises(RuntimeError):
+        Transformer.from_crs(("RPG", crs_from), crs_to) # invalid authority
+
+
 @pytest.mark.parametrize("crs_from, crs_to", invalid_crs_combos)
 def test_invalid_epsg_codes(crs_from, crs_to):
     with pytest.raises(RuntimeError):

@@ -16,13 +16,19 @@ cdef class Transformer:
     cdef projection[vec_2d[double]]* proj_64
 
     def __init__(self, crs_from, crs_to):
-        if (isinstance(crs_from, int) & isinstance(crs_to, int)):
+        if (isinstance(crs_from, int)
             crs_from = str(crs_from)
+        elif (isinstance(crs_from, tuple))
+            crs_from = str.join(":", crs_from)
+
+        if (isinstance(crs_to, int))
             crs_to = str(crs_to)
+        elif (isinstance(crs_to, tuple))
+            crs_to = str.join(":", crs_to)
 
         if (not isinstance(crs_from, str) or not isinstance(crs_to, str)):
             raise TypeError(
-                "crs_from and crs_to must be both strings or both integers")
+                "crs_from and crs_to must be strings or integers")
 
 
         crs_from_b = crs_from.encode('utf-8')
