@@ -156,7 +156,6 @@ class MultipointRangeTest : public BaseFixture {
     return points;
   };
 
-
   rmm::device_uvector<std::size_t> copy_offsets()
   {
     auto rng = this->range();
