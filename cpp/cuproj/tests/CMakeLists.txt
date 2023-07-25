@@ -24,7 +24,8 @@ function(ConfigureTest CMAKE_TEST_NAME)
                         "$<$<COMPILE_LANGUAGE:CUDA>:${CUPROJ_CUDA_FLAGS}>")
     target_include_directories(${CMAKE_TEST_NAME}
                 PRIVATE "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}>"
-                        "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}/src>")
+                        "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}/src>"
+                        ../../../cpp/include)
     set_target_properties(
         ${CMAKE_TEST_NAME}
         PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUPROJ_BINARY_DIR}/gtests>"
@@ -49,5 +50,5 @@ endfunction(ConfigureTest)
 ###################################################################################################
 
 # index
-ConfigureTest(TEST_TEST
-    test.cu)
+ConfigureTest(WGS_TO_UTM_TEST
+    wgs_to_utm_test.cu)
