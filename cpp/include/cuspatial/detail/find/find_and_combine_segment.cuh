@@ -24,23 +24,35 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <ranger/ranger.hpp>
+
 #include <thrust/sort.h>
+#include <thrust/uninitialized_fill.h>
 
 namespace cuspatial {
 namespace detail {
 
 /**
  * @internal
- * @brief Kernel to merge segments. Each thread works on one segment space,
- * with a naive n^2 algorithm.
+ * @pre All segments in range @p segments , it is presorted using `segment_comparator`.
+ *
+ * @brief Kernel to merge segments. Each thread works on one segment space, within each space,
+ * `segment_comparator` guarantees that segments with same slope are grouped together. We call
+ * each of such group is a "mergeable group". Within each mergeable group, the first segment is
+ * the "leading segment". The algorithm behave as follows:
+ *
+ * 1. For each mergeable group, loop over the rest of the segments in the group and see if it is
+ * mergeable with the leading segment. If it is, overwrite the leading segment with the merged
+ * result. Then mark the segment as merged by setting the flag to 1. This makes sure the inner loop
+ * for each merged segment is not run again.
+ * 2. Repeat 1 until all mergeable group is processed.
  */
 template <typename OffsetRange, typename SegmentRange, typename OutputIt>
 void __global__ simple_find_and_combine_segments_kernel(OffsetRange offsets,
                                                         SegmentRange segments,
                                                         OutputIt merged_flag)
 {
-  for (auto pair_idx = threadIdx.x + blockIdx.x * blockDim.x; pair_idx < offsets.size() - 1;
-       pair_idx += gridDim.x * blockDim.x) {
+  for (auto pair_idx : ranger::grid_stride_range(offsets.size() - 1)) {
     // Zero-initialize flags for all segments in current space.
     for (auto i = offsets[pair_idx]; i < offsets[pair_idx + 1]; i++) {
       merged_flag[i] = 0;
@@ -65,7 +77,7 @@ void __global__ simple_find_and_combine_segments_kernel(OffsetRange offsets,
 /**
  * @brief Comparator for sorting the segment range.
  *
- * This comparator makes sure that the segment range are sorted by the following keys:
+ * This comparator makes sure that the segment range is sorted such that:
  * 1. Segments with the same space id are grouped together.
  * 2. Segments within the same space are grouped by their slope.
  * 3. Within each slope group, segments are sorted by their lower left point.

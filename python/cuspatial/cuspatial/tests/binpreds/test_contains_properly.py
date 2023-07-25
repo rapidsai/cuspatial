@@ -131,7 +131,7 @@ def test_float_precision_limits(point, polygon, expects):
     Unique success cases identified by @mharris. These go in a pair
     with test_float_precision_limits_failures because these are
     inconsistent results, where 0.6 fails above (as True, within the
-    polygon) and 0.66 below succeeds, though they are colinear.
+    polygon) and 0.66 below succeeds, though they are collinear.
     """
     gpdpoint = gpd.GeoSeries(point)
     gpdpolygon = gpd.GeoSeries(polygon)

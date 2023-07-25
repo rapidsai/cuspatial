@@ -28,6 +28,7 @@
 #include <cuspatial/intersection.cuh>
 
 #include <rmm/exec_policy.hpp>
+
 #include <thrust/host_vector.h>
 
 template <typename T>

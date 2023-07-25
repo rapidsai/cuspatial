@@ -26,6 +26,7 @@ target_compile_features(cuspatial_benchmark_common PUBLIC cxx_std_17 cuda_std_17
 target_link_libraries(cuspatial_benchmark_common
     PUBLIC benchmark::benchmark
            cudf::cudftestutil
+           ranger::ranger
            cuspatial)
 
 target_compile_options(cuspatial_benchmark_common

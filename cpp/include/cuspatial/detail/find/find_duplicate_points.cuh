@@ -22,6 +22,8 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <ranger/ranger.hpp>
+
 #include <thrust/uninitialized_fill.h>
 
 namespace cuspatial {
@@ -35,8 +37,7 @@ template <typename MultiPointRange, typename OutputIt>
 void __global__ find_duplicate_points_kernel_simple(MultiPointRange multipoints,
                                                     OutputIt duplicate_flags)
 {
-  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < multipoints.size();
-       idx += gridDim.x * blockDim.x) {
+  for (auto idx : ranger::grid_stride_range(multipoints.size())) {
     auto multipoint    = multipoints[idx];
     auto global_offset = multipoints.offsets_begin()[idx];
 
