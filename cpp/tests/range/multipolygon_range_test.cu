@@ -1015,3 +1015,126 @@ class MultipolygonRangeEmptyTest : public MultipolygonRangeTestBase<T> {
 TYPED_TEST_CASE(MultipolygonRangeEmptyTest, FloatingPointTypes);
 
 TYPED_TEST(MultipolygonRangeEmptyTest, EmptyMultipolygonRange) { this->run_test(); }
+
+template <typename T>
+class MultipolygonRangeOneTest : public MultipolygonRangeTestBase<T> {
+  void make_test_multipolygon()
+  {
+    auto geometry_offsets = make_device_vector<std::size_t>({0, 2});
+    auto part_offsets     = make_device_vector<std::size_t>({0, 1, 2});
+    auto ring_offsets     = make_device_vector<std::size_t>({0, 4, 8});
+    auto coordinates      = make_device_vector<vec_2d<T>>(
+      {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}});
+
+    this->test_multipolygon = std::make_unique<multipolygon_array<rmm::device_vector<std::size_t>,
+                                                                  rmm::device_vector<std::size_t>,
+                                                                  rmm::device_vector<std::size_t>,
+                                                                  rmm::device_vector<vec_2d<T>>>>(
+      std::move(geometry_offsets),
+      std::move(part_offsets),
+      std::move(ring_offsets),
+      std::move(coordinates));
+  }
+
+  void test_num_multipolygons() { EXPECT_EQ(this->range().num_multipolygons(), 1); }
+
+  void test_num_polygons() { EXPECT_EQ(this->range().num_polygons(), 2); }
+
+  void test_num_rings() { EXPECT_EQ(this->range().num_rings(), 2); }
+
+  void test_num_points() { EXPECT_EQ(this->range().num_points(), 8); }
+
+  void test_multipolygon_it()
+  {
+    rmm::device_uvector<vec_2d<T>> d_points = this->copy_leading_point_multipolygon();
+    auto expected                           = make_device_vector<vec_2d<T>>({{0, 0}});
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_points, expected);
+  }
+
+  void test_point_it()
+  {
+    rmm::device_uvector<vec_2d<T>> d_points = this->copy_all_points();
+    auto expected                           = make_device_vector<vec_2d<T>>(
+      {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}});
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_points, expected);
+  }
+
+  void test_geometry_offsets_it()
+  {
+    rmm::device_uvector<std::size_t> d_offsets = this->copy_geometry_offsets();
+    auto expected                              = make_device_vector<std::size_t>({0, 1});
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_offsets, expected);
+  }
+
+  void test_part_offset_it()
+  {
+    rmm::device_uvector<std::size_t> d_offsets = this->copy_part_offsets();
+    auto expected                              = make_device_vector<std::size_t>({0, 1, 2});
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_offsets, expected);
+  }
+
+  void test_ring_offset_it()
+  {
+    rmm::device_uvector<std::size_t> d_offsets = this->copy_ring_offsets();
+    auto expected                              = make_device_vector<std::size_t>({0, 4, 8});
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_offsets, expected);
+  }
+
+  void test_ring_idx_from_point_idx()
+  {
+    rmm::device_uvector<std::size_t> d_ring_idx = this->copy_ring_idx_from_point_idx();
+    auto expected = make_device_vector<std::size_t>({0, 0, 0, 0, 1, 1, 1, 1});
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_ring_idx, expected);
+  }
+
+  void test_part_idx_from_ring_idx()
+  {
+    rmm::device_uvector<std::size_t> d_part_idx = this->copy_part_idx_from_ring_idx();
+    auto expected                               = make_device_vector<std::size_t>({0, 1});
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_part_idx, expected);
+  }
+
+  void test_geometry_idx_from_part_idx()
+  {
+    rmm::device_uvector<std::size_t> d_geometry_idx = this->copy_geometry_idx_from_part_idx();
+    auto expected                                   = make_device_vector<std::size_t>({0, 0});
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_geometry_idx, expected);
+  }
+
+  void test_array_access_operator()
+  {
+    auto all_points = this->copy_all_points_of_ith_multipolygon(0);
+    auto expected   = make_device_vector<vec_2d<T>>(
+      {{0, 0}, {1, 0}, {1, 1}, {0, 0}, {10, 10}, {11, 10}, {11, 11}, {10, 10}});
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(all_points, expected);
+  }
+
+  void test_multipolygon_point_count_it()
+  {
+    rmm::device_uvector<std::size_t> d_point_count = this->copy_multipolygon_point_count();
+    auto expected                                  = make_device_vector<std::size_t>({8});
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_point_count, expected);
+  }
+
+  void test_multipolygon_ring_count_it()
+  {
+    rmm::device_uvector<std::size_t> d_ring_count = this->copy_multipolygon_ring_count();
+    auto expected                                 = make_device_vector<std::size_t>({2});
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_ring_count, expected);
+  }
+};
+
+TYPED_TEST_CASE(MultipolygonRangeOneTest, FloatingPointTypes);
+
+TYPED_TEST(MultipolygonRangeOneTest, OneMultipolygonRange) { this->run_test(); }
