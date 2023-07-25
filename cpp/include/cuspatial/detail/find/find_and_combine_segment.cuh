@@ -34,8 +34,18 @@ namespace detail {
 
 /**
  * @internal
- * @brief Kernel to merge segments. Each thread works on one segment space,
- * with a naive n^2 algorithm.
+ * @pre All segments in range @p segments , it is presorted using `segment_comparator`.
+ *
+ * @brief Kernel to merge segments. Each thread works on one segment space, within each space,
+ * `segment_comparator` guarantees that segments with same slope are grouped together. We call
+ * each of such group is a "mergeable group". Within each mergeable group, the first segment is
+ * the "leading segment". The algorithm behave as follows:
+ *
+ * 1. For each mergeable group, loop over the rest of the segments in the group and see if it is
+ * mergeable with the leading segment. If it is, overwrite the leading segment with the merged
+ * result. Then mark the segment as merged by setting the flag to 1. This makes sure the inner loop
+ * for each merged segment is not run again.
+ * 2. Repeat 1 until all mergeable group is processed.
  */
 template <typename OffsetRange, typename SegmentRange, typename OutputIt>
 void __global__ simple_find_and_combine_segments_kernel(OffsetRange offsets,
