@@ -95,13 +95,14 @@ container_types = [list, tuple, np.asarray, cp.asarray]
 
 
 def run_forward_and_inverse_transforms(
-        container_type, min_corner, max_corner, crs_to):
+        dtype, container_type, min_corner, max_corner, crs_to):
     num_points_x = 100
     num_points_y = 100
 
-    grid = np.meshgrid(np.linspace(min_corner[0], max_corner[0], num_points_y),
-                       np.linspace(min_corner[1], max_corner[1], num_points_x))
-    grid = [np.ravel(grid[0]), np.ravel(grid[1])]
+    x, y = np.meshgrid(
+        np.linspace(min_corner[0], max_corner[0], num_points_y, dtype=dtype),
+        np.linspace(min_corner[1], max_corner[1], num_points_x, dtype=dtype))
+    grid = [x.reshape(-1), y.reshape(-1)]
 
     # Transform to UTM using PyProj
     transformer = Transformer.from_crs("EPSG:4326", crs_to)
@@ -112,8 +113,11 @@ def run_forward_and_inverse_transforms(
     cu_transformer = cuTransformer.from_crs("EPSG:4326", crs_to)
     cuproj_x, cuproj_y = cu_transformer.transform(*cu_grid)
 
-    assert_allclose(cuproj_x, pyproj_x)
-    assert_allclose(cuproj_y, pyproj_y)
+    # Expect within 5m for float32, 100nm for float64
+    atol = 5 if dtype == cp.float32 else 1e-07
+
+    assert_allclose(cuproj_x, pyproj_x, atol=atol)
+    assert_allclose(cuproj_y, pyproj_y, atol=atol)
 
     # Transform back to WGS84 using PyProj
     pyproj_x_back, pyproj_y_back = transformer.transform(
@@ -123,8 +127,8 @@ def run_forward_and_inverse_transforms(
     cuproj_x_back, cuproj_y_back = cu_transformer.transform(
         cuproj_x, cuproj_y, direction="INVERSE")
 
-    assert_allclose(cuproj_x_back, pyproj_x_back)
-    assert_allclose(cuproj_y_back, pyproj_y_back)
+    assert_allclose(cuproj_x_back, pyproj_x_back, atol=atol)
+    assert_allclose(cuproj_y_back, pyproj_y_back, atol=atol)
 
     # Also test inverse-constructed Transformers
 
@@ -138,16 +142,18 @@ def run_forward_and_inverse_transforms(
     cuproj_x_back, cuproj_y_back = cu_transformer.transform(
         cuproj_x, cuproj_y)
 
-    assert_allclose(cuproj_x_back, pyproj_x_back)
-    assert_allclose(cuproj_y_back, pyproj_y_back)
+    assert_allclose(cuproj_x_back, pyproj_x_back, atol=atol)
+    assert_allclose(cuproj_y_back, pyproj_y_back, atol=atol)
 
+# test float and double
+@pytest.mark.parametrize("dtype", [cp.float32, cp.float64])
 # test with grids of points
 @pytest.mark.parametrize("container_type", container_types)
 # test with various container types (host and device)
 @pytest.mark.parametrize("min_corner, max_corner, crs_to", grid_corners)
-def test_wgs84_to_utm_grid(container_type, min_corner, max_corner, crs_to):
+def test_wgs84_to_utm_grid(dtype, container_type, min_corner, max_corner, crs_to):
     run_forward_and_inverse_transforms(
-        container_type, min_corner, max_corner, crs_to)
+        dtype, container_type, min_corner, max_corner, crs_to)
 
 
 # test __cuda_array_interface__ support by using cuspatial geoseries as input

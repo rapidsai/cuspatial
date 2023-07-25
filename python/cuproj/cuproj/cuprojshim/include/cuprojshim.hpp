@@ -23,23 +23,31 @@
 
 namespace cuprojshim {
 
-cuproj::projection<cuproj::vec_2d<double>>* make_projection(std::string const& src_epsg,
-                                                            std::string const& dst_epsg);
+template <typename T>
+cuproj::projection<cuproj::vec_2d<T>>* make_projection(std::string const& src_epsg,
+                                                       std::string const& dst_epsg);
 
-cuproj::projection<cuproj::vec_2d<double>>* make_projection(int src_epsg, int dst_epsg);
+template <typename T>
+cuproj::projection<cuproj::vec_2d<T>>* make_projection(int src_epsg, int dst_epsg);
 
-void transform(cuproj::projection<cuproj::vec_2d<double>> const& proj,
-               cuproj::vec_2d<double>* xy_in,
-               cuproj::vec_2d<double>* xy_out,
+template <typename T>
+void transform(cuproj::projection<cuproj::vec_2d<T>> const& proj,
+               cuproj::vec_2d<T>* xy_in,
+               cuproj::vec_2d<T>* xy_out,
                std::size_t n,
                cuproj::direction dir);
 
-void transform(cuproj::projection<cuproj::vec_2d<double>> const& proj,
-               double* x_in,
-               double* y_in,
-               double* x_out,
-               double* y_out,
+template <typename T>
+void transform(cuproj::projection<cuproj::vec_2d<T>> const& proj,
+               T* x_in,
+               T* y_in,
+               T* x_out,
+               T* y_out,
                std::size_t n,
                cuproj::direction dir);
 
 }  // namespace cuprojshim
+
+#ifdef __CUDACC__
+#include "detail/cuprojshim.hpp"
+#endif

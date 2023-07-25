@@ -80,8 +80,8 @@ class Transformer:
             x = cp.asarray([x], dtype='f8')
             y = cp.asarray([y], dtype='f8')
         elif isinstance(x, Iterable) and isinstance(y, Iterable):
-            x = cp.asarray(x, dtype='f8')
-            y = cp.asarray(y, dtype='f8')
+            x = cp.asarray(x, x.dtype)
+            y = cp.asarray(y, y.dtype)
 
         resx, resy = self._proj.transform(x, y, direction)
 
