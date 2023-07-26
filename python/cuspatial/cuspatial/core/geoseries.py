@@ -1384,3 +1384,37 @@ class GeoSeries(cudf.Series):
             align=align
         )
         return predicate(self, other)
+
+    def distance(self, other, align=True):
+        """Returns a `Series` containing the distance to aligned other.
+
+        The operation works on a 1-to-1 row-wise manner:
+
+        Parameters
+        ----------
+        other
+            The GeoSeries (elementwise) or geometric object to find the
+            distance to.
+        align : bool, default True
+            If True, automatically aligns GeoSeries based on their indices.
+            If False, the order of the elements is preserved.
+
+        Returns
+        -------
+        Series (float)
+
+        Notes
+        -----
+        Unlike GeoPandas, this API only supports geoseries that contain only
+        single type geometries.
+
+        Examples
+        --------
+        >>> from shapely.geometry import Point
+        >>> point = GeoSeries([Point(0, 0)])
+        >>> point2 = GeoSeries([Point(1, 1)])
+        >>> print(point.distance(point2))
+        0    1.414214
+        """
+
+        pass
