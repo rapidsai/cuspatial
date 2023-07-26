@@ -27,6 +27,7 @@ from cudf.core.copy_types import GatherMap
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import ColumnType, GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
+from cuspatial.core.binops.distance_dispatch import DistanceDispatch
 from cuspatial.core.binpreds.binpred_dispatch import (
     CONTAINS_DISPATCH,
     CONTAINS_PROPERLY_DISPATCH,
@@ -1417,4 +1418,4 @@ class GeoSeries(cudf.Series):
         0    1.414214
         """
 
-        pass
+        return DistanceDispatch(self, other, align)()

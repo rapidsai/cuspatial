@@ -52,8 +52,8 @@ def _binary_op_combinations(
         polygon_generator: {"distance_from_origin": 10, "radius": 10},
         multipolygon_generator: {
             "max_per_multi": 10,
-            "max_num_geometries": 10,
-            "max_num_interior_rings": 10,
+            "distance_from_origin": 10,
+            "radius": 10,
         },
     }
 
@@ -62,6 +62,11 @@ def _binary_op_combinations(
     p0, p1 = generator_parameters[g0], generator_parameters[g1]
     return (partial(g0, **p0), partial(g1, **p1))
 
+def test_geoseires_distance_empty():
+    expected = geopandas.GeoSeries([]).distance(geopandas.GeoSeries([]))
+    actual = cuspatial.GeoSeries([]).distance(cuspatial.GeoSeries([]))
+
+    assert_series_equal(actual, cudf.Series(expected))
 
 @pytest.mark.parametrize("n", [10, 1000])
 @pytest.mark.parametrize("align", [True, False])
@@ -78,3 +83,16 @@ def test_geoseries_distance_non_empty(_binary_op_combinations, n, align):
     actual = d0.distance(d1, align=align)
 
     assert_series_equal(actual, cudf.Series(expected))
+
+# def test_geoseries_distance_indices_different():
+#     h0 = geopandas.GeoSeries([Point(0, 0), Point(1, 1)], index=[0, 1])
+#     h1 = geopandas.GeoSeries([Point(0, 0)], index=[0])
+
+#     expected = h0.distance(h1)
+
+#     d0 = cuspatial.GeoSeries(h0)
+#     d1 = cuspatial.GeoSeries(h1)
+
+#     actual = d0.distance(d1)
+
+#     assert_series_equal(actual, cudf.Series(expected))
