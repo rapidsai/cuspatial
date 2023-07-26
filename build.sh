@@ -18,7 +18,7 @@ ARGS=$*
 # script, and that this script resides in the repo dir!
 REPODIR=$(cd $(dirname $0); pwd)
 
-VALIDARGS="clean libcuspatial cuspatial tests benchmarks -v -g -n -h --allgpuarch --show_depr_warn"
+VALIDARGS="clean libcuspatial cuspatial libcuproj cuproj tests benchmarks -v -g -n -h --allgpuarch --show_depr_warn"
 HELP="$0 [clean] [libcuspatial] [cuspatial] [tests] [-v] [-g] [-n] [-h] [-l] [--show_depr_warn] [--cmake-args=\"<args>\"]
    clean                       - remove all existing build artifacts and configuration (start over)
    libcuspatial                - build the libcuspatial C++ code only
