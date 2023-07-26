@@ -128,6 +128,7 @@ class DistanceDispatch:
         self._rhs_type = self._determine_series_type(self._rhs)
 
     def _determine_series_type(self, s):
+        """Check single geometry type of `s`."""
         if contains_only_multipoints(s):
             typ = Feature_Enum.MULTIPOINT
         elif contains_only_points(s):
@@ -143,6 +144,7 @@ class DistanceDispatch:
         return typ
 
     def _column(self, s, typ):
+        """Get column of `s` based on `typ`."""
         if typ == Feature_Enum.POINT:
             return s.points.column()
         elif typ == Feature_Enum.MULTIPOINT:
@@ -169,6 +171,8 @@ class DistanceDispatch:
         else:
             dist = func(*collection_types, self._lhs_column, self._rhs_column)
 
+        # Rows with misaligned indices contains nan. Here we scatter the
+        # distance values to the correct indices.
         res = full(
             len(self._res_index),
             float("nan"),
@@ -179,6 +183,8 @@ class DistanceDispatch:
         ).apply_boolean_mask(self._non_null_mask)
 
         res[scatter_map] = dist
+
+        # If `align==False`, geopandas preserves lhs index.
         index = None if self._align else self._res_index
 
         return cudf.Series(res, index=index, nan_as_null=False)

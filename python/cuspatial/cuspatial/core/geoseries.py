@@ -1401,7 +1401,10 @@ class GeoSeries(cudf.Series):
     def distance(self, other, align=True):
         """Returns a `Series` containing the distance to aligned other.
 
-        The operation works on a 1-to-1 row-wise manner:
+        The operation works on a 1-to-1 row-wise manner. See
+        `geopandas.distance` documentation [1] for details.
+
+        [1]: https://geopandas.org/docs/reference/api/geopandas.GeoSeries.distance.html#geopandas.GeoSeries.distance # noqa E501
 
         Parameters
         ----------
@@ -1428,6 +1431,34 @@ class GeoSeries(cudf.Series):
         >>> point2 = GeoSeries([Point(1, 1)])
         >>> print(point.distance(point2))
         0    1.414214
+        dtype: float64
+
+        By default, geoseries are aligned before computing:
+
+        >>> from shapely.geometry import Point
+        >>> point = GeoSeries([Point(0, 0)])
+        >>> point2 = GeoSeries([Point(1, 1), Point(2, 2)])
+        >>> print(point.distance(point2))
+        0    1.414214
+        1         NaN
+        dtype: float64
+
+        This can be overridden by setting `align=False`:
+
+        >>> lines = GeoSeries([
+                LineString([(0, 0), (1, 1)]), LineString([(2, 2), (3, 3)])])
+        >>> polys = GeoSeries([
+                Polygon([(0, 0), (1, 1), (1, 0)]),
+                Polygon([(2, 2), (3, 3), (3, 2)])],
+                index=[1, 0])
+        >>> lines.distance(polys), align=False)
+        0    0.0
+        1    0.0
+        dtype: float64
+        >>> lines.distance(polys, align=True)
+        0    1.414214
+        1    1.414214
+        dtype: float64
         """
 
         if not align:
