@@ -1,5 +1,3 @@
-from collections.abc import Iterable
-
 import cupy as cp
 
 from cuproj._lib.transform import Transformer as _Transformer
