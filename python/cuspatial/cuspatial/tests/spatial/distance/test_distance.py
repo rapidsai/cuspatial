@@ -62,18 +62,31 @@ def _binary_op_combinations(
     p0, p1 = generator_parameters[g0], generator_parameters[g1]
     return (partial(g0, **p0), partial(g1, **p1))
 
+
 def test_geoseires_distance_empty():
     expected = geopandas.GeoSeries([]).distance(geopandas.GeoSeries([]))
     actual = cuspatial.GeoSeries([]).distance(cuspatial.GeoSeries([]))
 
     assert_series_equal(actual, cudf.Series(expected))
 
-@pytest.mark.parametrize("n", [10, 1000])
+
+@pytest.mark.parametrize("n", [1, 100])
 @pytest.mark.parametrize("align", [True, False])
-def test_geoseries_distance_non_empty(_binary_op_combinations, n, align):
+@pytest.mark.parametrize(
+    "index_shuffle",
+    [
+        (lambda x: x, lambda x: reversed(x)),
+        (lambda x: reversed(x), lambda x: x),
+    ],
+)
+def test_geoseries_distance_non_empty(
+    _binary_op_combinations, n, align, index_shuffle
+):
     g0, g1 = _binary_op_combinations
-    h0 = geopandas.GeoSeries([*g0(n=n)])
-    h1 = geopandas.GeoSeries([*g1(n=n)], index=h0.index[::-1])
+    sfl0, sfl1 = index_shuffle
+
+    h0 = geopandas.GeoSeries([*g0(n=n)], index=sfl0(range(n)))
+    h1 = geopandas.GeoSeries([*g1(n=n)], index=sfl1(range(n)))
 
     expected = h0.distance(h1, align=align)
 
@@ -84,15 +97,30 @@ def test_geoseries_distance_non_empty(_binary_op_combinations, n, align):
 
     assert_series_equal(actual, cudf.Series(expected))
 
-# def test_geoseries_distance_indices_different():
-#     h0 = geopandas.GeoSeries([Point(0, 0), Point(1, 1)], index=[0, 1])
-#     h1 = geopandas.GeoSeries([Point(0, 0)], index=[0])
 
-#     expected = h0.distance(h1)
+def test_geoseries_distance_indices_different():
+    h0 = geopandas.GeoSeries([Point(0, 0), Point(1, 1)], index=[0, 1])
+    h1 = geopandas.GeoSeries([Point(0, 0)], index=[0])
 
-#     d0 = cuspatial.GeoSeries(h0)
-#     d1 = cuspatial.GeoSeries(h1)
+    expected = h0.distance(h1)
 
-#     actual = d0.distance(d1)
+    d0 = cuspatial.GeoSeries(h0)
+    d1 = cuspatial.GeoSeries(h1)
 
-#     assert_series_equal(actual, cudf.Series(expected))
+    actual = d0.distance(d1)
+
+    assert_series_equal(actual, cudf.Series(expected, nan_as_null=False))
+
+
+def test_geoseries_distance_indices_different_not_aligned():
+    h0 = geopandas.GeoSeries([Point(0, 0), Point(1, 1)], index=[0, 1])
+    h1 = geopandas.GeoSeries([Point(0, 0)], index=[0])
+
+    d0 = cuspatial.GeoSeries(h0)
+    d1 = cuspatial.GeoSeries(h1)
+
+    try:
+        h0.distance(h1, align=False)
+    except Exception as e:
+        with pytest.raises(e.__class__, match=e.__str__()):
+            d0.distance(d1, align=False)

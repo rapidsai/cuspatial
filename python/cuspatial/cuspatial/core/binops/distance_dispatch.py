@@ -1,4 +1,5 @@
 import cudf
+from cudf.core.column import arange, full
 
 from cuspatial._lib.distance import (
     pairwise_linestring_distance,
@@ -108,14 +109,21 @@ type_to_func = {
 
 
 class DistanceDispatch:
-    """Dispatches distance operations between two GeoSeries
-    """
+    """Dispatches distance operations between two GeoSeries"""
+
     def __init__(self, lhs, rhs, align):
         if align:
             self._lhs, self._rhs = lhs.align(rhs)
         else:
             self._lhs, self._rhs = lhs, rhs
 
+        self._align = align
+        self._res_index = lhs.index
+        self._non_null_mask = self._lhs.notna() & self._rhs.notna()
+        self._lhs = self._lhs[self._non_null_mask]
+        self._rhs = self._rhs[self._non_null_mask]
+
+        # TODO: This test is expensive, so would be nice if we can cache it
         self._lhs_type = self._determine_series_type(self._lhs)
         self._rhs_type = self._determine_series_type(self._rhs)
 
@@ -157,10 +165,20 @@ class DistanceDispatch:
             (self._lhs_type, self._rhs_type)
         ]
         if reverse:
-            return cudf.Series(
-                func(*collection_types, self._rhs_column, self._lhs_column)
-            )
+            dist = func(*collection_types, self._rhs_column, self._lhs_column)
         else:
-            return cudf.Series(
-                func(*collection_types, self._lhs_column, self._rhs_column)
-            )
+            dist = func(*collection_types, self._lhs_column, self._rhs_column)
+
+        res = full(
+            len(self._res_index),
+            float("nan"),
+            dtype="float64",
+        )
+        scatter_map = arange(
+            len(self._res_index), dtype="int32"
+        ).apply_boolean_mask(self._non_null_mask)
+
+        res[scatter_map] = dist
+        index = None if self._align else self._res_index
+
+        return cudf.Series(res, index=index, nan_as_null=False)

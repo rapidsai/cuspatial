@@ -1386,6 +1386,18 @@ class GeoSeries(cudf.Series):
         )
         return predicate(self, other)
 
+    def isna(self):
+        """Detect missing values."""
+
+        c = self._column._meta.input_types == Feature_Enum.NONE.value
+        return cudf.Series(c, index=self.index)
+
+    def notna(self):
+        """Detect non-missing values."""
+
+        c = self._column._meta.input_types != Feature_Enum.NONE.value
+        return cudf.Series(c, index=self.index)
+
     def distance(self, other, align=True):
         """Returns a `Series` containing the distance to aligned other.
 
@@ -1417,5 +1429,12 @@ class GeoSeries(cudf.Series):
         >>> print(point.distance(point2))
         0    1.414214
         """
+
+        if not align:
+            if len(self) != len(other):
+                raise ValueError(
+                    f"Lengths of inputs do not match. Left: {len(self)}, "
+                    f"Right: {len(other)}"
+                )
 
         return DistanceDispatch(self, other, align)()
