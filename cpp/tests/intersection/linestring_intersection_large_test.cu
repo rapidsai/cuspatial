@@ -27,6 +27,8 @@
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/intersection.cuh>
 
+#include <rmm/exec_policy.hpp>
+
 #include <thrust/host_vector.h>
 
 template <typename T>

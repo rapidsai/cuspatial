@@ -69,8 +69,8 @@ __device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonR
       T run_to_point  = test_point.x - a.x;
 
       // point-on-edge test
-      bool is_colinear = float_equal(run * rise_to_point, run_to_point * rise);
-      if (is_colinear) {
+      bool is_collinear = float_equal(run * rise_to_point, run_to_point * rise);
+      if (is_collinear) {
         T minx = a.x;
         T maxx = b.x;
         if (minx > maxx) thrust::swap(minx, maxx);
