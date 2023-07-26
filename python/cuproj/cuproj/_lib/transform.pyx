@@ -41,12 +41,6 @@ cdef class Transformer:
         del self.proj
 
     def transform(self, x, y, dir):
-        if not hasattr(x, "__cuda_array_interface__"):
-            raise TypeError(
-                "x must be a __cuda_array_interface__ compliant object")
-        if not hasattr(y, "__cuda_array_interface__"):
-            raise TypeError(
-                "y must be a __cuda_array_interface__ compliant object")
         if (len(x.shape) != 1):
             raise TypeError("x must be a 1D array")
         if (len(y.shape) != 1):

@@ -8,15 +8,12 @@ from cuproj._lib.transform import Transformer as _Transformer
 class Transformer:
     """A transformer object to transform coordinates from one CRS to another.
 
-    Parameters
-    ----------
-    from_crs : CRS
-        The source CRS.
-    to_crs : CRS
-        The target CRS.
-    skip_equivalent : bool, optional
-        If True, skip transformation if the source and target CRS are
-        equivalent. Default is False.
+
+    Notes
+    -----
+    Currently only the EPSG authority is supported.
+    Currently only projection from WGS84 to UTM (and vice versa)
+    is supported.
 
     Examples
     --------
@@ -29,6 +26,30 @@ class Transformer:
     """
 
     def __init__(self, crs_from, crs_to):
+        """Construct a Transformer object.
+
+        Parameters
+        ----------
+        from_crs : CRS
+            The source CRS.
+        to_crs : CRS
+            The target CRS.
+
+        Source and target CRS may be:
+        - An authority string [i.e. 'epsg:4326']
+        - An EPSG integer code [i.e. 4326]
+        - A tuple of (“auth_name”: “auth_code”) [i.e ('epsg', '4326')]
+
+        Notes
+        -----
+        Currently only the EPSG authority is supported.
+
+        Examples
+        --------
+        >>> from cuproj import Transformer
+        >>> transformer = Transformer("epsg:4326", "epsg:32631")
+        >>> transformer = Transformer(4326, 32631)
+        """
         self._crs_from = crs_from
         self._crs_to = crs_to
         self._proj = _Transformer(crs_from, crs_to)
@@ -40,9 +61,18 @@ class Transformer:
         Parameters
         ----------
         crs_from : CRS
-            int or "auth:code" string. The source CRS.
+            The source CRS.
         crs_to : CRS
-            int or "auth:code" string. The target CRS.
+            The target CRS.
+
+        Source and target CRS may be:
+        - An authority string [i.e. 'epsg:4326']
+        - An EPSG integer code [i.e. 4326]
+        - A tuple of (“auth_name”: “auth_code”) [i.e ('epsg', '4326')]
+
+        Notes
+        -----
+        Currently only the EPSG authority is supported.
 
         Returns
         -------
@@ -54,6 +84,10 @@ class Transformer:
 
     def transform(self, x, y, direction="FORWARD"):
         """Transform coordinates from one CRS to another.
+
+        If the data is already on the device, and the input implements
+        __cuda_array_interface__, the data will be used directly. If the data
+        is on the host, it will be copied to the device.
 
         Parameters
         ----------
@@ -68,7 +102,7 @@ class Transformer:
         Returns
         -------
         tuple
-            A tuple of transformed x and y coordinates.
+            A tuple of transformed x and y coordinates as cupy (device) arrays.
         """
 
         if direction not in ("FORWARD", "INVERSE"):
@@ -79,7 +113,7 @@ class Transformer:
             isfloat = True
             x = cp.asarray([x], dtype='f8')
             y = cp.asarray([y], dtype='f8')
-        elif isinstance(x, Iterable) and isinstance(y, Iterable):
+        else:
             x = cp.asarray(x, x.dtype)
             y = cp.asarray(y, y.dtype)
 
