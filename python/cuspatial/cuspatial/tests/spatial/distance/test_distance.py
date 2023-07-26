@@ -124,3 +124,27 @@ def test_geoseries_distance_indices_different_not_aligned():
     except Exception as e:
         with pytest.raises(e.__class__, match=e.__str__()):
             d0.distance(d1, align=False)
+
+
+@pytest.mark.parametrize("align", [True, False])
+@pytest.mark.parametrize(
+    "index",
+    [
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
+    ],
+)
+def test_geoseries_distance_to_shapely_object(
+    _binary_op_combinations, align, index
+):
+    g0, g1 = _binary_op_combinations
+    h0 = geopandas.GeoSeries([*g0(n=10)], index=index)
+    obj = [*g1(n=1)][0]
+
+    expected = h0.distance(obj, align=align)
+
+    d0 = cuspatial.GeoSeries(h0)
+
+    actual = d0.distance(obj, align=align)
+
+    assert_series_equal(actual, cudf.Series(expected))

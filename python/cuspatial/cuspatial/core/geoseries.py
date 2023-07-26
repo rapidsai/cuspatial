@@ -18,6 +18,7 @@ from shapely.geometry import (
     Point,
     Polygon,
 )
+from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry
 
 import cudf
 from cudf._typing import ColumnLike
@@ -1461,6 +1462,11 @@ class GeoSeries(cudf.Series):
         dtype: float64
         """
 
+        other_is_scalar = False
+        if issubclass(type(other), (BaseGeometry, BaseMultipartGeometry)):
+            other_is_scalar = True
+            other = GeoSeries([other] * len(self), index=self.index)
+
         if not align:
             if len(self) != len(other):
                 raise ValueError(
@@ -1468,4 +1474,7 @@ class GeoSeries(cudf.Series):
                     f"Right: {len(other)}"
                 )
 
-        return DistanceDispatch(self, other, align)()
+        res = DistanceDispatch(self, other, align)()
+        if other_is_scalar:
+            res.index = self.index
+        return res
