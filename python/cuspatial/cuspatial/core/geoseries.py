@@ -1403,9 +1403,7 @@ class GeoSeries(cudf.Series):
         """Returns a `Series` containing the distance to aligned other.
 
         The operation works on a 1-to-1 row-wise manner. See
-        `geopandas.distance` documentation [1] for details.
-
-        [1]: https://geopandas.org/docs/reference/api/geopandas.GeoSeries.distance.html#geopandas.GeoSeries.distance # noqa E501
+        `geopandas.GeoSeries.distance` documentation for details.
 
         Parameters
         ----------
