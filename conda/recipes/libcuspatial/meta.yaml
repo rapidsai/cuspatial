@@ -84,6 +84,7 @@ outputs:
     test:
       commands:
         - test -f $PREFIX/lib/libcuspatial.so
+        - test -f $PREFIX/lib/libcuproj.so
     about:
       home: https://rapids.ai/
       license: Apache-2.0

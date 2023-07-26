@@ -19,4 +19,5 @@ if [[ "$(arch)" == "aarch64" && ${RAPIDS_BUILD_TYPE} == "pull-request" ]]; then
     python ./ci/wheel_smoke_test.py
 else
     python -m pytest -n 8 ./python/cuspatial/cuspatial/tests
+    python -m pytest -n 8 ./python/cuproj/cuproj/tests
 fi

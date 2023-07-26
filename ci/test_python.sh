@@ -58,5 +58,20 @@ pytest \
   tests
 popd
 
+rapids-logger "pytest cuproj"
+pushd python/cuproj/cuproj
+# It is essential to cd into python/cuproj/cuproj as `pytest-xdist` + `coverage` seem to work only at this directory level.
+pytest \
+  --cache-clear \
+  --junitxml="${RAPIDS_TESTS_DIR}/junit-cuproj.xml" \
+  --numprocesses=8 \
+  --dist=loadscope \
+  --cov-config=../.coveragerc \
+  --cov=cuproj \
+  --cov-report=xml:"${RAPIDS_COVERAGE_DIR}/cuproj-coverage.xml" \
+  --cov-report=term \
+  tests
+popd
+
 rapids-logger "Test script exiting with value: $EXITCODE"
 exit ${EXITCODE}

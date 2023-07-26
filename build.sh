@@ -23,6 +23,8 @@ HELP="$0 [clean] [libcuspatial] [cuspatial] [tests] [-v] [-g] [-n] [-h] [-l] [--
    clean                       - remove all existing build artifacts and configuration (start over)
    libcuspatial                - build the libcuspatial C++ code only
    cuspatial                   - build the cuspatial Python package
+   libcuproj                   - build the libcuproj C++ code only
+   cuproj                      - build the cuproj Python package
    tests                       - build tests
    benchmarks                  - build benchmarks
    -v                          - verbose build mode
@@ -36,8 +38,10 @@ HELP="$0 [clean] [libcuspatial] [cuspatial] [tests] [-v] [-g] [-n] [-h] [-l] [--
    'cuspatial' targets
 "
 LIBCUSPATIAL_BUILD_DIR=${REPODIR}/cpp/build
+LIBCUPROJ_BUILD_DIR=${REPODIR}/cpp/build/cuproj
 CUSPATIAL_BUILD_DIR=${REPODIR}/python/cuspatial/_skbuild
-BUILD_DIRS="${LIBCUSPATIAL_BUILD_DIR} ${CUSPATIAL_BUILD_DIR}"
+CUPROJ_BUILD_DIR=${REPODIR}/python/cuproj/_skbuild
+BUILD_DIRS="${LIBCUSPATIAL_BUILD_DIR} ${CUSPATIAL_BUILD_DIR} ${LIBCUPROJ_BUILD_DIR} ${CUPROJ_BUILD_DIR}"
 
 # Set defaults for vars modified by flags to this script
 VERBOSE_FLAG=""
@@ -126,6 +130,11 @@ if [[ "${EXTRA_CMAKE_ARGS}" != *"DFIND_CUSPATIAL_CPP"* ]]; then
     EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DFIND_CUSPATIAL_CPP=ON"
 fi
 
+# Append `-DFIND_CUSPATIAL_CPP=ON` to EXTRA_CMAKE_ARGS unless a user specified the option.
+if [[ "${EXTRA_CMAKE_ARGS}" != *"DFIND_CUPROJ_CPP"* ]]; then
+    EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DFIND_CUPROJ_CPP=ON"
+fi
+
 # If clean given, run it prior to any other steps
 if hasArg clean; then
     # If the dirs to clean are mounted dirs in a container, the
@@ -177,5 +186,37 @@ if (( ${NUMARGS} == 0 )) || hasArg cuspatial; then
     python setup.py build_ext -j${PARALLEL_LEVEL:-1} --inplace -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} -DCMAKE_LIBRARY_PATH=${LIBCUSPATIAL_BUILD_DIR} ${EXTRA_CMAKE_ARGS}
     if [[ ${INSTALL_TARGET} != "" ]]; then
         python setup.py install --single-version-externally-managed --record=record.txt -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} -DCMAKE_LIBRARY_PATH=${LIBCUSPATIAL_BUILD_DIR} ${EXTRA_CMAKE_ARGS}
+    fi
+fi
+
+################################################################################
+# Configure, build, and install libcuproj
+if (( ${NUMARGS} == 0 )) || hasArg libcuproj; then
+    mkdir -p ${LIBCUPROJ_BUILD_DIR}
+    cd ${LIBCUPROJ_BUILD_DIR}
+    cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
+          ${CUSPATIAL_CMAKE_CUDA_ARCHITECTURES} \
+          -DCMAKE_CXX11_ABI=ON \
+          -DBUILD_TESTS=${BUILD_TESTS} \
+          -DBUILD_BENCHMARKS=${BUILD_BENCHMARKS} \
+          -DDISABLE_DEPRECATION_WARNING=${BUILD_DISABLE_DEPRECATION_WARNING} \
+          -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+          ${EXTRA_CMAKE_ARGS} \
+          ..
+
+    cmake --build . -j ${PARALLEL_LEVEL} ${VERBOSE_FLAG}
+
+    if [[ ${INSTALL_TARGET} != "" ]]; then
+        cmake --build . -j ${PARALLEL_LEVEL} --target install ${VERBOSE_FLAG}
+    fi
+fi
+
+# Build and install the cuproj Python package
+if (( ${NUMARGS} == 0 )) || hasArg cuproj; then
+
+    cd ${REPODIR}/python/cuproj
+    python setup.py build_ext -j${PARALLEL_LEVEL:-1} --inplace -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} -DCMAKE_LIBRARY_PATH=${LIBCUPROJ_BUILD_DIR} ${EXTRA_CMAKE_ARGS}
+    if [[ ${INSTALL_TARGET} != "" ]]; then
+        python setup.py install --single-version-externally-managed --record=record.txt -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} -DCMAKE_LIBRARY_PATH=${LIBCUPROJ_BUILD_DIR} ${EXTRA_CMAKE_ARGS}
     fi
 fi
