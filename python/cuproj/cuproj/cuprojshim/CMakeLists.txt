@@ -17,8 +17,10 @@ cmake_minimum_required(VERSION 3.26.4 FATAL_ERROR)
 set(cuproj_version 23.08.00)
 
 include(../../../../fetch_rapids.cmake)
+include(rapids-cmake)
 include(rapids-cuda)
-rapids_cuda_init_architectures(cuprojshim)
+
+rapids_cuda_init_architectures(CUPROJSHIM)
 
 project(
   CUPROJSHIM
@@ -45,13 +47,41 @@ message(STATUS "CUPROJSHIM: Statically link the CUDA toolkit runtime and librari
 
 
 rapids_cmake_build_type("Release")
+
+set(CUPROJSHIM_CXX_FLAGS "")
+set(CUPROJSHIM_CUDA_FLAGS "")
+set(CUPROJSHIM_CXX_DEFINITIONS "")
+set(CUPROJSHIM_CUDA_DEFINITIONS "")
+
+# Set RMM logging level
+set(RMM_LOGGING_LEVEL "INFO" CACHE STRING "Choose the logging level.")
+set_property(CACHE RMM_LOGGING_LEVEL PROPERTY STRINGS "TRACE" "DEBUG" "INFO" "WARN" "ERROR" "CRITICAL" "OFF")
+message(STATUS "CUSPATIAL: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'.")
+
+###################################################################################################
+# - conda environment -----------------------------------------------------------------------------
+
+rapids_cmake_support_conda_env(conda_env MODIFY_PREFIX_PATH)
+
+###################################################################################################
+# - compiler options ------------------------------------------------------------------------------
+
 rapids_cuda_init_runtime(USE_STATIC ${CUDA_STATIC_RUNTIME})
+
+rapids_find_package(
+  CUDAToolkit REQUIRED
+  BUILD_EXPORT_SET cuspatial-exports
+  INSTALL_EXPORT_SET cuspatial-exports
+)
 
 # * find CUDAToolkit package
 # * determine GPU architectures
 # * enable the CMake CUDA language
 # * set other CUDA compilation flags
 include(../../../../cpp/cuproj/cmake/modules/ConfigureCUDA.cmake)
+
+###################################################################################################
+# - library targets -------------------------------------------------------------------------------
 
 add_library(cuprojshim STATIC src/cuprojshim.cu)
 
@@ -67,11 +97,13 @@ set_target_properties(cuprojshim
                INTERFACE_POSITION_INDEPENDENT_CODE ON
 )
 
+# Use `CUPROJ_*_FLAGS` here because we reuse the cuProj's ConfigureCUDA.cmake above
 target_compile_options(cuprojshim
             PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:${CUPROJ_CXX_FLAGS}>"
                     "$<$<COMPILE_LANGUAGE:CUDA>:${CUPROJ_CUDA_FLAGS}>"
 )
 
+# Use `CUPROJ_*_DEFINITIONS` here because we reuse the cuProj's ConfigureCUDA.cmake above
 target_compile_definitions(cuprojshim
             PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${CUPROJ_CXX_DEFINITIONS}>"
                    "$<$<COMPILE_LANGUAGE:CUDA>:${CUPROJ_CUDA_DEFINITIONS}>"
@@ -84,7 +116,17 @@ target_include_directories(cuprojshim
            PRIVATE     "$<BUILD_INTERFACE:${CUPROJSHIM_SOURCE_DIR}>"
            INTERFACE   "$<INSTALL_INTERFACE:include>")
 
-target_link_libraries(cuprojshim cuproj rmm::rmm)
+# Add Conda library, and include paths if specified
+if(TARGET conda_env)
+  target_link_libraries(cuprojshim PRIVATE conda_env)
+endif()
+
+# Workaround until https://github.com/rapidsai/rapids-cmake/issues/176 is resolved
+if(NOT BUILD_SHARED_LIBS)
+  if(TARGET conda_env)
+    install(TARGETS conda_env EXPORT cuprojshim-exports)
+  endif()
+endif()
 
 # Per-thread default stream
 if(PER_THREAD_DEFAULT_STREAM)
@@ -99,5 +141,6 @@ endif()
 # Define spdlog level
 target_compile_definitions(cuprojshim PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
 
+target_link_libraries(cuprojshim PUBLIC cuproj rmm::rmm)
 
 add_library(cuproj::cuprojshim ALIAS cuprojshim)
