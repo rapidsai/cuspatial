@@ -18,6 +18,7 @@ set(cuproj_version 23.08.00)
 
 include(../../../../fetch_rapids.cmake)
 include(rapids-cmake)
+include(rapids-cpm)
 include(rapids-cuda)
 include(rapids-find)
 
