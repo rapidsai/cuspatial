@@ -29,7 +29,7 @@ rapids-print-env
 
 rapids-mamba-retry install \
   --channel "${CPP_CHANNEL}" \
-  libcuspatial libcuspatial-tests libcuproj libcuproj-tests
+  libcuspatial libcuspatial-tests
 
 rapids-logger "Check GPU usage"
 nvidia-smi
