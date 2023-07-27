@@ -74,13 +74,23 @@ rapids_find_package(
   BUILD_EXPORT_SET cuprojshim-exports
   INSTALL_EXPORT_SET cuprojshim-exports
 )
-#include(../../../../cpp/cuproj/cmake/thirdparty/get_thrust.cmake)
 
 # * find CUDAToolkit package
 # * determine GPU architectures
 # * enable the CMake CUDA language
 # * set other CUDA compilation flags
 include(../../../../cpp/cuproj/cmake/modules/ConfigureCUDA.cmake)
+
+###################################################################################################
+# - dependencies ----------------------------------------------------------------------------------
+
+# add third party dependencies using CPM
+rapids_cpm_init()
+
+# find or add RMM
+include(../../../../cpp/cuproj/cmake/thirdparty/get_rmm.cmake)
+#include(../../../../cpp/cuproj/cmake/thirdparty/get_thrust.cmake)
+
 
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
