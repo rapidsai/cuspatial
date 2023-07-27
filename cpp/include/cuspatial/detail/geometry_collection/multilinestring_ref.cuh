@@ -80,7 +80,7 @@ CUSPATIAL_HOST_DEVICE auto multilinestring_ref<PartIterator, VecIterator>::point
 template <typename PartIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto multilinestring_ref<PartIterator, VecIterator>::point_end() const
 {
-  // _part_end is the one-past the last part index to the point of this multilinestring.
+  // _part_end refers to the one past the last part index to the points of this multilinestring.
   // So prior to computing the end point index, we need to decrement _part_end.
   return thrust::next(_point_begin, *thrust::prev(_part_end));
 }

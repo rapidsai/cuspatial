@@ -275,7 +275,7 @@ class multilinestring_array {
 };
 
 /**
- * @brief Construct an owning object of a multilinestring array from ranges
+ * @brief Construct an owning object of a multilinestring array from `device_uvectors`
  *
  * @param geometry_inl Range of geometry offsets
  * @param part_inl Range of part offsets
@@ -294,7 +294,7 @@ auto make_multilinestring_array(rmm::device_uvector<IndexType>&& geometry_inl,
 }
 
 /**
- * @brief Construct an owning object of a multilinestring array from ranges
+ * @brief Construct an owning object of a multilinestring array from `device_vectors`
  *
  * @param geometry_inl Range of geometry offsets
  * @param part_inl Range of part offsets
