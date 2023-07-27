@@ -18,7 +18,7 @@ ARGS=$*
 # script, and that this script resides in the repo dir!
 REPODIR=$(cd $(dirname $0); pwd)
 
-VALIDARGS="clean libcuspatial cuspatial libcuproj cuproj tests benchmarks -v -g -n -h --allgpuarch --show_depr_warn"
+VALIDARGS="clean libcuspatial cuspatial cuproj tests benchmarks -v -g -n -h --allgpuarch --show_depr_warn"
 HELP="$0 [clean] [libcuspatial] [cuspatial] [tests] [-v] [-g] [-n] [-h] [-l] [--show_depr_warn] [--cmake-args=\"<args>\"]
    clean                       - remove all existing build artifacts and configuration (start over)
    libcuspatial                - build the libcuspatial C++ code only
@@ -186,28 +186,6 @@ if (( ${NUMARGS} == 0 )) || hasArg cuspatial; then
     python setup.py build_ext -j${PARALLEL_LEVEL:-1} --inplace -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} -DCMAKE_LIBRARY_PATH=${LIBCUSPATIAL_BUILD_DIR} ${EXTRA_CMAKE_ARGS}
     if [[ ${INSTALL_TARGET} != "" ]]; then
         python setup.py install --single-version-externally-managed --record=record.txt -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} -DCMAKE_LIBRARY_PATH=${LIBCUSPATIAL_BUILD_DIR} ${EXTRA_CMAKE_ARGS}
-    fi
-fi
-
-################################################################################
-# Configure, build, and install libcuproj
-if (( ${NUMARGS} == 0 )) || hasArg libcuproj; then
-    mkdir -p ${LIBCUPROJ_BUILD_DIR}
-    cd ${LIBCUPROJ_BUILD_DIR}
-    cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
-          ${CUSPATIAL_CMAKE_CUDA_ARCHITECTURES} \
-          -DCMAKE_CXX11_ABI=ON \
-          -DBUILD_TESTS=${BUILD_TESTS} \
-          -DBUILD_BENCHMARKS=${BUILD_BENCHMARKS} \
-          -DDISABLE_DEPRECATION_WARNING=${BUILD_DISABLE_DEPRECATION_WARNING} \
-          -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
-          ${EXTRA_CMAKE_ARGS} \
-          ..
-
-    cmake --build . -j ${PARALLEL_LEVEL} ${VERBOSE_FLAG}
-
-    if [[ ${INSTALL_TARGET} != "" ]]; then
-        cmake --build . -j ${PARALLEL_LEVEL} --target install ${VERBOSE_FLAG}
     fi
 fi
 
