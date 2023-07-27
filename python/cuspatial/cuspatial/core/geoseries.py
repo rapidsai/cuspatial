@@ -1420,8 +1420,8 @@ class GeoSeries(cudf.Series):
 
         Notes
         -----
-        Unlike GeoPandas, this API only supports geoseries that contain only
-        single type geometries.
+        Unlike GeoPandas, this API currently only supports geoseries that
+        contain only single type geometries.
 
         Examples
         --------

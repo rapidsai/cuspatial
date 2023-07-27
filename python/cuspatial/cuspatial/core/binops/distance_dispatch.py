@@ -19,11 +19,23 @@ from cuspatial.utils.column_utils import (
 )
 
 # Maps from type combinations to a tuple of (function, reverse,
-# point_collection_types) where if reverse is True, the arguments
-# need to be swapped and point_collection_types is a tuple of the
-# types of the point column type. For example, if the first argument
-# is a MultiPoint and the second is a Point, then the
-# point_collection_types is (CollectionType.MULTI, CollectionType.SINGLE)
+# point_collection_types).
+#
+# If reverse is True, the arguments need to be swapped.
+# Due to the way the functions are written, certain combinations of types
+# requires that the arguments be swapped. For example,
+# `point_linestring_distance` requires that the first argument be a point and
+# the second argument be a linestring. In this case, when lhs is a linestring
+# and rhs is a point, the arguments need to be swapped. The results holds true
+# thanks to that cartesian distance is symmetric.
+#
+# `point_collection_types` is a tuple of the types of the point column type.
+# For example, if the first argument is a `MultiPoint` and the second is a
+# `Point`, then the `point_collection_types` is (`CollectionType.MULTI`,
+# `CollectionType.SINGLE`). They are only needed for point/multipoint columns,
+# because the cython APIs are designed to handle both point and multipoint
+# columns based on their collection types.
+
 type_to_func = {
     (Feature_Enum.POINT, Feature_Enum.POINT): (
         pairwise_point_distance,
@@ -173,7 +185,7 @@ class DistanceDispatch:
 
         # Rows with misaligned indices contains nan. Here we scatter the
         # distance values to the correct indices.
-        res = full(
+        result = full(
             len(self._res_index),
             float("nan"),
             dtype="float64",
@@ -182,9 +194,9 @@ class DistanceDispatch:
             len(self._res_index), dtype="int32"
         ).apply_boolean_mask(self._non_null_mask)
 
-        res[scatter_map] = dist
+        result[scatter_map] = dist
 
         # If `align==False`, geopandas preserves lhs index.
         index = None if self._align else self._res_index
 
-        return cudf.Series(res, index=index, nan_as_null=False)
+        return cudf.Series(result, index=index, nan_as_null=False)
