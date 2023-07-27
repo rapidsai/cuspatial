@@ -122,6 +122,24 @@ TYPED_TEST(PointInPolygonTest, OnePolygonOneRing)
                      {false, false, false, false, true, true, true, true});
 }
 
+TYPED_TEST(PointInPolygonTest, OnePolygonOneRingSpherical)
+{
+  CUSPATIAL_RUN_TEST(this->run_spherical_test,
+                     {{-2503.357, -4660.203, 3551.245},
+                      {-2503.357, -4660.203, 3551.245},
+                      {-2686.757, -4312.736, 3842.237},
+                      {-2684.959, -4312.568, 3843.673},
+                      {519.181, -5283.34, 3523.313}},
+                     {0, 1},
+                     {0, 5},
+                     {{-2681.925, -4311.158, 3847.346},   // San Jose
+                      {-2695.156, -4299.131, 3851.527},   // MTV
+                      {-2691.386, -4313.414, 3838.26},    // Los Gatos
+                      {-2673.88, -4319.257, 3843.883},    // East San Jose
+                      {-2681.925, -4311.158, 3847.346}},  // San Jose
+                     {false, false, true, true, false});
+}
+
 // cuspatial expects closed rings, however algorithms may work OK with unclosed rings
 // in the future if we change to an algorithm that requires closed rings we may change or remove
 // this test.
@@ -144,7 +162,7 @@ TYPED_TEST(PointInPolygonTest, OnePolygonOneRingUnclosed)
                      {false, false, false, false, false, true, true, false});
 }
 
-TYPED_TEST(PointInPolygonTest, OnePolygonOneRingSpherical)
+TYPED_TEST(PointInPolygonTest, OnePolygonOneRingUnclosedSpherical)
 {
   CUSPATIAL_RUN_TEST(this->run_spherical_test,
                      {{-2503.357, -4660.203, 3551.245},
@@ -190,6 +208,29 @@ TYPED_TEST(PointInPolygonTest, TwoPolygonsOneRingEach)
                      {0b00, 0b00, 0b00, 0b00, 0b11, 0b11, 0b11, 0b11});
 }
 
+TYPED_TEST(PointInPolygonTest, TwoPolygonsOneRingEachSpherical)
+{
+  CUSPATIAL_RUN_TEST(this->run_spherical_test,
+                     {{-2503.357, -4660.203, 3551.245},
+                      {-2503.357, -4660.203, 3551.245},
+                      {-2686.757, -4312.736, 3842.237},
+                      {-2684.959, -4312.568, 3843.673},
+                      {519.181, -5283.34, 3523.313}},
+                     {0, 1, 2},
+                     {0, 5, 10},
+                     {{-2681.925, -4311.158, 3847.346},  // San Jose
+                      {-2695.156, -4299.131, 3851.527},  // MTV
+                      {-2691.386, -4313.414, 3838.26},   // Los Gatos
+                      {-2673.88, -4319.257, 3843.883},   // East San Jose
+                      {-2681.925, -4311.158, 3847.346},  // San Jose
+                      {-2691.386, -4313.414, 3838.26},   // Los Gatos
+                      {-2673.88, -4319.257, 3843.883},   // East San Jose
+                      {-2681.925, -4311.158, 3847.346},  // San Jose
+                      {-2695.156, -4299.131, 3851.527},  // MTV
+                      {-2691.386, -4313.414, 3838.26}},  // Los Gatos
+                     {0b00, 0b00, 0b11, 0b11, 0b00});
+}
+
 TYPED_TEST(PointInPolygonTest, OnePolygonTwoRings)
 {
   CUSPATIAL_RUN_TEST(this->run_test,
@@ -208,6 +249,31 @@ TYPED_TEST(PointInPolygonTest, OnePolygonTwoRings)
                       {-0.5, -0.5}},
 
                      {0b0, 0b0, 0b1, 0b0, 0b1});
+}
+
+TYPED_TEST(PointInPolygonTest, OnePolygonTwoRingsSpherical)
+{
+  CUSPATIAL_RUN_TEST(this->run_spherical_test,
+                     {{-2503.357, -4660.203, 3551.245},
+                      {-2503.357, -4660.203, 3551.245},
+                      {-2686.757, -4312.736, 3842.237},
+                      {-2684.959, -4312.568, 3843.673},
+                      {519.181, -5283.34, 3523.313}},
+                     {0, 2},
+                     {0, 5, 10},
+                     {
+                       {-2867.9, -3750.684, 4273.764},
+                       {-3346.365, -4376.427, 3203.156},
+                       {-2010.426, -5129.275, 3203.156},
+                       {-1722.974, -4395.889, 4273.764},
+                       {-2867.9, -3750.684, 4273.764},
+                       {-2681.925, -4311.158, 3847.346},  // San Jose
+                       {-2673.88, -4319.257, 3843.883},   // East San Jose
+                       {-2691.386, -4313.414, 3838.26},   // Los Gatos
+                       {-2695.156, -4299.131, 3851.527},  // MTV
+                       {-2681.925, -4311.158, 3847.346},  // San Jose
+                     },
+                     {0b1, 0b1, 0b0, 0b0, 0b0});
 }
 
 TYPED_TEST(PointInPolygonTest, EdgesOfSquare)

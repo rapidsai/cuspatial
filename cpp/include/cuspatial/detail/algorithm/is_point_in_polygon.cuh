@@ -111,12 +111,12 @@ __device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonR
 template <typename T>
 __device__ bool is_left(vec_3d<T> const p1, vec_3d<T> const& p2, vec_3d<T> const& p3)
 {
-  vec_3d<T> po = {0, 0, 0};
-  auto ao      = po - p1;
-  auto ab      = p2 - p1;
-  auto ac      = p3 - p1;
-  auto aoxab   = cross_product(ao, ab);
-  auto w       = dot(aoxab, ac);
+  vec_3d<T> po  = {0, 0, 0};
+  auto p1o      = po - p1;
+  auto p1p2     = p2 - p1;
+  auto p1p3     = p3 - p1;
+  auto p1oxp1p2 = cross_product(p1o, p1p2);
+  auto w        = dot(p1oxp1p2, p1p3);
 
   return w > 0;
 }
@@ -164,20 +164,28 @@ __device__ inline bool is_point_in_polygon_spherical(vec_3d<T> const& test_point
                                                      PolygonRef const& polygon)
 {
   bool check = false, left_check = false, point_is_within = false;
+  const T radius = sqrt(dot(test_point, test_point));
   vec_3d<T> check_point;
   for (auto ring : polygon) {
-    auto ring_points = multipoint_ref{ring.point_begin(), ring.point_end()};
-    vec_3d<T> b      = ring_points[ring.num_segments()];
+    auto ring_points  = multipoint_ref{ring.point_begin(), ring.point_end()};
+    auto num_segments = ring.num_segments();
+    bool closed_ring  = ring_points[0] == ring_points[num_segments];
+    vec_3d<T> b       = ring_points[num_segments - closed_ring];
+    size_t s          = 0;
     for (vec_3d<T> a : ring_points) {
       if (!check) {
-        left_check  = is_left(b, a, test_point);
-        check_point = a;
+        left_check   = is_left(b, a, test_point);
+        const auto c = a + b;
+        const auto w = sqrtf(dot(c, c));
+        check_point  = (c) * (radius / w);
+        check        = true;
       } else {
-        if (is_intersecting(b, a, test_point, check_point)) {
+        if ((!closed_ring || s < num_segments) && is_intersecting(b, a, test_point, check_point)) {
           point_is_within = not point_is_within;
         }
       }
       b = a;
+      ++s;
     }
   }
   return point_is_within == left_check;
