@@ -19,6 +19,7 @@ set(cuproj_version 23.08.00)
 include(../../../../fetch_rapids.cmake)
 include(rapids-cmake)
 include(rapids-cuda)
+include(rapids-find)
 
 rapids_cuda_init_architectures(CUPROJSHIM)
 
@@ -73,6 +74,7 @@ rapids_find_package(
   BUILD_EXPORT_SET cuprojshim-exports
   INSTALL_EXPORT_SET cuprojshim-exports
 )
+#include(../../../../cpp/cuproj/cmake/thirdparty/get_thrust.cmake)
 
 # * find CUDAToolkit package
 # * determine GPU architectures
