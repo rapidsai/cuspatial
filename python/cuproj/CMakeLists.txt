@@ -64,9 +64,6 @@ if(NOT cuproj_FOUND)
 
   if(CUPROJ_BUILD_WHEELS)
     include(../cuspatial/cmake/Modules/WheelHelpers.cmake)
-    #get_target_property(_nvcomp_link_libs nvcomp::nvcomp INTERFACE_LINK_LIBRARIES)
-    # Ensure all the shared objects we need at runtime are in the wheel
-    #add_target_libs_to_wheel(LIB_DIR ${cython_lib_dir} TARGETS arrow_shared nvcomp::nvcomp ${_nvcomp_link_libs})
   endif()
 
   # Since there are multiple subpackages of cuproj._lib that require access to libcuspatial, we place the
