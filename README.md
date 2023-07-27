@@ -108,7 +108,7 @@ WSL2: Volta architecture or newer ([Compute Capability >=7.0](https://developer.
 ```
 
 ### Quick start: Docker
-Use the [RAPIDS Release Selector](https://rapids.ai/start.html#get-rapids), selecting `Docker` as the installation method. All RAPIDS Docker images contain cuSpatial.
+Use the [RAPIDS Release Selector](https://docs.rapids.ai/install#selector), selecting `Docker` as the installation method. All RAPIDS Docker images contain cuSpatial.
 
 An example command from the Release Selector:
 ```shell
