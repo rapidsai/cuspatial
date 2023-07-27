@@ -56,8 +56,8 @@ cuSpatial is constantly working on new features! Check out the [epics](https://g
 - [Spatial window filtering](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#cuspatial.points_in_spatial_window)
 
 ### Indexing and Join Functions
-- [Quadtree indexing](https://docs.rapids.ai/api/cuspatial/nightly/user_guide/cuspatial_api_examples.html#Quadtree-Indexing)
-- [Spatial joins](https://docs.rapids.ai/api/cuspatial/nightly/user_guide/cuspatial_api_examples.html#Indexed-Spatial-Joins)
+- [Quadtree indexing](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#Quadtree-Indexing)
+- [Spatial joins](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#Indexed-Spatial-Joins)
 - [Quadtree-based point-in-polygon](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#cuspatial.quadtree_point_in_polygon)
 - [Quadtree-based point-to-nearest-linestring](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#cuspatial.quadtree_point_to_nearest_linestring)
 
