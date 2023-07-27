@@ -56,7 +56,7 @@ set(CUPROJSHIM_CUDA_DEFINITIONS "")
 # Set RMM logging level
 set(RMM_LOGGING_LEVEL "INFO" CACHE STRING "Choose the logging level.")
 set_property(CACHE RMM_LOGGING_LEVEL PROPERTY STRINGS "TRACE" "DEBUG" "INFO" "WARN" "ERROR" "CRITICAL" "OFF")
-message(STATUS "CUSPATIAL: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'.")
+message(STATUS "CUPROJSHIM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'.")
 
 ###################################################################################################
 # - conda environment -----------------------------------------------------------------------------
@@ -70,8 +70,8 @@ rapids_cuda_init_runtime(USE_STATIC ${CUDA_STATIC_RUNTIME})
 
 rapids_find_package(
   CUDAToolkit REQUIRED
-  BUILD_EXPORT_SET cuspatial-exports
-  INSTALL_EXPORT_SET cuspatial-exports
+  BUILD_EXPORT_SET cuprojshim-exports
+  INSTALL_EXPORT_SET cuprojshim-exports
 )
 
 # * find CUDAToolkit package
