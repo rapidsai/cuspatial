@@ -79,3 +79,12 @@ sed_runner "s/^version = .*/version = \"${NEXT_FULL_TAG_PEP440}\"/g" python/cusp
 
 # Dependency versions in dependencies.yaml
 sed_runner "/-cu[0-9]\{2\}==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}.*/g" dependencies.yaml
+
+# Versions in README.md
+sed_runner "s/cuspatial:[0-9]\+.[0-9]/cuspatial:${NEXT_SHORT_TAG}/g" README.md
+sed_runner "s/cuspatial=[0-9]\+.[0-9]/cuspatial=${NEXT_SHORT_TAG}/g" README.md
+sed_runner "s/cuspatial:[0-9]\+.[0-9]/notebooks:${NEXT_SHORT_TAG}/g" README.md
+
+
+# Versions in docs/source/user_guide/cuspatial_api_examples.ipynb
+sed_runner "s/cuspatial=[0-9]\+.[0-9]/cuspatial=${NEXT_SHORT_TAG}/g" docs/source/user_guide/cuspatial_api_examples.ipynb
