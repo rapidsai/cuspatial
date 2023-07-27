@@ -197,8 +197,6 @@ class LineStringLineStringContainsProperly(BinPred):
         return count
 
 
-# test
-
 """DispatchDict listing the classes to use for each combination of
     left and right hand side types. """
 DispatchDict = {
