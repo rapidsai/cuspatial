@@ -28,6 +28,7 @@ files:
   test_notebooks:
     output: none
     includes:
+      - cudatoolkit
       - notebooks
       - py_version
   checks:
