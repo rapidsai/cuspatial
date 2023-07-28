@@ -397,15 +397,22 @@ dependencies:
           - {matrix: null, packages: [*cudf_conda, *rmm_conda]}
   run_python_cuproj:
     common:
-      - output_types: conda
+      - output_types: [conda, requirements, pyproject]
         packages:
           - *rmm_conda
+      - output_types: conda
+        packages:
           - cupy>=12.0.0
+          - pip
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
-          # This index is needed for cudf and rmm.
-          - --extra-index-url=https://pypi.nvidia.com
+          # This index is needed for rmm
+          - --extra-index-url=https://pypi.ngc.nvidia.com
+          - &cupy_pip cupy-cuda11x>=12.0.0
+      - output_types: pyproject
+        packages:
+          - *cupy_pip
     specific:
       - output_types: [requirements, pyproject]
         matrices:
