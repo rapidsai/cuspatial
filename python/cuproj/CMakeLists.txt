@@ -50,7 +50,7 @@ if(NOT cuproj_FOUND)
     # Statically link cudart if building wheels
     set(CUDA_STATIC_RUNTIME ON)
 
-    # Need to set this so all the nvcomp targets are global, not only nvcomp::nvcomp
+    # Need to set this so all the cuproj targets are global, not only cuproj::cuproj
     # https://cmake.org/cmake/help/latest/variable/CMAKE_FIND_PACKAGE_TARGETS_GLOBAL.html#variable:CMAKE_FIND_PACKAGE_TARGETS_GLOBAL
     set(CMAKE_FIND_PACKAGE_TARGETS_GLOBAL ON)
 

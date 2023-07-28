@@ -76,7 +76,7 @@ jobs:
       date: ${{ inputs.date }}
       script: ci/build_wheel_cuspatial.sh
   wheel-publish-cuspatial:
-    needs: wheel-build
+    needs: wheel-build-cuspatial
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/wheels-publish.yaml@branch-23.08
     with:
@@ -95,7 +95,7 @@ jobs:
       date: ${{ inputs.date }}
       script: ci/build_wheel_cuproj.sh
   wheel-publish-cuproj:
-    needs: wheel-build
+    needs: wheel-build-cuproj
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/wheels-publish.yaml@branch-23.08
     with:

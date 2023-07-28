@@ -23,7 +23,6 @@ HELP="$0 [clean] [libcuspatial] [cuspatial] [tests] [-v] [-g] [-n] [-h] [-l] [--
    clean                       - remove all existing build artifacts and configuration (start over)
    libcuspatial                - build the libcuspatial C++ code only
    cuspatial                   - build the cuspatial Python package
-   libcuproj                   - build the libcuproj C++ code only
    cuproj                      - build the cuproj Python package
    tests                       - build tests
    benchmarks                  - build benchmarks
@@ -130,7 +129,7 @@ if [[ "${EXTRA_CMAKE_ARGS}" != *"DFIND_CUSPATIAL_CPP"* ]]; then
     EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DFIND_CUSPATIAL_CPP=ON"
 fi
 
-# Append `-DFIND_CUSPATIAL_CPP=ON` to EXTRA_CMAKE_ARGS unless a user specified the option.
+# Append `-DFIND_CUPROJ_CPP=ON` to EXTRA_CMAKE_ARGS unless a user specified the option.
 if [[ "${EXTRA_CMAKE_ARGS}" != *"DFIND_CUPROJ_CPP"* ]]; then
     EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DFIND_CUPROJ_CPP=ON"
 fi

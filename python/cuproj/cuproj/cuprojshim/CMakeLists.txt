@@ -90,8 +90,6 @@ rapids_cpm_init()
 
 # find or add RMM
 include(../../../../cpp/cuproj/cmake/thirdparty/get_rmm.cmake)
-#include(../../../../cpp/cuproj/cmake/thirdparty/get_thrust.cmake)
-
 
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
