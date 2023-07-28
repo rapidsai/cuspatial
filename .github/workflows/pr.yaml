@@ -82,7 +82,7 @@ jobs:
       build_type: pull-request
       script: ci/build_wheel_cuspatial.sh
   wheel-tests-cuspatial:
-    needs: wheel-build
+    needs: wheel-build-cuspatial
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/wheels-test.yaml@branch-23.08
     with:
