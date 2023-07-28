@@ -85,7 +85,7 @@ jobs:
       sha: ${{ inputs.sha }}
       date: ${{ inputs.date }}
       package-name: cuspatial
-wheel-build-cuproj:
+  wheel-build-cuproj:
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/wheels-build.yaml@branch-23.08
     with:
