@@ -93,10 +93,10 @@ __forceinline__ T __device__ point_to_segment_distance_squared(vec_2d<T> const& 
  * @brief Computes shortest distance between two segments (ab and cd) that don't intersect.
  */
 template <typename T>
-__forceinline__ T __device__ segment_distance_no_intersect_or_colinear(vec_2d<T> const& a,
-                                                                       vec_2d<T> const& b,
-                                                                       vec_2d<T> const& c,
-                                                                       vec_2d<T> const& d)
+__forceinline__ T __device__ segment_distance_no_intersect_or_collinear(vec_2d<T> const& a,
+                                                                        vec_2d<T> const& b,
+                                                                        vec_2d<T> const& c,
+                                                                        vec_2d<T> const& d)
 {
   auto dist_sqr = min(
     min(point_to_segment_distance_squared(a, c, d), point_to_segment_distance_squared(b, c, d)),
@@ -123,7 +123,7 @@ __forceinline__ T __device__ squared_segment_distance(vec_2d<T> const& a,
 
   if (float_equal(denom, T{0})) {
     // Segments parallel or collinear
-    return segment_distance_no_intersect_or_colinear(a, b, c, d);
+    return segment_distance_no_intersect_or_collinear(a, b, c, d);
   }
 
   auto ac               = c - a;
@@ -132,7 +132,7 @@ __forceinline__ T __device__ squared_segment_distance(vec_2d<T> const& a,
   auto r                = r_numer * denom_reciprocal;
   auto s                = det(ac, ab) * denom_reciprocal;
   if (r >= 0 and r <= 1 and s >= 0 and s <= 1) { return 0.0; }
-  return segment_distance_no_intersect_or_colinear(a, b, c, d);
+  return segment_distance_no_intersect_or_collinear(a, b, c, d);
 }
 
 /**

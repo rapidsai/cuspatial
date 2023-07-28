@@ -84,12 +84,6 @@ rapids_cmake_support_conda_env(conda_env MODIFY_PREFIX_PATH)
 
 ###################################################################################################
 # - compiler options ------------------------------------------------------------------------------
-set(_ctk_static_suffix "")
-if(CUDA_STATIC_RUNTIME)
-  set(_ctk_static_suffix "_static")
-  # Control legacy FindCUDA.cmake behavior too
-  set(CUDA_USE_STATIC_CUDA_RUNTIME ON)
-endif()
 
 rapids_cuda_init_runtime(USE_STATIC ${CUDA_STATIC_RUNTIME})
 
@@ -110,14 +104,19 @@ include(cmake/Modules/ConfigureCUDA.cmake)
 # add third party dependencies using CPM
 rapids_cpm_init()
 # find or add cuDF
-include(cmake/thirdparty/CUSPATIAL_GetCUDF.cmake)
+include(cmake/thirdparty/get_cudf.cmake)
 # find or install GoogleTest
 if (CUSPATIAL_BUILD_TESTS)
     include(cmake/thirdparty/get_gtest.cmake)
 endif()
+# find or add ranger
+include (cmake/thirdparty/get_ranger.cmake)
 
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
+
+# cuProj
+add_subdirectory(cuproj)
 
 add_library(cuspatial
     src/bounding_boxes/linestring_bounding_boxes.cu
@@ -204,6 +203,7 @@ target_compile_definitions(cuspatial PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${
 
 # Specify the target module library dependencies
 target_link_libraries(cuspatial PUBLIC cudf::cudf)
+target_link_libraries(cuspatial PRIVATE ranger::ranger)
 
 add_library(cuspatial::cuspatial ALIAS cuspatial)
 
@@ -221,13 +221,8 @@ endif()
 
 if(CUSPATIAL_BUILD_BENCHMARKS)
     # Find or install GoogleBench
-    CPMFindPackage(NAME benchmark
-        VERSION         1.5.2
-        GIT_REPOSITORY  https://github.com/google/benchmark.git
-        GIT_TAG         v1.5.2
-        GIT_SHALLOW     TRUE
-        OPTIONS         "BENCHMARK_ENABLE_TESTING OFF"
-                        "BENCHMARK_ENABLE_INSTALL OFF")
+    include(${rapids-cmake-dir}/cpm/gbench.cmake)
+    rapids_cpm_gbench()
 
     # Find or install NVBench Temporarily force downloading of fmt because current versions of nvbench
     # do not support the latest version of fmt, which is automatically pulled into our conda
@@ -243,7 +238,6 @@ endif()
 
 rapids_cmake_install_lib_dir(lib_dir)
 include(CPack)
-include(GNUInstallDirs)
 
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME cuspatial)
 
