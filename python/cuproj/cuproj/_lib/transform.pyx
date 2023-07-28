@@ -38,7 +38,8 @@ cdef class Transformer:
             <string> crs_from_b, <string> crs_to_b)
 
     def __del__(self):
-        del self.proj
+        del self.proj_32
+        del self.proj_64
 
     def transform(self, x, y, dir):
         if (len(x.shape) != 1):

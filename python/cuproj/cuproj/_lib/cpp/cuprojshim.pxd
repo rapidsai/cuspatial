@@ -1,4 +1,3 @@
-from libcpp.memory cimport unique_ptr
 from libcpp.string cimport string
 
 from cuproj._lib.cpp.operation cimport direction
