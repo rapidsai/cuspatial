@@ -1,4 +1,4 @@
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.
 
 """Defines pytest fixtures for all benchmarks.
 
@@ -7,6 +7,7 @@ The cuspatial fixture is a single randomly generated GeoDataframe, containing
 column.
 """
 
+import pytest
 import cupy as cp
 import geopandas as gpd
 import numpy as np
@@ -176,3 +177,11 @@ def shapefile(tmp_path, gpdf_100):
     p = d / "read_polygon_shapefile"
     gpdf_100.to_file(p)
     return p
+
+@pytest.fixture()
+def point_generator_device():
+    def generator(n):
+        coords = cp.random.random(n*2, dtype="f8")
+        return cuspatial.GeoSeries.from_points_xy(coords)
+
+    return generator

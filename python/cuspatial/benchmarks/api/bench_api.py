@@ -1,4 +1,5 @@
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.
+import pytest
 
 import cupy
 import geopandas
@@ -293,3 +294,20 @@ def bench_point_in_polygon(benchmark, polygons):
     short_dataframe = polygons.iloc[0:31]
     geometry = short_dataframe["geometry"]
     benchmark(cuspatial.point_in_polygon, points, geometry)
+
+
+@pytest.mark.parametrize("align", [True, False])
+@pytest.mark.parametrize("n", [1e3, 1e4, 1e5, 1e6, 1e7])
+def bench_point_distance_cuspatial(benchmark, point_generator_device,  n, align):
+    points = point_generator_device(int(n))
+    other_points = point_generator_device(int(n))
+
+    benchmark(points.distance, other_points, align)
+
+@pytest.mark.parametrize("align", [True, False])
+@pytest.mark.parametrize("n", [1e3, 1e4, 1e5, 1e6, 1e7])
+def bench_point_distance_gpd(benchmark, point_generator_device,  n, align):
+    points = point_generator_device(int(n)).to_geopandas()
+    other_points = point_generator_device(int(n)).to_geopandas()
+
+    benchmark(points.distance, other_points, align)
