@@ -152,6 +152,6 @@ endif()
 # Define spdlog level
 target_compile_definitions(cuprojshim PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
 
-target_link_libraries(cuprojshim PUBLIC cuproj rmm::rmm)
+target_link_libraries(cuprojshim PUBLIC cuproj::cuproj rmm::rmm)
 
 add_library(cuproj::cuprojshim ALIAS cuprojshim)
