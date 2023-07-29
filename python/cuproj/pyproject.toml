@@ -58,7 +58,7 @@ test = [
 
 [project.urls]
 Homepage = "https://github.com/rapidsai/cuspatial/"
-Documentation = "https://docs.rapids.ai/api/cuspatial/stable/"
+Documentation = "https://docs.rapids.ai/api/cuproj/stable/"
 
 [tool.setuptools]
 license-files = ["LICENSE"]
