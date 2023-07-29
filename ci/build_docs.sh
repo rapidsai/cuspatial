@@ -29,11 +29,18 @@ rapids-mamba-retry install \
 export RAPIDS_VERSION_NUMBER="23.08"
 export RAPIDS_DOCS_DIR="$(mktemp -d)"
 
-rapids-logger "Build CPP docs"
+rapids-logger "Build cuSpatial CPP docs"
 pushd cpp/doxygen
 doxygen Doxyfile
 mkdir -p "${RAPIDS_DOCS_DIR}/libcuspatial/html"
 mv html/* "${RAPIDS_DOCS_DIR}/libcuspatial/html"
+popd
+
+rapids-logger "Build cuProj CPP docs"
+pushd cpp/cuproj/doxygen
+doxygen Doxyfile
+mkdir -p "${RAPIDS_DOCS_DIR}/libcuproj/html"
+mv html/* "${RAPIDS_DOCS_DIR}/libcuproj/html"
 popd
 
 rapids-logger "Build Python docs"
