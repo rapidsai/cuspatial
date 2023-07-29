@@ -22,6 +22,11 @@
 namespace cuproj {
 
 /**
+ * @addtogroup operations
+ * @{
+ */
+
+/**
  * @brief Enumerates the different types of transform operations
  *
  * This enum is used to identify the type of transform operation in the transform pipeline. Each
@@ -80,5 +85,9 @@ class operation {
    */
   projection_parameters<T> setup(projection_parameters<T> const& params) { return params; };
 };
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuproj

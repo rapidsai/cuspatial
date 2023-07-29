@@ -22,6 +22,11 @@
 namespace cuproj {
 
 /**
+ * @addtogroup operations
+ * @{
+ */
+
+/**
  * @brief Axis swap operation: swap x and y coordinates
  *
  * @tparam Coordinate the coordinate type
@@ -40,5 +45,9 @@ struct axis_swap : operation<Coordinate> {
     return Coordinate{coord.y, coord.x};
   }
 };
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuproj

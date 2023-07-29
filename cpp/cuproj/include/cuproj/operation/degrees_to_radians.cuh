@@ -23,6 +23,11 @@
 namespace cuproj {
 
 /**
+ * @addtogroup operations
+ * @{
+ */
+
+/**
  * @brief Converts degrees to radians and vice versa
  *
  * @tparam Coordinate The coordinate type
@@ -71,5 +76,9 @@ class degrees_to_radians : operation<Coordinate> {
     return Coordinate{coord.x * RAD_TO_DEG<T>, coord.y * RAD_TO_DEG<T>};
   }
 };
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuproj

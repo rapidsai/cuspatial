@@ -21,6 +21,11 @@
 namespace cuproj {
 
 /**
+ * @addtogroup projection_parameters
+ * @{
+ */
+
+/**
  * @brief Hemisphere identifier for projections
  */
 enum class hemisphere { NORTH, SOUTH };
@@ -67,5 +72,9 @@ struct projection_parameters {
 
   tmerc_params tmerc_params_{};
 };
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuproj

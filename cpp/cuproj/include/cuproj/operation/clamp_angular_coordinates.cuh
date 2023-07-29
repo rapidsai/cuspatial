@@ -29,6 +29,11 @@
 namespace cuproj {
 
 /**
+ * @addtogroup operations
+ * @{
+ */
+
+/**
  * @brief Clamp angular coordinates to the valid range and offset by the central meridian (lam0) and
  * an optional prime meridian offset.
  *
@@ -123,5 +128,9 @@ class clamp_angular_coordinates : operation<Coordinate> {
   T lam0_{};  // central meridian
   T prime_meridian_offset_{};
 };
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuproj
