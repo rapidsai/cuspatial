@@ -414,7 +414,6 @@ dependencies:
       - output_types: pyproject
         packages:
           - *cupy_pip
-          - cuspatial
     specific:
       - output_types: [requirements, pyproject]
         matrices:
