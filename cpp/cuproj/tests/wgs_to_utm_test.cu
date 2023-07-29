@@ -192,7 +192,7 @@ TYPED_TEST(ProjectionTest, one)
   // We can expect nanometer accuracy with double precision. The precision ratio of
   // double to single precision is 2^53 / 2^24 == 2^29 ~= 10^9, then we should
   // expect meter (10^9 nanometer) accuracy with single precision.
-  T tolerance = std::is_same_v<T, float> ? T{1.0} : T{1e-9};
+  T tolerance = std::is_same_v<T, double> ? T{1e-9} : T{1.0};
   run_forward_and_inverse<T>(input, tolerance, "EPSG:32756");
 }
 
@@ -270,4 +270,20 @@ TYPED_TEST(ProjectionTest, many)
     std::string epsg = "EPSG:32648";
     test_grid<TypeParam>(min_corner, max_corner, num_points_xy, epsg);
   }
+}
+
+// Test the code in the readme
+TYPED_TEST(ProjectionTest, readme_example)
+{
+  using T = TypeParam;
+
+  // Make a projection to convert WGS84 (lat, lon) coordinates to UTM zone 56S (x, y) coordinates
+  auto* proj = cuproj::make_projection<cuproj::vec_2d<T>>("EPSG:4326", "EPSG:32756");
+
+  cuproj::vec_2d<T> sydney{-33.858700, 151.214000};  // Sydney, NSW, Australia
+  thrust::device_vector<cuproj::vec_2d<T>> d_in{1, sydney};
+  thrust::device_vector<cuproj::vec_2d<T>> d_out(d_in.size());
+
+  // Convert the coordinates. Works the same with a vector of many coordinates.
+  proj->transform(d_in.begin(), d_in.end(), d_out.begin(), cuproj::direction::FORWARD);
 }
