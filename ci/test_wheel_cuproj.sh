@@ -8,6 +8,9 @@ RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen ${RAPIDS_CUDA_VERSION})"
 RAPIDS_PY_WHEEL_NAME="cuproj_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-from-s3 ./dist
 
 # Install additional dependencies
+apt update
+DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libgdal-dev
+python -m pip install --no-binary fiona 'fiona>=1.8.19,<1.9'
 python -m pip install --no-binary cupy 'cupy>=12.0.0'
 
 # echo to expand wildcard before adding `[extra]` requires for pip

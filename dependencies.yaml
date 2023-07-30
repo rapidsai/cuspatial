@@ -400,6 +400,7 @@ dependencies:
       - output_types: [conda, requirements, pyproject]
         packages:
           - geopandas>=0.11.0 # only required for testing
+          - cuspatial==23.8.* # only required for testing
       - output_types: conda
         packages:
           - *rmm_conda
