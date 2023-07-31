@@ -62,13 +62,13 @@ CUSPATIAL_HOST_DEVICE auto polygon_ref<RingIterator, VecIterator>::ring_end() co
 template <typename RingIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto polygon_ref<RingIterator, VecIterator>::point_begin() const
 {
-  return _point_begin;
+  return thrust::next(_point_begin, *_ring_begin);
 }
 
 template <typename RingIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto polygon_ref<RingIterator, VecIterator>::point_end() const
 {
-  return _point_end;
+  return thrust::next(_point_begin, *thrust::prev(_ring_end));
 }
 
 template <typename RingIterator, typename VecIterator>
