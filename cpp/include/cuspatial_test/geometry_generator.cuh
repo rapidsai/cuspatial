@@ -354,7 +354,7 @@ auto generate_multilinestring_array(multilinestring_generator_parameter<T> param
                          params.origin,
                          detail::random_walk_functor<T>{params.segment_length});
 
-  return make_multilinestring_array(
+  return make_multilinestring_array<std::size_t, T>(
     std::move(geometry_offset), std::move(part_offset), std::move(points));
 }
 
