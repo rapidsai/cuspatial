@@ -24,34 +24,31 @@ add_library(cuproj_benchmark_common OBJECT
 target_compile_features(cuproj_benchmark_common PUBLIC cxx_std_17 cuda_std_17)
 
 target_link_libraries(cuproj_benchmark_common
-    PUBLIC benchmark::benchmark
-           cudf::cudftestutil
-           ranger::ranger
-           cuproj)
+  PUBLIC benchmark::benchmark cudf::cudftestutil cuproj)
 
 target_compile_options(cuproj_benchmark_common
-             PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${CUPROJ_CXX_FLAGS}>"
-                    "$<$<COMPILE_LANGUAGE:CUDA>:${CUPROJ_CUDA_FLAGS}>")
+  PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${CUPROJ_CXX_FLAGS}>"
+         "$<$<COMPILE_LANGUAGE:CUDA>:${CUPROJ_CUDA_FLAGS}>")
 
 target_include_directories(cuproj_benchmark_common
-             PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
-                    "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}>"
-                    "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}/src>"
-                    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../include>")
+  PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+         "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}>"
+         "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}/src>"
+         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../include>")
 
 function(ConfigureBench CMAKE_BENCH_NAME)
-    add_executable(${CMAKE_BENCH_NAME} ${ARGN})
-    set_target_properties(${CMAKE_BENCH_NAME}
-        PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUPROJ_BINARY_DIR}/benchmarks>"
-                   INSTALL_RPATH "\$ORIGIN/../../../lib"
-        )
-    target_link_libraries(${CMAKE_BENCH_NAME} PRIVATE benchmark::benchmark_main cuproj_benchmark_common PROJ::proj)
-    install(
-        TARGETS ${CMAKE_BENCH_NAME}
-        COMPONENT benchmark
-        DESTINATION bin/benchmarks/libcuproj
-        EXCLUDE_FROM_ALL
+  add_executable(${CMAKE_BENCH_NAME} ${ARGN})
+  set_target_properties(${CMAKE_BENCH_NAME}
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUPROJ_BINARY_DIR}/benchmarks>"
+               INSTALL_RPATH "\$ORIGIN/../../../lib"
     )
+  target_link_libraries(${CMAKE_BENCH_NAME} PRIVATE benchmark::benchmark_main cuproj_benchmark_common PROJ::proj)
+  install(
+    TARGETS ${CMAKE_BENCH_NAME}
+    COMPONENT benchmark
+    DESTINATION bin/benchmarks/libcuproj
+    EXCLUDE_FROM_ALL
+  )
 endfunction()
 
 # This function takes in a benchmark name and benchmark source for nvbench benchmarks and handles
@@ -90,5 +87,4 @@ endfunction()
 ### benchmark sources #############################################################################
 ###################################################################################################
 
-ConfigureBench(WGS_TO_UTM_BENCH
-    wgs_to_utm_bench.cu)
+ConfigureBench(WGS_TO_UTM_BENCH wgs_to_utm_bench.cu)
