@@ -72,8 +72,6 @@ class multipolygon_range {
   using index_t   = iterator_value_type<GeometryIterator>;
   using element_t = iterator_vec_base_type<VecIterator>;
 
-  int64_t static constexpr INVALID_INDEX = -1;
-
   multipolygon_range(GeometryIterator geometry_begin,
                      GeometryIterator geometry_end,
                      PartIterator part_begin,
@@ -117,10 +115,10 @@ class multipolygon_range {
   CUSPATIAL_HOST_DEVICE auto point_end();
 
   /// Return the iterator to the first geometry offset in the range.
-  CUSPATIAL_HOST_DEVICE auto geometry_offsets_begin() { return _part_begin; }
+  CUSPATIAL_HOST_DEVICE auto geometry_offset_begin() { return _part_begin; }
 
   /// Return the iterator to the one past the last geometry offset in the range.
-  CUSPATIAL_HOST_DEVICE auto geometry_offsets_end() { return _part_end; }
+  CUSPATIAL_HOST_DEVICE auto geometry_offset_end() { return _part_end; }
 
   /// Return the iterator to the first part offset in the range.
   CUSPATIAL_HOST_DEVICE auto part_offset_begin() { return _part_begin; }
@@ -133,13 +131,6 @@ class multipolygon_range {
 
   /// Return the iterator to the one past the last ring offset in the range.
   CUSPATIAL_HOST_DEVICE auto ring_offset_end() { return _ring_end; }
-
-  /// Given the index of a segment, return the index of the geometry (multipolygon) that contains
-  /// the segment. Segment index is the index to the starting point of the segment. If the index is
-  /// the last point of the ring, then it is not a valid index. This function returns
-  /// multipolygon_range::INVALID_INDEX if the index is invalid.
-  template <typename IndexType>
-  CUSPATIAL_HOST_DEVICE auto geometry_idx_from_segment_idx(IndexType segment_idx);
 
   /// Given the index of a point, return the index of the ring that contains the point.
   template <typename IndexType>
@@ -157,16 +148,6 @@ class multipolygon_range {
   /// Returns the `multipolygon_idx`th multipolygon in the range.
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto operator[](IndexType multipolygon_idx);
-
-  /// Returns the `segment_idx`th segment in the multipolygon range.
-  template <typename IndexType>
-  CUSPATIAL_HOST_DEVICE auto get_segment(IndexType segment_idx);
-
-  /// Returns `true` if `point_idx`th point is the first point of `geometry_idx`th
-  /// multipolygon
-  template <typename IndexType1, typename IndexType2>
-  CUSPATIAL_HOST_DEVICE bool is_first_point_of_multipolygon(IndexType1 point_idx,
-                                                            IndexType2 geometry_idx);
 
   /// Returns an iterator to the number of points of the first multipolygon
   /// @note The count includes the duplicate first and last point of the ring.

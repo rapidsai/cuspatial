@@ -171,6 +171,7 @@ ConfigureTest(SINUSOIDAL_PROJECTION_TEST_EXP
 
 # range
 ConfigureTest(RANGE_TEST_EXP
+    range/multipoint_range_test.cu
     range/multilinestring_range_test.cu
     range/multipolygon_range_test.cu)
 
