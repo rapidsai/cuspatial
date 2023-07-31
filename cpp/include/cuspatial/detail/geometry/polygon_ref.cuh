@@ -22,6 +22,7 @@
 #include <cuspatial/traits.hpp>
 
 #include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/geometry/vec_3d.hpp>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/tuple.h>
 
