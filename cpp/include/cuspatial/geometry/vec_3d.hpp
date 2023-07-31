@@ -176,7 +176,7 @@ T CUSPATIAL_HOST_DEVICE dot(vec_3d<T> const& a, vec_3d<T> const& b)
  * @brief Compute 3D determinant of a 2x2 matrix with column vectors @p a and @p b.
  */
 template <typename T>
-vec_3d<T> CUSPATIAL_HOST_DEVICE cross_product(vec_3d<T> const& a, vec_3d<T> const& b)
+vec_3d<T> CUSPATIAL_HOST_DEVICE cross(vec_3d<T> const& a, vec_3d<T> const& b)
 {
   return {a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
 }
