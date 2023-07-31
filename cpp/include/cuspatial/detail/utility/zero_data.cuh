@@ -19,6 +19,8 @@
 
 #include <cuspatial/traits.hpp>
 
+#include <rmm/cuda_stream_view.hpp>
+
 namespace cuspatial {
 namespace detail {
 
