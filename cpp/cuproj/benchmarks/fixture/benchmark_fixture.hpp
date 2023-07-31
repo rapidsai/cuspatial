@@ -75,6 +75,7 @@ class benchmark : public ::benchmark::Fixture {
   {
     // reset default resource to the initial resource
     rmm::mr::set_current_device_resource(nullptr);
+    mr.reset();
   }
 
   // eliminate partial override warnings (see benchmark/benchmark.h)

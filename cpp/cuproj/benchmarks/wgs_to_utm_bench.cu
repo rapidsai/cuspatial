@@ -15,14 +15,13 @@
  */
 
 #include <cuproj/projection_factories.hpp>
+#include <cuspatial/geometry/vec_2d.hpp>
 
 #include <cuproj_test/convert_coordinates.hpp>
 #include <cuproj_test/coordinate_generator.cuh>
 
 #include <benchmarks/fixture/benchmark_fixture.hpp>
 #include <benchmarks/synchronization/synchronization.hpp>
-
-#include <cuspatial/geometry/vec_2d.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_vector.hpp>
@@ -107,14 +106,7 @@ BENCHMARK_REGISTER_F(proj_utm_benchmark, forward_double)
   ->Range(8, 16384)
   ->Unit(benchmark::kMillisecond);
 
-class cuproj_utm_benchmark : public cuspatial::benchmark {
-  void SetUp(const ::benchmark::State& state) override
-  {
-    mr = std::make_shared<rmm::mr::cuda_memory_resource>();
-    rmm::mr::set_current_device_resource(mr.get());  // set default resource to cuda
-  }
-  void SetUp(::benchmark::State& st) override { SetUp(const_cast<const ::benchmark::State&>(st)); }
-};
+class cuproj_utm_benchmark : public cuspatial::benchmark {};
 
 #define UTM_CUPROJ_BENCHMARK_DEFINE(name, type)                              \
   BENCHMARK_DEFINE_F(cuproj_utm_benchmark, name)(::benchmark::State & state) \
