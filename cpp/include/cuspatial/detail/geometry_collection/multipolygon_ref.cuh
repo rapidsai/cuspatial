@@ -112,14 +112,14 @@ template <typename PartIterator, typename RingIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto multipolygon_ref<PartIterator, RingIterator, VecIterator>::point_begin()
   const
 {
-  return _point_begin;
+  return thrust::next(_point_begin, *thrust::next(_ring_begin, *_part_begin));
 }
 
 template <typename PartIterator, typename RingIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto multipolygon_ref<PartIterator, RingIterator, VecIterator>::point_end()
   const
 {
-  return _point_end;
+  return thrust::next(_point_begin, *thrust::next(_ring_begin, *thrust::prev(_part_end)));
 }
 
 template <typename PartIterator, typename RingIterator, typename VecIterator>
