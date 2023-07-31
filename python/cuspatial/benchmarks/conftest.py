@@ -185,3 +185,30 @@ def point_generator_device():
         return cuspatial.GeoSeries.from_points_xy(coords)
 
     return generator
+
+@pytest.fixture()
+def linestring_generator_device():
+    def generator(n, segment_per_linestring):
+        geometry_offsets = cp.arange(n+1)
+        part_offsets = cp.arange(0, (n+1) * segment_per_linestring, segment_per_linestring)
+        num_points = part_offsets[-1].get()
+        coords = cp.random.random(num_points*2, dtype="f8")
+        return cuspatial.GeoSeries.from_linestrings_xy(
+            coords, part_offsets, geometry_offsets
+        )
+
+    return generator
+
+@pytest.fixture()
+def polygon_generator_device():
+    def generator(n, num_sides):
+        geometry_offsets = cp.arange(n+1)
+        part_offsets = cp.arange(n+1)
+        ring_offsets = cp.arange((n+1) * num_sides, step=num_sides)
+        num_points = ring_offsets[-1].get()
+        coords = cp.random.random(num_points*2, dtype="f8")
+        return cuspatial.GeoSeries.from_polygons_xy(
+            coords, ring_offsets, part_offsets, geometry_offsets
+        )
+
+    return generator

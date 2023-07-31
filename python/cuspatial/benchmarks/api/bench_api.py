@@ -302,6 +302,7 @@ def bench_point_distance_cuspatial(benchmark, point_generator_device,  n, align)
     points = point_generator_device(int(n))
     other_points = point_generator_device(int(n))
 
+    other_points.index = cudf.Index(cupy.arange(len(other_points)-1, -1, -1))
     benchmark(points.distance, other_points, align)
 
 @pytest.mark.parametrize("align", [True, False])
@@ -310,4 +311,38 @@ def bench_point_distance_gpd(benchmark, point_generator_device,  n, align):
     points = point_generator_device(int(n)).to_geopandas()
     other_points = point_generator_device(int(n)).to_geopandas()
 
+    other_points.index = cudf.Index(cupy.arange(len(other_points)-1, -1, -1)).to_pandas()
     benchmark(points.distance, other_points, align)
+
+
+@pytest.mark.parametrize("align", [True, False])
+@pytest.mark.parametrize("n", [1e3, 1e4, 1e5, 1e6, 1e7])
+def bench_linestring_polygon_distance_cuspatial(
+    benchmark,
+    linestring_generator_device,
+    polygon_generator_device,
+    n,
+    align
+):
+    lines = linestring_generator_device(int(n), 10)
+    polygons = polygon_generator_device(int(n), 20)
+
+    lines.index = cudf.Index(cupy.arange(len(lines)-1, -1, -1))
+    benchmark(lines.distance, polygons, align)
+
+
+
+@pytest.mark.parametrize("align", [True, False])
+@pytest.mark.parametrize("n", [1e3, 1e4, 1e5, 1e6, 1e7])
+def bench_linestring_polygon_distance_gpd(
+    benchmark,
+    linestring_generator_device,
+    polygon_generator_device,
+    n,
+    align
+):
+    lines = linestring_generator_device(int(n), 10).to_geopandas()
+    polygons = polygon_generator_device(int(n), 20).to_geopandas()
+
+    lines.index = cudf.Index(cupy.arange(len(lines)-1, -1, -1)).to_pandas()
+    benchmark(lines.distance, polygons, align)
