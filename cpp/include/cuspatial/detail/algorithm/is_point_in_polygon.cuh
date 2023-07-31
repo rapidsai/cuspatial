@@ -169,7 +169,7 @@ __device__ inline bool is_point_in_polygon_spherical(vec_3d<T> const& test_point
   for (auto ring : polygon) {
     auto ring_points  = multipoint_ref{ring.point_begin(), ring.point_end()};
     auto num_segments = ring.num_segments();
-    bool closed_ring  = ring_points[0] == ring_points[num_segments];
+    int closed_ring  = static_cast<int>(ring_points[0] == ring_points[num_segments]);
     vec_3d<T> b       = ring_points[num_segments - closed_ring];
     size_t s          = 0;
     for (vec_3d<T> a : ring_points) {
