@@ -100,14 +100,11 @@ __device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonR
   return point_is_within;
 }
 
-/** @brief check if p3 is on the left side of the arc that is
- * defined but p1 and p2
- * @note: T can be float or double and T4 can be float4 or double4
- * @param p1: first point of an arc
- * @param p2: second point af an arc
- * @param p3: a point to check
- * @return bool
- */
+/** 
+ * @internal
+ * @brief Return true if point p3 is on the left side of the segment or geodesic arc that is defined
+ * by points p1 and p2.
+*/
 template <typename T>
 __device__ bool is_left(vec_3d<T> const p1, vec_3d<T> const& p2, vec_3d<T> const& p3)
 {
