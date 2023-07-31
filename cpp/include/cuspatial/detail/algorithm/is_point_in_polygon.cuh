@@ -121,8 +121,9 @@ __device__ bool is_left(vec_3d<T> const p1, vec_3d<T> const& p2, vec_3d<T> const
   return w > 0;
 }
 
-/** @brief check if two arcs, defined with (p1, p2) and (p3, p4)
- * intersects (true or not)
+/** 
+@internal
+@brief Check if the geodesic arc with endpoints (p1, p2) intersects the arc with endpoints (p3, p4).
  * @note: T can be float or double and T4 can be float4 or double4
  * @param p1: first point of first arc
  * @param p2: second point af first arc
