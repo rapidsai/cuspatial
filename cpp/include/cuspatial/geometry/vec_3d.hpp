@@ -32,9 +32,7 @@ namespace cuspatial {
 /**
  * @brief A generic 3D vector type.
  *
- * This is the base type used in cuspatial for both Longitude/Latitude (LonLat) coordinate pairs and
- * Cartesian (X/Y) coordinate pairs. For LonLat pairs, the `x` member represents Longitude, and `y`
- * represents Latitude.
+ * This is the base type used in cuspatial for Cartesian (X/Y/Z) coordinates.
  *
  * @tparam T the base type for the coordinates
  */
