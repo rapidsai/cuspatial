@@ -149,8 +149,8 @@ __device__ bool is_intersecting(vec_3d<T> const& p1,
 /**
  * @brief Test if a point is inside a polygon on a spherical geometry.
  *
- * Implements another "Crossings test" algorithm by picking the first point
- * of the query polygon as the reference point
+ * Implements a "crossings test" algorithm by picking the first point of the query 
+ * polygon as the reference point
  *
  * @tparam T type of coordinate
  * @tparam PolygonRef polygon_ref type
