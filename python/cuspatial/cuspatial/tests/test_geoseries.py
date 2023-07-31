@@ -20,6 +20,7 @@ from shapely.geometry import (
 )
 
 import cudf
+from cudf.testing import assert_series_equal
 
 import cuspatial
 
@@ -757,3 +758,31 @@ def test_from_polygons_xy_example():
         [Polygon([(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (0, 0)])]
     )
     gpd.testing.assert_geoseries_equal(gpolygon.to_geopandas(), hpolygon)
+
+
+@pytest.mark.parametrize(
+    "s",
+    [
+        gpd.GeoSeries(),
+        gpd.GeoSeries([Point(0, 0)]),
+        gpd.GeoSeries([None]),
+        gpd.GeoSeries([Point(0, 0), None, Point(1, 1)]),
+        gpd.GeoSeries([Point(0, 0), None, LineString([(1, 1), (2, 2)]), None]),
+    ],
+)
+def test_isna(s):
+    assert_series_equal(cudf.Series(s.isna()), cuspatial.GeoSeries(s).isna())
+
+
+@pytest.mark.parametrize(
+    "s",
+    [
+        gpd.GeoSeries(),
+        gpd.GeoSeries([Point(0, 0)]),
+        gpd.GeoSeries([None]),
+        gpd.GeoSeries([Point(0, 0), None, Point(1, 1)]),
+        gpd.GeoSeries([Point(0, 0), None, LineString([(1, 1), (2, 2)]), None]),
+    ],
+)
+def test_notna(s):
+    assert_series_equal(cudf.Series(s.notna()), cuspatial.GeoSeries(s).notna())
