@@ -258,7 +258,12 @@ linestring_intersection_result<T, index_t> pairwise_linestring_intersection(
       stream);
 
     points.remove_if(range(point_flags.begin(), point_flags.end()), stream);
+
+    rmm::device_uvector<int> point_flags_int(point_flags.size(), stream);
+    thrust::copy(
+      rmm::exec_policy(stream), point_flags.begin(), point_flags.end(), point_flags_int.begin());
   }
+
   // Phase 4: Assemble results as union column
   auto num_union_column_rows = points.geoms->size() + segments.geoms->size();
   auto geometry_collection_offsets =
