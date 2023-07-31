@@ -100,25 +100,18 @@ __device__ inline bool is_point_in_polygon(vec_2d<T> const& test_point, PolygonR
   return point_is_within;
 }
 
-/** 
+/**
  * @internal
  * @brief Return true if point p3 is on the left side of the segment or geodesic arc that is defined
  * by points p1 and p2.
-*/
+ */
 template <typename T>
 __device__ bool is_left(vec_3d<T> const p1, vec_3d<T> const& p2, vec_3d<T> const& p3)
 {
-  vec_3d<T> po  = {0, 0, 0};
-  auto p1o      = po - p1;
-  auto p1p2     = p2 - p1;
-  auto p1p3     = p3 - p1;
-  auto p1oxp1p2 = cross_product(p1o, p1p2);
-  auto w        = dot(p1oxp1p2, p1p3);
-
-  return w > 0;
+  return dot(cross(-p1, p2 - p1), p3 - p1) > 0;
 }
 
-/** 
+/**
 @internal
 @brief Check if the geodesic arc with endpoints (p1, p2) intersects the arc with endpoints (p3, p4).
  * @note: T can be float or double and T4 can be float4 or double4
@@ -147,7 +140,7 @@ __device__ bool is_intersecting(vec_3d<T> const& p1,
 /**
  * @brief Test if a point is inside a polygon on a spherical geometry.
  *
- * Implements a "crossings test" algorithm by picking the first point of the query 
+ * Implements a "crossings test" algorithm by picking the first point of the query
  * polygon as the reference point
  *
  * @tparam T type of coordinate
@@ -167,14 +160,14 @@ __device__ inline bool is_point_in_polygon_spherical(vec_3d<T> const& test_point
   for (auto ring : polygon) {
     auto ring_points  = multipoint_ref{ring.point_begin(), ring.point_end()};
     auto num_segments = ring.num_segments();
-    int closed_ring  = static_cast<int>(ring_points[0] == ring_points[num_segments]);
+    int closed_ring   = static_cast<int>(ring_points[0] == ring_points[num_segments]);
     vec_3d<T> b       = ring_points[num_segments - closed_ring];
     size_t s          = 0;
     for (vec_3d<T> a : ring_points) {
       if (!check) {
         left_check   = is_left(b, a, test_point);
         const auto c = a + b;
-        const auto w = sqrtf(dot(c, c));
+        const auto w = sqrt(dot(c, c));
         check_point  = (c) * (radius / w);
         check        = true;
       } else {
