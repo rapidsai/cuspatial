@@ -12,8 +12,10 @@ files:
       - develop
       - docs
       - py_version
-      - run_python
-      - test_python
+      - run_python_cuspatial
+      - run_python_cuproj
+      - test_python_cuspatial
+      - test_python_cuspatial_cuproj
       - notebooks
   test_cpp:
     output: none
@@ -42,7 +44,7 @@ files:
       - cudatoolkit
       - docs
       - py_version
-  py_build:
+  py_build_cuspatial:
     output: [pyproject]
     pyproject_dir: python/cuspatial
     extras:
@@ -51,21 +53,21 @@ files:
       - build_cpp
       - build_python
       - build_wheels
-  py_run:
+  py_run_cuspatial:
     output: [pyproject]
     pyproject_dir: python/cuspatial
     extras:
       table: project
     includes:
-      - run_python
-  py_test:
+      - run_python_cuspatial
+  py_test_cuspatial:
     output: [pyproject]
     pyproject_dir: python/cuspatial
     extras:
       table: project.optional-dependencies
       key: test
     includes:
-      - test_python
+      - test_python_cuspatial
   py_build_cuproj:
     output: [pyproject]
     pyproject_dir: python/cuproj
@@ -89,7 +91,7 @@ files:
       table: project.optional-dependencies
       key: test
     includes:
-      - test_python
+      - test_python_cuproj
 
 channels:
   - rapidsai
@@ -366,7 +368,7 @@ dependencies:
           - matrix:
             packages:
               - python>=3.9,<3.11
-  run_python:
+  run_python_cuspatial:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
@@ -388,19 +390,15 @@ dependencies:
               - cudf-cu12==23.8.*
               - rmm-cu12==23.8.*
           - matrix: {cuda: "11.8"}
-            packages: &run_python_packages_cu11
+            packages: &run_python_cuspatial_packages_cu11
               - cudf-cu11==23.8.*
               - rmm-cu11==23.8.*
-          - {matrix: {cuda: "11.5"}, packages: *run_python_packages_cu11}
-          - {matrix: {cuda: "11.4"}, packages: *run_python_packages_cu11}
-          - {matrix: {cuda: "11.2"}, packages: *run_python_packages_cu11}
+          - {matrix: {cuda: "11.5"}, packages: *run_python_cuspatial_packages_cu11}
+          - {matrix: {cuda: "11.4"}, packages: *run_python_cuspatial_packages_cu11}
+          - {matrix: {cuda: "11.2"}, packages: *run_python_cuspatial_packages_cu11}
           - {matrix: null, packages: [*cudf_conda, *rmm_conda]}
   run_python_cuproj:
     common:
-      - output_types: [conda, requirements, pyproject]
-        packages:
-          - geopandas>=0.11.0 # only required for testing
-          - cuspatial==23.8.* # only required for testing
       - output_types: conda
         packages:
           - *rmm_conda
@@ -428,10 +426,19 @@ dependencies:
           - {matrix: {cuda: "11.4"}, packages: *run_python_cuproj_packages_cu11}
           - {matrix: {cuda: "11.2"}, packages: *run_python_cuproj_packages_cu11}
           - {matrix: null, packages: [*rmm_conda]}
-  test_python:
+  test_python_cuspatial:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
           - pytest
           - pytest-cov
           - pytest-xdist
+  test_python_cuproj:
+    common:
+      - output_types: [conda, requirements, pyproject]
+        packages:
+          - pytest
+          - pytest-cov
+          - pytest-xdist
+          - geopandas>=0.11.0
+          - cuspatial==23.8.*
