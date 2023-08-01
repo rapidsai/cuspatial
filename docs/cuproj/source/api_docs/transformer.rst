@@ -10,5 +10,3 @@ between coordinate reference systems (CRS).
     :members:
     :show-inheritance:
     :inherited-members:
-
-"""
