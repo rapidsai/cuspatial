@@ -1,4 +1,4 @@
-# cuProj: GPU-Accelerated Cartographics Projections and Coordinate Transformations
+# cuProj: GPU-Accelerated Cartographic Projections and Coordinate Transformations
 
 cuProj is a generic coordinate transformation library that transforms geospatial coordinates from
 one coordinate reference system (CRS) to another. This includes cartographic projections as well as
