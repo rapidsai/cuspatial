@@ -81,7 +81,6 @@ void proj_wgs_to_utm_benchmark(benchmark::State& state)
   auto input   = thrust::host_vector<coordinate<T>>(d_input);
 
   std::vector<PJ_COORD> pj_input(input.size());
-  cuproj_test::convert_coordinates(input, pj_input);
 
   PJ_CONTEXT* C = proj_context_create();
   PJ* P         = proj_create_crs_to_crs(C, epsg_src, epsg_dst, nullptr);
