@@ -14,6 +14,8 @@ dependencies:
 - cuda-version=12.0
 - cudf==23.8.*
 - cuml==23.8.*
+- cupy>=12.0.0
+- cuspatial==23.8.*
 - cxx-compiler
 - cython>=0.29,<0.30
 - doxygen
@@ -30,6 +32,7 @@ dependencies:
 - ninja
 - notebook
 - numpydoc
+- pip
 - pre-commit
 - proj
 - pydata-sphinx-theme

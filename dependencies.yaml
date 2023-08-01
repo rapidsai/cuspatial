@@ -15,7 +15,7 @@ files:
       - run_python_cuspatial
       - run_python_cuproj
       - test_python_cuspatial
-      - test_python_cuspatial_cuproj
+      - test_python_cuproj
       - notebooks
   test_cpp:
     output: none
