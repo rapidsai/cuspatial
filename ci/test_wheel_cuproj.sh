@@ -11,7 +11,6 @@ RAPIDS_PY_WHEEL_NAME="cuproj_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-fr
 apt update
 DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libgdal-dev
 python -m pip install --no-binary fiona 'fiona>=1.8.19,<1.9'
-python -m pip install --no-binary cupy 'cupy>=12.0.0'
 
 # echo to expand wildcard before adding `[extra]` requires for pip
 python -m pip install $(echo ./dist/cuproj*.whl)[test]
