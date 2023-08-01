@@ -1,10 +1,17 @@
-# <div align="left"><img src="https://rapids.ai/assets/images/rapids_logo.png" width="90px"/>&nbsp;cuSpatial - GPU-Accelerated Vector Geospatial Data Analysis</div>
+# <div align="left"><img src="https://rapids.ai/assets/images/rapids_logo.png" width="90px"/>&nbsp;cuProj: GPU-Accelerated Coordinate Projection</div>
 
 > **Note**
 >
-> cuSpatial depends on [RMM](https://github.com/rapidsai/rmm) from [RAPIDS](https://rapids.ai/).
+> cuProj depends on [RMM](https://github.com/rapidsai/rmm) from [RAPIDS](https://rapids.ai/).
 
 ## Resources
+
+- [cuProj User's Guide](https://docs.rapids.ai/api/cuproj/stable/user_guide/cuproj_api_examples.html): Python API reference and guides
+- [cuProj Developer Documentation](https://docs.rapids.ai/api/cuproj/stable/developer_guide/index.html): Understand cuProj's architecture
+- [Getting Started](https://rapids.ai/start.html): Instructions for installing cuSpatial/cuProj
+- [cuProj/cuSpatial Community](https://github.com/rapidsai/cuspatial/discussions): Get help, collaborate, and ask the team questions
+- [cuProj Issues](https://github.com/rapidsai/cuspatial/issues/new/choose): Request a feature/documentation or report a bug (file issues in cuSpatial repo).
+- [cuProj Roadmap](https://github.com/orgs/rapidsai/projects/41/views/5): Report issues or request features in the cuSpatial / cuProj roadmap.
 
 ## Overview
 
