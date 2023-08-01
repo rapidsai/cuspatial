@@ -90,8 +90,7 @@ include(cmake/modules/ConfigureCUDA.cmake)
 
 # add third party dependencies using CPM
 rapids_cpm_init()
-# find or add cuDF
-include(cmake/thirdparty/get_cudf.cmake)
+
 # find or install GoogleTest and Proj
 if (CUPROJ_BUILD_TESTS)
     include(cmake/thirdparty/get_gtest.cmake)
