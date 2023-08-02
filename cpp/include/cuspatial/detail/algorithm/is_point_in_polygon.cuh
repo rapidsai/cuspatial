@@ -127,11 +127,12 @@ __device__ bool is_intersecting(vec_3d<T> const& p1,
                                 vec_3d<T> const& p3,
                                 vec_3d<T> const& p4)
 {
+  if (dot(p1, p3) <= 0) return false;
+
   auto p1left = is_left(p3, p4, p1);
   auto p2left = is_left(p3, p4, p2);
   auto p3left = is_left(p1, p2, p3);
   auto p4left = is_left(p1, p2, p4);
-
   return (p1left != p2left) && (p3left != p4left);
 }
 

@@ -314,6 +314,23 @@ TYPED_TEST(PointInPolygonTest, CornersOfSquare)
     {0b0000});
 }
 
+TYPED_TEST(PointInPolygonTest, OnePolygonOneRingDifferentHemisphereSpherical)
+{
+  CUSPATIAL_RUN_TEST(this->run_spherical_test,
+                     {{0, 1.0, 0},
+                      {0.5773502, -0.5773502, -0.5773502},
+                      {-0.5773502, -0.5773502, -0.5773502},
+                      {-0.5773502, -0.5773502, 0.5773502}},
+                     {0, 1},
+                     {0, 5},
+                     {{-0.5773502, 0.5773502, 0.5773502},
+                      {0.5773502, 0.5773502, 0.5773502},
+                      {0.5773502, 0.5773502, -0.5773502},
+                      {-0.5773502, 0.5773502, -0.5773502},
+                      {-0.5773502, 0.5773502, 0.5773502}},
+                     {true, false, false, false});
+}
+
 struct OffsetIteratorFunctor {
   std::size_t __device__ operator()(std::size_t idx) { return idx * 5; }
 };
