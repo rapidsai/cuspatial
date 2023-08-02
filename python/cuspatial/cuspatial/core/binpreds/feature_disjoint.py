@@ -45,8 +45,7 @@ class PointLineStringDisjoint(BinPred):
 
 class PointPolygonDisjoint(BinPred):
     def _preprocess(self, lhs, rhs):
-        contains = _basic_contains_any(lhs, rhs)
-        return ~contains
+        return ~_basic_contains_any(lhs, rhs)
 
 
 class LineStringPointDisjoint(PointLineStringDisjoint):
@@ -65,8 +64,7 @@ class LineStringLineStringDisjoint(IntersectsPredicateBase):
 
 class LineStringPolygonDisjoint(BinPred):
     def _preprocess(self, lhs, rhs):
-        contains = _basic_contains_any(rhs, lhs)
-        return ~contains
+        return ~_basic_contains_any(rhs, lhs)
 
 
 class PolygonPolygonDisjoint(BinPred):

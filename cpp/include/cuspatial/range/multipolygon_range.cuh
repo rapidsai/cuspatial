@@ -16,13 +16,15 @@
 
 #pragma once
 
-#include <thrust/pair.h>
-
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/detail/range/enumerate_range.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
 #include <cuspatial/types.hpp>
+
+#include <rmm/cuda_stream_view.hpp>
+
+#include <thrust/pair.h>
 
 namespace cuspatial {
 
@@ -70,8 +72,6 @@ class multipolygon_range {
   using index_t   = iterator_value_type<GeometryIterator>;
   using element_t = iterator_vec_base_type<VecIterator>;
 
-  int64_t static constexpr INVALID_INDEX = -1;
-
   multipolygon_range(GeometryIterator geometry_begin,
                      GeometryIterator geometry_end,
                      PartIterator part_begin,
@@ -96,9 +96,6 @@ class multipolygon_range {
   /// Return the total number of points in the array.
   CUSPATIAL_HOST_DEVICE auto num_points();
 
-  /// Return the total number of segments in the array.
-  CUSPATIAL_HOST_DEVICE auto num_segments();
-
   /// Return the iterator to the first multipolygon in the range.
   CUSPATIAL_HOST_DEVICE auto multipolygon_begin();
 
@@ -117,6 +114,12 @@ class multipolygon_range {
   /// Return the iterator to the one past the last point in the range.
   CUSPATIAL_HOST_DEVICE auto point_end();
 
+  /// Return the iterator to the first geometry offset in the range.
+  CUSPATIAL_HOST_DEVICE auto geometry_offset_begin() { return _part_begin; }
+
+  /// Return the iterator to the one past the last geometry offset in the range.
+  CUSPATIAL_HOST_DEVICE auto geometry_offset_end() { return _part_end; }
+
   /// Return the iterator to the first part offset in the range.
   CUSPATIAL_HOST_DEVICE auto part_offset_begin() { return _part_begin; }
 
@@ -128,13 +131,6 @@ class multipolygon_range {
 
   /// Return the iterator to the one past the last ring offset in the range.
   CUSPATIAL_HOST_DEVICE auto ring_offset_end() { return _ring_end; }
-
-  /// Given the index of a segment, return the index of the geometry (multipolygon) that contains
-  /// the segment. Segment index is the index to the starting point of the segment. If the index is
-  /// the last point of the ring, then it is not a valid index. This function returns
-  /// multipolygon_range::INVALID_INDEX if the index is invalid.
-  template <typename IndexType>
-  CUSPATIAL_HOST_DEVICE auto geometry_idx_from_segment_idx(IndexType segment_idx);
 
   /// Given the index of a point, return the index of the ring that contains the point.
   template <typename IndexType>
@@ -153,16 +149,6 @@ class multipolygon_range {
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto operator[](IndexType multipolygon_idx);
 
-  /// Returns the `segment_idx`th segment in the multipolygon range.
-  template <typename IndexType>
-  CUSPATIAL_HOST_DEVICE auto get_segment(IndexType segment_idx);
-
-  /// Returns `true` if `point_idx`th point is the first point of `geometry_idx`th
-  /// multipolygon
-  template <typename IndexType1, typename IndexType2>
-  CUSPATIAL_HOST_DEVICE bool is_first_point_of_multipolygon(IndexType1 point_idx,
-                                                            IndexType2 geometry_idx);
-
   /// Returns an iterator to the number of points of the first multipolygon
   /// @note The count includes the duplicate first and last point of the ring.
   CUSPATIAL_HOST_DEVICE auto multipolygon_point_count_begin();
@@ -175,16 +161,10 @@ class multipolygon_range {
   /// Returns the one past the iterator to the number of rings of the last multipolygon
   CUSPATIAL_HOST_DEVICE auto multipolygon_ring_count_end();
 
-  /// Returns an iterator to the number of segments of the first multipolygon
-  CUSPATIAL_HOST_DEVICE auto multipolygon_segment_count_begin();
-  /// Returns the one past the iterator to the number of segments of the last multipolygon
-  CUSPATIAL_HOST_DEVICE auto multipolygon_segment_count_end();
-
-  /// Returns an iterator to the start of the segment
-  CUSPATIAL_HOST_DEVICE auto segment_begin();
-
-  /// Returns an iterator to the end of the segment
-  CUSPATIAL_HOST_DEVICE auto segment_end();
+  /// @internal
+  /// Returns the owning class that provides views into the segments of the multipolygon range
+  /// Can only be constructed on host.
+  auto _segments(rmm::cuda_stream_view);
 
   /// Range Casting
 
@@ -205,14 +185,72 @@ class multipolygon_range {
   VecIterator _point_begin;
   VecIterator _point_end;
 
-  // TODO: find a better name
-  CUSPATIAL_HOST_DEVICE auto subtracted_ring_begin();
-  CUSPATIAL_HOST_DEVICE auto subtracted_ring_end();
-
  private:
   template <typename IndexType1, typename IndexType2>
   CUSPATIAL_HOST_DEVICE bool is_valid_segment_id(IndexType1 segment_idx, IndexType2 ring_idx);
 };
+
+/**
+ * @brief Create a multipoylgon_range object of from size and start iterators
+ *
+ * @tparam GeometryIteratorDiffType Integer type of the size of the geometry offset array
+ * @tparam PartIteratorDiffType Integer type of the size of the part offset array
+ * @tparam RingIteratorDiffType Integer type of the size of the ring offset array
+ * @tparam VecIteratorDiffType Integer type of the size of the point array
+ * @tparam GeometryIterator iterator type for offset array. Must meet
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
+ * @tparam PartIterator iterator type for offset array. Must meet
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
+ * @tparam RingIterator iterator type for offset array. Must meet
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
+ * @tparam VecIterator iterator type for the point array. Must meet
+ * the requirements of [LegacyRandomAccessIterator][LinkLRAI].
+ *
+ * @note Iterators should be device-accessible if the view is intended to be
+ * used on device.
+ *
+ * @param num_multipolygons Number of multipolygons in the array
+ * @param geometry_begin Iterator to the start of the geometry offset array
+ * @param num_polygons Number of polygons in the array
+ * @param part_begin Iterator to the start of the part offset array
+ * @param num_rings Number of rings in the array
+ * @param ring_begin Iterator to the start of the ring offset array
+ * @param num_points Number of underlying points in the multipoint array
+ * @param point_begin Iterator to the start of the points array
+ * @return range to multipolygon array
+ *
+ * [LinkLRAI]: https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator
+ * "LegacyRandomAccessIterator"
+ */
+template <typename GeometryIteratorDiffType,
+          typename PartIteratorDiffType,
+          typename RingIteratorDiffType,
+          typename VecIteratorDiffType,
+          typename GeometryIterator,
+          typename PartIterator,
+          typename RingIterator,
+          typename VecIterator>
+multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>
+make_multipolygon_range(GeometryIteratorDiffType num_multipolygons,
+                        GeometryIterator geometry_begin,
+                        PartIteratorDiffType num_polygons,
+                        PartIterator part_begin,
+                        RingIteratorDiffType num_rings,
+                        RingIterator ring_begin,
+                        VecIteratorDiffType num_points,
+                        VecIterator point_begin)
+{
+  return multipolygon_range{
+    geometry_begin,
+    thrust::next(geometry_begin, num_multipolygons + 1),
+    part_begin,
+    thrust::next(part_begin, num_polygons + 1),
+    ring_begin,
+    thrust::next(ring_begin, num_rings + 1),
+    point_begin,
+    thrust::next(point_begin, num_points),
+  };
+}
 
 /**
  * @brief Create a range object of multipolygon from cuspatial::geometry_column_view.

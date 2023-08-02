@@ -213,7 +213,6 @@ class ContainsGeometryProcessor(BinPred):
         result_df = hits.reset_index().merge(
             expected_count.reset_index(), on="rhs_index"
         )
-
         # Handling for the basic predicates
         if mode == "basic_none":
             none_result = _true_series(len(rhs))

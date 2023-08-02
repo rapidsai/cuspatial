@@ -2,6 +2,10 @@
 
 from typing import TypeVar
 
+import cupy as cp
+
+import cudf
+
 from cuspatial.core.binpreds.basic_predicates import (
     _basic_equals_all,
     _basic_intersects,
@@ -70,14 +74,14 @@ class ContainsProperlyPredicate(ContainsGeometryProcessor):
 
         Notes
         -----
-        1. Quadtree is always used if user requests `allpairs=True`.
-        2. If the number of polygons in the lhs is less than 32, we use the
+        1. If the number of polygons in the lhs is less than 32, we use the
            brute-force algorithm because it is faster and has less memory
            overhead.
-        3. If the lhs contains multipolygons, we use quadtree because
-           the quadtree code path already handles multipolygons.
-        4. Otherwise pairwise is defaulted to since the default GeoPandas
-           behavior is to use the pairwise algorithm.
+        2. If the lhs contains multipolygons, or `allpairs=True` is specified,
+           we use quadtree because the quadtree code path already handles
+           multipolygons.
+        3. Otherwise default to pairwise to match the default GeoPandas
+           behavior.
         """
         if len(lhs) <= 31:
             return "brute_force"
@@ -103,12 +107,27 @@ class ContainsProperlyPredicate(ContainsGeometryProcessor):
         mode = self._pip_mode(lhs, preprocessor_result.final_rhs)
         lhs_indices = lhs.index
         # Duplicates the lhs polygon for each point in the final_rhs result
-        # that was computed by _preprocess.
+        # that was computed by _preprocess. Will always ensure that the
+        # number of points in the rhs is equal to the number of polygons in the
+        # lhs.
         if mode == "pairwise":
             lhs_indices = preprocessor_result.point_indices
         pip_result = contains_properly(
             lhs[lhs_indices], preprocessor_result.final_rhs, mode=mode
         )
+        # If the mode is pairwise or brute_force, we need to replace the
+        # `pairwise_index` of each repeated polygon with the `part_index`
+        # from the preprocessor result.
+        if "pairwise_index" in pip_result.columns:
+            pairwise_index_df = cudf.DataFrame(
+                {
+                    "pairwise_index": cp.arange(len(lhs_indices)),
+                    "part_index": rhs.point_indices,
+                }
+            )
+            pip_result = pip_result.merge(
+                pairwise_index_df, on="pairwise_index"
+            )[["part_index", "point_index"]]
         op_result = ContainsOpResult(pip_result, preprocessor_result)
         return self._postprocess(lhs, rhs, preprocessor_result, op_result)
 

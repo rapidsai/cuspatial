@@ -26,6 +26,7 @@ target_compile_features(cuspatial_benchmark_common PUBLIC cxx_std_17 cuda_std_17
 target_link_libraries(cuspatial_benchmark_common
     PUBLIC benchmark::benchmark
            cudf::cudftestutil
+           ranger::ranger
            cuspatial)
 
 target_compile_options(cuspatial_benchmark_common
@@ -79,9 +80,14 @@ endfunction()
 ConfigureBench(HAUSDORFF_BENCH
     distance/hausdorff_benchmark.cpp)
 
-ConfigureNVBench(DISTANCES_BENCH
-    distance/pairwise_point_polygon_distance.cu
+ConfigureNVBench(POINT_POLYGON_DISTANCES_BENCH
+    distance/pairwise_point_polygon_distance.cu)
+
+ConfigureNVBench(LINESTRING_DISTANCES_BENCH
     distance/pairwise_linestring_distance.cu)
+
+ConfigureNVBench(LINESTRING_POLYGON_DISTANCES_BENCH
+    distance/pairwise_linestring_polygon_distance.cu)
 
 ConfigureNVBench(QUADTREE_ON_POINTS_BENCH
     indexing/quadtree_on_points.cu)

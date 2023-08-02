@@ -23,6 +23,8 @@
 #include <cuspatial/traits.hpp>
 #include <cuspatial/types.hpp>
 
+#include <rmm/cuda_stream_view.hpp>
+
 #include <thrust/pair.h>
 
 namespace cuspatial {
@@ -81,9 +83,6 @@ class multilinestring_range {
   /// Return the total number of points in the array.
   CUSPATIAL_HOST_DEVICE auto num_points();
 
-  /// Return the total number of segments in the array.
-  CUSPATIAL_HOST_DEVICE auto num_segments();
-
   /// Return the iterator to the first multilinestring in the range.
   CUSPATIAL_HOST_DEVICE auto multilinestring_begin();
 
@@ -101,6 +100,12 @@ class multilinestring_range {
 
   /// Return the iterator to the one past the last point in the range.
   CUSPATIAL_HOST_DEVICE auto point_end() { return _point_end; }
+
+  /// Return the iterator to the first geometry offset in the range.
+  CUSPATIAL_HOST_DEVICE auto geometry_offset_begin() { return _geometry_begin; }
+
+  /// Return the iterator to the one past the last geometry offset in the range.
+  CUSPATIAL_HOST_DEVICE auto geometry_offset_end() { return _geometry_end; }
 
   /// Return the iterator to the first part offset in the range.
   CUSPATIAL_HOST_DEVICE auto part_offset_begin() { return _part_begin; }
@@ -145,8 +150,7 @@ class multilinestring_range {
 
   /// Returns the segment given a segment index.
   template <typename IndexType>
-  CUSPATIAL_HOST_DEVICE thrust::pair<vec_2d<element_t>, vec_2d<element_t>> segment(
-    IndexType segment_idx);
+  CUSPATIAL_HOST_DEVICE auto segment(IndexType segment_idx);
 
   /// Returns an iterator to the counts of points per multilinestring
   CUSPATIAL_HOST_DEVICE auto multilinestring_point_count_begin();
@@ -154,34 +158,20 @@ class multilinestring_range {
   /// Returns an iterator to the counts of segments per multilinestring
   CUSPATIAL_HOST_DEVICE auto multilinestring_point_count_end();
 
-  /// Returns an iterator to the counts of segments per multilinestring
-  CUSPATIAL_HOST_DEVICE auto multilinestring_segment_count_begin();
-
-  /// Returns an iterator to the counts of points per multilinestring
-  CUSPATIAL_HOST_DEVICE auto multilinestring_segment_count_end();
-
   /// Returns an iterator to the counts of points per multilinestring
   CUSPATIAL_HOST_DEVICE auto multilinestring_linestring_count_begin();
 
   /// Returns an iterator to the counts of points per multilinestring
   CUSPATIAL_HOST_DEVICE auto multilinestring_linestring_count_end();
 
-  /// Returns an iterator to the start of the segment
-  CUSPATIAL_HOST_DEVICE auto segment_begin();
-
-  /// Returns an iterator to the end of the segment
-  CUSPATIAL_HOST_DEVICE auto segment_end();
+  /// @internal
+  /// Returns the owning class that provides views into the segments of the multilinestring range
+  /// Can only be constructed on host
+  auto _segments(rmm::cuda_stream_view);
 
   /// Returns the `multilinestring_idx`th multilinestring in the range.
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE auto operator[](IndexType multilinestring_idx);
-
-  /// Raw offsets iterator
-
-  CUSPATIAL_HOST_DEVICE auto geometry_offsets_begin() { return _geometry_begin; }
-  CUSPATIAL_HOST_DEVICE auto geometry_offsets_end() { return _geometry_end; }
-  CUSPATIAL_HOST_DEVICE auto part_offsets_begin() { return _part_begin; }
-  CUSPATIAL_HOST_DEVICE auto part_offsets_end() { return _part_end; }
 
   /// Range Casts
 
@@ -197,9 +187,6 @@ class multilinestring_range {
   PartIterator _part_end;
   VecIterator _point_begin;
   VecIterator _point_end;
-
-  CUSPATIAL_HOST_DEVICE auto segment_offset_begin();
-  CUSPATIAL_HOST_DEVICE auto segment_offset_end();
 
  private:
   /// @internal
