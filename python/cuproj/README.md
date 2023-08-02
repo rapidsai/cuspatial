@@ -10,14 +10,12 @@
   Python API reference and guides
 - [cuProj Developer Documentation](https://docs.rapids.ai/api/cuproj/stable/developer_guide/index.html):
   Understand cuProj's architecture
-- [Getting Started](https://rapids.ai/start.html):
+- [Getting Started](https://docs.rapids.ai/install):
   Instructions for installing cuSpatial/cuProj
 - [cuProj/cuSpatial Community](https://github.com/rapidsai/cuspatial/discussions):
   Get help, collaborate, and ask the team questions
 - [cuProj Issues](https://github.com/rapidsai/cuspatial/issues/new/choose):
   Request a feature/documentation or report a bug (file issues in cuSpatial repo).
-- [cuProj Roadmap](https://github.com/orgs/rapidsai/projects/41/views/5):
-  Report issues or request features in the cuSpatial / cuProj roadmap.
 
 ## Overview
 
@@ -35,7 +33,7 @@ support many of the same features and transformations that Proj supports.
 Currently cuProj only supports a subset of the Proj transformations. The following transformations
 are supported:
 
-- WGS84 to/from UTM
+- WGS84 (EPSG: 4326) to/from any of the 60 UTM zone transformations (EPSG: 32601-32660, 32701-32760).
 
 ## Example
 
