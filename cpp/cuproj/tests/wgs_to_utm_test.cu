@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <cuproj_test/convert_coordinates.hpp>
 #include <cuproj_test/coordinate_generator.cuh>
 
 #include <cuproj/error.hpp>
@@ -45,28 +46,6 @@ TYPED_TEST_CASE(ProjectionTest, TestTypes);
 
 template <typename T>
 using coordinate = typename cuspatial::vec_2d<T>;
-
-template <typename InVector, typename OutVector>
-void convert_coordinates(InVector const& in, OutVector& out)
-{
-  using in_coord_type  = typename InVector::value_type;
-  using out_coord_type = typename OutVector::value_type;
-
-  static_assert(
-    (std::is_same_v<out_coord_type, PJ_COORD> != std::is_same_v<in_coord_type, PJ_COORD>),
-    "Invalid coordinate vector conversion");
-
-  if constexpr (std::is_same_v<in_coord_type, PJ_COORD>) {
-    using T                       = typename out_coord_type::value_type;
-    auto proj_coord_to_coordinate = [](auto const& c) {
-      return out_coord_type{static_cast<T>(c.xy.x), static_cast<T>(c.xy.y)};
-    };
-    thrust::transform(in.begin(), in.end(), out.begin(), proj_coord_to_coordinate);
-  } else if constexpr (std::is_same_v<out_coord_type, PJ_COORD>) {
-    auto coordinate_to_proj_coord = [](auto const& c) { return PJ_COORD{c.x, c.y, 0, 0}; };
-    thrust::transform(in.begin(), in.end(), out.begin(), coordinate_to_proj_coord);
-  }
-}
 
 // run a test using the cuproj library
 template <typename T>
@@ -118,7 +97,7 @@ void run_forward_and_inverse(DeviceVector const& input,
   // projection, and we want to test both directions for each.
   thrust::host_vector<coordinate<T>> h_input(input.begin(), input.end());
   thrust::host_vector<PJ_COORD> pj_input{input.size()};
-  convert_coordinates(h_input, pj_input);
+  cuproj_test::convert_coordinates(h_input, pj_input);
   thrust::host_vector<PJ_COORD> pj_expected(pj_input);
 
   char const* epsg_src = "EPSG:4326";
@@ -128,7 +107,7 @@ void run_forward_and_inverse(DeviceVector const& input,
     run_proj_test(pj_expected, epsg_src, epsg_dst);
 
     thrust::host_vector<coordinate<T>> h_expected{pj_expected.size()};
-    convert_coordinates(pj_expected, h_expected);
+    cuproj_test::convert_coordinates(pj_expected, h_expected);
 
     auto proj = cuproj::make_projection<coordinate<T>>(epsg_src, epsg_dst);
 
@@ -140,7 +119,7 @@ void run_forward_and_inverse(DeviceVector const& input,
   run();
   // invert construction
   pj_input = pj_expected;
-  convert_coordinates(pj_input, h_input);
+  cuproj_test::convert_coordinates(pj_input, h_input);
   std::swap(epsg_src, epsg_dst);
   run();
 }

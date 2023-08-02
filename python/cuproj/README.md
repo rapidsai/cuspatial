@@ -6,23 +6,34 @@
 
 ## Resources
 
-- [cuProj User's Guide](https://docs.rapids.ai/api/cuproj/stable/user_guide/cuproj_api_examples.html): Python API reference and guides
-- [cuProj Developer Documentation](https://docs.rapids.ai/api/cuproj/stable/developer_guide/index.html): Understand cuProj's architecture
-- [Getting Started](https://rapids.ai/start.html): Instructions for installing cuSpatial/cuProj
-- [cuProj/cuSpatial Community](https://github.com/rapidsai/cuspatial/discussions): Get help, collaborate, and ask the team questions
-- [cuProj Issues](https://github.com/rapidsai/cuspatial/issues/new/choose): Request a feature/documentation or report a bug (file issues in cuSpatial repo).
-- [cuProj Roadmap](https://github.com/orgs/rapidsai/projects/41/views/5): Report issues or request features in the cuSpatial / cuProj roadmap.
+- [cuProj User's Guide](https://docs.rapids.ai/api/cuproj/stable/user_guide/cuproj_api_examples.html):
+  Python API reference and guides
+- [cuProj Developer Documentation](https://docs.rapids.ai/api/cuproj/stable/developer_guide/index.html):
+  Understand cuProj's architecture
+- [Getting Started](https://rapids.ai/start.html):
+  Instructions for installing cuSpatial/cuProj
+- [cuProj/cuSpatial Community](https://github.com/rapidsai/cuspatial/discussions):
+  Get help, collaborate, and ask the team questions
+- [cuProj Issues](https://github.com/rapidsai/cuspatial/issues/new/choose):
+  Request a feature/documentation or report a bug (file issues in cuSpatial repo).
+- [cuProj Roadmap](https://github.com/orgs/rapidsai/projects/41/views/5):
+  Report issues or request features in the cuSpatial / cuProj roadmap.
 
 ## Overview
 
-cuProj is a generic coordinate transformation library that transforms geospatial coordinates from
-one coordinate reference system (CRS) to another. This includes cartographic projections as well as geodetic transformations. cuProj is implemented in CUDA C++ to run on GPUs to provide the highest performance.
+cuProj is a library and Python package for accelerated geographic and geodetic coordinate
+transformations. cuProj can transform billions of geospatial coordinates per second from one
+coordinate reference system (CRS) to another on GPUs. This includes cartographic projections as well
+as geodetic transformations. cuProj is implemented in CUDA C++ to run on GPUs to provide the highest
+performance.
 
-cuProj provides a Python API that closely matches the [PyProj](https://pyproj4.github.io/pyproj/stable/) API. cuProj also provides a header-only C++ API. While the C++ API does not match the API
-of [Proj](https://proj.org/), it is designed to eventually expand to support many of the same features
-and transformations that Proj supports.
+cuProj provides a Python API that closely matches the
+[PyProj](https://pyproj4.github.io/pyproj/stable/) API, as well as a header-only C++ API. While the
+C++ API does not match the API of [Proj](https://proj.org/), it is designed to eventually expand to
+support many of the same features and transformations that Proj supports.
 
-Currently cuProj only supports a subset of the Proj transformations. The following transformations are supported:
+Currently cuProj only supports a subset of the Proj transformations. The following transformations
+are supported:
 
 - WGS84 to/from UTM
 
