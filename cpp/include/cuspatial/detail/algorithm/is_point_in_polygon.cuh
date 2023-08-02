@@ -143,7 +143,7 @@ __device__ bool is_intersecting(vec_3d<T> const& p1,
  * polygon as the reference point
  *
  * This algorithm assumes that all query polygon vertices and test points
- * resides on the surface of a sphere. 
+ * resides on the surface of a sphere.
  *
  * @tparam T type of coordinate
  * @tparam PolygonRef polygon_ref type
@@ -157,7 +157,7 @@ __device__ inline bool is_point_in_polygon_spherical(vec_3d<T> const& test_point
                                                      PolygonRef const& polygon)
 {
   bool check = false, left_check = false, point_is_within = false;
-  // Norm of a point gives the radius: All test points are on the surface 
+  // Norm of a point gives the radius: All test points are on the surface
   const T radius = sqrt(dot(test_point, test_point));
   vec_3d<T> check_point;
   for (auto ring : polygon) {
