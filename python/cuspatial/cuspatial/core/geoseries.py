@@ -18,6 +18,7 @@ from shapely.geometry import (
     Point,
     Polygon,
 )
+from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry
 
 import cudf
 from cudf._typing import ColumnLike
@@ -27,6 +28,7 @@ from cudf.core.copy_types import GatherMap
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import ColumnType, GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
+from cuspatial.core.binops.distance_dispatch import DistanceDispatch
 from cuspatial.core.binpreds.binpred_dispatch import (
     CONTAINS_DISPATCH,
     CONTAINS_PROPERLY_DISPATCH,
@@ -1391,3 +1393,93 @@ class GeoSeries(cudf.Series):
             align=align
         )
         return predicate(self, other)
+
+    def isna(self):
+        """Detect missing values."""
+
+        c = self._column._meta.input_types == Feature_Enum.NONE.value
+        return cudf.Series(c, index=self.index)
+
+    def notna(self):
+        """Detect non-missing values."""
+
+        c = self._column._meta.input_types != Feature_Enum.NONE.value
+        return cudf.Series(c, index=self.index)
+
+    def distance(self, other, align=True):
+        """Returns a `Series` containing the distance to aligned other.
+
+        The operation works on a 1-to-1 row-wise manner. See
+        `geopandas.GeoSeries.distance` documentation for details.
+
+        Parameters
+        ----------
+        other
+            The GeoSeries (elementwise) or geometric object to find the
+            distance to.
+        align : bool, default True
+            If True, automatically aligns GeoSeries based on their indices.
+            If False, the order of the elements is preserved.
+
+        Returns
+        -------
+        Series (float)
+
+        Notes
+        -----
+        Unlike GeoPandas, this API currently only supports geoseries that
+        contain only single type geometries.
+
+        Examples
+        --------
+        >>> from shapely.geometry import Point
+        >>> point = GeoSeries([Point(0, 0)])
+        >>> point2 = GeoSeries([Point(1, 1)])
+        >>> print(point.distance(point2))
+        0    1.414214
+        dtype: float64
+
+        By default, geoseries are aligned before computing:
+
+        >>> from shapely.geometry import Point
+        >>> point = GeoSeries([Point(0, 0)])
+        >>> point2 = GeoSeries([Point(1, 1), Point(2, 2)])
+        >>> print(point.distance(point2))
+        0    1.414214
+        1         NaN
+        dtype: float64
+
+        This can be overridden by setting `align=False`:
+
+        >>> lines = GeoSeries([
+                LineString([(0, 0), (1, 1)]), LineString([(2, 2), (3, 3)])])
+        >>> polys = GeoSeries([
+                Polygon([(0, 0), (1, 1), (1, 0)]),
+                Polygon([(2, 2), (3, 3), (3, 2)])],
+                index=[1, 0])
+        >>> lines.distance(polys), align=False)
+        0    0.0
+        1    0.0
+        dtype: float64
+        >>> lines.distance(polys, align=True)
+        0    1.414214
+        1    1.414214
+        dtype: float64
+        """
+
+        other_is_scalar = False
+        if issubclass(type(other), (BaseGeometry, BaseMultipartGeometry)):
+            other_is_scalar = True
+            other = GeoSeries([other] * len(self), index=self.index)
+
+        if not align:
+            if len(self) != len(other):
+                raise ValueError(
+                    f"Lengths of inputs do not match. Left: {len(self)}, "
+                    f"Right: {len(other)}"
+                )
+
+        res = DistanceDispatch(self, other, align)()
+        if other_is_scalar:
+            res.index = self.index
+        return res

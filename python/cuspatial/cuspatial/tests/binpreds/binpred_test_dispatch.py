@@ -359,6 +359,78 @@ features = {
         LineString([(0.5, 1.25), (0.5, -0.25)]),
         point_polygon,
     ),
+    "linestring-polygon-cross-concave-edge": (
+        """
+    x  x  x
+    |\\ | /|
+    | xx- |
+    |  |  |
+    ---x---
+    """,
+        LineString([(0.5, 0.0), (0.5, 1.0)]),
+        Polygon([(0, 0), (0, 1), (0.3, 0.4), (1, 1), (1, 0)]),
+    ),
+    "linestring-polygon-half-in": (
+        """
+    -----
+    |   |
+    | x |
+    |/ \\|
+    xx-xx
+    """,
+        LineString(
+            [(0.0, 0.0), (0.25, 0.0), (0.5, 0.5), (0.75, 0.0), (1.0, 0.0)]
+        ),
+        point_polygon,
+    ),
+    "linestring-polygon-half-out": (
+        """
+    -----
+    |   |
+    |   |
+    |   |
+    xx-xx
+     \\/
+      x
+    """,
+        LineString(
+            [(0.0, 0.0), (0.25, 0.0), (0.5, -0.5), (0.75, 0.0), (1.0, 0.0)]
+        ),
+        point_polygon,
+    ),
+    "linestring-polygon-two-edges": (
+        """
+    x----
+    |   |
+    |   |
+    |   |
+    x---x
+    """,
+        LineString([(0.0, 1.0), (0.0, 0.0), (1.0, 0.0)]),
+        point_polygon,
+    ),
+    "linestring-polygon-edge-to-interior": (
+        """
+    x----
+    |   |
+    |  -x
+    |-/ |
+    x----
+    """,
+        LineString([(0.0, 1.0), (0.0, 0.0), (1.0, 0.5)]),
+        point_polygon,
+    ),
+    "linestring-polygon-edge-cross-to-exterior": (
+        """
+    x------
+    |     |
+    |    ---x
+    | --- |
+    x------
+    """,
+        LineString([(0.0, 1.0), (0.0, 0.0), (1.5, 0.5)]),
+        point_polygon,
+    ),
     "polygon-polygon-disjoint": (
         """
     Polygon polygon tests use a triangle for the lhs and a square for the rhs.
@@ -555,6 +627,12 @@ linestring_polygon_dispatch_list = [
     "linestring-polygon-edge-interior",
     "linestring-polygon-in",
     "linestring-polygon-crosses",
+    "linestring-polygon-cross-concave-edge",
+    "linestring-polygon-half-in",
+    "linestring-polygon-half-out",
+    "linestring-polygon-two-edges",
+    "linestring-polygon-edge-to-interior",
+    "linestring-polygon-edge-cross-to-exterior",
 ]
 
 polygon_polygon_dispatch_list = [

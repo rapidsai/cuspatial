@@ -24,6 +24,7 @@ from cuspatial.utils.binpred_utils import (
     Point,
     Polygon,
     _false_series,
+    _pli_points_to_multipoints,
     _points_and_lines_to_multipoints,
 )
 
@@ -101,18 +102,19 @@ class LineStringLineStringTouches(BinPred):
 
 class LineStringPolygonTouches(BinPred):
     def _preprocess(self, lhs, rhs):
+        intersects = _basic_intersects_count(lhs, rhs) > 0
+        contains = rhs.contains(lhs)
+        contains_any = _basic_contains_properly_any(rhs, lhs)
+
         pli = _basic_intersects_pli(lhs, rhs)
         if len(pli[1]) == 0:
             return _false_series(len(lhs))
-        intersections = _points_and_lines_to_multipoints(pli[1], pli[0])
+        points = _pli_points_to_multipoints(pli)
         # A touch can only occur if the point in the intersection
         # is equal to a point in the linestring: it must
         # terminate in the boundary of the polygon.
-        equals = _basic_equals_count(intersections, lhs) > 0
-        intersects = _basic_intersects_count(lhs, rhs)
-        intersects = (intersects == 1) | (intersects == 2)
-        contains = rhs.contains(lhs)
-        contains_any = _basic_contains_properly_any(rhs, lhs)
+        equals = _basic_equals_count(points, lhs) == points.sizes
+
         return equals & intersects & ~contains & ~contains_any
 
 
