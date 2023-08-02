@@ -1,6 +1,6 @@
 # Building cuProj Documentation
 
-As a prerequisite, a RAPIDS compatible GPU is required to build the docs since the notebooks in the
+As a prerequisite, a [RAPIDS compatible GPU](https://docs.rapids.ai/install#system-req) is required to build the docs since the notebooks in the
 docs execute the code to generate the HTML output.
 
 ## Steps to follow:
