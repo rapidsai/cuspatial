@@ -18,9 +18,8 @@
 #include <cuproj_test/coordinate_generator.cuh>
 
 #include <cuproj/error.hpp>
-#include <cuproj/projection_factories.hpp>
-
-#include <cuspatial/geometry/vec_2d.hpp>
+#include <cuproj/projection_factories.cuh>
+#include <cuproj/vec_2d.hpp>
 
 #include <cuspatial_test/vector_equality.hpp>
 
@@ -85,7 +84,7 @@ void run_proj_test(thrust::host_vector<PJ_COORD>& coords,
 }
 
 // Run a test using the cuproj library in both directions, comparing to the proj library
-template <typename T, typename DeviceVector, bool inverted = false>
+template <typename T, typename DeviceVector>
 void run_forward_and_inverse(DeviceVector const& input,
                              T tolerance                 = T{0},
                              std::string const& utm_epsg = "EPSG:32756")
@@ -104,8 +103,6 @@ void run_forward_and_inverse(DeviceVector const& input,
   char const* epsg_src = "EPSG:4326";
   char const* epsg_dst = utm_epsg.c_str();
 
-  if constexpr (inverted) {}
-
   auto run = [&]() {
     run_proj_test(pj_expected, epsg_src, epsg_dst);
 
@@ -114,8 +111,8 @@ void run_forward_and_inverse(DeviceVector const& input,
 
     auto proj = cuproj::make_projection<coordinate<T>>(epsg_src, epsg_dst);
 
-    run_cuproj_test(h_input, h_expected, proj, cuproj::direction::FORWARD, tolerance);
-    run_cuproj_test(h_expected, h_input, proj, cuproj::direction::INVERSE, tolerance);
+    run_cuproj_test(h_input, h_expected, *proj, cuproj::direction::FORWARD, tolerance);
+    run_cuproj_test(h_expected, h_input, *proj, cuproj::direction::INVERSE, tolerance);
   };
 
   // forward construction
@@ -131,10 +128,18 @@ void run_forward_and_inverse(DeviceVector const& input,
 TYPED_TEST(ProjectionTest, make_projection_valid_epsg)
 {
   using T = TypeParam;
-  cuproj::make_projection<coordinate<T>>("EPSG:4326", "EPSG:32756");
-  cuproj::make_projection<coordinate<T>>("EPSG:32756", "EPSG:4326");
-  cuproj::make_projection<coordinate<T>>("EPSG:4326", "EPSG:32601");
-  cuproj::make_projection<coordinate<T>>("EPSG:32601", "EPSG:4326");
+  {  // auth:code strings
+    cuproj::make_projection<coordinate<T>>("EPSG:4326", "EPSG:32756");
+    cuproj::make_projection<coordinate<T>>("EPSG:32756", "EPSG:4326");
+    cuproj::make_projection<coordinate<T>>("EPSG:4326", "EPSG:32601");
+    cuproj::make_projection<coordinate<T>>("EPSG:32601", "EPSG:4326");
+  }
+  {  // int epsg codes
+    cuproj::make_projection<coordinate<T>>(4326, 32756);
+    cuproj::make_projection<coordinate<T>>(32756, 4326);
+    cuproj::make_projection<coordinate<T>>(4326, 32601);
+    cuproj::make_projection<coordinate<T>>(32601, 4326);
+  }
 }
 
 // Test that construction of the projection from unsupported EPSG codes throws
@@ -142,10 +147,18 @@ TYPED_TEST(ProjectionTest, make_projection_valid_epsg)
 TYPED_TEST(ProjectionTest, invalid_epsg)
 {
   using T = TypeParam;
-  EXPECT_THROW(cuproj::make_projection<coordinate<T>>("EPSG:4326", "EPSG:756"),
-               cuproj::logic_error);
-  EXPECT_THROW(cuproj::make_projection<coordinate<T>>("EPSG:4326", "UTM:32756"),
-               cuproj::logic_error);
+  {  // auth:code strings
+    EXPECT_THROW(cuproj::make_projection<coordinate<T>>("EPSG:4326", "EPSG:756"),
+                 cuproj::logic_error);
+    EXPECT_THROW(cuproj::make_projection<coordinate<T>>("EPSG:4326", "UTM:32756"),
+                 cuproj::logic_error);
+    EXPECT_THROW(cuproj::make_projection<coordinate<T>>("EPSG:32611", "EPSG:32756"),
+                 cuproj::logic_error);
+  }
+  {  // int codes
+    EXPECT_THROW(cuproj::make_projection<coordinate<T>>(4326, 756), cuproj::logic_error);
+    EXPECT_THROW(cuproj::make_projection<coordinate<T>>(32611, 32756), cuproj::logic_error);
+  }
 }
 
 // Test on a single coordinate
@@ -153,12 +166,12 @@ TYPED_TEST(ProjectionTest, one)
 {
   using T = TypeParam;
 
-  coordinate<T> sydney{-33.865143, 151.209900};  // Sydney, NSW, Australia
+  coordinate<T> sydney{-33.858700, 151.214000};  // Sydney, NSW, Australia
   std::vector<coordinate<T>> input{sydney};
   // We can expect nanometer accuracy with double precision. The precision ratio of
   // double to single precision is 2^53 / 2^24 == 2^29 ~= 10^9, then we should
   // expect meter (10^9 nanometer) accuracy with single precision.
-  T tolerance = std::is_same_v<T, float> ? T{1.0} : T{1e-9};
+  T tolerance = std::is_same_v<T, double> ? T{1e-9} : T{1.0};
   run_forward_and_inverse<T>(input, tolerance, "EPSG:32756");
 }
 
@@ -236,4 +249,20 @@ TYPED_TEST(ProjectionTest, many)
     std::string epsg = "EPSG:32648";
     test_grid<TypeParam>(min_corner, max_corner, num_points_xy, epsg);
   }
+}
+
+// Test the code in the readme
+TYPED_TEST(ProjectionTest, readme_example)
+{
+  using T = TypeParam;
+
+  // Make a projection to convert WGS84 (lat, lon) coordinates to UTM zone 56S (x, y) coordinates
+  auto* proj = cuproj::make_projection<cuproj::vec_2d<T>>("EPSG:4326", "EPSG:32756");
+
+  cuproj::vec_2d<T> sydney{-33.858700, 151.214000};  // Sydney, NSW, Australia
+  thrust::device_vector<cuproj::vec_2d<T>> d_in{1, sydney};
+  thrust::device_vector<cuproj::vec_2d<T>> d_out(d_in.size());
+
+  // Convert the coordinates. Works the same with a vector of many coordinates.
+  proj->transform(d_in.begin(), d_in.end(), d_out.begin(), cuproj::direction::FORWARD);
 }

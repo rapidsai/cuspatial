@@ -67,7 +67,8 @@
 
 #pragma once
 
-#include <cuproj/detail/wrap_to_pi.cuh>
+#include <cuproj/detail/utility/cuda.hpp>
+#include <cuproj/detail/wrap_to_pi.hpp>
 #include <cuproj/ellipsoid.hpp>
 #include <cuproj/operation/operation.cuh>
 #include <cuproj/projection_parameters.hpp>
@@ -92,7 +93,7 @@ namespace detail {
  * @return The value of the trigonometric series at B
  */
 template <typename T>
-inline static __host__ __device__ T gatg(T const* p1, int len_p1, T B, T cos_2B, T sin_2B)
+inline static CUPROJ_HOST_DEVICE T gatg(T const* p1, int len_p1, T B, T cos_2B, T sin_2B)
 {
   T h = 0, h1, h2 = 0;
 
@@ -124,7 +125,7 @@ inline static __host__ __device__ T gatg(T const* p1, int len_p1, T B, T cos_2B,
  * @return The real part of the summation at arg_r
  */
 template <typename T>
-inline static __host__ __device__ T clenshaw_complex(
+inline static CUPROJ_HOST_DEVICE T clenshaw_complex(
   T const* a, int size, T sin_arg_r, T cos_arg_r, T sinh_arg_i, T cosh_arg_i, T* R, T* I)
 {
   T r, i, hr, hr1, hr2, hi, hi1, hi2;
@@ -165,7 +166,7 @@ inline static __host__ __device__ T clenshaw_complex(
  * @return the summation at arg_r
  */
 template <typename T>
-static __host__ __device__ T clenshaw_real(T const* a, int size, T arg_r)
+static CUPROJ_HOST_DEVICE T clenshaw_real(T const* a, int size, T arg_r)
 {
   T r, hr, hr1, hr2, cos_arg_r;
 
@@ -195,7 +196,7 @@ class transverse_mercator : operation<Coordinate> {
    *
    * @param params projection parameters
    */
-  __host__ __device__ transverse_mercator(projection_parameters<T> const& params) : params_(params)
+  CUPROJ_HOST_DEVICE transverse_mercator(projection_parameters<T> const& params) : params_(params)
   {
   }
 
@@ -206,7 +207,7 @@ class transverse_mercator : operation<Coordinate> {
    * @param dir direction of projection
    * @return projected coordinate
    */
-  __host__ __device__ Coordinate operator()(Coordinate const& coord, direction dir) const
+  CUPROJ_HOST_DEVICE Coordinate operator()(Coordinate const& coord, direction dir) const
   {
     if (dir == direction::FORWARD)
       return forward(coord);
@@ -344,7 +345,7 @@ class transverse_mercator : operation<Coordinate> {
    * @param coord Geographic coordinate (lat, lon) in radians.
    * @return Transverse mercator coordinate (x, y) in meters.
    */
-  __host__ __device__ Coordinate forward(Coordinate const& coord) const
+  CUPROJ_HOST_DEVICE Coordinate forward(Coordinate const& coord) const
   {
     // so we don't have to qualify the class name everywhere.
     auto& tmerc_params = this->params_.tmerc_params_;
@@ -434,7 +435,7 @@ class transverse_mercator : operation<Coordinate> {
    * @param coord projected coordinate (x, y) in meters
    * @return geographic coordinate (lon, lat) in radians
    */
-  __host__ __device__ Coordinate inverse(Coordinate const& coord) const
+  CUPROJ_HOST_DEVICE Coordinate inverse(Coordinate const& coord) const
   {
     // so we don't have to qualify the class name everywhere.
     auto& tmerc_params = this->params_.tmerc_params_;
