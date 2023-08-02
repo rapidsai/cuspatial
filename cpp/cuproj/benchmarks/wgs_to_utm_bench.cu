@@ -102,7 +102,8 @@ void proj_wgs_to_utm_benchmark(benchmark::State& state)
 class proj_utm_benchmark : public ::benchmark::Fixture {};
 
 // Edit these for GPUs/CPUs with larger or smaller memory.
-// 10^8 pionts -> 3.2GB+, 10^9 -> 32GB+
+// For double precision, its' 16 bytes per (x,y) point, x2 for input and output
+// 10^8 points -> 3.2GB+, 10^9 points -> 32GB+
 // H100 80GB is plenty for 10^9 points
 
 constexpr int range_min = 100;
