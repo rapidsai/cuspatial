@@ -97,12 +97,14 @@ OutputIt pairwise_multipoint_equals_count(MultiPointRangeA lhs,
     rhs.offsets_begin(), rhs.offsets_end(), rhs_point_sorted.begin(), rhs_point_sorted.end()};
 
   detail::zero_data_async(output, output + lhs.size(), stream);
-  auto [tpb, n_blocks] = grid_1d(lhs.num_points());
-  detail::pairwise_multipoint_equals_count_kernel<<<n_blocks, tpb, 0, stream.value()>>>(
-    lhs, rhs_sorted, output);
 
-  CUSPATIAL_CHECK_CUDA(stream.value());
+  if (lhs.num_points() > 0) {
+    auto [tpb, n_blocks] = grid_1d(lhs.num_points());
+    detail::pairwise_multipoint_equals_count_kernel<<<n_blocks, tpb, 0, stream.value()>>>(
+      lhs, rhs_sorted, output);
 
+    CUSPATIAL_CHECK_CUDA(stream.value());
+  }
   return output + lhs.size();
 }
 
