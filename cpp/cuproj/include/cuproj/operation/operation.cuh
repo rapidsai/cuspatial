@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cuproj/detail/utility/cuda.hpp>
 #include <cuproj/projection_parameters.hpp>
 
 namespace cuproj {
@@ -35,10 +36,10 @@ enum operation_type {
 };
 
 /// Enumerates the direction of a transform operation
-enum class direction { FORWARD, INVERSE };
+enum direction { FORWARD, INVERSE };
 
-/// Returns the inverse of a direction
-direction reverse(direction dir)
+/// Returns the opposite of a direction
+inline direction reverse(direction dir)
 {
   return dir == direction::FORWARD ? direction::INVERSE : direction::FORWARD;
 }
@@ -63,7 +64,7 @@ class operation {
    * @param dir Direction of transform
    * @return Coordinate
    */
-  __host__ __device__ Coordinate operator()(Coordinate const& c, direction dir) const { return c; }
+  CUPROJ_HOST_DEVICE Coordinate operator()(Coordinate const& c, direction dir) const { return c; }
 
   /**
    * @brief Modifies the projection parameters for the transform operation
@@ -77,10 +78,7 @@ class operation {
    * @param params Projection parameters
    * @return The modified parameters
    */
-  __host__ projection_parameters<T> setup(projection_parameters<T> const& params)
-  {
-    return params;
-  };
+  projection_parameters<T> setup(projection_parameters<T> const& params) { return params; };
 };
 
 }  // namespace cuproj
