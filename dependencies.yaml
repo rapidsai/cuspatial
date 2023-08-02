@@ -404,7 +404,6 @@ dependencies:
         packages:
           - *rmm_conda
           - cupy>=12.0.0
-          - pip
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
