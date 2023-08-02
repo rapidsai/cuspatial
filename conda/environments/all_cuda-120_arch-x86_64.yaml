@@ -32,7 +32,6 @@ dependencies:
 - ninja
 - notebook
 - numpydoc
-- pip
 - pre-commit
 - proj
 - pydata-sphinx-theme
