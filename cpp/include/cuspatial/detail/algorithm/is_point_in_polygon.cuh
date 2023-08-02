@@ -149,8 +149,7 @@ __device__ bool is_intersecting(vec_3d<T> const& p1,
  * @tparam PolygonRef polygon_ref type
  * @param test_point point to test for point in polygon
  * @param polygon polygon to test for point in polygon
- * @return boolean to indicate if point is inside the polygon.
- * `false` if point is on the edge of the polygon.
+ * @return True if point is inside the polygon, false if point is outside or on the edge.
  */
 template <typename T, class PolygonRef>
 __device__ inline bool is_point_in_polygon_spherical(vec_3d<T> const& test_point,
