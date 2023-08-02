@@ -138,7 +138,7 @@ To install via pip:
 
 The cuSpatial pip packages can be installed from NVIDIA's PyPI index. pip installations require using the matching wheel to the system's installed CUDA toolkit.
 - For CUDA 11 toolkits, install the `-cu11` wheels
-- For CUDA 12 tookits install the `-cu12` wheels
+- For CUDA 12 toolkits install the `-cu12` wheels
 - If your installation has a CUDA 12 driver but a CUDA 11 toolkit, use the `-cu11` wheels.
 ```shell
 pip install cuspatial-cu12 --extra-index-url=https://pypi.nvidia.com
