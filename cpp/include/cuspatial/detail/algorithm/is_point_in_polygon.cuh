@@ -143,6 +143,9 @@ __device__ bool is_intersecting(vec_3d<T> const& p1,
  * Implements a "crossings test" algorithm by picking the first point of the query
  * polygon as the reference point
  *
+ * This algorithm assumes that all query polygon vertices and test points
+ * resides on the surface of a sphere. 
+ *
  * @tparam T type of coordinate
  * @tparam PolygonRef polygon_ref type
  * @param test_point point to test for point in polygon
@@ -155,6 +158,7 @@ __device__ inline bool is_point_in_polygon_spherical(vec_3d<T> const& test_point
                                                      PolygonRef const& polygon)
 {
   bool check = false, left_check = false, point_is_within = false;
+  // Norm of a point gives the radius: All test points are on the surface 
   const T radius = sqrt(dot(test_point, test_point));
   vec_3d<T> check_point;
   for (auto ring : polygon) {
