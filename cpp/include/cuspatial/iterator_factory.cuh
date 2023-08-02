@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cuspatial/detail/functors.cuh>
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/box.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
@@ -422,6 +423,13 @@ auto make_geometry_id_iterator(GeometryIter geometry_offsets_begin,
     first_part_offsets_begin,
     thrust::next(first_part_offsets_begin,
                  std::distance(geometry_offsets_begin, geometry_offsets_end)));
+}
+
+template <typename OffsetIterator>
+auto make_count_iterator_from_offset_iterator(OffsetIterator it)
+{
+  auto zipped_offsets_it = thrust::make_zip_iterator(it, thrust::next(it));
+  return thrust::make_transform_iterator(zipped_offsets_it, detail::offset_pair_to_count_functor{});
 }
 
 /**
