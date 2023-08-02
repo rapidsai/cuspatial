@@ -257,7 +257,7 @@ def polygon_generator():
 
 
 @pytest.fixture
-def multipolygon_generator():
+def multipolygon_generator(polygon_generator):
     """Generator for multi complex polygons.
     Usage: multipolygon_generator(n, max_per_multi)
     """

@@ -149,6 +149,7 @@ class multipoint_range {
 
   /**
    * @brief Returns `true` if the range contains only single points
+   * Undefined behavior if the range is an empty range.
    */
   CUSPATIAL_HOST_DEVICE bool is_single_point_range();
 
