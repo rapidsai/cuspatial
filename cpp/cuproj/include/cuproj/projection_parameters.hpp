@@ -29,8 +29,7 @@ enum class hemisphere { NORTH, SOUTH };
  * @brief Projection parameters
  *
  * Storage for parameters for projections. This is a POD type that is passed to
-  * the projection operators.
-
+ * the projection operators.
  *
  * @tparam T Coordinate value type
  */

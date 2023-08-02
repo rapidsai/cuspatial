@@ -35,7 +35,7 @@ function(ConfigureTest CMAKE_TEST_NAME)
                    CUDA_STANDARD 17
                    CUDA_STANDARD_REQUIRED ON
     )
-    target_link_libraries(${CMAKE_TEST_NAME} GTest::gtest_main GTest::gmock_main cudf::cudftestutil PROJ::proj cuproj)
+    target_link_libraries(${CMAKE_TEST_NAME} GTest::gtest_main GTest::gmock_main PROJ::proj cuproj)
     add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
     install(
         TARGETS ${CMAKE_TEST_NAME}
