@@ -5,9 +5,9 @@
 > cuSpatial depends on [cuDF](https://github.com/rapidsai/cudf) and [RMM](https://github.com/rapidsai/rmm) from [RAPIDS](https://rapids.ai/).
 
 ## cuProj - a cuSpatial subproject
-cuProj is a subproject of cuSpatial that provides GPU-accelerated coordinate reference system (CRS) transformations. cuProj is available as of release 23.08 supporting UTM <-> WGS84 transformations :globe_with_meridians:.
+cuProj is a new RAPIDS library housed within the cuSpatial repo that provides GPU-accelerated coordinate reference system (CRS) transformations. cuProj is available as of release 23.08 supporting UTM <-> WGS84 transformations :globe_with_meridians:.
 
-To learn more about cuProj, see the [cuProj README](cpp/cuproj/README.md).
+To learn more about cuProj, see the [c++ libcuproj README](cpp/cuproj/README.md) or the [Python cuProj README](python/cuproj/README.md)
 
 ## Resources
 
