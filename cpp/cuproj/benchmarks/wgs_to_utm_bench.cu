@@ -52,7 +52,9 @@ auto make_input(std::size_t grid_side)
 template <typename T>
 static void cuproj_wgs_to_utm_benchmark(benchmark::State& state)
 {
-  auto const grid_side{static_cast<std::size_t>(state.range(0))};
+  auto const num_points = state.range(0);
+
+  auto const grid_side{static_cast<std::size_t>(sqrt(num_points))};
 
   auto input = make_input<T>(grid_side);
 
@@ -69,13 +71,15 @@ static void cuproj_wgs_to_utm_benchmark(benchmark::State& state)
                    rmm::cuda_stream_default);
   }
 
-  state.SetItemsProcessed(grid_side * grid_side * state.iterations());
+  state.SetItemsProcessed(num_points * state.iterations());
 }
 
 void proj_wgs_to_utm_benchmark(benchmark::State& state)
 {
-  using T = double;
-  auto const grid_side{static_cast<std::size_t>(state.range(0))};
+  using T               = double;
+  auto const num_points = state.range(0);
+
+  auto const grid_side{static_cast<std::size_t>(sqrt(num_points))};
 
   auto d_input = make_input<T>(grid_side);
   auto input   = thrust::host_vector<coordinate<T>>(d_input);
@@ -92,17 +96,25 @@ void proj_wgs_to_utm_benchmark(benchmark::State& state)
     proj_trans_array(P, PJ_FWD, pj_input.size(), pj_input.data());
   }
 
-  state.SetItemsProcessed(grid_side * grid_side * state.iterations());
+  state.SetItemsProcessed(num_points * state.iterations());
 }
 
 class proj_utm_benchmark : public ::benchmark::Fixture {};
+
+// Edit these for GPUs/CPUs with larger or smaller memory.
+// 10^8 pionts -> 3.2GB+, 10^9 -> 32GB+
+// H100 80GB is plenty for 10^9 points
+
+constexpr int range_min = 100;
+constexpr int range_max = 100'000'000;
 
 BENCHMARK_DEFINE_F(proj_utm_benchmark, forward_double)(::benchmark::State& state)
 {
   proj_wgs_to_utm_benchmark(state);
 }
 BENCHMARK_REGISTER_F(proj_utm_benchmark, forward_double)
-  ->Range(8, 16384)
+  ->RangeMultiplier(10)
+  ->Range(range_min, range_max)
   ->Unit(benchmark::kMillisecond);
 
 class cuproj_utm_benchmark : public cuspatial::benchmark {};
@@ -113,7 +125,8 @@ class cuproj_utm_benchmark : public cuspatial::benchmark {};
     cuproj_wgs_to_utm_benchmark<type>(state);                                \
   }                                                                          \
   BENCHMARK_REGISTER_F(cuproj_utm_benchmark, name)                           \
-    ->Range(8, 16384)                                                        \
+    ->RangeMultiplier(10)                                                    \
+    ->Range(range_min, range_max)                                            \
     ->UseManualTime()                                                        \
     ->Unit(benchmark::kMillisecond);
 
