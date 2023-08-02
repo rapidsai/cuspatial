@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <cuproj/projection_factories.hpp>
+#include <cuproj/projection_factories.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 
 #include <cuproj_test/convert_coordinates.hpp>
