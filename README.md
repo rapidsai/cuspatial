@@ -13,7 +13,7 @@ To learn more about cuProj, see the [c++ libcuproj README](cpp/cuproj/README.md)
 
 - [cuSpatial User's Guide](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html): Python API reference and guides
 - [cuSpatial Developer Documentation](https://docs.rapids.ai/api/cuspatial/stable/developer_guide/index.html): Understand cuSpatial's architecture
-- [Getting Started](https://rapids.ai/start.html): Instructions for installing cuSpatial
+- [Getting Started](https://docs.rapids.ai/install#selector): Installation options for cuSpatial
 - [cuSpatial Community](https://github.com/rapidsai/cuspatial/discussions): Get help, collaborate, and ask the team questions
 - [cuSpatial Issues](https://github.com/rapidsai/cuspatial/issues/new/choose): Request a feature/documentation or report a bug
 
@@ -101,11 +101,9 @@ gitGraph
 
 ## Using cuSpatial
 **CUDA/GPU requirements**
-```
-CUDA 11.2+ with a [compatible, supported driver](https://docs.nvidia.com/datacenter/tesla/drivers/#cuda-drivers)
-Linux native: Pascal architecture or newer ([Compute Capability >=6.0](https://developer.nvidia.com/cuda-gpus))
-WSL2: Volta architecture or newer ([Compute Capability >=7.0](https://developer.nvidia.com/cuda-gpus))
-```
+- CUDA 11.2+ with a [compatible, supported driver](https://docs.nvidia.com/datacenter/tesla/drivers/#cuda-drivers)
+- Linux native: Pascal architecture or newer ([Compute Capability >=6.0](https://developer.nvidia.com/cuda-gpus))
+- WSL2: Volta architecture or newer ([Compute Capability >=7.0](https://developer.nvidia.com/cuda-gpus))
 
 ### Quick start: Docker
 Use the [RAPIDS Release Selector](https://docs.rapids.ai/install#selector), selecting `Docker` as the installation method. All RAPIDS Docker images contain cuSpatial.
