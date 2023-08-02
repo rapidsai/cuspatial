@@ -64,11 +64,11 @@ static void cuproj_wgs_to_utm_benchmark(benchmark::State& state)
 
   for (auto _ : state) {
     cuda_event_timer raii(state, true);
-    proj.transform(input.begin(),
-                   input.end(),
-                   output.begin(),
-                   cuproj::direction::FORWARD,
-                   rmm::cuda_stream_default);
+    proj->transform(input.begin(),
+                    input.end(),
+                    output.begin(),
+                    cuproj::direction::FORWARD,
+                    rmm::cuda_stream_default);
   }
 
   state.SetItemsProcessed(num_points * state.iterations());
