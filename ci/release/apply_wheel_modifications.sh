@@ -14,7 +14,6 @@ sed -i "s/cudf==/cudf${CUDA_SUFFIX}==/g" python/cuspatial/pyproject.toml
 sed -i "s/^version = .*/version = \"${VERSION}\"/g" python/cuproj/pyproject.toml
 sed -i "s/^name = \"cuproj\"/name = \"cuproj${CUDA_SUFFIX}\"/g" python/cuproj/pyproject.toml
 sed -i "s/rmm==/rmm${CUDA_SUFFIX}==/g" python/cuproj/pyproject.toml
-sed -i "s/cudf==/cudf${CUDA_SUFFIX}==/g" python/cuproj/pyproject.toml
 sed -i "s/cuspatial==/cuspatial${CUDA_SUFFIX}==/g" python/cuproj/pyproject.toml
 
 if [[ $CUDA_SUFFIX == "-cu12" ]]; then

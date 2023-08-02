@@ -55,7 +55,6 @@ cdef class Transformer:
         if (x.dtype != y.dtype):
             raise TypeError("x and y must have the same dtype")
 
-        # allocate C-contiguous array
         if (x.dtype == cp.float32):
             return self.transform_32(x, y, dir)
         else:

@@ -9,6 +9,7 @@ dependencies:
 - c-compiler
 - cmake>=3.26.4
 - cuda-cudart-dev
+- cuda-cupti-dev
 - cuda-nvcc
 - cuda-nvrtc-dev
 - cuda-version=12.0
@@ -32,7 +33,6 @@ dependencies:
 - ninja
 - notebook
 - numpydoc
-- pip
 - pre-commit
 - proj
 - pydata-sphinx-theme

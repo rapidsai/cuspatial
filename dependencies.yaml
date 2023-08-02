@@ -290,6 +290,7 @@ dependencies:
               - cuda-version=12.0
               - cuda-cudart-dev
               - cuda-nvrtc-dev
+              - cuda-cupti-dev
           - matrix:
               cuda: "11.8"
             packages:
@@ -404,7 +405,6 @@ dependencies:
         packages:
           - *rmm_conda
           - cupy>=12.0.0
-          - pip
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
