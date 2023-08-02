@@ -26,7 +26,8 @@ files:
     includes:
       - cudatoolkit
       - py_version
-      - test_python
+      - test_python_cuspatial
+      - test_python_cuproj
   test_notebooks:
     output: none
     includes:
