@@ -171,7 +171,7 @@ T CUSPATIAL_HOST_DEVICE dot(vec_3d<T> const& a, vec_3d<T> const& b)
 }
 
 /**
- * @brief Compute cross product of two 3D vectors. 
+ * @brief Compute cross product of two 3D vectors.
  *
  * Equivalent to 3D determinant of a 2x2 matrix with column vectors @p a and @p b.
  */
