@@ -48,7 +48,7 @@ for nb in $(find . -name "*.ipynb"); do
         echo "--------------------------------------------------------------------------------"
     else
         nvidia-smi
-        ${NBTEST} ${nbBasename}
+        ${NBTEST} ${nb}
     fi
 done
 
