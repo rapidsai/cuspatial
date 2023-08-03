@@ -27,7 +27,7 @@ PYTHON_CHANNEL=$(rapids-download-conda-from-s3 python)
 rapids-mamba-retry install \
   --channel "${CPP_CHANNEL}" \
   --channel "${PYTHON_CHANNEL}" \
-  cuspatial libcuspatial
+  cuspatial libcuspatial cuproj
 
 NBTEST="$(realpath "$(dirname "$0")/utils/nbtest.sh")"
 pushd notebooks
