@@ -30,7 +30,7 @@ jobs:
       branch: ${{ inputs.branch }}
       date: ${{ inputs.date }}
       sha: ${{ inputs.sha }}
-  wheel-tests:
+  wheel-tests-cuspatial:
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/wheels-test.yaml@branch-23.08
     with:
@@ -38,4 +38,13 @@ jobs:
       branch: ${{ inputs.branch }}
       date: ${{ inputs.date }}
       sha: ${{ inputs.sha }}
-      script: ci/test_wheel.sh
+      script: ci/test_wheel_cuspatial.sh
+  wheel-tests-cuproj:
+    secrets: inherit
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-test.yaml@branch-23.08
+    with:
+      build_type: nightly
+      branch: ${{ inputs.branch }}
+      date: ${{ inputs.date }}
+      sha: ${{ inputs.sha }}
+      script: ci/test_wheel_cuproj.sh
