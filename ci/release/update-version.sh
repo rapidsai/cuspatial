@@ -79,3 +79,7 @@ sed_runner "s/^version = .*/version = \"${NEXT_FULL_TAG_PEP440}\"/g" python/cusp
 
 # Dependency versions in dependencies.yaml
 sed_runner "/-cu[0-9]\{2\}==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}.*/g" dependencies.yaml
+
+# .devcontainer files
+sed_runner "s/ARG RAPIDS=${CURRENT_SHORT_TAG}/ARG RAPIDS=${NEXT_SHORT_TAG}/g" .devcontainer/Dockerfile
+find .devcontainer/ -type f -name devcontainer.json -exec sed -i "s/${CURRENT_SHORT_TAG}/${NEXT_SHORT_TAG}/g" {} \;
