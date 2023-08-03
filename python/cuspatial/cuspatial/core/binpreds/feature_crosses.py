@@ -54,7 +54,7 @@ class LineStringLineStringCrosses(IntersectsPredicateBase):
 
 class LineStringPolygonCrosses(BinPred):
     def _preprocess(self, lhs, rhs):
-        intersects = _basic_intersects_count(rhs, lhs) > 1
+        intersects = _basic_intersects_count(rhs, lhs) > 0
         touches = rhs.touches(lhs)
         contains = rhs.contains(lhs)
         return ~touches & intersects & ~contains
