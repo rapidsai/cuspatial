@@ -100,3 +100,9 @@ sed_runner "s/cuspatial=[0-9]*\.[0-9]*/cuspatial=${NEXT_SHORT_TAG}/g" docs/sourc
 sed_runner "s/rapids-[0-9]*\.[0-9]*/rapids-${NEXT_SHORT_TAG}/g" docs/cuproj/source/user_guide/cuproj_api_examples.ipynb
 sed_runner "s/cuproj=[0-9]*\.[0-9]*/cuproj-${NEXT_SHORT_TAG}/g" docs/cuproj/source/user_guide/cuproj_api_examples.ipynb
 sed_runner "s/cuspatial=[0-9]*\.[0-9]*/cuspatial=${NEXT_SHORT_TAG}/g" docs/cuproj/source/user_guide/cuproj_api_examples.ipynb
+
+# Versions in README.md
+sed_runner "s/cuspatial:[0-9]\+.[0-9]/cuspatial:${NEXT_SHORT_TAG}/g" README.md
+sed_runner "s/cuspatial=[0-9]\+.[0-9]/cuspatial=${NEXT_SHORT_TAG}/g" README.md
+sed_runner "s/notebooks:[0-9]\+.[0-9]/notebooks:${NEXT_SHORT_TAG}/g" README.md
+
