@@ -6,7 +6,6 @@ from cuproj._lib.transform import Transformer as _Transformer
 class Transformer:
     """A transformer object to transform coordinates from one CRS to another.
 
-
     Notes
     -----
     Currently only the EPSG authority is supported.
@@ -83,9 +82,11 @@ class Transformer:
     def transform(self, x, y, direction="FORWARD"):
         """Transform coordinates from one CRS to another.
 
-        If the data is already on the device, and the input implements
-        __cuda_array_interface__, the data will be used directly. If the data
-        is on the host, it will be copied to the device.
+        If the input data is already in device memory, and the input implements
+        `__cuda_array_interface__
+        <https://numba.readthedocs.io/en/stable/cuda/cuda_array_interface.html>`_
+        , the data will be used directly. If the data is in host memory, it
+        will be copied to the device.
 
         Parameters
         ----------

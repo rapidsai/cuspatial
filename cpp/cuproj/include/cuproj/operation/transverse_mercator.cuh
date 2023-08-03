@@ -79,6 +79,11 @@
 
 namespace cuproj {
 
+/**
+ * @addtogroup operations
+ * @{
+ */
+
 namespace detail {
 
 /**
@@ -519,5 +524,9 @@ class transverse_mercator : operation<Coordinate> {
  private:
   projection_parameters<T> params_{};
 };
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuproj

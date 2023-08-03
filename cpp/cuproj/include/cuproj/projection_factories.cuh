@@ -24,6 +24,11 @@
 
 namespace cuproj {
 
+/**
+ * @addtogroup projection_factories
+ * @{
+ */
+
 namespace detail {
 
 /**
@@ -188,5 +193,9 @@ cuproj::projection<Coordinate>* make_projection(int src_epsg, int const& dst_eps
 
   return make_projection<Coordinate>(detail::epsg_code(src_epsg), detail::epsg_code(dst_epsg));
 }
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuproj

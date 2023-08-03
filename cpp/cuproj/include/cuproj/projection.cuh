@@ -33,6 +33,12 @@
 namespace cuproj {
 
 /**
+ * @addtogroup cuproj_types
+ * @{
+ * @file
+ */
+
+/**
  * @brief A projection transforms coordinates between coordinate reference systems
  *
  * Projections are constructed from a list of operations to be applied to coordinates.
@@ -113,5 +119,9 @@ class projection {
   projection_parameters<T> params_;
   direction constructed_direction_{direction::FORWARD};
 };
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuproj

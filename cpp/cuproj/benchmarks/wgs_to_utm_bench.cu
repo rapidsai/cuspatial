@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <cuproj/projection_factories.hpp>
+#include <cuproj/projection_factories.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 
 #include <cuproj_test/convert_coordinates.hpp>
@@ -64,11 +64,11 @@ static void cuproj_wgs_to_utm_benchmark(benchmark::State& state)
 
   for (auto _ : state) {
     cuda_event_timer raii(state, true);
-    proj.transform(input.begin(),
-                   input.end(),
-                   output.begin(),
-                   cuproj::direction::FORWARD,
-                   rmm::cuda_stream_default);
+    proj->transform(input.begin(),
+                    input.end(),
+                    output.begin(),
+                    cuproj::direction::FORWARD,
+                    rmm::cuda_stream_default);
   }
 
   state.SetItemsProcessed(num_points * state.iterations());

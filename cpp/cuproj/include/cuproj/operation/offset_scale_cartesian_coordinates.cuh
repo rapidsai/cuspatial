@@ -28,6 +28,11 @@
 namespace cuproj {
 
 /**
+ * @addtogroup operations
+ * @{
+ */
+
+/**
  * @brief Given Cartesian coordinates (x, y) in meters, offset and scale them
  * to the projection's origin and scale (ellipsoidal semi-major axis).
  *
@@ -93,5 +98,9 @@ class offset_scale_cartesian_coordinates : operation<Coordinate> {
   T x0_;  // projection origin x
   T y0_;  // projection origin y
 };
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuproj
