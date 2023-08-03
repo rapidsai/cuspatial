@@ -23,6 +23,10 @@ CompileFlags:
     - "-Wno-unknown-cuda-version"
     # Allow variadic CUDA functions
     - "-Xclang=-fcuda-allow-variadic-functions"
+Diagnostics:
+  Suppress:
+    - "variadic_device_fn"
+    - "attributes_not_allowed"
 
 ---
 
