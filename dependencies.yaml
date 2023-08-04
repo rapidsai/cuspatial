@@ -158,7 +158,7 @@ dependencies:
           - cxx-compiler
           - gmock>=1.13.0
           - gtest>=1.13.0
-          - librmm==23.8.*
+          - librmm==23.10.*
           - proj
           - sqlite
     specific:
@@ -266,7 +266,7 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.0"}
             packages:
-              - rmm-cu12==23.8.*
+              - rmm-cu12==23.10.*
           - matrix: {cuda: "11.8"}
             packages:
               - *rmm_cu11
@@ -419,10 +419,10 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.0"}
             packages:
-              - rmm-cu12==23.8.*
+              - rmm-cu12==23.10.*
           - matrix: {cuda: "11.8"}
             packages: &run_python_cuproj_packages_cu11
-              - rmm-cu11==23.8.*
+              - rmm-cu11==23.10.*
           - {matrix: {cuda: "11.5"}, packages: *run_python_cuproj_packages_cu11}
           - {matrix: {cuda: "11.4"}, packages: *run_python_cuproj_packages_cu11}
           - {matrix: {cuda: "11.2"}, packages: *run_python_cuproj_packages_cu11}
@@ -442,4 +442,4 @@ dependencies:
           - pytest-cov
           - pytest-xdist
           - geopandas>=0.11.0
-          - cuspatial==23.8.*
+          - cuspatial==23.10.*
