@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cuproj/detail/utility/cuda.hpp>
 #include <cuproj/ellipsoid.hpp>
 #include <cuproj/operation/operation.cuh>
 #include <cuproj/projection_parameters.hpp>
@@ -25,6 +26,11 @@
 #include <algorithm>
 
 namespace cuproj {
+
+/**
+ * @addtogroup operations
+ * @{
+ */
 
 /**
  * @brief Given Cartesian coordinates (x, y) in meters, offset and scale them
@@ -42,7 +48,7 @@ class offset_scale_cartesian_coordinates : operation<Coordinate> {
    * @param params projection parameters, including the ellipsoid semi-major axis
    * and the projection origin
    */
-  __host__ __device__ offset_scale_cartesian_coordinates(projection_parameters<T> const& params)
+  CUPROJ_HOST_DEVICE offset_scale_cartesian_coordinates(projection_parameters<T> const& params)
     : a_(params.ellipsoid_.a), ra_(T{1.0} / a_), x0_(params.x0), y0_(params.y0)
   {
   }
@@ -54,7 +60,7 @@ class offset_scale_cartesian_coordinates : operation<Coordinate> {
    * @param dir the direction of the operation, either forward or inverse
    * @return the offset and scaled coordinate
    */
-  __host__ __device__ Coordinate operator()(Coordinate const& coord, direction dir) const
+  CUPROJ_HOST_DEVICE Coordinate operator()(Coordinate const& coord, direction dir) const
   {
     if (dir == direction::FORWARD)
       return forward(coord);
@@ -70,7 +76,7 @@ class offset_scale_cartesian_coordinates : operation<Coordinate> {
    * @param coord the coordinate to offset and scale
    * @return the offset and scaled coordinate
    */
-  __host__ __device__ Coordinate forward(Coordinate const& coord) const
+  CUPROJ_HOST_DEVICE Coordinate forward(Coordinate const& coord) const
   {
     return coord * a_ + Coordinate{x0_, y0_};
   };
@@ -82,7 +88,7 @@ class offset_scale_cartesian_coordinates : operation<Coordinate> {
    * @param coord the coordinate to offset and scale
    * @return the offset and scaled coordinate
    */
-  __host__ __device__ Coordinate inverse(Coordinate const& coord) const
+  CUPROJ_HOST_DEVICE Coordinate inverse(Coordinate const& coord) const
   {
     return (coord - Coordinate{x0_, y0_}) * ra_;
   };
@@ -92,5 +98,9 @@ class offset_scale_cartesian_coordinates : operation<Coordinate> {
   T x0_;  // projection origin x
   T y0_;  // projection origin y
 };
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuproj

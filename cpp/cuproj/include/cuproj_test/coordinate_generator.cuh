@@ -48,6 +48,7 @@ struct grid_generator {
   }
 };
 
+// Create a Vector containing a grid of coordinates between the min and max corners
 template <typename Coord, typename Vector>
 auto make_grid_array(Coord const& min_corner,
                      Coord const& max_corner,

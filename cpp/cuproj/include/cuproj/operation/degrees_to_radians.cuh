@@ -17,9 +17,15 @@
 #pragma once
 
 #include <cuproj/constants.hpp>
+#include <cuproj/detail/utility/cuda.hpp>
 #include <cuproj/operation/operation.cuh>
 
 namespace cuproj {
+
+/**
+ * @addtogroup operations
+ * @{
+ */
 
 /**
  * @brief Converts degrees to radians and vice versa
@@ -37,7 +43,7 @@ class degrees_to_radians : operation<Coordinate> {
    * converts radians to degrees
    * @return The converted coordinate
    */
-  __host__ __device__ Coordinate operator()(Coordinate const& coord, direction dir) const
+  CUPROJ_HOST_DEVICE Coordinate operator()(Coordinate const& coord, direction dir) const
   {
     if (dir == direction::FORWARD)
       return forward(coord);
@@ -52,7 +58,7 @@ class degrees_to_radians : operation<Coordinate> {
    * @param coord The coordinate to convert (lat, lon) in degrees
    * @return The converted coordinate (lat, lon) in radians
    */
-  __host__ __device__ Coordinate forward(Coordinate const& coord) const
+  CUPROJ_HOST_DEVICE Coordinate forward(Coordinate const& coord) const
   {
     using T = typename Coordinate::value_type;
     return Coordinate{coord.x * DEG_TO_RAD<T>, coord.y * DEG_TO_RAD<T>};
@@ -64,11 +70,15 @@ class degrees_to_radians : operation<Coordinate> {
    * @param coord The coordinate to convert (lat, lon) in radians
    * @return The converted coordinate (lat, lon) in degrees
    */
-  __host__ __device__ Coordinate inverse(Coordinate const& coord) const
+  CUPROJ_HOST_DEVICE Coordinate inverse(Coordinate const& coord) const
   {
     using T = typename Coordinate::value_type;
     return Coordinate{coord.x * RAD_TO_DEG<T>, coord.y * RAD_TO_DEG<T>};
   }
 };
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuproj

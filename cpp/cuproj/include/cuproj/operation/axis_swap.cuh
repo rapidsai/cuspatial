@@ -16,9 +16,15 @@
 
 #pragma once
 
+#include <cuproj/detail/utility/cuda.hpp>
 #include <cuproj/operation/operation.cuh>
 
 namespace cuproj {
+
+/**
+ * @addtogroup operations
+ * @{
+ */
 
 /**
  * @brief Axis swap operation: swap x and y coordinates
@@ -34,10 +40,14 @@ struct axis_swap : operation<Coordinate> {
    * @param dir (unused) the direction of the operation
    * @return the swapped coordinate
    */
-  __host__ __device__ Coordinate operator()(Coordinate const& coord, direction) const
+  CUPROJ_HOST_DEVICE Coordinate operator()(Coordinate const& coord, direction) const
   {
     return Coordinate{coord.y, coord.x};
   }
 };
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuproj
