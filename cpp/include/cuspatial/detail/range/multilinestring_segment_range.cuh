@@ -200,7 +200,7 @@ class multilinestring_segment_range {
   CUSPATIAL_HOST_DEVICE auto multigeometry_offset_begin()
   {
     return thrust::make_permutation_iterator(_per_linestring_offset_begin(),
-                                             _parent.geometry_offsets_begin());
+                                             _parent.geometry_offset_begin());
   }
 
   /// Returns end iterator to the range of the starting segment index per multilinestring
