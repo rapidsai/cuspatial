@@ -21,6 +21,7 @@ from shapely.geometry import (
     Point,
     Polygon,
 )
+from numba import cuda
 
 import cudf
 
@@ -199,14 +200,44 @@ def linestring_generator_device():
 
     return generator
 
+# Numba kernel to generate a closed ring for each polygon
+@cuda.jit
+def generate_polygon_coordinates(coordinate_array, num_vertices):
+    i = cuda.grid(1)
+    if i >= coordinate_array.size:
+        return
+
+    point_idx = i // 2
+    geometry_idx = point_idx // (num_vertices + 1)
+
+    # The last index should wrap around to 0
+    intra_point_idx = point_idx % (num_vertices + 1)
+
+    centroid = (geometry_idx, 0)
+    radius = 1
+    angle = 2 * np.pi * intra_point_idx / num_vertices
+
+    if i % 2 == 0:
+        coordinate_array[i] = centroid[0] + radius * np.cos(angle)
+    else:
+        coordinate_array[i] = centroid[1] + radius * np.sin(angle)
+
+
 @pytest.fixture()
 def polygon_generator_device():
-    def generator(n, num_sides):
+    def generator(n, num_vertices):
         geometry_offsets = cp.arange(n+1)
         part_offsets = cp.arange(n+1)
-        ring_offsets = cp.arange((n+1) * num_sides, step=num_sides)
-        num_points = ring_offsets[-1].get()
-        coords = cp.random.random(num_points*2, dtype="f8")
+
+        # Each polygon has a closed ring, so we need to add an extra point
+        ring_offsets = cp.arange(
+            (n+1) * (num_vertices + 1),
+            step=(num_vertices + 1)
+        )
+        num_points = int(ring_offsets[-1].get())
+
+        coords = cp.ndarray((num_points * 2,), dtype="f8")
+        generate_polygon_coordinates.forall(len(coords))(coords, num_vertices)
         return cuspatial.GeoSeries.from_polygons_xy(
             coords, ring_offsets, part_offsets, geometry_offsets
         )
