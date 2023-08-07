@@ -83,8 +83,8 @@ dependencies:
           - cxx-compiler
           - gmock>=1.13.0
           - gtest>=1.13.0
-          - libcudf==23.8.*
-          - librmm==23.8.*
+          - libcudf==23.10.*
+          - librmm==23.10.*
           - proj
           - sqlite
     specific:
@@ -126,8 +126,8 @@ dependencies:
           - setuptools
       - output_types: conda
         packages: &build_python_packages_conda
-          - &cudf_conda cudf==23.8.*
-          - &rmm_conda rmm==23.8.*
+          - &cudf_conda cudf==23.10.*
+          - &rmm_conda rmm==23.10.*
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -150,12 +150,12 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.0"}
             packages:
-              - cudf-cu12==23.8.*
-              - rmm-cu12==23.8.*
+              - cudf-cu12==23.10.*
+              - rmm-cu12==23.10.*
           - matrix: {cuda: "11.8"}
             packages: &build_python_packages_cu11
-              - &cudf_cu11 cudf-cu11==23.8.*
-              - &rmm_cu11 rmm-cu11==23.8.*
+              - &cudf_cu11 cudf-cu11==23.10.*
+              - &rmm_cu11 rmm-cu11==23.10.*
           - {matrix: {cuda: "11.5"}, packages: *build_python_packages_cu11}
           - {matrix: {cuda: "11.4"}, packages: *build_python_packages_cu11}
           - {matrix: {cuda: "11.2"}, packages: *build_python_packages_cu11}
@@ -226,17 +226,17 @@ dependencies:
           - scikit-image
       - output_types: conda
         packages:
-          - &cuml_conda cuml==23.8.*
+          - &cuml_conda cuml==23.10.*
     specific:
       - output_types: [requirements, pyproject]
         matrices:
           - {matrix: null, packages: [*cuml_conda]}
           - matrix: {cuda: "12.0"}
             packages:
-              - cuml-cu12==23.8.*
+              - cuml-cu12==23.10.*
           - matrix: {cuda: "11.8"}
             packages: &notebooks_packages_cu11
-              - &cuml_cu11 cuml-cu11==23.8.*
+              - &cuml_cu11 cuml-cu11==23.10.*
           - {matrix: {cuda: "11.5"}, packages: *notebooks_packages_cu11}
           - {matrix: {cuda: "11.4"}, packages: *notebooks_packages_cu11}
           - {matrix: {cuda: "11.2"}, packages: *notebooks_packages_cu11}
@@ -274,12 +274,12 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.0"}
             packages:
-              - cudf-cu12==23.8.*
-              - rmm-cu12==23.8.*
+              - cudf-cu12==23.10.*
+              - rmm-cu12==23.10.*
           - matrix: {cuda: "11.8"}
             packages: &run_python_packages_cu11
-              - cudf-cu11==23.8.*
-              - rmm-cu11==23.8.*
+              - cudf-cu11==23.10.*
+              - rmm-cu11==23.10.*
           - {matrix: {cuda: "11.5"}, packages: *run_python_packages_cu11}
           - {matrix: {cuda: "11.4"}, packages: *run_python_packages_cu11}
           - {matrix: {cuda: "11.2"}, packages: *run_python_packages_cu11}

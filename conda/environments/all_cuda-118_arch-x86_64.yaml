@@ -10,8 +10,8 @@ dependencies:
 - cmake>=3.26.4
 - cuda-version=11.8
 - cudatoolkit
-- cudf==23.8.*
-- cuml==23.8.*
+- cudf==23.10.*
+- cuml==23.10.*
 - cxx-compiler
 - cython>=0.29,<0.30
 - doxygen
@@ -21,8 +21,8 @@ dependencies:
 - gtest>=1.13.0
 - ipython
 - ipywidgets
-- libcudf==23.8.*
-- librmm==23.8.*
+- libcudf==23.10.*
+- librmm==23.10.*
 - myst-parser
 - nbsphinx
 - ninja
@@ -37,7 +37,7 @@ dependencies:
 - pytest-cov
 - pytest-xdist
 - python>=3.9,<3.11
-- rmm==23.8.*
+- rmm==23.10.*
 - scikit-build>=0.13.1
 - scikit-image
 - setuptools
