@@ -24,25 +24,42 @@ rapids-mamba-retry install \
   --channel "${CPP_CHANNEL}" \
   --channel "${PYTHON_CHANNEL}" \
   libcuspatial \
-  cuspatial
+  cuspatial \
+  cuproj
 
 export RAPIDS_VERSION_NUMBER="23.10"
 export RAPIDS_DOCS_DIR="$(mktemp -d)"
 
-rapids-logger "Build CPP docs"
+rapids-logger "Build cuSpatial CPP docs"
 pushd cpp/doxygen
 doxygen Doxyfile
 mkdir -p "${RAPIDS_DOCS_DIR}/libcuspatial/html"
 mv html/* "${RAPIDS_DOCS_DIR}/libcuspatial/html"
 popd
 
-rapids-logger "Build Python docs"
+rapids-logger "Build cuProj CPP docs"
+pushd cpp/cuproj/doxygen
+doxygen Doxyfile
+mkdir -p "${RAPIDS_DOCS_DIR}/libcuproj/html"
+mv html/* "${RAPIDS_DOCS_DIR}/libcuproj/html"
+popd
+
+rapids-logger "Build cuSpatial Python docs"
 pushd docs
 sphinx-build -b dirhtml source _html -W
 sphinx-build -b text source _text -W
 mkdir -p "${RAPIDS_DOCS_DIR}/cuspatial/"{html,txt}
 mv _html/* "${RAPIDS_DOCS_DIR}/cuspatial/html"
 mv _text/* "${RAPIDS_DOCS_DIR}/cuspatial/txt"
+popd
+
+rapids-logger "Build cuProj Python docs"
+pushd docs/cuproj
+sphinx-build -b dirhtml source _html -W
+sphinx-build -b text source _text -W
+mkdir -p "${RAPIDS_DOCS_DIR}/cuproj/"{html,txt}
+mv _html/* "${RAPIDS_DOCS_DIR}/cuproj/html"
+mv _text/* "${RAPIDS_DOCS_DIR}/cuproj/txt"
 popd
 
 rapids-upload-docs

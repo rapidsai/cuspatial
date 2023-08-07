@@ -69,6 +69,38 @@ struct PointInPolygonTest : public BaseFixture {
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected, got);
     EXPECT_EQ(ret, got.end());
   }
+
+  void run_spherical_test(std::initializer_list<vec_3d<T>> points,
+                          std::initializer_list<int> polygon_offsets,
+                          std::initializer_list<int> ring_offsets,
+                          std::initializer_list<vec_3d<T>> polygon_points,
+                          std::initializer_list<int32_t> expected)
+  {
+    auto d_points          = make_device_vector<vec_3d<T>>(points);
+    auto d_polygon_offsets = make_device_vector<int>(polygon_offsets);
+    auto d_ring_offsets    = make_device_vector<int>(ring_offsets);
+    auto d_polygon_points  = make_device_vector<vec_3d<T>>(polygon_points);
+
+    auto mpoints = make_multipoint_range(
+      d_points.size(), thrust::make_counting_iterator(0), d_points.size(), d_points.begin());
+    auto mpolys = make_multipolygon_range(polygon_offsets.size() - 1,
+                                          thrust::make_counting_iterator(0),
+                                          d_polygon_offsets.size() - 1,
+                                          d_polygon_offsets.begin(),
+                                          d_ring_offsets.size() - 1,
+                                          d_ring_offsets.begin(),
+                                          d_polygon_points.size(),
+                                          d_polygon_points.begin());
+
+    auto d_expected = make_device_vector(expected);
+
+    auto got = rmm::device_uvector<int32_t>(points.size(), stream());
+
+    auto ret = point_in_polygon(mpoints, mpolys, got.begin(), stream());
+
+    CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_expected, got);
+    EXPECT_EQ(ret, got.end());
+  }
 };
 
 TYPED_TEST_CASE(PointInPolygonTest, FloatingPointTypes);
@@ -88,6 +120,24 @@ TYPED_TEST(PointInPolygonTest, OnePolygonOneRing)
                      {0, 5},
                      {{-1.0, -1.0}, {1.0, -1.0}, {1.0, 1.0}, {-1.0, 1.0}, {-1.0, -1.0}},
                      {false, false, false, false, true, true, true, true});
+}
+
+TYPED_TEST(PointInPolygonTest, OnePolygonOneRingSpherical)
+{
+  CUSPATIAL_RUN_TEST(this->run_spherical_test,
+                     {{-2503.357, -4660.203, 3551.245},
+                      {-2503.357, -4660.203, 3551.245},
+                      {-2686.757, -4312.736, 3842.237},
+                      {-2684.959, -4312.568, 3843.673},
+                      {519.181, -5283.34, 3523.313}},
+                     {0, 1},
+                     {0, 5},
+                     {{-2681.925, -4311.158, 3847.346},   // San Jose
+                      {-2695.156, -4299.131, 3851.527},   // MTV
+                      {-2691.386, -4313.414, 3838.26},    // Los Gatos
+                      {-2673.88, -4319.257, 3843.883},    // East San Jose
+                      {-2681.925, -4311.158, 3847.346}},  // San Jose
+                     {false, false, true, true, false});
 }
 
 // cuspatial expects closed rings, however algorithms may work OK with unclosed rings
@@ -110,6 +160,23 @@ TYPED_TEST(PointInPolygonTest, OnePolygonOneRingUnclosed)
                      {0, 4},
                      {{-1.0, -1.0}, {1.0, -1.0}, {1.0, 0.0}, {1.0, 1.0}},
                      {false, false, false, false, false, true, true, false});
+}
+
+TYPED_TEST(PointInPolygonTest, OnePolygonOneRingUnclosedSpherical)
+{
+  CUSPATIAL_RUN_TEST(this->run_spherical_test,
+                     {{-2503.357, -4660.203, 3551.245},
+                      {-2503.357, -4660.203, 3551.245},
+                      {-2686.757, -4312.736, 3842.237},
+                      {-2684.959, -4312.568, 3843.673},
+                      {519.181, -5283.34, 3523.313}},
+                     {0, 1},
+                     {0, 4},
+                     {{-2681.925, -4311.158, 3847.346},  // San Jose
+                      {-2695.156, -4299.131, 3851.527},  // MTV
+                      {-2691.386, -4313.414, 3838.26},   // Los Gatos
+                      {-2673.88, -4319.257, 3843.883}},  // East San Jose
+                     {false, false, true, true, false});
 }
 
 TYPED_TEST(PointInPolygonTest, TwoPolygonsOneRingEach)
@@ -141,6 +208,29 @@ TYPED_TEST(PointInPolygonTest, TwoPolygonsOneRingEach)
                      {0b00, 0b00, 0b00, 0b00, 0b11, 0b11, 0b11, 0b11});
 }
 
+TYPED_TEST(PointInPolygonTest, TwoPolygonsOneRingEachSpherical)
+{
+  CUSPATIAL_RUN_TEST(this->run_spherical_test,
+                     {{-2503.357, -4660.203, 3551.245},
+                      {-2503.357, -4660.203, 3551.245},
+                      {-2686.757, -4312.736, 3842.237},
+                      {-2684.959, -4312.568, 3843.673},
+                      {519.181, -5283.34, 3523.313}},
+                     {0, 1, 2},
+                     {0, 5, 10},
+                     {{-2681.925, -4311.158, 3847.346},  // San Jose
+                      {-2695.156, -4299.131, 3851.527},  // MTV
+                      {-2691.386, -4313.414, 3838.26},   // Los Gatos
+                      {-2673.88, -4319.257, 3843.883},   // East San Jose
+                      {-2681.925, -4311.158, 3847.346},  // San Jose
+                      {-2691.386, -4313.414, 3838.26},   // Los Gatos
+                      {-2673.88, -4319.257, 3843.883},   // East San Jose
+                      {-2681.925, -4311.158, 3847.346},  // San Jose
+                      {-2695.156, -4299.131, 3851.527},  // MTV
+                      {-2691.386, -4313.414, 3838.26}},  // Los Gatos
+                     {0b00, 0b00, 0b11, 0b11, 0b00});
+}
+
 TYPED_TEST(PointInPolygonTest, OnePolygonTwoRings)
 {
   CUSPATIAL_RUN_TEST(this->run_test,
@@ -159,6 +249,31 @@ TYPED_TEST(PointInPolygonTest, OnePolygonTwoRings)
                       {-0.5, -0.5}},
 
                      {0b0, 0b0, 0b1, 0b0, 0b1});
+}
+
+TYPED_TEST(PointInPolygonTest, OnePolygonTwoRingsSpherical)
+{
+  CUSPATIAL_RUN_TEST(this->run_spherical_test,
+                     {{-2503.357, -4660.203, 3551.245},
+                      {-2503.357, -4660.203, 3551.245},
+                      {-2686.757, -4312.736, 3842.237},
+                      {-2684.959, -4312.568, 3843.673},
+                      {519.181, -5283.34, 3523.313}},
+                     {0, 2},
+                     {0, 5, 10},
+                     {
+                       {-2867.9, -3750.684, 4273.764},
+                       {-3346.365, -4376.427, 3203.156},
+                       {-2010.426, -5129.275, 3203.156},
+                       {-1722.974, -4395.889, 4273.764},
+                       {-2867.9, -3750.684, 4273.764},
+                       {-2681.925, -4311.158, 3847.346},  // San Jose
+                       {-2673.88, -4319.257, 3843.883},   // East San Jose
+                       {-2691.386, -4313.414, 3838.26},   // Los Gatos
+                       {-2695.156, -4299.131, 3851.527},  // MTV
+                       {-2681.925, -4311.158, 3847.346},  // San Jose
+                     },
+                     {0b1, 0b1, 0b0, 0b0, 0b0});
 }
 
 TYPED_TEST(PointInPolygonTest, EdgesOfSquare)
@@ -197,6 +312,23 @@ TYPED_TEST(PointInPolygonTest, CornersOfSquare)
      {0.0, -1.0},  {0.0, 0.0},  {0.0, 1.0},  {1.0, 1.0},  {1.0, 0.0},   {0.0, 0.0}},
 
     {0b0000});
+}
+
+TYPED_TEST(PointInPolygonTest, OnePolygonOneRingDifferentHemisphereSpherical)
+{
+  CUSPATIAL_RUN_TEST(this->run_spherical_test,
+                     {{0, 1.0, 0},
+                      {0.5773502, -0.5773502, -0.5773502},
+                      {-0.5773502, -0.5773502, -0.5773502},
+                      {-0.5773502, -0.5773502, 0.5773502}},
+                     {0, 1},
+                     {0, 5},
+                     {{-0.5773502, 0.5773502, 0.5773502},
+                      {0.5773502, 0.5773502, 0.5773502},
+                      {0.5773502, 0.5773502, -0.5773502},
+                      {-0.5773502, 0.5773502, -0.5773502},
+                      {-0.5773502, 0.5773502, 0.5773502}},
+                     {true, false, false, false});
 }
 
 struct OffsetIteratorFunctor {

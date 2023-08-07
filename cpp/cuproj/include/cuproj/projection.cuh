@@ -27,9 +27,16 @@
 #include <thrust/device_vector.h>
 #include <thrust/transform.h>
 
+#include <iterator>
 #include <type_traits>
 
 namespace cuproj {
+
+/**
+ * @addtogroup cuproj_types
+ * @{
+ * @file
+ */
 
 /**
  * @brief A projection transforms coordinates between coordinate reference systems
@@ -50,9 +57,9 @@ class projection {
    * @param params the projection parameters
    * @param dir the default order to execute the operations, FORWARD or INVERSE
    */
-  __host__ projection(std::vector<operation_type> const& operations,
-                      projection_parameters<T> const& params,
-                      direction dir = direction::FORWARD)
+  projection(std::vector<operation_type> const& operations,
+             projection_parameters<T> const& params,
+             direction dir = direction::FORWARD)
     : params_(params), constructed_direction_(dir)
   {
     setup(operations);
@@ -69,15 +76,13 @@ class projection {
    * run in the reverse order of the direction specified in the constructor.
    * @param stream the CUDA stream on which to run the transform
    */
-  template <class CoordIter>
-  void transform(CoordIter first,
-                 CoordIter last,
-                 CoordIter result,
+  template <class InputCoordIter, class OutputCoordIter>
+  void transform(InputCoordIter first,
+                 InputCoordIter last,
+                 OutputCoordIter result,
                  direction dir,
                  rmm::cuda_stream_view stream = rmm::cuda_stream_default) const
   {
-    static_assert(std::is_same_v<typename CoordIter::value_type, Coordinate>,
-                  "Coordinate type must match iterator value type");
     dir = (constructed_direction_ == direction::FORWARD) ? dir : reverse(dir);
 
     if (dir == direction::FORWARD) {
@@ -114,5 +119,9 @@ class projection {
   projection_parameters<T> params_;
   direction constructed_direction_{direction::FORWARD};
 };
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuproj
