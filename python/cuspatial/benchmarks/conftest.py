@@ -7,12 +7,13 @@ The cuspatial fixture is a single randomly generated GeoDataframe, containing
 column.
 """
 
-import pytest
 import cupy as cp
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+import pytest
 import pytest_cases
+from numba import cuda
 from shapely.geometry import (
     LineString,
     MultiLineString,
@@ -21,7 +22,6 @@ from shapely.geometry import (
     Point,
     Polygon,
 )
-from numba import cuda
 
 import cudf
 
@@ -179,30 +179,35 @@ def shapefile(tmp_path, gpdf_100):
     gpdf_100.to_file(p)
     return p
 
+
 @pytest.fixture()
 def point_generator_device():
     def generator(n):
-        coords = cp.random.random(n*2, dtype="f8")
+        coords = cp.random.random(n * 2, dtype="f8")
         return cuspatial.GeoSeries.from_points_xy(coords)
 
     return generator
 
+
 @pytest.fixture()
 def linestring_generator_device():
     def generator(n, segment_per_linestring):
-        geometry_offsets = cp.arange(n+1)
-        part_offsets = cp.arange(0, (n+1) * segment_per_linestring, segment_per_linestring)
+        geometry_offsets = cp.arange(n + 1)
+        part_offsets = cp.arange(
+            0, (n + 1) * segment_per_linestring, segment_per_linestring
+        )
         num_points = part_offsets[-1].get()
-        coords = cp.random.random(num_points*2, dtype="f8")
+        coords = cp.random.random(num_points * 2, dtype="f8")
         return cuspatial.GeoSeries.from_linestrings_xy(
             coords, part_offsets, geometry_offsets
         )
 
     return generator
 
+
 # Numba kernel to generate a closed ring for each polygon
 @cuda.jit
-def generate_polygon_coordinates(coordinate_array, num_vertices):
+def generate_polygon_coordinates(coordinate_array, centroids, num_vertices):
     i = cuda.grid(1)
     if i >= coordinate_array.size:
         return
@@ -213,7 +218,7 @@ def generate_polygon_coordinates(coordinate_array, num_vertices):
     # The last index should wrap around to 0
     intra_point_idx = point_idx % (num_vertices + 1)
 
-    centroid = (geometry_idx, 0)
+    centroid = centroids[geometry_idx]
     radius = 1
     angle = 2 * np.pi * intra_point_idx / num_vertices
 
@@ -226,18 +231,20 @@ def generate_polygon_coordinates(coordinate_array, num_vertices):
 @pytest.fixture()
 def polygon_generator_device():
     def generator(n, num_vertices):
-        geometry_offsets = cp.arange(n+1)
-        part_offsets = cp.arange(n+1)
+        geometry_offsets = cp.arange(n + 1)
+        part_offsets = cp.arange(n + 1)
 
         # Each polygon has a closed ring, so we need to add an extra point
         ring_offsets = cp.arange(
-            (n+1) * (num_vertices + 1),
-            step=(num_vertices + 1)
+            (n + 1) * (num_vertices + 1), step=(num_vertices + 1)
         )
         num_points = int(ring_offsets[-1].get())
 
+        centroids = cp.random.random((n, 2))
         coords = cp.ndarray((num_points * 2,), dtype="f8")
-        generate_polygon_coordinates.forall(len(coords))(coords, num_vertices)
+        generate_polygon_coordinates.forall(len(coords))(
+            coords, centroids, num_vertices
+        )
         return cuspatial.GeoSeries.from_polygons_xy(
             coords, ring_offsets, part_offsets, geometry_offsets
         )
