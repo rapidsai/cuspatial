@@ -189,22 +189,6 @@ def point_generator_device():
     return generator
 
 
-@pytest.fixture()
-def linestring_generator_device():
-    def generator(n, segment_per_linestring):
-        geometry_offsets = cp.arange(n + 1)
-        part_offsets = cp.arange(
-            0, (n + 1) * segment_per_linestring, segment_per_linestring
-        )
-        num_points = part_offsets[-1].get()
-        coords = cp.random.random(num_points * 2, dtype="f8")
-        return cuspatial.GeoSeries.from_linestrings_xy(
-            coords, part_offsets, geometry_offsets
-        )
-
-    return generator
-
-
 # Numba kernel to generate a closed ring for each polygon
 @cuda.jit
 def generate_polygon_coordinates(coordinate_array, centroids, num_vertices):
@@ -230,7 +214,7 @@ def generate_polygon_coordinates(coordinate_array, centroids, num_vertices):
 
 @pytest.fixture()
 def polygon_generator_device():
-    def generator(n, num_vertices):
+    def generator(n, num_vertices, all_concentric=False):
         geometry_offsets = cp.arange(n + 1)
         part_offsets = cp.arange(n + 1)
 
@@ -240,13 +224,37 @@ def polygon_generator_device():
         )
         num_points = int(ring_offsets[-1].get())
 
-        centroids = cp.random.random((n, 2))
+        if not all_concentric:
+            centroids = cp.random.random((n, 2))
+        else:
+            centroids = cp.zeros((n, 2))
         coords = cp.ndarray((num_points * 2,), dtype="f8")
         generate_polygon_coordinates.forall(len(coords))(
             coords, centroids, num_vertices
         )
         return cuspatial.GeoSeries.from_polygons_xy(
             coords, ring_offsets, part_offsets, geometry_offsets
+        )
+
+    return generator
+
+
+@pytest.fixture()
+def linestring_generator_device(polygon_generator_device):
+    """Reusing polygon_generator_device, treating the rings of the
+    generated polygons as linestrings. This is to gain locality to
+    the generated linestrings.
+    """
+
+    def generator(n, segment_per_linestring):
+        polygons = polygon_generator_device(
+            n, segment_per_linestring, all_concentric=False
+        )
+
+        return cuspatial.GeoSeries.from_linestrings_xy(
+            polygons.polygons.xy,
+            polygons.polygons.ring_offset,
+            polygons.polygons.geometry_offset,
         )
 
     return generator
