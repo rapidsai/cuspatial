@@ -4,14 +4,18 @@
 >
 > cuSpatial depends on [cuDF](https://github.com/rapidsai/cudf) and [RMM](https://github.com/rapidsai/rmm) from [RAPIDS](https://rapids.ai/).
 
+## cuProj - GPU-accelerated Coordinate Reference System (CRS) Transformations
+cuProj is a new RAPIDS library housed within the cuSpatial repo that provides GPU-accelerated transformations of coordinates between coordinate reference systems (CRS). cuProj is available as of release 23.10 with support for transformations of WGS84 coordinates to and from Universal Transverse Mercator (UTM) :globe_with_meridians:.
+
+To learn more about cuProj, see the [Python cuProj README](python/cuproj/README.md) or the [c++ libcuproj README](cpp/cuproj/README.md).
+
 ## Resources
 
 - [cuSpatial User's Guide](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html): Python API reference and guides
 - [cuSpatial Developer Documentation](https://docs.rapids.ai/api/cuspatial/stable/developer_guide/index.html): Understand cuSpatial's architecture
-- [Getting Started](https://rapids.ai/start.html): Instructions for installing cuSpatial
+- [Getting Started](https://docs.rapids.ai/install#selector): Installation options for cuSpatial
 - [cuSpatial Community](https://github.com/rapidsai/cuspatial/discussions): Get help, collaborate, and ask the team questions
 - [cuSpatial Issues](https://github.com/rapidsai/cuspatial/issues/new/choose): Request a feature/documentation or report a bug
-- [cuSpatial Roadmap](https://github.com/orgs/rapidsai/projects/41/views/5): Report issues or request features.
 
 ## Overview
 cuSpatial accelerates vector geospatial operations through GPU parallelization. As part of the RAPIDS libraries, cuSpatial is inherently connected to [cuDF](https://github.com/rapidsai/cudf), [cuML](https://github.com/rapidsai/cuml), and [cuGraph](https://github.com/rapidsai/cugraph), enabling GPU acceleration across entire workflows.
@@ -44,19 +48,16 @@ For additional examples, browse the complete [API documentation](https://docs.ra
 cuSpatial is constantly working on new features! Check out the [epics](https://github.com/orgs/rapidsai/projects/41/views/4) for a high-level view of our development, or the [roadmap](https://github.com/orgs/rapidsai/projects/41/views/5) for the details!
 
 ### Core Spatial Functions
-- Spatial relationship queries (DE-9IM) [Follow Development!](https://github.com/rapidsai/cuspatial/milestone/5)
-  - [Contains Properly](https://docs.rapids.ai/api/cuspatial/stable/api_docs/geopandas_compatibility.html#cuspatial.GeoSeries.contains_properly)
-  - [Linestring-Linestring Intersections](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#Linestring-Intersections)
-- Distance computations (ST_Distance) [Follow Development!](https://github.com/rapidsai/cuspatial/issues/767)
-  - [Pairwise Linestring Distance](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#cuspatial.pairwise_linestring_distance)
-  - [Pairwise Point-Linestring Distance](https://docs.rapids.ai/api/cuspatial/stable/api_docs/spatial.html#cuspatial.pairwise_point_linestring_distance)
+- [Spatial relationship queries (DE-9IM)](https://docs.rapids.ai/api/cuspatial/stable/api_docs/geopandas_compatibility/#cuspatial.GeoSeries.contains)
+- [Linestring-Linestring Intersections](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#Linestring-Intersections)
+- Cartesian distance between any two geometries (ST_Distance)
 - [Haversine distance](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#cuspatial.haversine_distance)
 - [Hausdorff distance](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#cuspatial.directed_hausdorff_distance)
 - [Spatial window filtering](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#cuspatial.points_in_spatial_window)
 
 ### Indexing and Join Functions
-- [Quadtree indexing](https://docs.rapids.ai/api/cuspatial/nightly/user_guide/cuspatial_api_examples.html#Quadtree-Indexing)
-- [Spatial joins](https://docs.rapids.ai/api/cuspatial/nightly/user_guide/cuspatial_api_examples.html#Indexed-Spatial-Joins)
+- [Quadtree indexing](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#Quadtree-Indexing)
+- [Spatial joins](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#Indexed-Spatial-Joins)
 - [Quadtree-based point-in-polygon](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#cuspatial.quadtree_point_in_polygon)
 - [Quadtree-based point-to-nearest-linestring](https://docs.rapids.ai/api/cuspatial/stable/user_guide/cuspatial_api_examples.html#cuspatial.quadtree_point_to_nearest_linestring)
 
@@ -100,22 +101,19 @@ gitGraph
 
 ## Using cuSpatial
 **CUDA/GPU requirements**
-```
-CUDA 11.2+
-NVIDIA driver 450.80.02+
-Pascal architecture or better (Compute Capability >=6.0)
-```
+- CUDA 11.2+ with a [compatible, supported driver](https://docs.nvidia.com/datacenter/tesla/drivers/#cuda-drivers)
+- Linux native: Pascal architecture or newer ([Compute Capability >=6.0](https://developer.nvidia.com/cuda-gpus))
+- WSL2: Volta architecture or newer ([Compute Capability >=7.0](https://developer.nvidia.com/cuda-gpus))
 
 ### Quick start: Docker
-Use the [RAPIDS Release Selector](https://rapids.ai/start.html#get-rapids), selecting `Docker` as the installation method. All RAPIDS Docker images contain cuSpatial.
+Use the [RAPIDS Release Selector](https://docs.rapids.ai/install#selector), selecting `Docker` as the installation method. All RAPIDS Docker images contain cuSpatial.
 
 An example command from the Release Selector:
 ```shell
-docker pull nvcr.io/nvidia/rapidsai/rapidsai-core:23.02-cuda11.8-runtime-ubuntu22.04-py3.10
-docker run --gpus all --rm -it \
+docker run --gpus all --pull always --rm -it \
     --shm-size=1g --ulimit memlock=-1 --ulimit stack=67108864 \
     -p 8888:8888 -p 8787:8787 -p 8786:8786 \
-    nvcr.io/nvidia/rapidsai/rapidsai-core:23.02-cuda11.8-runtime-ubuntu22.04-py3.10
+    nvcr.io/nvidia/rapidsai/notebooks:23.10-cuda11.8-py3.10
 ```
 
 ### Install with Conda
@@ -127,29 +125,24 @@ cuSpatial can be installed with conda (miniconda, or the full Anaconda distribut
 
 ```shell
 conda install -c rapidsai -c conda-forge -c nvidia \
-    cuspatial=23.04 python=3.10 cudatoolkit=11.8
+    cuspatial=23.10 python=3.10 cudatoolkit=11.8
 ```
 We also provide nightly Conda packages built from the HEAD of our latest development branch.
 
-See the [RAPIDS release selector](https://rapids.ai/start.html#get-rapids) for more OS and version info.
+See the [RAPIDS installation documentation](https://docs.rapids.ai/install) for more OS and version info.
 
 ### Install with pip
 
 To install via pip:
 > **Note** cuSpatial is supported only on Linux or [through WSL](https://rapids.ai/wsl2.html), and with Python versions 3.9 and 3.10
 
-The cuSpatial pip packages can be installed from NVIDIA's PyPI index:
-
+The cuSpatial pip packages can be installed from NVIDIA's PyPI index. pip installations require using the matching wheel to the system's installed CUDA toolkit.
+- For CUDA 11 toolkits, install the `-cu11` wheels
+- For CUDA 12 toolkits install the `-cu12` wheels
+- If your installation has a CUDA 12 driver but a CUDA 11 toolkit, use the `-cu11` wheels.
 ```shell
-# If using driver 525+, with support for CUDA Toolkit 12.0+
-pip install --extra-index-url=https://pypi.nvidia.com cuspatial-cu12
-
-# If using driver 450.80+, with support for CUDA Toolkit 11.2+
-pip install --extra-index-url=https://pypi.nvidia.com cuspatial-cu11
-
-# Or do this if you're unsure which CUDA Toolkit is supported by your driver:
-CUDA_MAJOR_VERSION="$(nvidia-smi | head -n3 | tail -n1 | tr -d '[:space:]' | cut -d':' -f3 | cut -d '.' -f1)"
-pip install --extra-index-url=https://pypi.nvidia.com cuspatial-cu${CUDA_MAJOR_VERSION}
+pip install cuspatial-cu12 --extra-index-url=https://pypi.nvidia.com
+pip install cuspatial-cu11 --extra-index-url=https://pypi.nvidia.com
 ```
 
 #### Troubleshooting Fiona/GDAL versions
@@ -184,6 +177,22 @@ There are two ways to fix this:
 ### Build/Install from source
 
 To build and install cuSpatial from source please see the [build documentation](https://docs.rapids.ai/api/cuspatial/stable/developer_guide/build.html).
+
+
+## Citing cuSpatial
+
+If you find cuSpatial useful in your published work, please consider citing the repository.
+
+```bibtex
+@misc{cuspatial:23.10,
+    author = {{NVIDIA Corporation}},
+    title = {cuSpatial: GPU-Accelerated Geospatial and Spatiotemporal Algorithms},
+    year = {2023},
+    publisher = {NVIDIA},
+    howpublished = {\url{https://github.com/rapidsai/cuspatial}},
+    note = {Software available from github.com},
+}
+```
 
 
 [1]:https://github.com/rapidsai-community/notebooks-contrib/blob/main/community_tutorials_and_guides/taxi/NYCTaxi-E2E.ipynb

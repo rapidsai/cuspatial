@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1.5
 
 ARG CUDA=12.0
+ARG CUDA=12.0
 ARG LLVM=16
 ARG RAPIDS=23.10
 ARG DISTRO=ubuntu22.04
@@ -13,8 +14,15 @@ FROM ${REPO}:${RAPIDS}-cpp-llvm${LLVM}-cuda${CUDA}-${DISTRO} as pip-base
 FROM ${REPO}:${RAPIDS}-cpp-mambaforge-${DISTRO} as conda-base
 
 COPY --from=pip-base /etc/skel/.config/clangd/config.yaml /etc/skel/.config/clangd/config.yaml
+FROM ${REPO}:${RAPIDS}-cpp-mambaforge-${DISTRO} as conda-base
+
+COPY --from=pip-base /etc/skel/.config/clangd/config.yaml /etc/skel/.config/clangd/config.yaml
 
 FROM ${PYTHON_PACKAGE_MANAGER}-base
+
+ARG CUDA
+ENV CUDAARCHS="RAPIDS"
+ENV CUDA_VERSION="${CUDA_VERSION:-${CUDA}}"
 
 ARG CUDA
 ENV CUDAARCHS="RAPIDS"

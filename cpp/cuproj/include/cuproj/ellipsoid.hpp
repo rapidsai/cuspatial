@@ -22,6 +22,11 @@
 namespace cuproj {
 
 /**
+ * @addtogroup ellipsoid
+ * @{
+ */
+
+/**
  * @brief Ellipsoid parameters
  *
  * @tparam T Floating point type
@@ -67,5 +72,9 @@ constexpr ellipsoid<T> make_ellipsoid_wgs84()
 {
   return ellipsoid<T>{T{6378137.0}, T{298.257223563}};
 }
+
+/**
+ * @} // end of doxygen group
+ */
 
 }  // namespace cuproj
