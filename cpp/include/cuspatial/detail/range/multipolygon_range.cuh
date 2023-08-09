@@ -111,8 +111,9 @@ multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::m
     _point_begin(point_begin),
     _point_end(point_end)
 {
-  static_assert(is_vec_2d<iterator_value_type<VecIterator>>,
-                "point_begin and point_end must be iterators to floating point vec_2d types.");
+  static_assert(
+    is_vec_2d<iterator_value_type<VecIterator>> || is_vec_3d<iterator_value_type<VecIterator>>,
+    "point_begin and point_end must be iterators to floating point vec_2d types or vec_3d.");
 
   CUSPATIAL_EXPECTS_VALID_MULTIPOLYGON_SIZES(
     num_points(), num_multipolygons() + 1, num_polygons() + 1, num_rings() + 1);
@@ -245,23 +246,6 @@ template <typename GeometryIterator,
           typename PartIterator,
           typename RingIterator,
           typename VecIterator>
-template <typename IndexType>
-CUSPATIAL_HOST_DEVICE auto
-multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
-  geometry_idx_from_segment_idx(IndexType segment_idx)
-{
-  auto ring_idx = ring_idx_from_point_idx(segment_idx);
-  if (!is_valid_segment_id(segment_idx, ring_idx))
-    return multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
-      INVALID_INDEX;
-
-  return geometry_idx_from_part_idx(part_idx_from_ring_idx(ring_idx));
-}
-
-template <typename GeometryIterator,
-          typename PartIterator,
-          typename RingIterator,
-          typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto
 multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
   multipolygon_point_count_begin()
@@ -347,35 +331,11 @@ template <typename GeometryIterator,
           typename PartIterator,
           typename RingIterator,
           typename VecIterator>
-template <typename IndexType>
-CUSPATIAL_HOST_DEVICE auto
-multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::get_segment(
-  IndexType segment_idx)
-{
-  return segment{_point_begin[segment_idx], _point_begin[segment_idx + 1]};
-}
-
-template <typename GeometryIterator,
-          typename PartIterator,
-          typename RingIterator,
-          typename VecIterator>
 auto multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::_segments(
   rmm::cuda_stream_view stream)
 {
   auto multilinestring_range = this->as_multilinestring_range();
   return multilinestring_segment_manager{multilinestring_range, stream};
-}
-
-template <typename GeometryIterator,
-          typename PartIterator,
-          typename RingIterator,
-          typename VecIterator>
-template <typename IndexType1, typename IndexType2>
-CUSPATIAL_HOST_DEVICE bool
-multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
-  is_first_point_of_multipolygon(IndexType1 point_idx, IndexType2 geometry_idx)
-{
-  return point_idx == _ring_begin[_part_begin[_geometry_begin[geometry_idx]]];
 }
 
 template <typename GeometryIterator,

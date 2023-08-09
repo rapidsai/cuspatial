@@ -28,6 +28,8 @@
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <ranger/ranger.hpp>
+
 #include <thrust/sequence.h>
 #include <thrust/tabulate.h>
 
@@ -193,8 +195,7 @@ template <typename T, typename MultipolygonRange>
 void __global__ generate_multipolygon_array_coordinates(MultipolygonRange multipolygons,
                                                         multipolygon_generator_parameter<T> params)
 {
-  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < multipolygons.num_points();
-       idx += gridDim.x * blockDim.x) {
+  for (auto idx : ranger::grid_stride_range(multipolygons.num_points())) {
     auto ring_idx     = multipolygons.ring_idx_from_point_idx(idx);
     auto part_idx     = multipolygons.part_idx_from_ring_idx(ring_idx);
     auto geometry_idx = multipolygons.geometry_idx_from_part_idx(part_idx);
@@ -353,7 +354,7 @@ auto generate_multilinestring_array(multilinestring_generator_parameter<T> param
                          params.origin,
                          detail::random_walk_functor<T>{params.segment_length});
 
-  return make_multilinestring_array(
+  return make_multilinestring_array<std::size_t, T>(
     std::move(geometry_offset), std::move(part_offset), std::move(points));
 }
 

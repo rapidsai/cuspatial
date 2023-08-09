@@ -18,14 +18,17 @@ from shapely.geometry import (
     Point,
     Polygon,
 )
+from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry
 
 import cudf
 from cudf._typing import ColumnLike
 from cudf.core.column.column import as_column
+from cudf.core.copy_types import GatherMap
 
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import ColumnType, GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
+from cuspatial.core.binops.distance_dispatch import DistanceDispatch
 from cuspatial.core.binpreds.binpred_dispatch import (
     CONTAINS_DISPATCH,
     CONTAINS_PROPERLY_DISPATCH,
@@ -109,7 +112,7 @@ class GeoSeries(cudf.Series):
 
     @property
     def feature_types(self):
-        return self._column._meta.input_types
+        return self._column._meta.input_types.reset_index(drop=True)
 
     @property
     def type(self):
@@ -188,23 +191,30 @@ class GeoSeries(cudf.Series):
             full_sizes = self.polygons.ring_offset.take(
                 self.polygons.part_offset.take(self.polygons.geometry_offset)
             )
-            return cudf.Series(full_sizes[1:] - full_sizes[:-1])
+            return cudf.Series(
+                full_sizes[1:] - full_sizes[:-1], index=self.index
+            )
         elif contains_only_linestrings(self):
             # Not supporting multilinestring yet
             full_sizes = self.lines.part_offset.take(
                 self.lines.geometry_offset
             )
-            return cudf.Series(full_sizes[1:] - full_sizes[:-1])
+            return cudf.Series(
+                full_sizes[1:] - full_sizes[:-1], index=self.index
+            )
         elif contains_only_multipoints(self):
-            return (
+            return cudf.Series(
                 self.multipoints.geometry_offset[1:]
-                - self.multipoints.geometry_offset[:-1]
+                - self.multipoints.geometry_offset[:-1],
+                index=self.index,
             )
         elif contains_only_points(self):
-            return cudf.Series(cp.repeat(cp.array(1), len(self)))
+            return cudf.Series(
+                cp.repeat(cp.array(1), len(self)), index=self.index
+            )
         else:
             if len(self) == 0:
-                return cudf.Series([0], dtype="int32")
+                return cudf.Series([0], dtype="int32", index=self.index)
             raise NotImplementedError(
                 "GeoSeries must contain only Points, MultiPoints, Lines, or "
                 "Polygons to return sizes."
@@ -251,7 +261,9 @@ class GeoSeries(cudf.Series):
             sizes = offsets[1:] - offsets[:-1]
             return cp.repeat(self._series.index, sizes)
             """
-            return self._meta.input_types.index[self._meta.input_types != -1]
+            return self._meta.input_types.reset_index(drop=True).index[
+                self._meta.input_types != -1
+            ]
 
         def column(self):
             """Return the ListColumn reordered by union offset."""
@@ -323,8 +335,7 @@ class GeoSeries(cudf.Series):
                 self.geometry_offset
             )
             sizes = offsets[1:] - offsets[:-1]
-
-            return self._series.index.repeat(sizes).values
+            return self._meta.input_types.index.repeat(sizes)
 
     @property
     def points(self):
@@ -402,6 +413,13 @@ class GeoSeries(cudf.Series):
             # Slice the types and offsets
             union_offsets = self._sr._column._meta.union_offsets.iloc[indexes]
             union_types = self._sr._column._meta.input_types.iloc[indexes]
+
+            # Very important to reset the index if it has been constructed from
+            # a slice.
+            if isinstance(union_offsets, cudf.Series):
+                union_offsets = union_offsets.reset_index(drop=True)
+            if isinstance(union_types, cudf.Series):
+                union_types = union_types.reset_index(drop=True)
 
             points = self._sr._column.points
             mpoints = self._sr._column.mpoints
@@ -914,10 +932,10 @@ class GeoSeries(cudf.Series):
             aligned_right,
         )
 
-    def _gather(
-        self, gather_map, keep_index=True, nullify=False, check_bounds=True
-    ):
-        return self.iloc[gather_map]
+    def _gather(self, gather_map: GatherMap, keep_index=True):
+        # TODO: This could use the information to avoid reprocessing
+        # in iloc
+        return self.iloc[gather_map.column]
 
     # def reset_index(self, drop=False, inplace=False, name=None):
     def reset_index(
@@ -967,7 +985,7 @@ class GeoSeries(cudf.Series):
         # and use `cudf` reset_index to identify what our result
         # should look like.
         cudf_series = cudf.Series(
-            np.arange(len(geo_series.index)), index=geo_series.index
+            cp.arange(len(geo_series.index)), index=geo_series.index
         )
         cudf_result = cudf_series.reset_index(level, drop, name, inplace)
 
@@ -1375,3 +1393,93 @@ class GeoSeries(cudf.Series):
             align=align
         )
         return predicate(self, other)
+
+    def isna(self):
+        """Detect missing values."""
+
+        c = self._column._meta.input_types == Feature_Enum.NONE.value
+        return cudf.Series(c, index=self.index)
+
+    def notna(self):
+        """Detect non-missing values."""
+
+        c = self._column._meta.input_types != Feature_Enum.NONE.value
+        return cudf.Series(c, index=self.index)
+
+    def distance(self, other, align=True):
+        """Returns a `Series` containing the distance to aligned other.
+
+        The operation works on a 1-to-1 row-wise manner. See
+        `geopandas.GeoSeries.distance` documentation for details.
+
+        Parameters
+        ----------
+        other
+            The GeoSeries (elementwise) or geometric object to find the
+            distance to.
+        align : bool, default True
+            If True, automatically aligns GeoSeries based on their indices.
+            If False, the order of the elements is preserved.
+
+        Returns
+        -------
+        Series (float)
+
+        Notes
+        -----
+        Unlike GeoPandas, this API currently only supports geoseries that
+        contain only single type geometries.
+
+        Examples
+        --------
+        >>> from shapely.geometry import Point
+        >>> point = GeoSeries([Point(0, 0)])
+        >>> point2 = GeoSeries([Point(1, 1)])
+        >>> print(point.distance(point2))
+        0    1.414214
+        dtype: float64
+
+        By default, geoseries are aligned before computing:
+
+        >>> from shapely.geometry import Point
+        >>> point = GeoSeries([Point(0, 0)])
+        >>> point2 = GeoSeries([Point(1, 1), Point(2, 2)])
+        >>> print(point.distance(point2))
+        0    1.414214
+        1         NaN
+        dtype: float64
+
+        This can be overridden by setting `align=False`:
+
+        >>> lines = GeoSeries([
+                LineString([(0, 0), (1, 1)]), LineString([(2, 2), (3, 3)])])
+        >>> polys = GeoSeries([
+                Polygon([(0, 0), (1, 1), (1, 0)]),
+                Polygon([(2, 2), (3, 3), (3, 2)])],
+                index=[1, 0])
+        >>> lines.distance(polys), align=False)
+        0    0.0
+        1    0.0
+        dtype: float64
+        >>> lines.distance(polys, align=True)
+        0    1.414214
+        1    1.414214
+        dtype: float64
+        """
+
+        other_is_scalar = False
+        if issubclass(type(other), (BaseGeometry, BaseMultipartGeometry)):
+            other_is_scalar = True
+            other = GeoSeries([other] * len(self), index=self.index)
+
+        if not align:
+            if len(self) != len(other):
+                raise ValueError(
+                    f"Lengths of inputs do not match. Left: {len(self)}, "
+                    f"Right: {len(other)}"
+                )
+
+        res = DistanceDispatch(self, other, align)()
+        if other_is_scalar:
+            res.index = self.index
+        return res

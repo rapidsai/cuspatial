@@ -27,14 +27,14 @@ PYTHON_CHANNEL=$(rapids-download-conda-from-s3 python)
 rapids-mamba-retry install \
   --channel "${CPP_CHANNEL}" \
   --channel "${PYTHON_CHANNEL}" \
-  cuspatial libcuspatial
+  cuspatial libcuspatial cuproj
 
 NBTEST="$(realpath "$(dirname "$0")/utils/nbtest.sh")"
 pushd notebooks
 
 # Add notebooks that should be skipped here
 # (space-separated list of filenames without paths)
-SKIPNBS=""
+SKIPNBS="binary_predicates.ipynb cuproj_benchmark.ipynb"
 
 EXITCODE=0
 trap "EXITCODE=1" ERR

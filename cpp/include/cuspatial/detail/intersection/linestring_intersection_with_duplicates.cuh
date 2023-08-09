@@ -30,6 +30,8 @@
 #include <rmm/exec_policy.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
+#include <ranger/ranger.hpp>
+
 #include <thrust/binary_search.h>
 #include <thrust/distance.h>
 #include <thrust/iterator/counting_iterator.h>
@@ -47,6 +49,16 @@ namespace cuspatial {
 namespace detail {
 
 namespace intersection_functors {
+
+/**
+ * @brief Cast `uint8_t` to `X`
+ *
+ * @tparam X The type to cast to
+ */
+template <typename X>
+struct uchar_to_x {
+  X __device__ operator()(uint8_t c) { return static_cast<X>(c); }
+};
 
 /** @brief Functor to compute the updated offset buffer after `remove_if` operation.
  *
@@ -290,11 +302,13 @@ struct linestring_intersection_intermediates {
     rmm::device_uvector<index_t> reduced_flags(num_pairs(), stream);
     auto keys_begin = make_geometry_id_iterator<index_t>(offsets->begin(), offsets->end());
 
+    auto iflags =
+      thrust::make_transform_iterator(flags.begin(), intersection_functors::uchar_to_x<index_t>{});
     auto [keys_end, flags_end] =
       thrust::reduce_by_key(rmm::exec_policy(stream),
                             keys_begin,
                             keys_begin + flags.size(),
-                            flags.begin(),
+                            iflags,
                             reduced_keys.begin(),
                             reduced_flags.begin(),
                             thrust::equal_to<index_t>(),
@@ -395,8 +409,7 @@ void __global__ pairwise_linestring_intersection_simple(MultiLinestringRange1 mu
   using types_t = uint8_t;
   using count_t = iterator_value_type<Offsets1>;
 
-  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < multilinestrings1.num_points();
-       idx += gridDim.x * blockDim.x) {
+  for (auto idx : ranger::grid_stride_range(multilinestrings1.num_points())) {
     if (auto const part_idx_opt = multilinestrings1.part_idx_from_segment_idx(idx);
         part_idx_opt.has_value()) {
       auto const part_idx           = part_idx_opt.value();

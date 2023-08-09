@@ -25,6 +25,8 @@
 #include <cuspatial/range/range.cuh>
 #include <cuspatial/traits.hpp>
 
+#include <ranger/ranger.hpp>
+
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
@@ -47,8 +49,7 @@ void __global__ pairwise_multipoint_equals_count_kernel(MultiPointRangeA lhs,
 {
   using T = typename MultiPointRangeA::point_t::value_type;
 
-  for (auto idx = threadIdx.x + blockIdx.x * blockDim.x; idx < lhs.num_points();
-       idx += gridDim.x * blockDim.x) {
+  for (auto idx : ranger::grid_stride_range(lhs.num_points())) {
     auto geometry_id    = lhs.geometry_idx_from_point_idx(idx);
     vec_2d<T> lhs_point = lhs.point_begin()[idx];
     auto rhs_multipoint = rhs[geometry_id];
@@ -96,12 +97,14 @@ OutputIt pairwise_multipoint_equals_count(MultiPointRangeA lhs,
     rhs.offsets_begin(), rhs.offsets_end(), rhs_point_sorted.begin(), rhs_point_sorted.end()};
 
   detail::zero_data_async(output, output + lhs.size(), stream);
-  auto [tpb, n_blocks] = grid_1d(lhs.num_points());
-  detail::pairwise_multipoint_equals_count_kernel<<<n_blocks, tpb, 0, stream.value()>>>(
-    lhs, rhs_sorted, output);
 
-  CUSPATIAL_CHECK_CUDA(stream.value());
+  if (lhs.num_points() > 0) {
+    auto [tpb, n_blocks] = grid_1d(lhs.num_points());
+    detail::pairwise_multipoint_equals_count_kernel<<<n_blocks, tpb, 0, stream.value()>>>(
+      lhs, rhs_sorted, output);
 
+    CUSPATIAL_CHECK_CUDA(stream.value());
+  }
   return output + lhs.size();
 }
 

@@ -34,7 +34,7 @@ function(ConfigureTest CMAKE_TEST_NAME)
                    CUDA_STANDARD 17
                    CUDA_STANDARD_REQUIRED ON
     )
-    target_link_libraries(${CMAKE_TEST_NAME} GTest::gtest_main GTest::gmock_main cudf::cudftestutil cuspatial)
+    target_link_libraries(${CMAKE_TEST_NAME} GTest::gtest_main GTest::gmock_main ranger::ranger cudf::cudftestutil cuspatial)
     add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
     install(
         TARGETS ${CMAKE_TEST_NAME}
@@ -171,6 +171,7 @@ ConfigureTest(SINUSOIDAL_PROJECTION_TEST_EXP
 
 # range
 ConfigureTest(RANGE_TEST_EXP
+    range/multipoint_range_test.cu
     range/multilinestring_range_test.cu
     range/multipolygon_range_test.cu)
 

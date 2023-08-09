@@ -200,12 +200,11 @@ multilinestring_range<GeometryIterator, PartIterator, VecIterator>::is_valid_seg
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 template <typename IndexType>
-CUSPATIAL_HOST_DEVICE thrust::pair<
-  vec_2d<typename multilinestring_range<GeometryIterator, PartIterator, VecIterator>::element_t>,
-  vec_2d<typename multilinestring_range<GeometryIterator, PartIterator, VecIterator>::element_t>>
+CUSPATIAL_HOST_DEVICE auto
 multilinestring_range<GeometryIterator, PartIterator, VecIterator>::segment(IndexType segment_idx)
 {
-  return thrust::make_pair(_point_begin[segment_idx], _point_begin[segment_idx + 1]);
+  using T = iterator_vec_base_type<VecIterator>;
+  return cuspatial::segment<T>{_point_begin[segment_idx], _point_begin[segment_idx + 1]};
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>

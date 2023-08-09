@@ -50,7 +50,7 @@ TYPED_TEST(PairwisePointInPolygonTest, Empty)
   auto poly_point_xs     = wrapper<T>({});
   auto poly_point_ys     = wrapper<T>({});
 
-  auto expected = wrapper<int32_t>({});
+  auto expected = wrapper<uint8_t>({});
 
   auto actual = cuspatial::pairwise_point_in_polygon(
     test_point_xs, test_point_ys, poly_offsets, poly_ring_offsets, poly_point_xs, poly_point_ys);

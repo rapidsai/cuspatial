@@ -16,7 +16,7 @@
 name: Documentation Request
 description: Request updates or additions to cuSpatial's documentation
 title: "[DOC]: "
-labels: ["doc", "? - Needs Triage"]
+labels: ["doc"]
 
 body:
   - type: markdown

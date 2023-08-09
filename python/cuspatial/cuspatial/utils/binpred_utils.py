@@ -7,6 +7,7 @@ import cudf
 
 import cuspatial
 from cuspatial.core._column.geocolumn import ColumnType
+from cuspatial.core._column.geometa import Feature_Enum
 
 """Column-Type objects to use for simple syntax in the `DispatchDict` contained
 in each `feature_<predicate>.py` file.  For example, instead of writing out
@@ -61,7 +62,12 @@ def _count_results_in_multipoint_geometries(point_indices, point_result):
         index=cudf.RangeIndex(len(point_indices), name="point_index"),
     ).reset_index()
     with_rhs_indices = point_result.merge(point_indices_df, on="point_index")
-    points_grouped_by_original_polygon = with_rhs_indices[
+    # Because we are doing pairwise operations, we're only interested in the
+    # results where polygon_index and rhs_index match
+    pairwise_matches = with_rhs_indices[
+        with_rhs_indices["polygon_index"] == with_rhs_indices["rhs_index"]
+    ]
+    points_grouped_by_original_polygon = pairwise_matches[
         ["point_index", "rhs_index"]
     ].drop_duplicates()
     hits = (
@@ -304,6 +310,8 @@ def _open_polygon_rings(geoseries):
 
 
 def _points_and_lines_to_multipoints(geoseries, offsets):
+    # TODO: This modification drops linestrings which are not used
+    # in geopandas intersection results for contains.
     """Converts a geoseries of points and lines into a geoseries of
     multipoints.
 
@@ -348,8 +356,8 @@ def _points_and_lines_to_multipoints(geoseries, offsets):
     1    MULTIPOINT (3.00000 3.00000, 4.00000, 4.0000, ...
     dtype: geometry
     """
-    points_mask = geoseries.type == "Point"
-    lines_mask = geoseries.type == "Linestring"
+    points_mask = geoseries.feature_types == Feature_Enum.POINT.value
+    lines_mask = geoseries.feature_types == Feature_Enum.LINESTRING.value
     if (points_mask + lines_mask).sum() != len(geoseries):
         raise ValueError("Geoseries must contain only points and lines")
     points = geoseries[points_mask]
@@ -378,31 +386,6 @@ def _points_and_lines_to_multipoints(geoseries, offsets):
     return result
 
 
-def _linestrings_to_center_point(geoseries):
-    if (geoseries.sizes != 2).any():
-        raise ValueError(
-            "Geoseries must contain only linestrings with two points"
-        )
-    x = geoseries.lines.x
-    y = geoseries.lines.y
-    return cuspatial.GeoSeries.from_points_xy(
-        cudf.DataFrame(
-            {
-                "x": (
-                    x[::2].reset_index(drop=True)
-                    + x[1::2].reset_index(drop=True)
-                )
-                / 2,
-                "y": (
-                    y[::2].reset_index(drop=True)
-                    + y[1::2].reset_index(drop=True)
-                )
-                / 2,
-            }
-        ).interleave_columns()
-    )
-
-
 def _multipoints_is_degenerate(geoseries):
     """Only tests if the first two points are degenerate."""
     offsets = geoseries.multipoints.geometry_offset[:-1]
@@ -417,3 +400,107 @@ def _multipoints_is_degenerate(geoseries):
     ) & (y1.reset_index(drop=True) == y2.reset_index(drop=True))
     result[sizes_mask] = is_degenerate.reset_index(drop=True)
     return result
+
+
+def _pli_features_rebuild_offsets(pli, features):
+    """Takes a modified pairwise_linestring_intersection (_pli) result
+    (specifically the first two elements of its result tuple: `(offsets,
+    GeoSeries)` and returns a new `offsets` buffer that corresponds with the
+    items in the GeoSeries. The GeoSeries in this call is modified from the
+    original pairwise_linestring_intersection result because it must be a
+    homogeneous GeoSeries, where the result of
+    pairwise-linestring-intersection is a mixed GeoSeries containing Points
+    and LineStrings.
+
+    The original offsets buffer at `pli[0]` refers to the geometry pair
+    from which the feature intersections from `pli[1]` were computed. The new
+    offsets buffer specifies the same thing, but now accounts for the missing
+    values (either Points or LineStrings) that are present in `pli[1]` but
+    missing in the `features` argument.
+
+    See the docs for `_pli_points_to_multipoints` and
+    `_pli_lines_to_multipoints` for the rest of the explanation.
+    """
+    in_sizes = (
+        features.sizes if len(features) > 0 else _zero_series(len(pli[0]) - 1)
+    )
+    offsets = cudf.Series(pli[0])
+    offset_sizes = offsets[1:].reset_index(drop=True) - offsets[
+        :-1
+    ].reset_index(drop=True)
+    in_indices = offset_sizes.index.repeat(offset_sizes)
+    if len(in_indices) == 0:
+        return _zero_series(len(pli[0]))
+    # Just replacing the indices from the feature series with
+    # the corresponding indices that are specified by the offsets buffer.
+    # This is because cudf.Series.replace is extremely slow.
+    in_sizes_df = in_sizes.reset_index()
+    in_sizes_df.columns = ["index", "sizes"]
+    sizes_replacement_series = cudf.Series(in_indices).reset_index()
+    sizes_replacement_series.columns = ["index", "new_index"]
+    new_in_sizes_index = in_sizes_df.merge(
+        sizes_replacement_series, on="index"
+    )
+    in_sizes.index = new_in_sizes_index.sort_values("index")["new_index"]
+
+    # Recompute the offsets for the new series
+    grouped_sizes = in_sizes.groupby(level=0).sum().sort_index()
+    out_sizes = _zero_series(len(pli[0]) - 1)
+    out_sizes.iloc[grouped_sizes.index] = grouped_sizes
+    offsets = cudf.concat([cudf.Series([0]), out_sizes.cumsum()])
+    return offsets
+
+
+def _pli_points_to_multipoints(pli):
+    """Takes a tuple (specifically the first two values returned by
+    pairwise_linestring_intersection (pli)) with offsets in position 0 and a
+    mixed GeoSeries in position 1. Extracts the points from the mixed
+    GeoSeries such that one MultiPoint is returned for all of the Point rows
+    that fall within each of the ranges specified by the offsets argument.
+
+    Example
+    -------
+    pli = (
+        cudf.Series([0, 2, 4, 6]),
+        cuspatial.GeoSeries([
+            Point(0, 0),
+            LineString([(1, 1), (2, 2)]),
+            Point(3, 3),
+            Point(4, 4),
+            Point(5, 5),
+            LineString([(6, 6), (7, 7)]),
+        ])
+    )
+    multipoints_from_points = _pli_points_to_multipoints(pli)
+    print(multipoints_from_points)
+    0                     MULTIPOINT (0.00000 0.00000)
+    1    MULTIPOINT (3.00000 3.00000, 4.00000 4.00000)
+    2                     MULTIPOINT (5.00000 5.00000)
+    dtype: geometry
+    """
+    points = pli[1][pli[1].feature_types == Feature_Enum.POINT.value]
+    offsets = _pli_features_rebuild_offsets(pli, points)
+    xy = (
+        points.points.xy
+        if len(points.points.xy) > 0
+        else cudf.Series([], dtype=cp.float64)
+    )
+    multipoints = cuspatial.GeoSeries.from_multipoints_xy(xy, offsets)
+    return multipoints
+
+
+def _pli_lines_to_multipoints(pli):
+    """Works identically to `_pli_points_to_multipoints`, converting the mixed
+    GeoSeries result of `pairwise_linestring_intersection` (pli) to a
+    GeoSeries of MultiPoints using only the points contained in the
+    LineString intersections from the result of
+    pairwise_linestring_intersection."""
+    lines = pli[1][pli[1].feature_types == Feature_Enum.LINESTRING.value]
+    offsets = _pli_features_rebuild_offsets(pli, lines)
+    xy = (
+        lines.lines.xy
+        if len(lines.lines.xy) > 0
+        else cudf.Series([], dtype=cp.float64)
+    )
+    multipoints = cuspatial.GeoSeries.from_multipoints_xy(xy, offsets)
+    return multipoints
