@@ -48,7 +48,7 @@
 - Forward merge `branch-23.06` into `branch-23.08` ([#1190](https://github.com/rapidsai/cuspatial/pull/1190)) [@raydouglass](https://github.com/raydouglass)
 - use rapids-upload-docs script ([#1181](https://github.com/rapidsai/cuspatial/pull/1181)) [@AyodeAwe](https://github.com/AyodeAwe)
 - Remove Stale Demo Scripts ([#1180](https://github.com/rapidsai/cuspatial/pull/1180)) [@isVoid](https://github.com/isVoid)
-- Updates Build Instructions to Adjust for Devcontainer Instructions and Remove Stale Infomation ([#1179](https://github.com/rapidsai/cuspatial/pull/1179)) [@isVoid](https://github.com/isVoid)
+- Updates Build Instructions to Adjust for Devcontainer Instructions and Remove Stale Information ([#1179](https://github.com/rapidsai/cuspatial/pull/1179)) [@isVoid](https://github.com/isVoid)
 - Fix branch-23.06 forward-merge into branch-23.08 ([#1175](https://github.com/rapidsai/cuspatial/pull/1175)) [@trxcllnt](https://github.com/trxcllnt)
 - Remove documentation build scripts for Jenkins ([#1169](https://github.com/rapidsai/cuspatial/pull/1169)) [@ajschmidt8](https://github.com/ajschmidt8)
 - cuSpatial: Build CUDA 12 packages ([#1044](https://github.com/rapidsai/cuspatial/pull/1044)) [@isVoid](https://github.com/isVoid)
