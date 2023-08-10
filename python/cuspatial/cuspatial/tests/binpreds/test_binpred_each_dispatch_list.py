@@ -1,7 +1,9 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
 import geopandas
-from binpred_test_dispatch import (  # noqa: F401
+
+import cuspatial
+from cuspatial.testing.test_geometries import (  # noqa: F401
     features,
     linestring_linestring_dispatch_list,
     linestring_polygon_dispatch_list,
@@ -9,10 +11,7 @@ from binpred_test_dispatch import (  # noqa: F401
     point_point_dispatch_list,
     point_polygon_dispatch_list,
     polygon_polygon_dispatch_list,
-    predicate,
 )
-
-import cuspatial
 
 
 def sample_test_data(features, dispatch_list, lib=cuspatial):
