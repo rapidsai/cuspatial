@@ -21,6 +21,8 @@
 #include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/traits.hpp>
 
+#include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/geometry/vec_3d.hpp>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/tuple.h>
 
@@ -34,7 +36,9 @@ CUSPATIAL_HOST_DEVICE polygon_ref<RingIterator, VecIterator>::polygon_ref(RingIt
   : _ring_begin(ring_begin), _ring_end(ring_end), _point_begin(point_begin), _point_end(point_end)
 {
   using T = iterator_vec_base_type<VecIterator>;
-  static_assert(is_same<vec_2d<T>, iterator_value_type<VecIterator>>(), "must be vec2d type");
+  static_assert(is_same<vec_2d<T>, iterator_value_type<VecIterator>>() ||
+                  is_same<vec_3d<T>, iterator_value_type<VecIterator>>(),
+                "must be vec2d or vec3d type");
 }
 
 template <typename RingIterator, typename VecIterator>
