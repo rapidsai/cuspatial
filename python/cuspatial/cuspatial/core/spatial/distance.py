@@ -109,7 +109,6 @@ def haversine_distance(p1: GeoSeries, p2: GeoSeries):
     -------
     result : cudf.Series
         The distance between pairs of points between `p1` and `p2`
-        
     >>> import cudf
     >>> import cuspatial
     >>> a = {"latitude":[0.0,0.0,1.0,1.0],
