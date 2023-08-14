@@ -126,7 +126,7 @@ def haversine_distance(p1: GeoSeries, p2: GeoSeries):
 
     >>> # Calculate Haversine Distance of cuDF dataframe to comparator point
     >>> df['compare_dist'] = cuspatial.haversine_distance(cuGeoSeries, atlGeoSeries)
-    >>> print(df)
+    >>> df.head()
     
            latitude  longitude  compare_lat  compare_lng  compare_dist
     0       0.0        0.0          2.0          2.0    314.474805
