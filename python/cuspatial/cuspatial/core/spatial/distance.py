@@ -116,7 +116,9 @@ def haversine_distance(p1: GeoSeries, p2: GeoSeries):
     >>> df = cudf.DataFrame(data=a)
 
     >>> # Create cuSpatial GeoSeries from cuDF Dataframe
-    >>> cuGeoSeries = cuspatial.GeoSeries.from_points_xy(df[['longitude', 'latitude']].interleave_columns())
+    >>> cuGeoSeries = cuspatial.GeoSeries.from_points_xy(
+    ...     df[['longitude', 'latitude']].interleave_columns()
+    ... )
 
     >>> # Create Comparator cuSpatial GeoSeries from a comparator point
     >>> df['compare_lat'] = 2.0
