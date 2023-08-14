@@ -101,14 +101,38 @@ def haversine_distance(p1: GeoSeries, p2: GeoSeries):
     Parameters
     ----------
     p1: GeoSeries
-        Series of points
+        Series of points as floats
     p2: GeoSeries
-        Series of points
+        Series of points as floats
 
     Returns
     -------
     result : cudf.Series
         The distance between pairs of points between `p1` and `p2`
+        
+    >>> import cudf
+    >>> import cuspatial
+    >>> a = {"latitude":[0.0,0.0,1.0,1.0],
+    ...      "longitude": [0.0,1.0,0.0,1.0]}
+    >>> df = cudf.DataFrame(data=a)
+
+    >>> # Create cuSpatial GeoSeries from cuDF Dataframe
+    >>> cuGeoSeries = cuspatial.GeoSeries.from_points_xy(df[['longitude', 'latitude']].interleave_columns())
+
+    >>> # Create Comparator cuSpatial GeoSeries from a comparator point
+    >>> df['compare_lat'] = 2.0
+    >>> df['compare_lng'] = 2.0
+    >>> atlGeoSeries = cuspatial.GeoSeries.from_points_xy(df[['compare_lat', 'compare_lng']].interleave_columns())
+
+    >>> # Calculate Haversine Distance of cuDF dataframe to comparator point
+    >>> df['compare_dist'] = cuspatial.haversine_distance(cuGeoSeries, atlGeoSeries)
+    >>> print(df)
+    
+           latitude  longitude  compare_lat  compare_lng  compare_dist
+    0       0.0        0.0          2.0          2.0    314.474805
+    1       0.0        1.0          2.0          2.0    248.629315
+    2       1.0        0.0          2.0          2.0    248.568719
+    3       1.0        1.0          2.0          2.0    157.225432
     """
 
     if any([not contains_only_points(p1), not contains_only_points(p2)]):
