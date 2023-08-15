@@ -421,9 +421,13 @@ def _pli_features_rebuild_offsets(pli, features):
     See the docs for `_pli_points_to_multipoints` and
     `_pli_lines_to_multipoints` for the rest of the explanation.
     """
+    if len(features) == 0:
+        return _zero_series(len(pli[0]))
+
     in_sizes = (
         features.sizes if len(features) > 0 else _zero_series(len(pli[0]) - 1)
     )
+
     offsets = cudf.Series(pli[0])
     offset_sizes = offsets[1:].reset_index(drop=True) - offsets[
         :-1
@@ -503,4 +507,16 @@ def _pli_lines_to_multipoints(pli):
         else cudf.Series([], dtype=cp.float64)
     )
     multipoints = cuspatial.GeoSeries.from_multipoints_xy(xy, offsets)
+    return multipoints
+
+
+def _lines_to_boundary_multipoints(lines):
+    starts = lines.lines.part_offset[:-1]
+    ends = lines.lines.part_offset[1:] - 1
+    indices = cudf.DataFrame({"x": starts, "y": ends}).interleave_columns()
+    all_points = cuspatial.GeoSeries.from_points_xy(lines.lines.xy)
+    boundary_points = all_points.take(indices)
+    multipoints = cuspatial.GeoSeries.from_multipoints_xy(
+        boundary_points.points.xy, lines.lines.geometry_offset * 2
+    )
     return multipoints

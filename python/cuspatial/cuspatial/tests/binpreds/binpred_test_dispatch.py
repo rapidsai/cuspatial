@@ -183,6 +183,39 @@ features = {
         LineString([(0.0, 0.0), (1.0, 1.0)]),
         LineString([(0.5, 0.5), (1.0, 0.1), (-1.0, 0.1)]),
     ),
+    "linestring-linestring-touch-corner": (
+        """
+        x   x
+        |  /
+        | //x
+        |//
+        x---x
+    """,
+        LineString([(0, 1), (0, 0), (1, 0)]),
+        LineString([(1, 1), (0, 0), (1, 0.5)]),
+    ),
+    "linestring-linestring-touch-twice-with-corner": (
+        """
+        x
+        |
+        x---x
+        | /
+        x---x
+    """,
+        LineString([(0, 1), (0, 0), (1, 0)]),
+        LineString([(0, 0.5), (1, 0.5), (0, 0)]),
+    ),
+    "linestring-linestring-touch-top-edge": (
+        """
+        x---x
+        |
+        |
+        |
+        x---x
+    """,
+        LineString([(0, 1), (0, 0), (1, 0)]),
+        LineString([(0, 1), (1, 1)]),
+    ),
     "linestring-polygon-disjoint": (
         """
     point_polygon above is drawn as
@@ -578,6 +611,9 @@ linestring_linestring_dispatch_list = [
     "linestring-linestring-touch-edge-twice",
     "linestring-linestring-crosses",
     "linestring-linestring-touch-and-cross",
+    "linestring-linestring-touch-corner",
+    "linestring-linestring-touch-twice-with-corner",
+    "linestring-linestring-touch-top-edge",
 ]
 
 linestring_polygon_dispatch_list = [

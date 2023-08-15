@@ -3,12 +3,12 @@
 from cuspatial.core.binpreds.basic_predicates import (
     _basic_equals_all,
     _basic_equals_any,
+    _basic_equals_count,
     _basic_intersects,
 )
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
     ImpossiblePredicate,
-    NotImplementedPredicate,
 )
 from cuspatial.utils.binpred_utils import (
     LineString,
@@ -33,13 +33,18 @@ class WithinIntersectsPredicate(BinPred):
 class PointLineStringWithin(BinPred):
     def _preprocess(self, lhs, rhs):
         intersects = lhs.intersects(rhs)
-        equals = _basic_equals_any(lhs, rhs)
+        equals = _basic_equals_count(rhs, lhs) == lhs.sizes
         return intersects & ~equals
 
 
 class PointPolygonWithin(BinPred):
     def _preprocess(self, lhs, rhs):
         return rhs.contains_properly(lhs)
+
+
+class MultiPointMultiPointWithin(BinPred):
+    def _preprocess(self, lhs, rhs):
+        return rhs.contains(lhs)
 
 
 class LineStringLineStringWithin(BinPred):
@@ -60,11 +65,11 @@ class PolygonPolygonWithin(BinPred):
 
 DispatchDict = {
     (Point, Point): WithinPredicateBase,
-    (Point, MultiPoint): WithinIntersectsPredicate,
+    (Point, MultiPoint): MultiPointMultiPointWithin,
     (Point, LineString): PointLineStringWithin,
     (Point, Polygon): PointPolygonWithin,
-    (MultiPoint, Point): NotImplementedPredicate,
-    (MultiPoint, MultiPoint): NotImplementedPredicate,
+    (MultiPoint, Point): MultiPointMultiPointWithin,
+    (MultiPoint, MultiPoint): MultiPointMultiPointWithin,
     (MultiPoint, LineString): WithinIntersectsPredicate,
     (MultiPoint, Polygon): PolygonPolygonWithin,
     (LineString, Point): ImpossiblePredicate,

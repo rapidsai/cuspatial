@@ -17,7 +17,9 @@ from cuspatial.utils.binpred_utils import (
     Point,
     Polygon,
     _false_series,
-    _points_and_lines_to_multipoints,
+    _lines_to_boundary_multipoints,
+    _pli_lines_to_multipoints,
+    _pli_points_to_multipoints,
 )
 
 
@@ -43,13 +45,23 @@ class LineStringLineStringCrosses(IntersectsPredicateBase):
         # they intersect, and none of the points of the
         # intersection are in the boundary of the other
         pli = _basic_intersects_pli(rhs, lhs)
-        intersections = _points_and_lines_to_multipoints(pli[1], pli[0])
-        equals_lhs_count = _basic_equals_count(intersections, lhs)
-        equals_rhs_count = _basic_equals_count(intersections, rhs)
-        equals_lhs = equals_lhs_count != intersections.sizes
-        equals_rhs = equals_rhs_count != intersections.sizes
-        equals = equals_lhs & equals_rhs
-        return equals
+        points = _pli_points_to_multipoints(pli)
+        lines = _pli_lines_to_multipoints(pli)
+        # Optimization: only compute the subsequent boundaries and equalities
+        # of indexes that contain point intersections and do not contain line
+        # intersections.
+        lhs_boundary = _lines_to_boundary_multipoints(lhs)
+        rhs_boundary = _lines_to_boundary_multipoints(rhs)
+        lhs_boundary_matches = _basic_equals_count(points, lhs_boundary)
+        rhs_boundary_matches = _basic_equals_count(points, rhs_boundary)
+        lhs_crosses = lhs_boundary_matches != points.sizes
+        rhs_crosses = rhs_boundary_matches != points.sizes
+        crosses = (
+            (points.sizes > 0)
+            & (lhs_crosses & rhs_crosses)
+            & (lines.sizes == 0)
+        )
+        return crosses
 
 
 class LineStringPolygonCrosses(BinPred):

@@ -6,6 +6,7 @@ import cudf
 
 from cuspatial.core.binpreds.basic_predicates import (
     _basic_contains_count,
+    _basic_equals_all,
     _basic_equals_any,
     _basic_equals_count,
     _basic_intersects,
@@ -154,19 +155,44 @@ class PointPointContains(BinPred):
         return _basic_equals_any(lhs, rhs)
 
 
+class MultiPointMultiPointContains(BinPred):
+    def _preprocess(self, lhs, rhs):
+        return _basic_equals_all(rhs, lhs)
+
+
 class LineStringPointContains(BinPred):
     def _preprocess(self, lhs, rhs):
         intersects = _basic_intersects(lhs, rhs)
-        equals = _basic_equals_any(lhs, rhs)
+        equals = _basic_equals_count(lhs, rhs) == rhs.sizes
         return intersects & ~equals
 
 
 class LineStringLineStringContainsPredicate(BinPred):
     def _preprocess(self, lhs, rhs):
+        # rhs_self_intersection is rhs where all colinear segments
+        # are compacted into a single segment. This is necessary
+        # because the intersection of lhs and rhs below will
+        # compact colinear segments into a single segment, so
+        # vertices in rhs will be lost and not countable.
+        # Consider the following example:
+        # lhs = [(0, 0), (1, 1)]
+        # rhs = [(0, 0), (0.5, 0.5), (1, 1)]
+        # The intersection of lhs and rhs is [(0, 0), (1, 1)].
+        # rhs is contained by lhs if all of the vertices in the
+        # intersection are in rhs. However, the intersection
+        # does not contain the vertex (0.5, 0.5) in the original rhs.
+        rhs_self_intersection = _basic_intersects_pli(rhs, rhs)
+        rhs_no_segments = _points_and_lines_to_multipoints(
+            rhs_self_intersection[1], rhs_self_intersection[0]
+        )
+        # Now intersect lhs and rhs and collect only the segments.
         pli = _basic_intersects_pli(lhs, rhs)
-        points = _points_and_lines_to_multipoints(pli[1], pli[0])
-        # Every point in B must be in the intersection
-        equals = _basic_equals_count(rhs, points) == rhs.sizes
+        lines = _pli_lines_to_multipoints(pli)
+        # Every segment in B must be in the intersection segments.
+        equals = (
+            _basic_equals_count(lines, rhs_no_segments)
+            == rhs_no_segments.sizes
+        )
         return equals
 
 
@@ -174,11 +200,11 @@ class LineStringLineStringContainsPredicate(BinPred):
     left and right hand side types. """
 DispatchDict = {
     (Point, Point): PointPointContains,
-    (Point, MultiPoint): ImpossiblePredicate,
+    (Point, MultiPoint): MultiPointMultiPointContains,
     (Point, LineString): ImpossiblePredicate,
     (Point, Polygon): ImpossiblePredicate,
-    (MultiPoint, Point): NotImplementedPredicate,
-    (MultiPoint, MultiPoint): NotImplementedPredicate,
+    (MultiPoint, Point): MultiPointMultiPointContains,
+    (MultiPoint, MultiPoint): MultiPointMultiPointContains,
     (MultiPoint, LineString): NotImplementedPredicate,
     (MultiPoint, Polygon): NotImplementedPredicate,
     (LineString, Point): LineStringPointContains,

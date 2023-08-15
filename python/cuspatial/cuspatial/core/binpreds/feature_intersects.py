@@ -8,6 +8,7 @@ import cudf
 from cuspatial.core.binops.intersection import pairwise_linestring_intersection
 from cuspatial.core.binpreds.basic_predicates import (
     _basic_contains_any,
+    _basic_equals_count,
     _basic_intersects,
 )
 from cuspatial.core.binpreds.binpred_interface import (
@@ -111,6 +112,11 @@ class PointLineStringIntersects(LineStringPointIntersects):
         return super()._preprocess(rhs, lhs)
 
 
+class MultiPointMultiPointIntersects(BinPred):
+    def _preprocess(self, lhs, rhs):
+        return _basic_equals_count(lhs, rhs) > 0
+
+
 class LineStringPolygonIntersects(BinPred):
     def _preprocess(self, lhs, rhs):
         return _basic_contains_any(rhs, lhs)
@@ -132,11 +138,11 @@ class PolygonPolygonIntersects(BinPred):
 """ Type dispatch dictionary for intersects binary predicates. """
 DispatchDict = {
     (Point, Point): IntersectsByEquals,
-    (Point, MultiPoint): NotImplementedPredicate,
+    (Point, MultiPoint): MultiPointMultiPointIntersects,
     (Point, LineString): PointLineStringIntersects,
     (Point, Polygon): PointPolygonIntersects,
-    (MultiPoint, Point): NotImplementedPredicate,
-    (MultiPoint, MultiPoint): NotImplementedPredicate,
+    (MultiPoint, Point): MultiPointMultiPointIntersects,
+    (MultiPoint, MultiPoint): MultiPointMultiPointIntersects,
     (MultiPoint, LineString): NotImplementedPredicate,
     (MultiPoint, Polygon): NotImplementedPredicate,
     (LineString, Point): LineStringPointIntersects,

@@ -37,15 +37,18 @@ class CoversPredicateBase(EqualsPredicateBase):
     pass
 
 
+class MultiPointMultiPointCovers(BinPred):
+    def _preprocess(self, lhs, rhs):
+        # A multipoint A covers another multipoint B iff
+        # every point in B is in A.
+        return lhs.contains(rhs)
+
+
 class LineStringLineStringCovers(BinPred):
     def _preprocess(self, lhs, rhs):
         # A linestring A covers another linestring B iff
         # no point in B is outside of A.
-        pli = _basic_intersects_pli(lhs, rhs)
-        points = _points_and_lines_to_multipoints(pli[1], pli[0])
-        # Every point in B must be in the intersection
-        equals = _basic_equals_count(rhs, points) == rhs.sizes
-        return equals
+        return lhs.contains(rhs)
 
 
 class PolygonPointCovers(BinPred):
@@ -83,11 +86,11 @@ class PolygonPolygonCovers(BinPred):
 
 DispatchDict = {
     (Point, Point): CoversPredicateBase,
-    (Point, MultiPoint): NotImplementedPredicate,
+    (Point, MultiPoint): MultiPointMultiPointCovers,
     (Point, LineString): ImpossiblePredicate,
     (Point, Polygon): ImpossiblePredicate,
-    (MultiPoint, Point): NotImplementedPredicate,
-    (MultiPoint, MultiPoint): NotImplementedPredicate,
+    (MultiPoint, Point): MultiPointMultiPointCovers,
+    (MultiPoint, MultiPoint): MultiPointMultiPointCovers,
     (MultiPoint, LineString): NotImplementedPredicate,
     (MultiPoint, Polygon): NotImplementedPredicate,
     (LineString, Point): LineStringPointIntersects,

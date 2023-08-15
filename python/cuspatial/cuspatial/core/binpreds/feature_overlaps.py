@@ -4,6 +4,8 @@ import cudf
 
 from cuspatial.core.binpreds.basic_predicates import (
     _basic_contains_properly_any,
+    _basic_equals_count,
+    _basic_intersects_pli,
 )
 from cuspatial.core.binpreds.binpred_interface import (
     BinPred,
@@ -17,6 +19,7 @@ from cuspatial.utils.binpred_utils import (
     Point,
     Polygon,
     _false_series,
+    _pli_lines_to_multipoints,
 )
 from cuspatial.utils.column_utils import has_same_geometry
 
@@ -37,6 +40,15 @@ class OverlapsPredicateBase(EqualsPredicateBase):
     """
 
     pass
+
+
+class LineStringLineStringOverlaps(BinPred):
+    def _preprocess(self, lhs, rhs):
+        pli = _basic_intersects_pli(lhs, rhs)
+        lines = _pli_lines_to_multipoints(pli)
+        lhs_not_equal = _basic_equals_count(lhs, lines) != lhs.sizes
+        rhs_not_equal = _basic_equals_count(rhs, lines) != rhs.sizes
+        return (lines.sizes > 0) & lhs_not_equal & rhs_not_equal
 
 
 class PolygonPolygonOverlaps(BinPred):
@@ -85,7 +97,7 @@ DispatchDict = {
     (MultiPoint, Polygon): ImpossiblePredicate,
     (LineString, Point): ImpossiblePredicate,
     (LineString, MultiPoint): ImpossiblePredicate,
-    (LineString, LineString): ImpossiblePredicate,
+    (LineString, LineString): LineStringLineStringOverlaps,
     (LineString, Polygon): ImpossiblePredicate,
     (Polygon, Point): OverlapsPredicateBase,
     (Polygon, MultiPoint): OverlapsPredicateBase,
