@@ -5,7 +5,7 @@
 > cuSpatial depends on [cuDF](https://github.com/rapidsai/cudf) and [RMM](https://github.com/rapidsai/rmm) from [RAPIDS](https://rapids.ai/).
 
 ## cuProj - GPU-accelerated Coordinate Reference System (CRS) Transformations
-cuProj is a new RAPIDS library housed within the cuSpatial repo that provides GPU-accelerated transformations of coordinates between coordinate reference systems (CRS). cuProj is available as of release 23.08 with support for transformations of WGS84 coordinates to and from Universal Transverse Mercator (UTM) :globe_with_meridians:.
+cuProj is a new RAPIDS library housed within the cuSpatial repo that provides GPU-accelerated transformations of coordinates between coordinate reference systems (CRS). cuProj is available as of release 23.10 with support for transformations of WGS84 coordinates to and from Universal Transverse Mercator (UTM) :globe_with_meridians:.
 
 To learn more about cuProj, see the [Python cuProj README](python/cuproj/README.md) or the [c++ libcuproj README](cpp/cuproj/README.md).
 
@@ -113,7 +113,7 @@ An example command from the Release Selector:
 docker run --gpus all --pull always --rm -it \
     --shm-size=1g --ulimit memlock=-1 --ulimit stack=67108864 \
     -p 8888:8888 -p 8787:8787 -p 8786:8786 \
-    nvcr.io/nvidia/rapidsai/notebooks:23.08-cuda11.8-py3.10
+    nvcr.io/nvidia/rapidsai/notebooks:23.10-cuda11.8-py3.10
 ```
 
 ### Install with Conda
@@ -125,7 +125,7 @@ cuSpatial can be installed with conda (miniconda, or the full Anaconda distribut
 
 ```shell
 conda install -c rapidsai -c conda-forge -c nvidia \
-    cuspatial=23.08 python=3.10 cudatoolkit=11.8
+    cuspatial=23.10 python=3.10 cudatoolkit=11.8
 ```
 We also provide nightly Conda packages built from the HEAD of our latest development branch.
 
@@ -142,7 +142,7 @@ The cuSpatial pip packages can be installed from NVIDIA's PyPI index. pip instal
 - If your installation has a CUDA 12 driver but a CUDA 11 toolkit, use the `-cu11` wheels.
 ```shell
 pip install cuspatial-cu12 --extra-index-url=https://pypi.nvidia.com
-pip install cuspatial-cu11 --extra-index-url=https://pypi.nvidia.com 
+pip install cuspatial-cu11 --extra-index-url=https://pypi.nvidia.com
 ```
 
 #### Troubleshooting Fiona/GDAL versions
@@ -184,7 +184,7 @@ To build and install cuSpatial from source please see the [build documentation](
 If you find cuSpatial useful in your published work, please consider citing the repository.
 
 ```bibtex
-@misc{cuspatial:23.08,
+@misc{cuspatial:23.10,
     author = {{NVIDIA Corporation}},
     title = {cuSpatial: GPU-Accelerated Geospatial and Spatiotemporal Algorithms},
     year = {2023},
