@@ -2,9 +2,10 @@
 
 import geopandas
 import numpy as np
+from binpred_test_dispatch import predicate  # noqa: F401
 
 import cuspatial
-from cuspatial.testing.test_geometries import (  # noqa: F401
+from cuspatial.testing.test_geometries import (
     features,
     linestring_linestring_dispatch_list,
     linestring_polygon_dispatch_list,
