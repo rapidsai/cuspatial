@@ -409,7 +409,7 @@ dependencies:
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
           # This index is needed for rmm
-          - --extra-index-url=https://pypi.ngc.nvidia.com
+          - --extra-index-url=https://pypi.nvidia.com
           - &cupy_pip cupy-cuda11x>=12.0.0
       - output_types: pyproject
         packages:
