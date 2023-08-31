@@ -49,7 +49,7 @@ requirements:
     - gmock {{ gtest_version }}
     - gtest {{ gtest_version }}
     - libcudf ={{ minor_version }}
-    - librmm ={{ minor_version }}
+    #- librmm ={{ minor_version }}  # TODO: Temporarily disabled so that rmm doesn't provide CCCL
     - sqlite
     - proj
 
