@@ -316,6 +316,9 @@ dependencies:
       - output_types: [conda, requirements]
         packages:
           - pre-commit
+      - output_types: conda
+        packages:
+          - clang-tools=16.0.1
   docs:
     common:
       - output_types: [conda]
