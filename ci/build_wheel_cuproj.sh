@@ -3,4 +3,6 @@
 
 set -euo pipefail
 
+export SKBUILD_CONFIGURE_OPTIONS="-DCUPROJ_BUILD_WHEELS=ON"
+
 ci/build_wheel.sh cuproj python/cuproj
