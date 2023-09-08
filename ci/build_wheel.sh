@@ -34,11 +34,9 @@ if ! rapids-is-release-build; then
     alpha_spec=',>=0.0.0a0'
 fi
 
+sed -r -i "s/rmm(.*)\"/rmm${PACKAGE_CUDA_SUFFIX}\1${alpha_spec}\"/g" ${pyproject_file}
 if [[ ${package_name} == "cuspatial" ]]; then
-    sed -r -i "s/rmm(.*)\"/rmm${PACKAGE_CUDA_SUFFIX}\1${alpha_spec}\"/g" ${pyproject_file}
     sed -r -i "s/cudf==(.*)\"/cudf${PACKAGE_CUDA_SUFFIX}==\1${alpha_spec}\"/g" ${pyproject_file}
-else
-    sed -r -i "s/rmm(.*)\"/rmm${PACKAGE_CUDA_SUFFIX}\1${alpha_spec}\"/g" ${pyproject_file}
 fi
 
 if [[ $PACKAGE_CUDA_SUFFIX == "-cu12" ]]; then
