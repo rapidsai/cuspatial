@@ -23,6 +23,7 @@ jobs:
       - wheel-tests-cuspatial
       - wheel-build-cuproj
       - wheel-tests-cuproj
+      - build-in-devcontainer
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/pr-builder.yaml@branch-23.10
   checks:
@@ -30,7 +31,6 @@ jobs:
     uses: rapidsai/shared-action-workflows/.github/workflows/checks.yaml@branch-23.10
     with:
       enable_check_generated_files: false
-      enable_check_pr_job_dependencies: false
   conda-cpp-build:
     needs: checks
     secrets: inherit
@@ -103,9 +103,11 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_wheel_cuproj.sh
-  devcontainer:
+  build-in-devcontainer:
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/build-in-devcontainer.yaml@fea/devcontainers
     with:
       build_command: |
-        build-cuspatial -DBUILD_TESTS=ON -DBUILD_BENCHMARKS=ON;
+        sccache -z;
+        build-all -DBUILD_TESTS=ON -DBUILD_BENCHMARKS=ON;
+        sccache -s;
