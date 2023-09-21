@@ -309,6 +309,9 @@ dependencies:
           - pydeck
           - shapely
           - scikit-image
+      - output_types: [requirements, pyproject]
+        packages:
+          - pyproj
   py_version:
     specific:
       - output_types: conda
@@ -344,6 +347,9 @@ dependencies:
           - pytest-cov
           - pytest-xdist
           - geopandas>=0.11.0
+      - output_types: [requirements, pyproject]
+        packages:
+          - pyproj
 
   depends_on_rmm:
     common:

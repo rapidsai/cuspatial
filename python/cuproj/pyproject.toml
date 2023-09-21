@@ -49,6 +49,7 @@ classifiers = [
 [project.optional-dependencies]
 test = [
     "geopandas>=0.11.0",
+    "pyproj",
     "pytest",
     "pytest-cov",
     "pytest-xdist",
