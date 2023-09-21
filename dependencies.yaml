@@ -442,4 +442,4 @@ dependencies:
           - pytest-cov
           - pytest-xdist
           - geopandas>=0.11.0
-          - cuspatial=23.10.*
+          - cuspatial==23.10.*
