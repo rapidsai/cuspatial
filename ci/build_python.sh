@@ -15,7 +15,7 @@ rapids-logger "Begin py build cuSpatial"
 
 # TODO: Remove `--no-test` flag once importing on a CPU
 # node works correctly
-rapids-mamba-retry mambabuild \
+rapids-conda-retry mambabuild \
   --no-test \
   --channel "${CPP_CHANNEL}" \
   conda/recipes/cuspatial
@@ -24,7 +24,7 @@ rapids-logger "Begin py build cuProj"
 
 # TODO: Remove `--no-test` flag once importing on a CPU
 # node works correctly
-rapids-mamba-retry mambabuild \
+rapids-conda-retry mambabuild \
   --no-test \
   --channel "${CPP_CHANNEL}" \
   conda/recipes/cuproj
