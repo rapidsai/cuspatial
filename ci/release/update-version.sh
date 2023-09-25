@@ -65,7 +65,6 @@ sed_runner "s/RAPIDS_VERSION_NUMBER=\".*/RAPIDS_VERSION_NUMBER=\"${NEXT_SHORT_TA
 
 # Need to distutils-normalize the original version
 NEXT_SHORT_TAG_PEP440=$(python -c "from setuptools.extern import packaging; print(packaging.version.Version('${NEXT_SHORT_TAG}'))")
-NEXT_FULL_TAG_PEP440=$(python -c "from setuptools.extern import packaging; print(packaging.version.Version('${NEXT_FULL_TAG}'))")
 
 DEPENDENCIES=(
   cudf
@@ -86,8 +85,8 @@ for DEP in "${DEPENDENCIES[@]}"; do
 done
 
 # Version in pyproject.toml
-sed_runner "s/^version = .*/version = \"${NEXT_FULL_TAG_PEP440}\"/g" python/cuspatial/pyproject.toml
-sed_runner "s/^version = .*/version = \"${NEXT_FULL_TAG_PEP440}\"/g" python/cuproj/pyproject.toml
+sed_runner "s/^version = .*/version = \"${NEXT_FULL_TAG}\"/g" python/cuspatial/pyproject.toml
+sed_runner "s/^version = .*/version = \"${NEXT_FULL_TAG}\"/g" python/cuproj/pyproject.toml
 
 # Dependency versions in dependencies.yaml
 sed_runner "/-cu[0-9]\{2\}==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}.*/g" dependencies.yaml
@@ -106,3 +105,8 @@ sed_runner "s/cuspatial:[0-9]\+.[0-9]/cuspatial:${NEXT_SHORT_TAG}/g" README.md
 sed_runner "s/cuspatial=[0-9]\+.[0-9]/cuspatial=${NEXT_SHORT_TAG}/g" README.md
 sed_runner "s/notebooks:[0-9]\+.[0-9]/notebooks:${NEXT_SHORT_TAG}/g" README.md
 
+# .devcontainer files
+find .devcontainer/ -type f -name devcontainer.json -print0 | while IFS= read -r -d '' filename; do
+    sed_runner "s@rapidsai/devcontainers:[0-9.]*@rapidsai/devcontainers:${NEXT_FULL_TAG}@g" "${filename}"
+    sed_runner "s@rapidsai/devcontainers/features/rapids-build-utils:[0-9.]*@rapidsai/devcontainers/features/rapids-build-utils:${NEXT_SHORT_TAG_PEP440}@"
+done
