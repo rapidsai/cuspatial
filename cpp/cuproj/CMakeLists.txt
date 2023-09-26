@@ -91,6 +91,8 @@ include(cmake/modules/ConfigureCUDA.cmake)
 # add third party dependencies using CPM
 rapids_cpm_init()
 
+include(cmake/thirdparty/get_rmm.cmake)
+
 # find or install GoogleTest and Proj
 if (CUPROJ_BUILD_TESTS)
     include(cmake/thirdparty/get_gtest.cmake)
@@ -102,6 +104,8 @@ endif()
 
 add_library(cuproj INTERFACE)
 add_library(cuproj::cuproj ALIAS cuproj)
+
+target_link_libraries(cuproj INTERFACE rmm::rmm)
 
 set_target_properties(cuproj
     PROPERTIES BUILD_RPATH                         "\$ORIGIN"
