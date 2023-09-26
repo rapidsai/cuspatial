@@ -69,8 +69,7 @@ struct TrajectoryDistancesAndSpeedsTest : public ::testing::Test {
                      expected_speeds.end(),
                      std::numeric_limits<T>::lowest(),
                      cuda::proclaim_return_type<T>(
-                      [] __device__(T const& a, T const& b) { return max(abs(a), abs(b)); }
-      ));
+                       [] __device__(T const& a, T const& b) { return max(abs(a), abs(b)); }));
 
     // We expect the floating point error (in ulps) due to be proportional to the  number of
     // operations to compute the relevant quantity. For distance, this computation is

@@ -152,10 +152,9 @@ void generic_hausdorff_test()
   auto zero_iter         = thrust::make_constant_iterator<vec_2d>({0, 0});
   auto counting_iter     = thrust::make_counting_iterator<uint32_t>(0);
   auto space_offset_iter = thrust::make_transform_iterator(
-    counting_iter,
-    cuda::proclaim_return_type<uint32_t>(
-      [] __device__(auto idx) { return idx * elements_per_space; }
-    ));
+    counting_iter, cuda::proclaim_return_type<uint32_t>([] __device__(auto idx) {
+      return idx * elements_per_space;
+    }));
 
   auto distances = rmm::device_vector<T>(num_distances);
   auto expected  = rmm::device_vector<T>(num_distances, 0);

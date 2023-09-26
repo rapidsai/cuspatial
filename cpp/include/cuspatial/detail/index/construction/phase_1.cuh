@@ -147,10 +147,9 @@ inline std::tuple<IndexT, IndexT, std::vector<IndexT>, std::vector<IndexT>> buil
 
   // iterator for the parent level's quad node keys
   auto parent_keys = thrust::make_transform_iterator(
-    keys_begin,
-    cuda::proclaim_return_type<uint32_t>(
-      [] __device__(uint32_t const child_key) { return (child_key >> 2); }
-    ));
+    keys_begin, cuda::proclaim_return_type<uint32_t>([] __device__(uint32_t const child_key) {
+      return (child_key >> 2);
+    }));
 
   // iterator for the current level's quad node point and child counts
   auto child_nodes = thrust::make_zip_iterator(quad_point_count_begin, quad_child_count_begin);

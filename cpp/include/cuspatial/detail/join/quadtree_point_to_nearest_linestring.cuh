@@ -249,8 +249,7 @@ quadtree_point_to_nearest_linestring(LinestringIndexIterator linestring_indices_
   auto all_point_indices =
     thrust::make_transform_iterator(all_point_linestring_indices_and_distances,
                                     cuda::proclaim_return_type<uint32_t>(
-                                      [] __device__(auto const& x) { return thrust::get<0>(x); }
-                                    ));
+                                      [] __device__(auto const& x) { return thrust::get<0>(x); }));
 
   // Allocate vectors for the distances min reduction
   auto num_points = std::distance(point_indices_first, point_indices_last);
@@ -291,8 +290,7 @@ quadtree_point_to_nearest_linestring(LinestringIndexIterator linestring_indices_
         }
         // Otherwise choose linestring with smallest distance
         return d_lhs < d_rhs ? lhs : rhs;
-      })
-    );
+      }));
 
   auto const num_distances = thrust::distance(point_idxs.begin(), point_idxs_end.first);
 

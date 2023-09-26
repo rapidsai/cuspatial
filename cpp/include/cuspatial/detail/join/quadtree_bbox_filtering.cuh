@@ -90,18 +90,14 @@ join_quadtree_and_bounding_boxes(point_quadtree_ref quadtree,
                                bounding_boxes_first,
                                // The top-level node indices
                                detail::make_counting_transform_iterator(
-                                 0,
-                                 cuda::proclaim_return_type<int32_t>(
-                                   [=] __device__(auto i) { return i % num_top_level_leaves; }
-                                 )
-                               ),
+                                 0, cuda::proclaim_return_type<int32_t>([=] __device__(auto i) {
+                                   return i % num_top_level_leaves;
+                                 })),
                                // The top-level bbox indices
                                detail::make_counting_transform_iterator(
-                                 0,
-                                 cuda::proclaim_return_type<int32_t>(
-                                   [=] __device__(auto i) { return i / num_top_level_leaves; }
-                                 )
-                               ),
+                                 0, cuda::proclaim_return_type<int32_t>([=] __device__(auto i) {
+                                   return i / num_top_level_leaves;
+                                 })),
                                make_current_level_iter(),  // intermediate intersections or parent
                                                            // quadrants found during traversal
                                // found intersecting quadrant and bbox indices for output
