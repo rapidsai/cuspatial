@@ -16,7 +16,7 @@
 build-backend = "setuptools.build_meta"
 requires = [
     "cmake>=3.26.4",
-    "cython>=0.29,<0.30",
+    "cython>=3.0.0",
     "ninja",
     "rmm==23.12.*",
     "scikit-build>=0.13.1",
@@ -49,6 +49,7 @@ classifiers = [
 [project.optional-dependencies]
 test = [
     "geopandas>=0.11.0",
+    "pyproj",
     "pytest",
     "pytest-cov",
     "pytest-xdist",
