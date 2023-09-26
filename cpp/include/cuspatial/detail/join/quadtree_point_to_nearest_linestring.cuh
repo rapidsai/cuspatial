@@ -25,6 +25,7 @@
 #include <cuspatial/range/multilinestring_range.cuh>
 #include <cuspatial/traits.hpp>
 
+#include <functional>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
 
@@ -247,7 +248,9 @@ quadtree_point_to_nearest_linestring(LinestringIndexIterator linestring_indices_
 
   auto all_point_indices =
     thrust::make_transform_iterator(all_point_linestring_indices_and_distances,
-                                    [] __device__(auto const& x) { return thrust::get<0>(x); });
+                                    cuda::proclaim_return_type<uint32_t>(
+                                      [] __device__(auto const& x) { return thrust::get<0>(x); }
+                                    ));
 
   // Allocate vectors for the distances min reduction
   auto num_points = std::distance(point_indices_first, point_indices_last);
@@ -272,22 +275,24 @@ quadtree_point_to_nearest_linestring(LinestringIndexIterator linestring_indices_
       thrust::make_discard_iterator(), output_linestring_idxs.begin(), output_distances.begin()),
     thrust::equal_to<uint32_t>(),  // comparator
     // binop to select the point/linestring pair with the smallest distance
-    [] __device__(auto const& lhs, auto const& rhs) {
-      T const& d_lhs = thrust::get<2>(lhs);
-      T const& d_rhs = thrust::get<2>(rhs);
-      // If lhs distance is 0, choose rhs
-      if (d_lhs == T{0}) { return rhs; }
-      // if rhs distance is 0, choose lhs
-      if (d_rhs == T{0}) { return lhs; }
-      // If distances to lhs/rhs are the same, choose linestring with smallest id
-      if (d_lhs == d_rhs) {
-        auto const& i_lhs = thrust::get<1>(lhs);
-        auto const& i_rhs = thrust::get<1>(rhs);
-        return i_lhs < i_rhs ? lhs : rhs;
-      }
-      // Otherwise choose linestring with smallest distance
-      return d_lhs < d_rhs ? lhs : rhs;
-    });
+    cuda::proclaim_return_type<thrust::tuple<uint32_t, uint32_t, T>>(
+      [] __device__(auto const& lhs, auto const& rhs) {
+        T const& d_lhs = thrust::get<2>(lhs);
+        T const& d_rhs = thrust::get<2>(rhs);
+        // If lhs distance is 0, choose rhs
+        if (d_lhs == T{0}) { return rhs; }
+        // if rhs distance is 0, choose lhs
+        if (d_rhs == T{0}) { return lhs; }
+        // If distances to lhs/rhs are the same, choose linestring with smallest id
+        if (d_lhs == d_rhs) {
+          auto const& i_lhs = thrust::get<1>(lhs);
+          auto const& i_rhs = thrust::get<1>(rhs);
+          return i_lhs < i_rhs ? lhs : rhs;
+        }
+        // Otherwise choose linestring with smallest distance
+        return d_lhs < d_rhs ? lhs : rhs;
+      })
+    );
 
   auto const num_distances = thrust::distance(point_idxs.begin(), point_idxs_end.first);
 

@@ -22,6 +22,7 @@
 #include <cuspatial/point_quadtree.cuh>
 #include <cuspatial/traits.hpp>
 
+#include <functional>
 #include <thrust/iterator/discard_iterator.h>
 
 #include <iterator>
@@ -47,10 +48,10 @@ join_quadtree_and_bounding_boxes(point_quadtree_ref quadtree,
 
   // Count the number of top-level nodes to start.
   // This could be provided explicitly, but count_if should be fast enough.
-  auto num_top_level_leaves = thrust::count_if(rmm::exec_policy(stream),
-                                               quadtree.level_begin(),
-                                               quadtree.level_end(),
-                                               thrust::placeholders::_1 == 0);
+  int32_t num_top_level_leaves = thrust::count_if(rmm::exec_policy(stream),
+                                                  quadtree.level_begin(),
+                                                  quadtree.level_end(),
+                                                  thrust::placeholders::_1 == 0);
 
   auto num_pairs = num_top_level_leaves * num_boxes;
 
@@ -89,10 +90,18 @@ join_quadtree_and_bounding_boxes(point_quadtree_ref quadtree,
                                bounding_boxes_first,
                                // The top-level node indices
                                detail::make_counting_transform_iterator(
-                                 0, [=] __device__(auto i) { return i % num_top_level_leaves; }),
+                                 0,
+                                 cuda::proclaim_return_type<int32_t>(
+                                   [=] __device__(auto i) { return i % num_top_level_leaves; }
+                                 )
+                               ),
                                // The top-level bbox indices
                                detail::make_counting_transform_iterator(
-                                 0, [=] __device__(auto i) { return i / num_top_level_leaves; }),
+                                 0,
+                                 cuda::proclaim_return_type<int32_t>(
+                                   [=] __device__(auto i) { return i / num_top_level_leaves; }
+                                 )
+                               ),
                                make_current_level_iter(),  // intermediate intersections or parent
                                                            // quadrants found during traversal
                                // found intersecting quadrant and bbox indices for output
