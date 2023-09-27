@@ -1,27 +1,29 @@
 # syntax=docker/dockerfile:1.5
 
-ARG CUDA=11.8
-ARG LLVM=16
-ARG RAPIDS=23.06
-ARG DISTRO=ubuntu22.04
-ARG REPO=rapidsai/devcontainers
-
+ARG BASE
 ARG PYTHON_PACKAGE_MANAGER=conda
 
-FROM ${REPO}:${RAPIDS}-cpp-llvm${LLVM}-cuda${CUDA}-${DISTRO} as pip-base
+FROM ${BASE} as pip-base
 
-FROM ${REPO}:${RAPIDS}-cpp-llvm${LLVM}-cuda${CUDA}-mambaforge-${DISTRO} as conda-base
+ENV DEFAULT_VIRTUAL_ENV=rapids
+
+RUN apt update -y \
+ && DEBIAN_FRONTEND=noninteractive apt install -y \
+    sqlite3 libsqlite3-dev libtiff-dev libcurl4-openssl-dev \
+ && rm -rf /tmp/* /var/tmp/* /var/cache/apt/* /var/lib/apt/lists/*;
+
+FROM ${BASE} as conda-base
+
+ENV DEFAULT_CONDA_ENV=rapids
 
 FROM ${PYTHON_PACKAGE_MANAGER}-base
 
+ARG CUDA
+ENV CUDAARCHS="RAPIDS"
+ENV CUDA_VERSION="${CUDA_VERSION:-${CUDA}}"
+
 ARG PYTHON_PACKAGE_MANAGER
 ENV PYTHON_PACKAGE_MANAGER="${PYTHON_PACKAGE_MANAGER}"
-
-USER coder
-
-RUN /bin/bash -c 'mkdir -m 0755 -p ~/.{aws,cache,conda,config/pip,local}'
-
-WORKDIR /home/coder/
 
 ENV PYTHONSAFEPATH="1"
 ENV PYTHONUNBUFFERED="1"
@@ -30,5 +32,4 @@ ENV PYTHONDONTWRITEBYTECODE="1"
 ENV SCCACHE_REGION="us-east-2"
 ENV SCCACHE_BUCKET="rapids-sccache-devs"
 ENV VAULT_HOST="https://vault.ops.k8s.rapids.ai"
-
 ENV HISTFILE="/home/coder/.cache/._bash_history"

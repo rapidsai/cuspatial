@@ -1,3 +1,58 @@
+# cuSpatial 23.08.00 (9 Aug 2023)
+
+## 🚨 Breaking Changes
+
+- Simplify point-in-polygon header only APIs ([#1192](https://github.com/rapidsai/cuspatial/pull/1192)) [@isVoid](https://github.com/isVoid)
+
+## 🐛 Bug Fixes
+
+- Update nightly wheel tests for cuproj ([#1250](https://github.com/rapidsai/cuspatial/pull/1250)) [@raydouglass](https://github.com/raydouglass)
+- Update GeoDataFrame to Use the Structured GatherMap Class ([#1219](https://github.com/rapidsai/cuspatial/pull/1219)) [@isVoid](https://github.com/isVoid)
+- Add streams to allocate_like call ([#1218](https://github.com/rapidsai/cuspatial/pull/1218)) [@isVoid](https://github.com/isVoid)
+- Add CUDA major to `cuspatial`&#39;s `build/string` ([#1211](https://github.com/rapidsai/cuspatial/pull/1211)) [@jakirkham](https://github.com/jakirkham)
+- Fix overflowing in `intersection_intermediates.remove_if` ([#1209](https://github.com/rapidsai/cuspatial/pull/1209)) [@isVoid](https://github.com/isVoid)
+- Sort the mergeable segments before computing merged segments ([#1207](https://github.com/rapidsai/cuspatial/pull/1207)) [@isVoid](https://github.com/isVoid)
+- Fix a small typo in pairwise_linestring_distance ([#1199](https://github.com/rapidsai/cuspatial/pull/1199)) [@isVoid](https://github.com/isVoid)
+- Improve Polygon.contains(LineString) predicate logic. ([#1186](https://github.com/rapidsai/cuspatial/pull/1186)) [@thomcom](https://github.com/thomcom)
+- Use grid_stride_range in kernel loops ([#1178](https://github.com/rapidsai/cuspatial/pull/1178)) [@harrism](https://github.com/harrism)
+- Better support for binary predicates with large inputs. ([#1166](https://github.com/rapidsai/cuspatial/pull/1166)) [@thomcom](https://github.com/thomcom)
+
+## 📖 Documentation
+
+- cuProj Python and C++ Documentation ([#1237](https://github.com/rapidsai/cuspatial/pull/1237)) [@harrism](https://github.com/harrism)
+- cuSpatial 23.08 README updates ([#1232](https://github.com/rapidsai/cuspatial/pull/1232)) [@jarmak-nv](https://github.com/jarmak-nv)
+- Add author credit to zipcode counting notebook, fix cudf string processing argument ([#1201](https://github.com/rapidsai/cuspatial/pull/1201)) [@isVoid](https://github.com/isVoid)
+- Remove `osmnx` dependency and use a small local dataset ([#1195](https://github.com/rapidsai/cuspatial/pull/1195)) [@isVoid](https://github.com/isVoid)
+
+## 🚀 New Features
+
+- Add `geoseries.distance` ([#1231](https://github.com/rapidsai/cuspatial/pull/1231)) [@isVoid](https://github.com/isVoid)
+- Initial Python bindings for cuProj ([#1217](https://github.com/rapidsai/cuspatial/pull/1217)) [@harrism](https://github.com/harrism)
+- WGS84 to UTM benchmark (C++) ([#1216](https://github.com/rapidsai/cuspatial/pull/1216)) [@harrism](https://github.com/harrism)
+- Adding Spherical Surface Processing Capability to Point-in-Polygon Queries ([#1212](https://github.com/rapidsai/cuspatial/pull/1212)) [@ayasar70](https://github.com/ayasar70)
+- WGS84 &lt;--&gt; UTM projection header-only API ([#1191](https://github.com/rapidsai/cuspatial/pull/1191)) [@harrism](https://github.com/harrism)
+- External issue triage GHA ([#1177](https://github.com/rapidsai/cuspatial/pull/1177)) [@jarmak-nv](https://github.com/jarmak-nv)
+- Binary Predicates Introduction and Benchmark Notebook ([#1156](https://github.com/rapidsai/cuspatial/pull/1156)) [@thomcom](https://github.com/thomcom)
+- Add cmake infrastructure for internal projection library ([#1132](https://github.com/rapidsai/cuspatial/pull/1132)) [@harrism](https://github.com/harrism)
+
+## 🛠️ Improvements
+
+- Switch to new wheel building pipeline ([#1227](https://github.com/rapidsai/cuspatial/pull/1227)) [@vyasr](https://github.com/vyasr)
+- Use Google Benchmark from rapids-cmake in cuproj. ([#1225](https://github.com/rapidsai/cuspatial/pull/1225)) [@bdice](https://github.com/bdice)
+- Use rapids-cmake to supply Google Benchmark library. ([#1224](https://github.com/rapidsai/cuspatial/pull/1224)) [@bdice](https://github.com/bdice)
+- Revert CUDA 12.0 CI workflows to branch-23.08. ([#1223](https://github.com/rapidsai/cuspatial/pull/1223)) [@bdice](https://github.com/bdice)
+- Update to `rapidsai/devcontainers:23.08` ([#1214](https://github.com/rapidsai/cuspatial/pull/1214)) [@trxcllnt](https://github.com/trxcllnt)
+- Add Comprehensive Test for Multigeometry Range Classes ([#1197](https://github.com/rapidsai/cuspatial/pull/1197)) [@isVoid](https://github.com/isVoid)
+- Update to CMake 3.26.4 ([#1196](https://github.com/rapidsai/cuspatial/pull/1196)) [@vyasr](https://github.com/vyasr)
+- Simplify point-in-polygon header only APIs ([#1192](https://github.com/rapidsai/cuspatial/pull/1192)) [@isVoid](https://github.com/isVoid)
+- Forward merge `branch-23.06` into `branch-23.08` ([#1190](https://github.com/rapidsai/cuspatial/pull/1190)) [@raydouglass](https://github.com/raydouglass)
+- use rapids-upload-docs script ([#1181](https://github.com/rapidsai/cuspatial/pull/1181)) [@AyodeAwe](https://github.com/AyodeAwe)
+- Remove Stale Demo Scripts ([#1180](https://github.com/rapidsai/cuspatial/pull/1180)) [@isVoid](https://github.com/isVoid)
+- Updates Build Instructions to Adjust for Devcontainer Instructions and Remove Stale Information ([#1179](https://github.com/rapidsai/cuspatial/pull/1179)) [@isVoid](https://github.com/isVoid)
+- Fix branch-23.06 forward-merge into branch-23.08 ([#1175](https://github.com/rapidsai/cuspatial/pull/1175)) [@trxcllnt](https://github.com/trxcllnt)
+- Remove documentation build scripts for Jenkins ([#1169](https://github.com/rapidsai/cuspatial/pull/1169)) [@ajschmidt8](https://github.com/ajschmidt8)
+- cuSpatial: Build CUDA 12 packages ([#1044](https://github.com/rapidsai/cuspatial/pull/1044)) [@isVoid](https://github.com/isVoid)
+
 # cuSpatial 23.06.00 (7 Jun 2023)
 
 ## 🚨 Breaking Changes

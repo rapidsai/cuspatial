@@ -11,7 +11,7 @@ rapids-print-env
 
 rapids-logger "Begin cpp build"
 
-rapids-mamba-retry mambabuild \
+rapids-conda-retry mambabuild \
     conda/recipes/libcuspatial
 
 rapids-upload-conda-to-s3 cpp

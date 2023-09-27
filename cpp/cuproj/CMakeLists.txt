@@ -75,11 +75,6 @@ set_property(CACHE RMM_LOGGING_LEVEL PROPERTY STRINGS "TRACE" "DEBUG" "INFO" "WA
 message(STATUS "CUPROJ: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'.")
 
 ###################################################################################################
-# - conda environment -----------------------------------------------------------------------------
-
-rapids_cmake_support_conda_env(conda_env)
-
-###################################################################################################
 # - compiler options ------------------------------------------------------------------------------
 
 rapids_cuda_init_runtime(USE_STATIC ${CUDA_STATIC_RUNTIME})
@@ -95,8 +90,9 @@ include(cmake/modules/ConfigureCUDA.cmake)
 
 # add third party dependencies using CPM
 rapids_cpm_init()
-# find or add cuDF
-include(cmake/thirdparty/get_cudf.cmake)
+
+include(cmake/thirdparty/get_rmm.cmake)
+
 # find or install GoogleTest and Proj
 if (CUPROJ_BUILD_TESTS)
     include(cmake/thirdparty/get_gtest.cmake)
@@ -106,9 +102,10 @@ endif()
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
 
-add_library(cuproj
-    src/test.cu
-)
+add_library(cuproj INTERFACE)
+add_library(cuproj::cuproj ALIAS cuproj)
+
+target_link_libraries(cuproj INTERFACE rmm::rmm)
 
 set_target_properties(cuproj
     PROPERTIES BUILD_RPATH                         "\$ORIGIN"
@@ -123,43 +120,32 @@ set_target_properties(cuproj
 )
 
 target_compile_options(cuproj
-            PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:${CUPROJ_CXX_FLAGS}>"
+            INTERFACE "$<$<COMPILE_LANGUAGE:CXX>:${CUPROJ_CXX_FLAGS}>"
                     "$<$<COMPILE_LANGUAGE:CUDA>:${CUPROJ_CUDA_FLAGS}>"
 )
 
 target_compile_definitions(cuproj
-            PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${CUPROJ_CXX_DEFINITIONS}>"
+            INTERFACE "$<$<COMPILE_LANGUAGE:CXX>:${CUPROJ_CXX_DEFINITIONS}>"
                    "$<$<COMPILE_LANGUAGE:CUDA>:${CUPROJ_CUDA_DEFINITIONS}>"
 )
 
 # Specify include paths for the current target and dependents
 target_include_directories(cuproj
-           PUBLIC      "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}/include>"
-           PRIVATE     "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}/src>"
-           INTERFACE   "$<INSTALL_INTERFACE:include>")
-
-# Add Conda library and include paths if specified
-if(TARGET conda_env)
-    target_link_libraries(cuproj PRIVATE "$<BUILD_INTERFACE:conda_env>")
-endif()
+           INTERFACE   "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}/include>"
+                       "$<INSTALL_INTERFACE:include>")
 
 # Per-thread default stream
 if(PER_THREAD_DEFAULT_STREAM)
-    target_compile_definitions(cuproj PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
+    target_compile_definitions(cuproj INTERFACE CUDA_API_PER_THREAD_DEFAULT_STREAM)
 endif()
 
 # Disable NVTX if necessary
 if(NOT USE_NVTX)
-    target_compile_definitions(cuproj PUBLIC NVTX_DISABLE)
+    target_compile_definitions(cuproj INTERFACE NVTX_DISABLE)
 endif()
 
 # Define spdlog level
-target_compile_definitions(cuproj PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
-
-# Specify the target module library dependencies
-#target_link_libraries(cuproj PUBLIC cudf::cudf)
-
-add_library(cuproj::cuproj ALIAS cuproj)
+target_compile_definitions(cuproj INTERFACE "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
 
 ###################################################################################################
 # - add tests -------------------------------------------------------------------------------------

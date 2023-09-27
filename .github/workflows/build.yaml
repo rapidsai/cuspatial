@@ -61,12 +61,12 @@ jobs:
       arch: "amd64"
       branch: ${{ inputs.branch }}
       build_type: ${{ inputs.build_type || 'branch' }}
-      container_image: "rapidsai/ci:latest"
+      container_image: "rapidsai/ci-conda:latest"
       date: ${{ inputs.date }}
       node_type: "gpu-v100-latest-1"
       run_script: "ci/build_docs.sh"
       sha: ${{ inputs.sha }}
-  wheel-build:
+  wheel-build-cuspatial:
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/wheels-build.yaml@branch-23.10
     with:
@@ -74,9 +74,9 @@ jobs:
       branch: ${{ inputs.branch }}
       sha: ${{ inputs.sha }}
       date: ${{ inputs.date }}
-      script: ci/build_wheel.sh
-  wheel-publish:
-    needs: wheel-build
+      script: ci/build_wheel_cuspatial.sh
+  wheel-publish-cuspatial:
+    needs: wheel-build-cuspatial
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/wheels-publish.yaml@branch-23.10
     with:
@@ -85,3 +85,22 @@ jobs:
       sha: ${{ inputs.sha }}
       date: ${{ inputs.date }}
       package-name: cuspatial
+  wheel-build-cuproj:
+    secrets: inherit
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-build.yaml@branch-23.08
+    with:
+      build_type: ${{ inputs.build_type || 'branch' }}
+      branch: ${{ inputs.branch }}
+      sha: ${{ inputs.sha }}
+      date: ${{ inputs.date }}
+      script: ci/build_wheel_cuproj.sh
+  wheel-publish-cuproj:
+    needs: wheel-build-cuproj
+    secrets: inherit
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-publish.yaml@branch-23.08
+    with:
+      build_type: ${{ inputs.build_type || 'branch' }}
+      branch: ${{ inputs.branch }}
+      sha: ${{ inputs.sha }}
+      date: ${{ inputs.date }}
+      package-name: cuproj
