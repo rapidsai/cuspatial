@@ -208,15 +208,6 @@ dependencies:
           - cython>=3.0.0
           - scikit-build>=0.13.1
           - setuptools
-      - output_types: conda
-        packages: &build_python_packages_conda
-          - &cudf_conda cudf==23.12.*
-          - &rmm_conda rmm==23.12.*
-      - output_types: requirements
-        packages:
-          # pip recognizes the index as a global option for the requirements.txt file
-          # This index is needed for cudf and rmm.
-          - --extra-index-url=https://pypi.nvidia.com
     specific:
       - output_types: conda
         matrices:
@@ -230,20 +221,6 @@ dependencies:
             packages:
               - *gcc_aarch64
               - *sysroot_aarch64
-      - output_types: [requirements, pyproject]
-        matrices:
-          - matrix: {cuda: "12.0"}
-            packages:
-              - cudf-cu12==23.12.*
-              - rmm-cu12==23.12.*
-          - matrix: {cuda: "11.8"}
-            packages: &build_python_packages_cu11
-              - &cudf_cu11 cudf-cu11==23.12.*
-              - &rmm_cu11 rmm-cu11==23.12.*
-          - {matrix: {cuda: "11.5"}, packages: *build_python_packages_cu11}
-          - {matrix: {cuda: "11.4"}, packages: *build_python_packages_cu11}
-          - {matrix: {cuda: "11.2"}, packages: *build_python_packages_cu11}
-          - {matrix: null, packages: [*cudf_conda, *rmm_conda] }
   build_python_cuproj:
     common:
       - output_types: [conda, requirements, pyproject]
@@ -264,18 +241,6 @@ dependencies:
             packages:
               - *gcc_aarch64
               - *sysroot_aarch64
-      - output_types: [requirements, pyproject]
-        matrices:
-          - matrix: {cuda: "12.0"}
-            packages:
-              - rmm-cu12==23.12.*
-          - matrix: {cuda: "11.8"}
-            packages:
-              - *rmm_cu11
-          - {matrix: {cuda: "11.5"}, packages: *build_python_packages_cu11}
-          - {matrix: {cuda: "11.4"}, packages: *build_python_packages_cu11}
-          - {matrix: {cuda: "11.2"}, packages: *build_python_packages_cu11}
-          - {matrix: null, packages: [*rmm_conda] }
   build_wheels:
     common:
       - output_types: [requirements, pyproject]
@@ -344,23 +309,9 @@ dependencies:
           - pydeck
           - shapely
           - scikit-image
-          - pyproj
-      - output_types: conda
-        packages:
-          - &cuml_conda cuml==23.12.*
-    specific:
       - output_types: [requirements, pyproject]
-        matrices:
-          - {matrix: null, packages: [*cuml_conda]}
-          - matrix: {cuda: "12.0"}
-            packages:
-              - cuml-cu12==23.12.*
-          - matrix: {cuda: "11.8"}
-            packages: &notebooks_packages_cu11
-              - &cuml_cu11 cuml-cu11==23.12.*
-          - {matrix: {cuda: "11.5"}, packages: *notebooks_packages_cu11}
-          - {matrix: {cuda: "11.4"}, packages: *notebooks_packages_cu11}
-          - {matrix: {cuda: "11.2"}, packages: *notebooks_packages_cu11}
+        packages:
+          - pyproj
   py_version:
     specific:
       - output_types: conda
@@ -381,58 +332,6 @@ dependencies:
       - output_types: [conda, requirements, pyproject]
         packages:
           - geopandas>=0.11.0
-      - output_types: conda
-        packages:
-          - *cudf_conda
-          - *rmm_conda
-      - output_types: requirements
-        packages:
-          # pip recognizes the index as a global option for the requirements.txt file
-          # This index is needed for cudf and rmm.
-          - --extra-index-url=https://pypi.nvidia.com
-    specific:
-      - output_types: [requirements, pyproject]
-        matrices:
-          - matrix: {cuda: "12.0"}
-            packages:
-              - cudf-cu12==23.12.*
-              - rmm-cu12==23.12.*
-          - matrix: {cuda: "11.8"}
-            packages: &run_python_cuspatial_packages_cu11
-              - cudf-cu11==23.12.*
-              - rmm-cu11==23.12.*
-          - {matrix: {cuda: "11.5"}, packages: *run_python_cuspatial_packages_cu11}
-          - {matrix: {cuda: "11.4"}, packages: *run_python_cuspatial_packages_cu11}
-          - {matrix: {cuda: "11.2"}, packages: *run_python_cuspatial_packages_cu11}
-          - {matrix: null, packages: [*cudf_conda, *rmm_conda]}
-  run_python_cuproj:
-    common:
-      - output_types: conda
-        packages:
-          - *rmm_conda
-          - cupy>=12.0.0
-      - output_types: requirements
-        packages:
-          # pip recognizes the index as a global option for the requirements.txt file
-          # This index is needed for rmm
-          - --extra-index-url=https://pypi.ngc.nvidia.com
-          - &cupy_pip cupy-cuda11x>=12.0.0
-      - output_types: pyproject
-        packages:
-          - *cupy_pip
-    specific:
-      - output_types: [requirements, pyproject]
-        matrices:
-          - matrix: {cuda: "12.0"}
-            packages:
-              - rmm-cu12==23.12.*
-          - matrix: {cuda: "11.8"}
-            packages: &run_python_cuproj_packages_cu11
-              - rmm-cu11==23.12.*
-          - {matrix: {cuda: "11.5"}, packages: *run_python_cuproj_packages_cu11}
-          - {matrix: {cuda: "11.4"}, packages: *run_python_cuproj_packages_cu11}
-          - {matrix: {cuda: "11.2"}, packages: *run_python_cuproj_packages_cu11}
-          - {matrix: null, packages: [*rmm_conda]}
   test_python_cuspatial:
     common:
       - output_types: [conda, requirements, pyproject]
@@ -456,7 +355,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - &rmm_conda rmm==23.10.*
+          - &rmm_conda rmm==23.12.*
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -466,12 +365,12 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.2"}
             packages: &rmm_packages_pip_cu12
-              - rmm-cu12==23.10.*
+              - rmm-cu12==23.12.*
           - {matrix: {cuda: "12.1"}, packages: *rmm_packages_pip_cu12}
           - {matrix: {cuda: "12.0"}, packages: *rmm_packages_pip_cu12}
           - matrix: {cuda: "11.8"}
             packages: &rmm_packages_pip_cu11
-              - rmm-cu11==23.10.*
+              - rmm-cu11==23.12.*
           - {matrix: {cuda: "11.5"}, packages: *rmm_packages_pip_cu11}
           - {matrix: {cuda: "11.4"}, packages: *rmm_packages_pip_cu11}
           - {matrix: {cuda: "11.2"}, packages: *rmm_packages_pip_cu11}
@@ -481,7 +380,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - &cudf_conda cudf==23.10.*
+          - &cudf_conda cudf==23.12.*
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -491,12 +390,12 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.2"}
             packages: &cudf_packages_pip_cu12
-              - cudf-cu12==23.10.*
+              - cudf-cu12==23.12.*
           - {matrix: {cuda: "12.1"}, packages: *cudf_packages_pip_cu12}
           - {matrix: {cuda: "12.0"}, packages: *cudf_packages_pip_cu12}
           - matrix: {cuda: "11.8"}
             packages: &cudf_packages_pip_cu11
-              - cudf-cu11==23.10.*
+              - cudf-cu11==23.12.*
           - {matrix: {cuda: "11.5"}, packages: *cudf_packages_pip_cu11}
           - {matrix: {cuda: "11.4"}, packages: *cudf_packages_pip_cu11}
           - {matrix: {cuda: "11.2"}, packages: *cudf_packages_pip_cu11}
@@ -506,7 +405,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - &cuml_conda cuml==23.10.*
+          - &cuml_conda cuml==23.12.*
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -516,12 +415,12 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.2"}
             packages: &cuml_packages_pip_cu12
-              - cuml-cu12==23.10.*
+              - cuml-cu12==23.12.*
           - {matrix: {cuda: "12.1"}, packages: *cuml_packages_pip_cu12}
           - {matrix: {cuda: "12.0"}, packages: *cuml_packages_pip_cu12}
           - matrix: {cuda: "11.8"}
             packages: &cuml_packages_pip_cu11
-              - cuml-cu11==23.10.*
+              - cuml-cu11==23.12.*
           - {matrix: {cuda: "11.5"}, packages: *cuml_packages_pip_cu11}
           - {matrix: {cuda: "11.4"}, packages: *cuml_packages_pip_cu11}
           - {matrix: {cuda: "11.2"}, packages: *cuml_packages_pip_cu11}
