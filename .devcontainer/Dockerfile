@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.5
 
-ARG CUDA=12.0
+ARG CUDA=11.8
 ARG LLVM=16
 ARG RAPIDS=23.08
 ARG DISTRO=ubuntu22.04

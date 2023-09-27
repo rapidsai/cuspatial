@@ -48,7 +48,7 @@ classifiers = [
 
 [project.optional-dependencies]
 test = [
-    "cuspatial=23.10.*",
+    "cuspatial==23.10.*",
     "geopandas>=0.11.0",
     "pytest",
     "pytest-cov",

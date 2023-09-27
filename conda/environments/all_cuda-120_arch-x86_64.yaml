@@ -16,6 +16,7 @@ dependencies:
 - cudf==23.10.*
 - cuml==23.10.*
 - cupy>=12.0.0
+- cuspatial==23.10.*
 - cxx-compiler
 - cython>=3.0.0
 - doxygen
