@@ -29,7 +29,7 @@ def bench_derive_trajectories(benchmark, sorted_trajectories):
     benchmark(cuspatial.derive_trajectories, ids, points, timestamps)
 
 
-def bench_distance_trajectorys_and_speeds(benchmark, sorted_trajectories):
+def bench_trajectory_distances_and_speeds(benchmark, sorted_trajectories):
     length = len(cudf.Series(sorted_trajectories[1]).unique())
     points = cuspatial.GeoSeries.from_points_xy(
         cudf.DataFrame(
@@ -100,14 +100,14 @@ def bench_sinusoidal_projection(benchmark, gpu_dataframe):
     )
 
 
-def bench_distance_directed_hausdorff(benchmark, sorted_trajectories):
+def bench_directed_hausdorff_distance(benchmark, sorted_trajectories):
     coords = sorted_trajectories[0][["x", "y"]].interleave_columns()
     offsets = sorted_trajectories[1]
     s = cuspatial.GeoSeries.from_multipoints_xy(coords, offsets)
     benchmark(cuspatial.directed_hausdorff_distance, s)
 
 
-def bench_distance_directed_hausdorff_many_spaces(benchmark):
+def bench_directed_hausdorff_distance_many_spaces(benchmark):
     spaces = 10000
     coords = cupy.zeros((spaces * 2,))
     offsets = cupy.arange(spaces + 1, dtype="int32")
@@ -115,7 +115,7 @@ def bench_distance_directed_hausdorff_many_spaces(benchmark):
     benchmark(cuspatial.directed_hausdorff_distance, s)
 
 
-def bench_distance_haversine(benchmark, gpu_dataframe):
+def bench_haversine_distance(benchmark, gpu_dataframe):
     coords_first = gpu_dataframe["geometry"][0:10].polygons.xy[0:1000]
     coords_second = gpu_dataframe["geometry"][10:20].polygons.xy[0:1000]
 
