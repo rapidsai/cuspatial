@@ -155,3 +155,4 @@ notebooks/cu_taxi.zones.*
 
 # clang tooling
 compile_commands.json
+.clangd/
