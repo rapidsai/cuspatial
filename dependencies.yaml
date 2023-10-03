@@ -114,7 +114,7 @@ dependencies:
           - gtest>=1.13.0
           - libcudf==23.8.*
           - librmm==23.8.*
-          - proj
+          - proj>=9.2,<10a0
           - sqlite
     specific:
       - output_types: conda
