@@ -58,7 +58,7 @@ requirements:
     - rmm ={{ minor_version }}
     - scikit-build >=0.13.1
     - setuptools
-    - proj
+    - proj {{ proj_version }}
     - sqlite
   run:
     {% if cuda_major == "11" %}
