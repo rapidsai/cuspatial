@@ -34,7 +34,7 @@ dependencies:
 - notebook
 - numpydoc
 - pre-commit
-- proj
+- proj>=9.2,<10a0
 - pydata-sphinx-theme
 - pydeck
 - pytest
