@@ -50,7 +50,7 @@ classifiers = [
 test = [
     "cuspatial==23.10.*",
     "geopandas>=0.11.0",
-    "pyproj",
+    "pyproj>=3.6.0,<3.7a0",
     "pytest",
     "pytest-cov",
     "pytest-xdist",
