@@ -350,7 +350,7 @@ dependencies:
           - cuspatial==23.10.*
       - output_types: [requirements, pyproject]
         packages:
-          - pyproj
+          - pyproj>=3.6.0,<3.7a0
 
   depends_on_rmm:
     common:
