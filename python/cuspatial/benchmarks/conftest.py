@@ -1,4 +1,4 @@
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.
 
 """Defines pytest fixtures for all benchmarks.
 
@@ -11,7 +11,9 @@ import cupy as cp
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+import pytest
 import pytest_cases
+from numba import cuda
 from shapely.geometry import (
     LineString,
     MultiLineString,
@@ -176,3 +178,84 @@ def shapefile(tmp_path, gpdf_100):
     p = d / "read_polygon_shapefile"
     gpdf_100.to_file(p)
     return p
+
+
+@pytest.fixture()
+def point_generator_device():
+    def generator(n):
+        coords = cp.random.random(n * 2, dtype="f8")
+        return cuspatial.GeoSeries.from_points_xy(coords)
+
+    return generator
+
+
+# Numba kernel to generate a closed ring for each polygon
+@cuda.jit
+def generate_polygon_coordinates(
+    coordinate_array, centroids, radius, num_vertices
+):
+    i = cuda.grid(1)
+    if i >= coordinate_array.size:
+        return
+
+    point_idx = i // 2
+    geometry_idx = point_idx // (num_vertices + 1)
+
+    # The last index should wrap around to 0
+    intra_point_idx = point_idx % (num_vertices + 1)
+
+    centroid = centroids[geometry_idx]
+    angle = 2 * np.pi * intra_point_idx / num_vertices
+
+    if i % 2 == 0:
+        coordinate_array[i] = centroid[0] + radius * np.cos(angle)
+    else:
+        coordinate_array[i] = centroid[1] + radius * np.sin(angle)
+
+
+@pytest.fixture()
+def polygon_generator_device():
+    def generator(n, num_vertices, radius=1.0, all_concentric=False):
+        geometry_offsets = cp.arange(n + 1)
+        part_offsets = cp.arange(n + 1)
+
+        # Each polygon has a closed ring, so we need to add an extra point
+        ring_offsets = cp.arange(
+            (n + 1) * (num_vertices + 1), step=(num_vertices + 1)
+        )
+        num_points = int(ring_offsets[-1].get())
+
+        if not all_concentric:
+            centroids = cp.random.random((n, 2))
+        else:
+            centroids = cp.zeros((n, 2))
+        coords = cp.ndarray((num_points * 2,), dtype="f8")
+        generate_polygon_coordinates.forall(len(coords))(
+            coords, centroids, radius, num_vertices
+        )
+        return cuspatial.GeoSeries.from_polygons_xy(
+            coords, ring_offsets, part_offsets, geometry_offsets
+        )
+
+    return generator
+
+
+@pytest.fixture()
+def linestring_generator_device(polygon_generator_device):
+    """Reusing polygon_generator_device, treating the rings of the
+    generated polygons as linestrings. This is to gain locality to
+    the generated linestrings.
+    """
+
+    def generator(n, segment_per_linestring):
+        polygons = polygon_generator_device(
+            n, segment_per_linestring, all_concentric=False
+        )
+
+        return cuspatial.GeoSeries.from_linestrings_xy(
+            polygons.polygons.xy,
+            polygons.polygons.ring_offset,
+            polygons.polygons.geometry_offset,
+        )
+
+    return generator
