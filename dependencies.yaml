@@ -103,6 +103,7 @@ files:
       key: test
     includes:
       - test_python_cuproj
+      - depends_on_cuspatial
 
 channels:
   - rapidsai
@@ -311,7 +312,7 @@ dependencies:
           - scikit-image
       - output_types: [requirements, pyproject]
         packages:
-          - pyproj
+          - pyproj>=3.6.0,<3.7a0
   py_version:
     specific:
       - output_types: conda
@@ -349,7 +350,7 @@ dependencies:
           - geopandas>=0.11.0
       - output_types: [requirements, pyproject]
         packages:
-          - pyproj
+          - pyproj>=3.6.0,<3.7a0
 
   depends_on_rmm:
     common:
@@ -425,6 +426,31 @@ dependencies:
           - {matrix: {cuda: "11.4"}, packages: *cuml_packages_pip_cu11}
           - {matrix: {cuda: "11.2"}, packages: *cuml_packages_pip_cu11}
           - {matrix: null, packages: [*cuml_conda]}
+
+  depends_on_cuspatial:
+    common:
+      - output_types: conda
+        packages:
+          - &cuspatial_conda cuspatial==23.10.*
+      - output_types: requirements
+        packages:
+          # pip recognizes the index as a global option for the requirements.txt file
+          - --extra-index-url=https://pypi.nvidia.com
+    specific:
+      - output_types: [requirements, pyproject]
+        matrices:
+          - matrix: {cuda: "12.2"}
+            packages: &cuspatial_packages_pip_cu12
+              - cuspatial-cu12==23.10.*
+          - {matrix: {cuda: "12.1"}, packages: *cuspatial_packages_pip_cu12}
+          - {matrix: {cuda: "12.0"}, packages: *cuspatial_packages_pip_cu12}
+          - matrix: {cuda: "11.8"}
+            packages: &cuspatial_packages_pip_cu11
+              - cuspatial-cu11==23.10.*
+          - {matrix: {cuda: "11.5"}, packages: *cuspatial_packages_pip_cu11}
+          - {matrix: {cuda: "11.4"}, packages: *cuspatial_packages_pip_cu11}
+          - {matrix: {cuda: "11.2"}, packages: *cuspatial_packages_pip_cu11}
+          - {matrix: null, packages: [*cuspatial_conda]}
 
   depends_on_cupy:
     common:
