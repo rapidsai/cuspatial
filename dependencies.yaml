@@ -313,6 +313,9 @@ dependencies:
       - output_types: [requirements, pyproject]
         packages:
           - pyproj>=3.6.0,<3.7a0
+      - output_types: [conda]
+        packages:
+          - curl
   py_version:
     specific:
       - output_types: conda
