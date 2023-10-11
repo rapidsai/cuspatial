@@ -2,4 +2,4 @@
 
 from .transformer import Transformer
 
-__version__ = "23.08.00"
+__version__ = "23.10.00"

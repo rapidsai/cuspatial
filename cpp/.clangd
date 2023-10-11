@@ -23,38 +23,43 @@ CompileFlags:
     - "-Wno-unknown-cuda-version"
     # Allow variadic CUDA functions
     - "-Xclang=-fcuda-allow-variadic-functions"
+Diagnostics:
+  Suppress:
+    - "variadic_device_fn"
+    - "attributes_not_allowed"
 
 ---
 
 # Tweak the clangd parse settings for all files
 CompileFlags:
   Add:
-    - "-stdlib=libc++"
     # report all errors
     - "-ferror-limit=0"
     - "-fmacro-backtrace-limit=0"
     - "-ftemplate-backtrace-limit=0"
+    # Skip the CUDA version check
+    - "--no-cuda-version-check"
   Remove:
-    - "-stdpar*"
-    # strip CUDA fatbin args
-    - "-Xfatbin*"
-    - "-Xcompiler*"
+    # remove gcc's -fcoroutines
+    - -fcoroutines
+    # remove nvc++ flags unknown to clang
     - "-gpu=*"
-    - "--diag_suppress*"
-    # strip CUDA arch flags
+    - "-stdpar*"
+    # remove nvcc flags unknown to clang
     - "-arch*"
     - "-gencode*"
     - "--generate-code*"
-    # strip gcc's -fcoroutines
-    - -fcoroutines
-    # strip CUDA flags unknown to clang
     - "-ccbin*"
-    - "-Xcudafe=*"
+    - "-t=*"
+    - "--threads*"
+    - "-Xptxas*"
+    - "-Xcudafe*"
+    - "-Xfatbin*"
+    - "-Xcompiler*"
+    - "--diag-suppress*"
+    - "--diag_suppress*"
     - "--compiler-options*"
     - "--expt-extended-lambda"
     - "--expt-relaxed-constexpr"
     - "-forward-unknown-to-host-compiler"
     - "-Werror=cross-execution-space-call"
-Diagnostics:
-  Suppress:
-    - "attributes_not_allowed"

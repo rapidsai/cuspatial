@@ -1,3 +1,35 @@
+# cuSpatial 23.10.00 (11 Oct 2023)
+
+## 🚨 Breaking Changes
+
+- Update to Cython 3.0.0 ([#1235](https://github.com/rapidsai/cuspatial/pull/1235)) [@vyasr](https://github.com/vyasr)
+
+## 🐛 Bug Fixes
+
+- Add `curl` for notebook testing ([#1281](https://github.com/rapidsai/cuspatial/pull/1281)) [@raydouglass](https://github.com/raydouglass)
+- Use `conda mambabuild` not `mamba mambabuild` ([#1265](https://github.com/rapidsai/cuspatial/pull/1265)) [@bdice](https://github.com/bdice)
+- Add back deleted conda env files ([#1261](https://github.com/rapidsai/cuspatial/pull/1261)) [@harrism](https://github.com/harrism)
+
+## 📖 Documentation
+
+- [REVIEW] Add cudf example code for haversine distance into 23.10 ([#1260](https://github.com/rapidsai/cuspatial/pull/1260)) [@taureandyernv](https://github.com/taureandyernv)
+
+## 🛠️ Improvements
+
+- Benchmark `GeoSeries.Distance` ([#1277](https://github.com/rapidsai/cuspatial/pull/1277)) [@isVoid](https://github.com/isVoid)
+- fix update-version.sh ([#1272](https://github.com/rapidsai/cuspatial/pull/1272)) [@trxcllnt](https://github.com/trxcllnt)
+- Update image names ([#1269](https://github.com/rapidsai/cuspatial/pull/1269)) [@AyodeAwe](https://github.com/AyodeAwe)
+- Update to clang 16.0.6. ([#1266](https://github.com/rapidsai/cuspatial/pull/1266)) [@bdice](https://github.com/bdice)
+- Simplify wheel build scripts and allow alphas of RAPIDS dependencies ([#1264](https://github.com/rapidsai/cuspatial/pull/1264)) [@divyegala](https://github.com/divyegala)
+- Update devcontainers to align with other RAPIDS repositories ([#1263](https://github.com/rapidsai/cuspatial/pull/1263)) [@trxcllnt](https://github.com/trxcllnt)
+- Use `copy-pr-bot` ([#1262](https://github.com/rapidsai/cuspatial/pull/1262)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Add binary_predicates.ipynb workflow and test data to package. ([#1258](https://github.com/rapidsai/cuspatial/pull/1258)) [@thomcom](https://github.com/thomcom)
+- Re-enable cuspatial tests and dependency. ([#1253](https://github.com/rapidsai/cuspatial/pull/1253)) [@thomcom](https://github.com/thomcom)
+- Fix 23.08 -&gt; 23.10 automerge ([#1251](https://github.com/rapidsai/cuspatial/pull/1251)) [@thomcom](https://github.com/thomcom)
+- Change path to trajectories_extracted.p to improve CI run consistency. ([#1247](https://github.com/rapidsai/cuspatial/pull/1247)) [@thomcom](https://github.com/thomcom)
+- Update to Cython 3.0.0 ([#1235](https://github.com/rapidsai/cuspatial/pull/1235)) [@vyasr](https://github.com/vyasr)
+- Branch 23.10 merge 23.08 ([#1230](https://github.com/rapidsai/cuspatial/pull/1230)) [@vyasr](https://github.com/vyasr)
+
 # cuSpatial 23.08.00 (9 Aug 2023)
 
 ## 🚨 Breaking Changes
