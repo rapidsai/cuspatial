@@ -27,7 +27,7 @@ requires = [
 
 [project]
 name = "cuspatial"
-version = "23.12.0"
+version = "23.12.00"
 description = "cuSpatial: GPU-Accelerated Spatial and Trajectory Data Management and Analytics Library"
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [

@@ -434,7 +434,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - &cuspatial_conda cuspatial==23.10.*
+          - &cuspatial_conda cuspatial==23.12.*
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -444,12 +444,12 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.2"}
             packages: &cuspatial_packages_pip_cu12
-              - cuspatial-cu12==23.10.*
+              - cuspatial-cu12==23.12.*
           - {matrix: {cuda: "12.1"}, packages: *cuspatial_packages_pip_cu12}
           - {matrix: {cuda: "12.0"}, packages: *cuspatial_packages_pip_cu12}
           - matrix: {cuda: "11.8"}
             packages: &cuspatial_packages_pip_cu11
-              - cuspatial-cu11==23.10.*
+              - cuspatial-cu11==23.12.*
           - {matrix: {cuda: "11.5"}, packages: *cuspatial_packages_pip_cu11}
           - {matrix: {cuda: "11.4"}, packages: *cuspatial_packages_pip_cu11}
           - {matrix: {cuda: "11.2"}, packages: *cuspatial_packages_pip_cu11}
