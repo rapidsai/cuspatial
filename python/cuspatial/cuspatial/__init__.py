@@ -1,5 +1,6 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
+from ._version import __git_commit__, __version__
 from .core.geodataframe import GeoDataFrame
 from .core.geoseries import GeoSeries
 from .core.spatial import (
@@ -28,5 +29,3 @@ from .core.trajectory import (
     trajectory_distances_and_speeds,
 )
 from .io.geopandas import from_geopandas
-
-__version__ = "23.12.00"

@@ -27,7 +27,7 @@ requires = [
 
 [project]
 name = "cuspatial"
-version = "23.12.00"
+dynamic = ["version"]
 description = "cuSpatial: GPU-Accelerated Spatial and Trajectory Data Management and Analytics Library"
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [
@@ -63,6 +63,9 @@ Documentation = "https://docs.rapids.ai/api/cuspatial/stable/"
 
 [tool.setuptools]
 license-files = ["LICENSE"]
+
+[tool.setuptools.dynamic]
+version = {attr = "cuspatial._version.__version__"}
 
 [tool.isort]
 line_length = 79

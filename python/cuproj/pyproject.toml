@@ -26,7 +26,7 @@ requires = [
 
 [project]
 name = "cuproj"
-version = "23.12.00"
+dynamic = ["version"]
 description = "cuProj: GPU-Accelerated Coordinate Projection"
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [{ name = "NVIDIA Corporation" }]
@@ -62,6 +62,9 @@ Documentation = "https://docs.rapids.ai/api/cuproj/stable/"
 
 [tool.setuptools]
 license-files = ["LICENSE"]
+
+[tool.setuptools.dynamic]
+version = {attr = "cuproj._version.__version__"}
 
 [tool.isort]
 line_length = 79
