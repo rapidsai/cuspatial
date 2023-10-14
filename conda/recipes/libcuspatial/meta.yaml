@@ -48,7 +48,7 @@ requirements:
     - doxygen
     - gmock {{ gtest_version }}
     - gtest {{ gtest_version }}
-    #- libcudf ={{ minor_version }}
+    - libcudf ={{ minor_version }}
     #- librmm ={{ minor_version }}
     - sqlite
     - proj
