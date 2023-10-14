@@ -52,6 +52,7 @@ requirements:
     #- librmm ={{ minor_version }}
     - sqlite
     - proj
+    - zlib
 
 outputs:
   - name: libcuspatial
