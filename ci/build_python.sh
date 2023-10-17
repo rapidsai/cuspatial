@@ -15,7 +15,7 @@ version=$(rapids-generate-version)
 commit=$(git rev-parse HEAD)
 
 for package_name in cuspatial cuproj; do 
-    version_file="${package_dir}/${package_name}/_version.py"
+    version_file="${package_dir}/${package_name}/${package_name}/_version.py"
     sed -i "/^__version__/ s/= .*/= ${version}/g" ${version_file}
     sed -i "/^__git_commit__/ s/= .*/= \"${commit}\"/g" ${version_file}
 done
