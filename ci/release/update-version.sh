@@ -42,9 +42,9 @@ sed_runner 's/release = .*/release = '"'${NEXT_FULL_TAG}'"'/g' docs/source/conf.
 sed_runner 's/version = .*/version = '"'${NEXT_SHORT_TAG}'"'/g' docs/cuproj/source/conf.py
 sed_runner 's/release = .*/release = '"'${NEXT_FULL_TAG}'"'/g' docs/cuproj/source/conf.py
 
-# Python __init__.py updates
-sed_runner "s/__version__ = .*/__version__ = \"${NEXT_FULL_TAG}\"/g" python/cuspatial/cuspatial/__init__.py
-sed_runner "s/__version__ = .*/__version__ = \"${NEXT_FULL_TAG}\"/g" python/cuproj/cuproj/__init__.py
+# Python _version.py updates
+sed_runner "/__version__ / s/= .*/= \"${NEXT_FULL_TAG}\"/g" python/cuspatial/cuspatial/_version.py
+sed_runner "/__version__ / s/= .*/= \"${NEXT_FULL_TAG}\"/g" python/cuproj/cuproj/_version.py
 
 # rapids-cmake version
 sed_runner 's/'"branch-.*\/RAPIDS.cmake"'/'"branch-${NEXT_SHORT_TAG}\/RAPIDS.cmake"'/g' fetch_rapids.cmake
@@ -83,10 +83,6 @@ for DEP in "${DEPENDENCIES[@]}"; do
   sed_runner "s/${DEP}==.*\",/${DEP}==${NEXT_SHORT_TAG_PEP440}.*\",/g" python/cuspatial/pyproject.toml
   sed_runner "s/${DEP}==.*\",/${DEP}==${NEXT_SHORT_TAG_PEP440}.*\",/g" python/cuproj/pyproject.toml
 done
-
-# Version in pyproject.toml
-sed_runner "s/^version = .*/version = \"${NEXT_FULL_TAG}\"/g" python/cuspatial/pyproject.toml
-sed_runner "s/^version = .*/version = \"${NEXT_FULL_TAG}\"/g" python/cuproj/pyproject.toml
 
 # Dependency versions in dependencies.yaml
 sed_runner "/-cu[0-9]\{2\}==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}.*/g" dependencies.yaml
