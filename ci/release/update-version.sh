@@ -43,8 +43,8 @@ sed_runner 's/version = .*/version = '"'${NEXT_SHORT_TAG}'"'/g' docs/cuproj/sour
 sed_runner 's/release = .*/release = '"'${NEXT_FULL_TAG}'"'/g' docs/cuproj/source/conf.py
 
 # Python _version.py updates
-sed_runner "/__version__ / s/= .*/= \"${NEXT_FULL_TAG}\"/g" python/cuspatial/cuspatial/_version.py
-sed_runner "/__version__ / s/= .*/= \"${NEXT_FULL_TAG}\"/g" python/cuproj/cuproj/_version.py
+sed_runner "/^__version__ / s/= .*/= \"${NEXT_FULL_TAG}\"/g" python/cuspatial/cuspatial/_version.py
+sed_runner "/^__version__ / s/= .*/= \"${NEXT_FULL_TAG}\"/g" python/cuproj/cuproj/_version.py
 
 # rapids-cmake version
 sed_runner 's/'"branch-.*\/RAPIDS.cmake"'/'"branch-${NEXT_SHORT_TAG}\/RAPIDS.cmake"'/g' fetch_rapids.cmake
