@@ -65,7 +65,7 @@ Documentation = "https://docs.rapids.ai/api/cuspatial/stable/"
 license-files = ["LICENSE"]
 
 [tool.setuptools.dynamic]
-version = {attr = "cuspatial._version.__version__"}
+version = {file = "VERSION"}
 
 [tool.isort]
 line_length = 79
