@@ -97,7 +97,7 @@ jobs:
       build_type: pull-request
       script: ci/build_wheel_cuproj.sh
   wheel-tests-cuproj:
-    needs: wheel-build-cuproj
+    needs: [wheel-build-cuspatial, wheel-build-cuproj]
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/wheels-test.yaml@branch-23.12
     with:
