@@ -23,7 +23,7 @@ pyproject_file="${package_dir}/pyproject.toml"
 version_file="${package_dir}/${package_name}/_version.py"
 
 sed -i "s/name = \"${package_name}\"/name = \"${package_name}${PACKAGE_CUDA_SUFFIX}\"/g" ${pyproject_file}
-cat "${version}" > VERSION
+echo "${version}" > VERSION
 sed -i "/^__git_commit__/ s/= .*/= \"${commit}\"/g" ${version_file}
 
 # For nightlies we want to ensure that we're pulling in alphas as well. The
