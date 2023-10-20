@@ -10,7 +10,7 @@ package:
   name: libcuspatial-split
 
 source:
-  git_url: ../../..
+  path: ../../..
 
 build:
   script_env:
