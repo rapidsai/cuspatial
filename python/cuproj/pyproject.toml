@@ -64,7 +64,7 @@ Documentation = "https://docs.rapids.ai/api/cuproj/stable/"
 license-files = ["LICENSE"]
 
 [tool.setuptools.dynamic]
-version = {file = "VERSION"}
+version = {file = "cuproj/VERSION"}
 
 [tool.isort]
 line_length = 79
