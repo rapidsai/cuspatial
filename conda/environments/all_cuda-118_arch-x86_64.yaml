@@ -34,7 +34,7 @@ dependencies:
 - nvcc_linux-64=11.8
 - pre-commit
 - proj
-- pydata-sphinx-theme
+- pydata-sphinx-theme!=0.14.2
 - pydeck
 - pytest
 - pytest-cov
