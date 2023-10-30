@@ -14,7 +14,7 @@ package_dir="python"
 version=$(rapids-generate-version)
 commit=$(git rev-parse HEAD)
 
-echo "${version}" | tr -d '"' > VERSION
+echo "${version}" > VERSION
 for package_name in cuspatial cuproj; do 
     sed -i "/^__git_commit__/ s/= .*/= \"${commit}\"/g" "${package_dir}/${package_name}/${package_name}/_version.py"
 done
