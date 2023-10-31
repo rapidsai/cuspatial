@@ -41,6 +41,7 @@ else()
   set(cuspatial_FOUND OFF)
 endif()
 
+
 if(NOT cuspatial_FOUND)
   set(BUILD_TESTS OFF)
   set(BUILD_BENCHMARKS OFF)
