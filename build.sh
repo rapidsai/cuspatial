@@ -28,7 +28,7 @@ HELP="$0 [clean] [libcuspatial] [cuspatial] [tests] [-v] [-g] [-n] [-h] [-l] [--
    benchmarks                  - build benchmarks
    -v                          - verbose build mode
    -g                          - build for debug
-   -n                          - no install step
+   -n                          - no install step (does not affect Python)
    -h                          - print this text
    --allgpuarch                - build for all supported GPU architectures
    --show_depr_warn            - show cmake deprecation warnings
@@ -182,18 +182,16 @@ fi
 if (( ${NUMARGS} == 0 )) || hasArg cuspatial; then
 
     cd ${REPODIR}/python/cuspatial
-    python setup.py build_ext -j${PARALLEL_LEVEL:-1} --inplace -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} -DCMAKE_LIBRARY_PATH=${LIBCUSPATIAL_BUILD_DIR} ${EXTRA_CMAKE_ARGS}
-    if [[ ${INSTALL_TARGET} != "" ]]; then
-        python setup.py install --single-version-externally-managed --record=record.txt -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} -DCMAKE_LIBRARY_PATH=${LIBCUSPATIAL_BUILD_DIR} ${EXTRA_CMAKE_ARGS}
-    fi
+    SKBUILD_CONFIGURE_OPTIONS="-DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} -DCMAKE_LIBRARY_PATH=${LIBCUSPATIAL_BUILD_DIR} ${EXTRA_CMAKE_ARGS}" \
+        SKBUILD_BUILD_OPTIONS="-j${PARALLEL_LEVEL:-1}" \
+        python -m pip install --no-build-isolation --no-deps .
 fi
 
 # Build and install the cuproj Python package
 if (( ${NUMARGS} == 0 )) || hasArg cuproj; then
 
     cd ${REPODIR}/python/cuproj
-    python setup.py build_ext -j${PARALLEL_LEVEL:-1} --inplace -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} -DCMAKE_LIBRARY_PATH=${LIBCUPROJ_BUILD_DIR} ${EXTRA_CMAKE_ARGS}
-    if [[ ${INSTALL_TARGET} != "" ]]; then
-        python setup.py install --single-version-externally-managed --record=record.txt -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} -DCMAKE_LIBRARY_PATH=${LIBCUPROJ_BUILD_DIR} ${EXTRA_CMAKE_ARGS}
-    fi
+    SKBUILD_CONFIGURE_OPTIONS="-DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} -DCMAKE_LIBRARY_PATH=${LIBCUPROJ_BUILD_DIR} ${EXTRA_CMAKE_ARGS}" \
+        SKBUILD_BUILD_OPTIONS="-j${PARALLEL_LEVEL:-1}" \
+        python -m pip install --no-build-isolation --no-deps .
 fi
