@@ -9,9 +9,11 @@ export CMAKE_GENERATOR=Ninja
 
 rapids-print-env
 
+version=$(rapids-generate-version)
+
 rapids-logger "Begin cpp build"
 
-rapids-conda-retry mambabuild \
+RAPIDS_PACKAGE_VERSION=${version} rapids-conda-retry mambabuild \
     conda/recipes/libcuspatial
 
 rapids-upload-conda-to-s3 cpp
