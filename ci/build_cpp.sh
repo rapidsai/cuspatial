@@ -25,6 +25,9 @@ rapids_repo_pr_artifact_channel () {
 LIBRMM_CHANNEL=$(rapids_repo_pr_artifact_channel rmm 1095 cpp)
 LIBCUDF_CHANNEL=$(rapids_repo_pr_artifact_channel cudf 14365 cpp)
 
+echo "LIBRMM_CHANNEL == " ${LIBRMM_CHANNEL}
+echo "LIBCUDF_CHANNEL == " ${LIBCUDF_CHANNEL}
+
 rapids-print-env
 
 version=$(rapids-generate-version)
