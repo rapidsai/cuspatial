@@ -22,26 +22,12 @@ rapids-logger "Downloading artifacts from previous jobs"
 CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
 PYTHON_CHANNEL=$(rapids-download-conda-from-s3 python)
 
-RAPIDS_CUDA_MAJOR="${RAPIDS_CUDA_VERSION%%.*}"
-PYTHON_MINOR_VERSION=$(python --version | sed -E 's/Python [0-9]+\.([0-9]+)\.[0-9]+/\1/g')
+ARTIFACT="$(realpath "$(dirname "$0")/utils/rapids-pr-artifact-path.sh")"
 
-rapids_repo_pr_artifact_channel () {
-    local repo=$1
-    local pr=$2
-    local commit=$(git ls-remote https://github.com/rapidsai/${repo}.git refs/heads/pull-request/${pr} | cut -c1-7)
-
-    if [[ $3 == "cpp" ]]
-    then
-        echo $(rapids-get-artifact ci/${repo}/pull-request/${pr}/${commit}/rmm_conda_cpp_cuda${RAPIDS_CUDA_MAJOR}_$(arch).tar.gz)
-    else
-        echo $(rapids-get-artifact ci/${repo}/pull-request/${pr}/${commit}/rmm_conda_python_cuda${RAPIDS_CUDA_MAJOR}_3${PYTHON_MINOR_VERSION}_$(arch).tar.gz)
-    fi
-}
-
-LIBRMM_CHANNEL=$(rapids_repo_pr_artifact_channel rmm 1095 cpp)
-RMM_CHANNEL=$(rapids_repo_pr_artifact_channel rmm 1095 python)
-LIBCUDF_CHANNEL=$(rapids_repo_pr_artifact_channel cudf 14365 cpp)
-CUDF_CHANNEL=$(rapids_repo_pr_artifact_channel cudf 14365 python)
+LIBRMM_CHANNEL=$(${ARTIFACT} rmm 1095 cpp)
+RMM_CHANNEL=$(${ARTIFACT} rmm 1095 python)
+LIBCUDF_CHANNEL=$(${ARTIFACT} cudf 14365 cpp)
+CUDF_CHANNEL=$(${ARTIFACT} cudf 14365 python)
 
 RAPIDS_TESTS_DIR=${RAPIDS_TESTS_DIR:-"${PWD}/test-results"}
 RAPIDS_COVERAGE_DIR=${RAPIDS_COVERAGE_DIR:-"${PWD}/coverage-results"}

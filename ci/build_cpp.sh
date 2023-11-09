@@ -7,26 +7,10 @@ source rapids-env-update
 
 export CMAKE_GENERATOR=Ninja
 
-RAPIDS_CUDA_MAJOR="${RAPIDS_CUDA_VERSION%%.*}"
+ARTIFACT="$(realpath "$(dirname "$0")/utils/rapids-pr-artifact-path.sh")"
 
-rapids_repo_pr_artifact_channel () {
-    local repo=$1
-    local pr=$2
-    local commit=$(git ls-remote https://github.com/rapidsai/${repo}.git refs/heads/pull-request/${pr} | cut -c1-7)
-
-    if [[ $3 == "cpp" ]]
-    then
-        echo $(rapids-get-artifact ci/${repo}/pull-request/${pr}/${commit}/rmm_conda_cpp_cuda${RAPIDS_CUDA_MAJOR}_$(arch).tar.gz)
-    else
-        echo $(rapids-get-artifact ci/${repo}/pull-request/${pr}/${commit}/rmm_conda_python_cuda${RAPIDS_CUDA_MAJOR}_3${PYTHON_MINOR_VERSION}_$(arch).tar.gz)
-    fi
-}
-
-LIBRMM_CHANNEL=$(rapids_repo_pr_artifact_channel rmm 1095 cpp)
-LIBCUDF_CHANNEL=$(rapids_repo_pr_artifact_channel cudf 14365 cpp)
-
-echo "LIBRMM_CHANNEL == " ${LIBRMM_CHANNEL}
-echo "LIBCUDF_CHANNEL == " ${LIBCUDF_CHANNEL}
+LIBRMM_CHANNEL=$(${ARTIFACT} rmm 1095 cpp)
+LIBCUDF_CHANNEL=$(${ARTIFACT} cudf 14365 cpp)
 
 rapids-print-env
 
