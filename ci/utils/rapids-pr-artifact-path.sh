@@ -21,7 +21,7 @@ PYTHON_MINOR_VERSION=$(python --version | sed -E 's/Python [0-9]+\.([0-9]+)\.[0-
 
 if [[ $3 == "cpp" ]]
 then
-    echo $(rapids-get-artifact ci/${repo}/pull-request/${pr}/${commit}/rmm_conda_cpp_cuda${RAPIDS_CUDA_MAJOR}_$(arch).tar.gz)
+    echo $(rapids-get-artifact ci/${repo}/pull-request/${pr}/${commit}/${repo}_conda_cpp_cuda${RAPIDS_CUDA_MAJOR}_$(arch).tar.gz)
 else
-    echo $(rapids-get-artifact ci/${repo}/pull-request/${pr}/${commit}/rmm_conda_python_cuda${RAPIDS_CUDA_MAJOR}_3${PYTHON_MINOR_VERSION}_$(arch).tar.gz)
+    echo $(rapids-get-artifact ci/${repo}/pull-request/${pr}/${commit}/${repo}_conda_python_cuda${RAPIDS_CUDA_MAJOR}_3${PYTHON_MINOR_VERSION}_$(arch).tar.gz)
 fi
