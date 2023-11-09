@@ -14,7 +14,7 @@
 
 cmake_minimum_required(VERSION 3.26.4 FATAL_ERROR)
 
-set(cuproj_version 23.12.00)
+set(cuproj_version 24.02.00)
 
 include(../../fetch_rapids.cmake)
 include(rapids-cuda)

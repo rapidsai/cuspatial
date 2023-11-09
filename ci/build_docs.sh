@@ -27,7 +27,7 @@ rapids-mamba-retry install \
   cuspatial \
   cuproj
 
-export RAPIDS_VERSION_NUMBER="23.12"
+export RAPIDS_VERSION_NUMBER="24.02"
 export RAPIDS_DOCS_DIR="$(mktemp -d)"
 
 rapids-logger "Build cuSpatial CPP docs"
