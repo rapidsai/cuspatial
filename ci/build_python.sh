@@ -21,7 +21,7 @@ done
 
 CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
 
-ARTIFACT="$(realpath "$(dirname "$0")/utils/rapids-pr-artifact-path.sh")"
+ARTIFACT="$(realpath "$(dirname "$0")/utils/rapids-get-pr-artifact.sh")"
 
 LIBRMM_CHANNEL=$(${ARTIFACT} rmm 1095 cpp)
 RMM_CHANNEL=$(${ARTIFACT} rmm 1095 python)

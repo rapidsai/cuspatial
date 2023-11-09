@@ -20,7 +20,7 @@ rapids-logger "Downloading artifacts from previous jobs"
 CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
 PYTHON_CHANNEL=$(rapids-download-conda-from-s3 python)
 
-ARTIFACT="$(realpath "$(dirname "$0")/utils/rapids-pr-artifact-path.sh")"
+ARTIFACT="$(realpath "$(dirname "$0")/utils/rapids-get-pr-artifact.sh")"
 
 LIBRMM_CHANNEL=$(${ARTIFACT} rmm 1095 cpp)
 RMM_CHANNEL=$(${ARTIFACT} rmm 1095 python)
