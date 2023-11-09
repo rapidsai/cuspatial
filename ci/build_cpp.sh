@@ -15,9 +15,11 @@ LIBRMM_CHANNEL=$(rapids-get-artifact ci/${REPO}/pull-request/${PR_NUMBER}/${COMM
 
 rapids-print-env
 
+version=$(rapids-generate-version)
+
 rapids-logger "Begin cpp build"
 
-rapids-conda-retry mambabuild \
+RAPIDS_PACKAGE_VERSION=${version} rapids-conda-retry mambabuild \
     --channel "${LIBRMM_CHANNEL}" \
     conda/recipes/libcuspatial
 

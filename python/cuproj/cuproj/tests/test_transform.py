@@ -1,17 +1,15 @@
 
 import cupy as cp
-# import geopandas as gpd
+import geopandas as gpd
 import numpy as np
 import pytest
 from cupy.testing import assert_allclose
 from pyproj import Transformer
 from pyproj.enums import TransformDirection
+from shapely.geometry import Point
 
-# import cuspatial
+import cuspatial
 from cuproj import Transformer as cuTransformer
-
-# from shapely.geometry import Point
-
 
 valid_crs_combos = [
     (4326, 32756),
@@ -178,7 +176,6 @@ def test_wgs84_to_utm_grid(dtype, container_type,
         dtype, container_type, min_corner, max_corner, crs_to)
 
 
-""" Temporary fix to repair 23.08 -> 23.10 automerge
 # test __cuda_array_interface__ support by using cuspatial geoseries as input
 def test_geoseries_input():
     s = gpd.GeoSeries(
@@ -200,4 +197,3 @@ def test_geoseries_input():
 
     assert_allclose(cuproj_x, pyproj_x)
     assert_allclose(cuproj_y, pyproj_y)
-"""

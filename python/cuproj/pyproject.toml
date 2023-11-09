@@ -16,7 +16,7 @@
 build-backend = "setuptools.build_meta"
 requires = [
     "cmake>=3.26.4",
-    "cython>=0.29,<0.30",
+    "cython>=3.0.0",
     "ninja",
     "rmm==23.12.*",
     "scikit-build>=0.13.1",
@@ -26,7 +26,7 @@ requires = [
 
 [project]
 name = "cuproj"
-version = "23.12.0"
+dynamic = ["version"]
 description = "cuProj: GPU-Accelerated Coordinate Projection"
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [{ name = "NVIDIA Corporation" }]
@@ -48,7 +48,9 @@ classifiers = [
 
 [project.optional-dependencies]
 test = [
+    "cuspatial==23.12.*",
     "geopandas>=0.11.0",
+    "pyproj>=3.6.0,<3.7a0",
     "pytest",
     "pytest-cov",
     "pytest-xdist",
@@ -60,6 +62,9 @@ Documentation = "https://docs.rapids.ai/api/cuproj/stable/"
 
 [tool.setuptools]
 license-files = ["LICENSE"]
+
+[tool.setuptools.dynamic]
+version = {file = "cuproj/VERSION"}
 
 [tool.isort]
 line_length = 79

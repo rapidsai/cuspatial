@@ -12,6 +12,10 @@ apt update
 DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libgdal-dev
 python -m pip install --no-binary fiona 'fiona>=1.8.19,<1.9'
 
+# Download the cuspatial built in the previous step
+RAPIDS_PY_WHEEL_NAME="cuspatial_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-from-s3 ./local-cuspatial-dep
+python -m pip install --no-deps ./local-cuspatial-dep/cuspatial*.whl
+
 # echo to expand wildcard before adding `[extra]` requires for pip
 python -m pip install $(echo ./dist/cuproj*.whl)[test]
 

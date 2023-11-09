@@ -7,12 +7,14 @@ channels:
 - nvidia
 dependencies:
 - c-compiler
+- clang-tools=16.0.6
 - cmake>=3.26.4
 - cuda-version=11.8
 - cudatoolkit
 - cudf==23.12.*
 - cuml==23.12.*
 - cupy>=12.0.0
+- curl
 - cxx-compiler
 - cython>=3.0.0
 - doxygen
@@ -32,7 +34,7 @@ dependencies:
 - nvcc_linux-64=11.8
 - pre-commit
 - proj
-- pydata-sphinx-theme
+- pydata-sphinx-theme!=0.14.2
 - pydeck
 - pytest
 - pytest-cov
