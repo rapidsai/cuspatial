@@ -22,12 +22,12 @@ rapids-logger "Downloading artifacts from previous jobs"
 CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
 PYTHON_CHANNEL=$(rapids-download-conda-from-s3 python)
 
-ARTIFACT="$(realpath "$(dirname "$0")/utils/rapids-get-pr-artifact.sh")"
+ARTIFACT="$(realpath "$(dirname "$0")/utils/rapids-pr-artifact-path.sh")"
 
-LIBRMM_CHANNEL=$(rapids-get-pr-artifact-path rmm 1095 cpp)
-RMM_CHANNEL=$(rapids-pr-artifact-path rmm 1095 python)
-LIBCUDF_CHANNEL=$(rapids-pr-artifact-path cudf 14365 cpp)
-CUDF_CHANNEL=$(rapids-pr-artifact-path cudf 14365 python)
+LIBRMM_CHANNEL=$(${ARTIFACT} rmm 1095 cpp)
+RMM_CHANNEL=$(${ARTIFACT} rmm 1095 python)
+LIBCUDF_CHANNEL=$(${ARTIFACT} cudf 14365 cpp)
+CUDF_CHANNEL=$(${ARTIFACT} cudf 14365 python)
 
 RAPIDS_TESTS_DIR=${RAPIDS_TESTS_DIR:-"${PWD}/test-results"}
 RAPIDS_COVERAGE_DIR=${RAPIDS_COVERAGE_DIR:-"${PWD}/coverage-results"}
