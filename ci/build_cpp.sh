@@ -7,10 +7,8 @@ source rapids-env-update
 
 export CMAKE_GENERATOR=Ninja
 
-ARTIFACT="$(realpath "$(dirname "$0")/utils/rapids-get-pr-artifact.sh")"
-
-LIBRMM_CHANNEL=$(${ARTIFACT} rmm 1095 cpp)
-LIBCUDF_CHANNEL=$(${ARTIFACT} cudf 14365 cpp)
+LIBRMM_CHANNEL=$(rapids-get-pr-conda-artifact rmm 1095 cpp)
+LIBCUDF_CHANNEL=$(rapids-get-pr-conda-artifact cudf 14365 cpp)
 
 rapids-print-env
 

@@ -20,12 +20,10 @@ set -u
 
 CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
 
-ARTIFACT="$(realpath "$(dirname "$0")/utils/rapids-get-pr-artifact.sh")"
-
-LIBRMM_CHANNEL=$(${ARTIFACT} rmm 1095 cpp)
-RMM_CHANNEL=$(${ARTIFACT} rmm 1095 python)
-LIBCUDF_CHANNEL=$(${ARTIFACT} cudf 14365 cpp)
-CUDF_CHANNEL=$(${ARTIFACT} cudf 14365 python)
+LIBRMM_CHANNEL=$(rapids-get-pr-conda-artifact rmm 1095 cpp)
+RMM_CHANNEL=$(rapids-get-pr-conda-artifact rmm 1095 python)
+LIBCUDF_CHANNEL=$(rapids-get-pr-conda-artifact cudf 14365 cpp)
+CUDF_CHANNEL=$(rapids-get-pr-conda-artifact cudf 14365 python)
 
 RAPIDS_TESTS_DIR=${RAPIDS_TESTS_DIR:-"${PWD}/test-results"}/
 mkdir -p "${RAPIDS_TESTS_DIR}"
