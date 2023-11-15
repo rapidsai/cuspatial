@@ -14,7 +14,7 @@ def _test_hausdorff_from_list_of_spaces(spaces):
 def test_empty():
     actual = _test_hausdorff_from_list_of_spaces([])
 
-    expected = cudf.DataFrame([], columns=cudf.Index([]))
+    expected = cudf.DataFrame([])
 
     cudf.testing.assert_frame_equal(expected, actual)
 
