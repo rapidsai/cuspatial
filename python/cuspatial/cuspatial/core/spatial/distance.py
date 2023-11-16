@@ -80,7 +80,7 @@ def directed_hausdorff_distance(multipoints: GeoSeries):
 
     num_spaces = len(multipoints)
     if num_spaces == 0:
-        return DataFrame()
+        return DataFrame([])
 
     if not contains_only_multipoints(multipoints):
         raise ValueError("Input must be a series of multipoints.")
