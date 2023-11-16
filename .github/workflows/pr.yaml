@@ -109,5 +109,7 @@ jobs:
     with:
       build_command: |
         sccache -z;
+        python -m pip install -U pip;
+        rapids-make-${PYTHON_PACKAGE_MANAGER}-env || true;
         build-all -DBUILD_TESTS=ON -DBUILD_BENCHMARKS=ON --verbose;
         sccache -s;
