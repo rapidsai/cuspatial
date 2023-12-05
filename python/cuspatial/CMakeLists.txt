@@ -32,11 +32,16 @@ project(
 option(FIND_CUSPATIAL_CPP "Search for existing cuspatial C++ installations before defaulting to local files"
        OFF)
 
-option(CUSPATIAL_BUILD_WHEELS "Whether this build is generating a Python wheel." OFF)
+# When building the Python package, always defer to pyarrow to tell us where to find libarrow. This
+# works whether libarrow is installed by pyarrow itself (i.e. as part of a wheel) or as part of a
+# separate libarrow package (i.e. in conda) because pyarrow always knows where it is. libcudf must
+# be built against an ABI-compatible arrow library for the package to load at runtime, so searching
+# this way is always correct.
+set(USE_LIBARROW_FROM_PYARROW ON)
 
 # If the user requested it we attempt to find cuspatial.
 if(FIND_CUSPATIAL_CPP)
-  find_package(cuspatial ${cuspatial_version})
+  find_package(cuspatial ${cuspatial_version} REQUIRED)
 else()
   set(cuspatial_FOUND OFF)
 endif()
@@ -44,40 +49,22 @@ endif()
 if(NOT cuspatial_FOUND)
   set(BUILD_TESTS OFF)
   set(BUILD_BENCHMARKS OFF)
-  set(_exclude_from_all "")
-  if(CUSPATIAL_BUILD_WHEELS)
+  set(CUDA_STATIC_RUNTIME ON)
+  set(CUSPATIAL_USE_CUDF_STATIC ON)
+  set(CUSPATIAL_EXCLUDE_CUDF_FROM_ALL ON)
 
-    # Statically link cudart if building wheels
-    set(CUDA_STATIC_RUNTIME ON)
-    set(CUSPATIAL_USE_CUDF_STATIC ON)
-    set(CUSPATIAL_EXCLUDE_CUDF_FROM_ALL ON)
-
-    # Always build wheels against the pyarrow libarrow.
-    set(USE_LIBARROW_FROM_PYARROW ON)
-
-    # Need to set this so all the nvcomp targets are global, not only nvcomp::nvcomp
-    # https://cmake.org/cmake/help/latest/variable/CMAKE_FIND_PACKAGE_TARGETS_GLOBAL.html#variable:CMAKE_FIND_PACKAGE_TARGETS_GLOBAL
-    set(CMAKE_FIND_PACKAGE_TARGETS_GLOBAL ON)
-
-    # Don't install the cuSpatial C++ targets into wheels
-    set(_exclude_from_all EXCLUDE_FROM_ALL)
-  endif()
-
-  add_subdirectory(../../cpp cuspatial-cpp ${_exclude_from_all})
+  add_subdirectory(../../cpp cuspatial-cpp EXCLUDE_FROM_ALL)
 
   set(cython_lib_dir cuspatial)
-
-  if(CUSPATIAL_BUILD_WHEELS)
-    include(cmake/Modules/WheelHelpers.cmake)
-    get_target_property(_nvcomp_link_libs nvcomp::nvcomp INTERFACE_LINK_LIBRARIES)
-    # Ensure all the shared objects we need at runtime are in the wheel
-    add_target_libs_to_wheel(LIB_DIR ${cython_lib_dir} TARGETS arrow_shared nvcomp::nvcomp ${_nvcomp_link_libs})
-  endif()
-
-  # Since there are multiple subpackages of cuspatial._lib that require access to libcuspatial, we place the
-  # library in the cuspatial directory as a single source of truth and modify the other rpaths
-  # appropriately.
-  install(TARGETS cuspatial DESTINATION ${cython_lib_dir})
+  include(cmake/Modules/WheelHelpers.cmake)
+  # TODO: This install is currently overzealous. We should only install the libraries that are
+  # downloaded by CPM during the build, not libraries that were found on the system.  However, in
+  # practice right this would only be a problem is if libcudf was not found but some of the
+  # dependencies were, and we have no real use cases where that happens.
+  install_aliased_imported_targets(
+    TARGETS cuspatial arrow_shared nvcomp::nvcomp nvcomp::nvcomp_gdeflate nvcomp::nvcomp_bitcomp
+    DESTINATION ${cython_lib_dir}
+  )
 endif()
 
 include(rapids-cython)
