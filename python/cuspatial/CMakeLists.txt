@@ -32,13 +32,6 @@ project(
 option(FIND_CUSPATIAL_CPP "Search for existing cuspatial C++ installations before defaulting to local files"
        OFF)
 
-# When building the Python package, always defer to pyarrow to tell us where to find libarrow. This
-# works whether libarrow is installed by pyarrow itself (i.e. as part of a wheel) or as part of a
-# separate libarrow package (i.e. in conda) because pyarrow always knows where it is. libcudf must
-# be built against an ABI-compatible arrow library for the package to load at runtime, so searching
-# this way is always correct.
-set(USE_LIBARROW_FROM_PYARROW ON)
-
 # If the user requested it we attempt to find cuspatial.
 if(FIND_CUSPATIAL_CPP)
   find_package(cuspatial ${cuspatial_version} REQUIRED)
