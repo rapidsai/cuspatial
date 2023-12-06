@@ -42,9 +42,8 @@ sed_runner 's/release = .*/release = '"'${NEXT_FULL_TAG}'"'/g' docs/source/conf.
 sed_runner 's/version = .*/version = '"'${NEXT_SHORT_TAG}'"'/g' docs/cuproj/source/conf.py
 sed_runner 's/release = .*/release = '"'${NEXT_FULL_TAG}'"'/g' docs/cuproj/source/conf.py
 
-# Python __init__.py updates
-sed_runner "s/__version__ = .*/__version__ = \"${NEXT_FULL_TAG}\"/g" python/cuspatial/cuspatial/__init__.py
-sed_runner "s/__version__ = .*/__version__ = \"${NEXT_FULL_TAG}\"/g" python/cuproj/cuproj/__init__.py
+# Centralized version file update
+echo "${NEXT_FULL_TAG}" > VERSION
 
 # rapids-cmake version
 sed_runner 's/'"branch-.*\/RAPIDS.cmake"'/'"branch-${NEXT_SHORT_TAG}\/RAPIDS.cmake"'/g' fetch_rapids.cmake
@@ -59,7 +58,7 @@ sed_runner "/TAGFILES/ s|[0-9]\+.[0-9]\+|${NEXT_SHORT_TAG}|g" cpp/cuproj/doxygen
 
 # CI files
 for FILE in .github/workflows/*.yaml; do
-  sed_runner "/shared-action-workflows/ s/@.*/@branch-${NEXT_SHORT_TAG}/g" "${FILE}"
+  sed_runner "/shared-workflows/ s/@.*/@branch-${NEXT_SHORT_TAG}/g" "${FILE}"
 done
 sed_runner "s/RAPIDS_VERSION_NUMBER=\".*/RAPIDS_VERSION_NUMBER=\"${NEXT_SHORT_TAG}\"/g" ci/build_docs.sh
 
@@ -84,10 +83,6 @@ for DEP in "${DEPENDENCIES[@]}"; do
   sed_runner "s/${DEP}==.*\",/${DEP}==${NEXT_SHORT_TAG_PEP440}.*\",/g" python/cuproj/pyproject.toml
 done
 
-# Version in pyproject.toml
-sed_runner "s/^version = .*/version = \"${NEXT_FULL_TAG}\"/g" python/cuspatial/pyproject.toml
-sed_runner "s/^version = .*/version = \"${NEXT_FULL_TAG}\"/g" python/cuproj/pyproject.toml
-
 # Dependency versions in dependencies.yaml
 sed_runner "/-cu[0-9]\{2\}==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}.*/g" dependencies.yaml
 
@@ -101,9 +96,9 @@ sed_runner "s/cuproj=[0-9]*\.[0-9]*/cuproj-${NEXT_SHORT_TAG}/g" docs/cuproj/sour
 sed_runner "s/cuspatial=[0-9]*\.[0-9]*/cuspatial=${NEXT_SHORT_TAG}/g" docs/cuproj/source/user_guide/cuproj_api_examples.ipynb
 
 # Versions in README.md
-sed_runner "s/cuspatial:[0-9]\+.[0-9]/cuspatial:${NEXT_SHORT_TAG}/g" README.md
-sed_runner "s/cuspatial=[0-9]\+.[0-9]/cuspatial=${NEXT_SHORT_TAG}/g" README.md
-sed_runner "s/notebooks:[0-9]\+.[0-9]/notebooks:${NEXT_SHORT_TAG}/g" README.md
+sed_runner "s/cuspatial:[0-9]\+\.[0-9]\+/cuspatial:${NEXT_SHORT_TAG}/g" README.md
+sed_runner "s/cuspatial=[0-9]\+\.[0-9]\+/cuspatial=${NEXT_SHORT_TAG}/g" README.md
+sed_runner "s/notebooks:[0-9]\+\.[0-9]\+/notebooks:${NEXT_SHORT_TAG}/g" README.md
 
 # .devcontainer files
 find .devcontainer/ -type f -name devcontainer.json -print0 | while IFS= read -r -d '' filename; do

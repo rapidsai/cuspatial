@@ -14,8 +14,8 @@ dependencies:
 - cuda-nvcc
 - cuda-nvrtc-dev
 - cuda-version=12.0
-- cudf==23.10.*
-- cuml==23.10.*
+- cudf==23.12.*
+- cuml==23.12.*
 - cupy>=12.0.0
 - curl
 - cxx-compiler
@@ -27,8 +27,8 @@ dependencies:
 - gtest>=1.13.0
 - ipython
 - ipywidgets
-- libcudf==23.10.*
-- librmm==23.10.*
+- libcudf==23.12.*
+- librmm==23.12.*
 - myst-parser
 - nbsphinx
 - ninja
@@ -36,13 +36,13 @@ dependencies:
 - numpydoc
 - pre-commit
 - proj
-- pydata-sphinx-theme
+- pydata-sphinx-theme!=0.14.2
 - pydeck
 - pytest
 - pytest-cov
 - pytest-xdist
 - python>=3.9,<3.11
-- rmm==23.10.*
+- rmm==23.12.*
 - scikit-build>=0.13.1
 - scikit-image
 - setuptools
