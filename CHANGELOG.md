@@ -1,3 +1,19 @@
+# cuSpatial 23.12.00 (6 Dec 2023)
+
+## 🐛 Bug Fixes
+
+- Update actions/labeler to v4 ([#1301](https://github.com/rapidsai/cuspatial/pull/1301)) [@raydouglass](https://github.com/raydouglass)
+- Fix broken hausdorff test ([#1295](https://github.com/rapidsai/cuspatial/pull/1295)) [@isVoid](https://github.com/isVoid)
+- Pin theme ([#1289](https://github.com/rapidsai/cuspatial/pull/1289)) [@vyasr](https://github.com/vyasr)
+
+## 🛠️ Improvements
+
+- Build concurrency for nightly and merge triggers ([#1298](https://github.com/rapidsai/cuspatial/pull/1298)) [@bdice](https://github.com/bdice)
+- Update versioning strategy ([#1285](https://github.com/rapidsai/cuspatial/pull/1285)) [@vyasr](https://github.com/vyasr)
+- Use branch-23.12 workflows. ([#1284](https://github.com/rapidsai/cuspatial/pull/1284)) [@bdice](https://github.com/bdice)
+- Build CUDA 12.0 ARM conda packages. ([#1275](https://github.com/rapidsai/cuspatial/pull/1275)) [@bdice](https://github.com/bdice)
+- Fix failed automerge Branch 23.12 merge 23.10 ([#1273](https://github.com/rapidsai/cuspatial/pull/1273)) [@harrism](https://github.com/harrism)
+
 # cuSpatial 23.10.00 (11 Oct 2023)
 
 ## 🚨 Breaking Changes
