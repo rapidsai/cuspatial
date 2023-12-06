@@ -34,7 +34,7 @@ option(FIND_CUSPATIAL_CPP "Search for existing cuspatial C++ installations befor
 
 # If the user requested it we attempt to find cuspatial.
 if(FIND_CUSPATIAL_CPP)
-  find_package(cuspatial ${cuspatial_version} REQUIRED)
+  find_package(cuspatial ${cuspatial_version})
 else()
   set(cuspatial_FOUND OFF)
 endif()
