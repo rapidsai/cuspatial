@@ -15,3 +15,7 @@ sysroot_version:
 
 cmake_version:
   - ">=3.26.4"
+
+# Workaround until proj 9.3.1 migration completes
+proj:
+  - "9.3.0"
