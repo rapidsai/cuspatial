@@ -115,9 +115,6 @@ include (cmake/thirdparty/get_ranger.cmake)
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
 
-# cuProj
-add_subdirectory(cuproj)
-
 add_library(cuspatial
     src/bounding_boxes/linestring_bounding_boxes.cu
     src/bounding_boxes/polygon_bounding_boxes.cu
