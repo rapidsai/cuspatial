@@ -25,7 +25,7 @@ include(rapids-find)
 
 rapids_cuda_init_architectures(CUSPATIAL)
 
-project(CUSPATIAL VERSION 23.12.00 LANGUAGES C CXX CUDA)
+project(CUSPATIAL VERSION 23.12.01 LANGUAGES C CXX CUDA)
 
 # Needed because GoogleBenchmark changes the state of FindThreads.cmake,
 # causing subsequent runs to have different values for the `Threads::Threads` target.
