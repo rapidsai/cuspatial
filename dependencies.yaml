@@ -85,7 +85,7 @@ files:
     includes:
       - depends_on_rmm
       - build_cpp_cuproj
-      - build_python_cuproj
+      - build_python
       - build_wheels
   py_run_cuproj:
     output: [pyproject]
@@ -207,28 +207,12 @@ dependencies:
       - output_types: [conda, requirements, pyproject]
         packages:
           - cython>=3.0.0
-          - scikit-build>=0.13.1
-          - setuptools
-    specific:
       - output_types: conda
-        matrices:
-          - matrix:
-              arch: x86_64
-            packages:
-              - *gcc_amd64
-              - *sysroot_amd64
-          - matrix:
-              arch: aarch64
-            packages:
-              - *gcc_aarch64
-              - *sysroot_aarch64
-  build_python_cuproj:
-    common:
-      - output_types: [conda, requirements, pyproject]
         packages:
-          - cython>=3.0.0
-          - scikit-build>=0.13.1
-          - setuptools
+          - &skbuild scikit-build-core >=0.7.0
+      - output_types: [requirements, pyproject]
+        packages:
+          - &skbuild_pyproject scikit-build-core[pyproject] >=0.7.0
     specific:
       - output_types: conda
         matrices:

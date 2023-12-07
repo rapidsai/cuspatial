@@ -56,7 +56,7 @@ requirements:
     - cython >=0.29,<0.30
     - python
     - rmm ={{ minor_version }}
-    - scikit-build >=0.13.1
+    - scikit-build-core >=0.7.0
     - setuptools
     - proj
     - sqlite

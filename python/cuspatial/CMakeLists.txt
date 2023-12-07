@@ -23,11 +23,7 @@ rapids_cuda_init_architectures(cuspatial-python)
 project(
   cuspatial-python
   VERSION ${cuspatial_version}
-  LANGUAGES # TODO: Building Python extension modules via the python_extension_module requires the C
-            # language to be enabled here. The test project that is built in scikit-build to verify
-            # various linking options for the python library is hardcoded to build with C, so until
-            # that is fixed we need to keep C.
-            C CXX CUDA)
+  LANGUAGES CXX CUDA)
 
 option(FIND_CUSPATIAL_CPP "Search for existing cuspatial C++ installations before defaulting to local files"
        OFF)
@@ -60,7 +56,7 @@ if(NOT cuspatial_FOUND)
   )
 endif()
 
-include(rapids-cython)
+include(rapids-cython-core)
 rapids_cython_init()
 
 add_subdirectory(cuspatial/_lib)

@@ -41,9 +41,8 @@ dependencies:
 - pytest-xdist
 - python>=3.9,<3.11
 - rmm==24.2.*
-- scikit-build>=0.13.1
+- scikit-build-core >=0.7.0
 - scikit-image
-- setuptools
 - shapely
 - sphinx<6
 - sqlite

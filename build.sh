@@ -182,8 +182,7 @@ fi
 if (( ${NUMARGS} == 0 )) || hasArg cuspatial; then
 
     cd ${REPODIR}/python/cuspatial
-    SKBUILD_CONFIGURE_OPTIONS="-DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} -DCMAKE_LIBRARY_PATH=${LIBCUSPATIAL_BUILD_DIR} ${EXTRA_CMAKE_ARGS}" \
-        SKBUILD_BUILD_OPTIONS="-j${PARALLEL_LEVEL:-1}" \
+    SKBUILD_CMAKE_ARGS="-DCMAKE_PREFIX_PATH=${INSTALL_PREFIX};-DCMAKE_LIBRARY_PATH=${LIBCUSPATIAL_BUILD_DIR};${EXTRA_CMAKE_ARGS}" \
         python -m pip install --no-build-isolation --no-deps .
 fi
 
@@ -191,7 +190,6 @@ fi
 if (( ${NUMARGS} == 0 )) || hasArg cuproj; then
 
     cd ${REPODIR}/python/cuproj
-    SKBUILD_CONFIGURE_OPTIONS="-DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} -DCMAKE_LIBRARY_PATH=${LIBCUPROJ_BUILD_DIR} ${EXTRA_CMAKE_ARGS}" \
-        SKBUILD_BUILD_OPTIONS="-j${PARALLEL_LEVEL:-1}" \
+    SKBUILD_CMAKE_ARGS="-DCMAKE_PREFIX_PATH=${INSTALL_PREFIX};-DCMAKE_LIBRARY_PATH=${LIBCUPROJ_BUILD_DIR};${EXTRA_CMAKE_ARGS}" \
         python -m pip install --no-build-isolation --no-deps .
 fi
