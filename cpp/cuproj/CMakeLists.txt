@@ -49,7 +49,7 @@ option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated d
 # Option to enable line info in CUDA device compilation to allow introspection when profiling / memchecking
 option(CUDA_ENABLE_LINEINFO "Enable the -lineinfo option for nvcc (useful for cuda-memcheck / profiler" OFF)
 # cudart can be statically linked or dynamically linked. The python ecosystem wants dynamic linking
-option(CUDA_STATIC_RUNTIME "Statically link the CUDA toolkit runtime and libraries" OFF)
+option(CUDA_STATIC_RUNTIME "Statically link the CUDA toolkit runtime and libraries" ON)
 
 message(STATUS "CUPROJ: Build with NVTX support: ${USE_NVTX}")
 message(STATUS "CUPROJ: Configure CMake to build tests: ${BUILD_TESTS}")

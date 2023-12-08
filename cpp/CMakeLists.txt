@@ -49,7 +49,7 @@ option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated d
 # Option to enable line info in CUDA device compilation to allow introspection when profiling / memchecking
 option(CUDA_ENABLE_LINEINFO "Enable the -lineinfo option for nvcc (useful for cuda-memcheck / profiler" OFF)
 # cudart can be statically linked or dynamically linked. The python ecosystem wants dynamic linking
-option(CUDA_STATIC_RUNTIME "Statically link the CUDA toolkit runtime and libraries" OFF)
+option(CUDA_STATIC_RUNTIME "Statically link the CUDA toolkit runtime and libraries" ON)
 
 option(CUSPATIAL_USE_CUDF_STATIC "Build and statically link cuDF" OFF)
 option(CUSPATIAL_EXCLUDE_CUDF_FROM_ALL "Exclude cuDF targets from cuSpatial's 'all' target" OFF)
