@@ -167,7 +167,8 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - proj
+          # Match with conda_build_config.yaml, and keep in sync with the conda-forge pinning
+          - proj==9.3.0
           - sqlite
   build_python:
     common:
