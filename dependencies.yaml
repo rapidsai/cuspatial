@@ -6,7 +6,9 @@ files:
       cuda: ["11.8", "12.0"]
       arch: [x86_64]
     includes:
-      - build_cpp
+      - build_cpp_common
+      - build_cpp_cuspatial
+      - build_cpp_cuproj
       - build_python
       - cudatoolkit
       - develop
@@ -57,7 +59,8 @@ files:
     includes:
       - depends_on_rmm
       - depends_on_cudf
-      - build_cpp
+      - build_cpp_common
+      - build_cpp_cuspatial
       - build_python
       - build_wheels
   py_run_cuspatial:
@@ -84,6 +87,7 @@ files:
       table: build-system
     includes:
       - depends_on_rmm
+      - build_cpp_common
       - build_cpp_cuproj
       - build_python_cuproj
       - build_wheels
@@ -111,7 +115,7 @@ channels:
   - conda-forge
   - nvidia
 dependencies:
-  build_cpp:
+  build_cpp_common:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
@@ -123,10 +127,7 @@ dependencies:
           - cxx-compiler
           - gmock>=1.13.0
           - gtest>=1.13.0
-          - libcudf==24.2.*
           - librmm==24.2.*
-          - proj
-          - sqlite
     specific:
       - output_types: conda
         matrices:
@@ -157,51 +158,17 @@ dependencies:
             packages:
               - cuda-version=12.0
               - cuda-nvcc
+  build_cpp_cuspatial:
+    common:
+      - output_types: conda
+        packages:
+          - libcudf==24.2.*
   build_cpp_cuproj:
     common:
-      - output_types: [conda, requirements, pyproject]
-        packages:
-          - ninja
-          - cmake>=3.26.4
       - output_types: conda
         packages:
-          - c-compiler
-          - cxx-compiler
-          - gmock>=1.13.0
-          - gtest>=1.13.0
-          - librmm==24.2.*
           - proj
           - sqlite
-    specific:
-      - output_types: conda
-        matrices:
-          - matrix:
-              arch: x86_64
-            packages:
-              - *gcc_amd64
-              - *sysroot_amd64
-          - matrix:
-              arch: aarch64
-            packages:
-              - *gcc_aarch64
-              - *sysroot_aarch64
-      - output_types: conda
-        matrices:
-          - matrix:
-              arch: x86_64
-              cuda: "11.8"
-            packages:
-              - nvcc_linux-64=11.8
-          - matrix:
-              arch: aarch64
-              cuda: "11.8"
-            packages:
-              - nvcc_linux-aarch64=11.8
-          - matrix:
-              cuda: "12.0"
-            packages:
-              - cuda-version=12.0
-              - cuda-nvcc
   build_python:
     common:
       - output_types: [conda, requirements, pyproject]
