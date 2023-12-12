@@ -59,8 +59,8 @@ TYPED_TEST(HaversineTest, Zero)
   auto a_lonlat = rmm::device_vector<Location>(1, Location{0, 0});
   auto b_lonlat = rmm::device_vector<Location>(1, Location{0, 0});
 
-  auto distance = rmm::device_vector<T>{1, -1};
-  auto expected = rmm::device_vector<T>{1, 0};
+  auto distance = rmm::device_vector<T>(1, -1);
+  auto expected = rmm::device_vector<T>(1, 0);
 
   auto distance_end = cuspatial::haversine_distance(
     a_lonlat.begin(), a_lonlat.end(), b_lonlat.begin(), distance.begin());
