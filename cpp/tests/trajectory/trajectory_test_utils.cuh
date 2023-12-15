@@ -296,7 +296,7 @@ struct trajectory_test_data {
 
     auto id_and_position = thrust::make_zip_iterator(ids_sorted.begin(), points_sorted.begin());
 
-    auto distance_per_step = rmm::device_vector<T>{points.size()};
+    auto distance_per_step = rmm::device_vector<T>(points.size());
 
     thrust::transform(rmm::exec_policy(),
                       id_and_position,

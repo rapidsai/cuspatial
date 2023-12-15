@@ -30,6 +30,8 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/tuple.h>
 
+#include <cuda/functional>
+
 #include <tuple>
 
 namespace cuspatial {
@@ -108,9 +110,9 @@ inline point_quadtree make_quad_tree(rmm::device_uvector<uint32_t>& keys,
                       offsets_iter + num_valid_nodes,
                       offsets.begin(),
                       // return is_internal_node ? lhs : rhs
-                      [] __device__(auto const& t) {
+                      cuda::proclaim_return_type<uint32_t>([] __device__(auto const& t) {
                         return thrust::get<0>(t) ? thrust::get<1>(t) : thrust::get<2>(t);
-                      });
+                      }));
 
     return std::move(offsets);
   }();
@@ -126,9 +128,9 @@ inline point_quadtree make_quad_tree(rmm::device_uvector<uint32_t>& keys,
                     lengths_iter + num_valid_nodes,
                     lengths.begin(),
                     // return bool ? lhs : rhs
-                    [] __device__(auto const& t) {
+                    cuda::proclaim_return_type<uint32_t>([] __device__(auto const& t) {
                       return thrust::get<0>(t) ? thrust::get<1>(t) : thrust::get<2>(t);
-                    });
+                    }));
 
   // Shrink keys to the number of valid nodes
   keys.resize(num_valid_nodes, stream);

@@ -30,6 +30,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <cuda/functional>
+
 #include <iterator>
 
 template <typename T>
@@ -43,7 +45,7 @@ struct HausdorffTest : public ::testing::Test {
     auto const d_space_offsets = rmm::device_vector<Index>{space_offsets};
 
     auto const num_distances = space_offsets.size() * space_offsets.size();
-    auto distances           = rmm::device_vector<T>{num_distances};
+    auto distances           = rmm::device_vector<T>(num_distances);
 
     auto const distances_end = cuspatial::directed_hausdorff_distance(d_points.begin(),
                                                                       d_points.end(),
@@ -150,10 +152,12 @@ void generic_hausdorff_test()
   auto zero_iter         = thrust::make_constant_iterator<vec_2d>({0, 0});
   auto counting_iter     = thrust::make_counting_iterator<uint32_t>(0);
   auto space_offset_iter = thrust::make_transform_iterator(
-    counting_iter, [] __device__(auto idx) { return idx * elements_per_space; });
+    counting_iter, cuda::proclaim_return_type<uint32_t>([] __device__(auto idx) {
+      return idx * elements_per_space;
+    }));
 
-  auto distances = rmm::device_vector<T>{num_distances};
-  auto expected  = rmm::device_vector<T>{num_distances, 0};
+  auto distances = rmm::device_vector<T>(num_distances);
+  auto expected  = rmm::device_vector<T>(num_distances, 0);
 
   auto distances_end = cuspatial::directed_hausdorff_distance(zero_iter,
                                                               zero_iter + num_points,

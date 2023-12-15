@@ -29,6 +29,8 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/reduce.h>
 
+#include <cuda/functional>
+
 #include <gtest/gtest.h>
 
 #include <limits>
@@ -66,7 +68,8 @@ struct TrajectoryDistancesAndSpeedsTest : public ::testing::Test {
       thrust::reduce(expected_speeds.begin(),
                      expected_speeds.end(),
                      std::numeric_limits<T>::lowest(),
-                     [] __device__(T const& a, T const& b) { return max(abs(a), abs(b)); });
+                     cuda::proclaim_return_type<T>(
+                       [] __device__(T const& a, T const& b) { return max(abs(a), abs(b)); }));
 
     // We expect the floating point error (in ulps) due to be proportional to the  number of
     // operations to compute the relevant quantity. For distance, this computation is
