@@ -209,8 +209,8 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromLongInputs)
   auto offset =
     rmm::device_vector<int32_t>{std::vector<int32_t>{0, 100, 200, 300, 400, num_points}};
 
-  auto got      = rmm::device_vector<T>(num_pairs);
-  auto expected = rmm::device_vector<T>{{42.0, 42.0, 42.0, 42.0, 42.0}};
+  auto got      = rmm::device_vector<T>{num_pairs};
+  auto expected = rmm::device_vector<T>{std::vector<T>{42.0, 42.0, 42.0, 42.0, 42.0}};
 
   auto mlinestrings1 = make_multilinestring_range(num_pairs,
                                                   thrust::make_counting_iterator(0),
