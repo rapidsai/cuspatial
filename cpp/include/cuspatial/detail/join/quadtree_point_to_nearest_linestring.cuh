@@ -25,7 +25,6 @@
 #include <cuspatial/range/multilinestring_range.cuh>
 #include <cuspatial/traits.hpp>
 
-#include <functional>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
 
@@ -34,6 +33,8 @@
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/scan.h>
+
+#include <cuda/functional>
 
 #include <cstdint>
 
