@@ -62,11 +62,11 @@ endfunction()
 set(CUSPATIAL_MIN_VERSION_cudf "${CUSPATIAL_VERSION_MAJOR}.${CUSPATIAL_VERSION_MINOR}")
 
 if(NOT DEFINED CUSPATIAL_CUDF_GIT_REPO)
-  set(CUSPATIAL_CUDF_GIT_REPO https://github.com/rapidsai/cudf.git)
+  set(CUSPATIAL_CUDF_GIT_REPO https://github.com/bdice/cudf.git)
 endif()
 
 if(NOT DEFINED CUSPATIAL_CUDF_GIT_TAG)
-  set(CUSPATIAL_CUDF_GIT_TAG branch-${CUSPATIAL_MIN_VERSION_cudf})
+  set(CUSPATIAL_CUDF_GIT_TAG cccl-2.2.0)
 endif()
 
 find_and_configure_cudf(VERSION ${CUSPATIAL_MIN_VERSION_cudf}.00
