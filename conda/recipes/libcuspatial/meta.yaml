@@ -50,8 +50,6 @@ requirements:
     - gtest {{ gtest_version }}
     - libcudf ={{ minor_version }}
     - librmm ={{ minor_version }}
-    - sqlite
-    - proj
 
 outputs:
   - name: libcuspatial
@@ -79,8 +77,6 @@ outputs:
         {% endif %}
         - libcudf ={{ minor_version }}
         - librmm ={{ minor_version }}
-        - sqlite
-        - proj
     test:
       commands:
         - test -f $PREFIX/lib/libcuspatial.so

@@ -33,7 +33,7 @@ dependencies:
 - numpydoc
 - nvcc_linux-64=11.8
 - pre-commit
-- proj
+- proj==9.3.0
 - pydata-sphinx-theme!=0.14.2
 - pydeck
 - pytest

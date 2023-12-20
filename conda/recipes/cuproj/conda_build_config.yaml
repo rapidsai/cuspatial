@@ -16,6 +16,6 @@ sysroot_version:
 cmake_version:
   - ">=3.26.4"
 
-# Workaround until proj 9.3.1 migration completes
+# Match with dependencies.yaml, and keep in sync with the conda-forge pinning
 proj:
   - "9.3.0"
