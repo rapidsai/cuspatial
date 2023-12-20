@@ -98,9 +98,8 @@ TYPED_TEST(PairwisePointInPolygonTest, OnePolygonOneRing)
                                                poly_point.size(),
                                                poly_point.begin());
 
-  auto got = rmm::device_vector<uint8_t>(1);
-  auto expected =
-    cuspatial::test::make_host_vector({false, false, false, false, true, true, true, true});
+  auto got      = rmm::device_vector<uint8_t>(1);
+  auto expected = thrust::host_vector{{false, false, false, false, true, true, true, true}};
 
   for (size_t i = 0; i < point_list.size(); ++i) {
     auto p           = point_list[i];

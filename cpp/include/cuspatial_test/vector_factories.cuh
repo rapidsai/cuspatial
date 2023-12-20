@@ -68,14 +68,6 @@ auto make_device_uvector(std::initializer_list<T> inl,
   return res;
 }
 
-// TODO: this can be eliminated when Thrust 2.1.0 is the minimum because
-// thrust::host_vector has a constructor that takes an initializer_list
-template <typename T>
-auto make_host_vector(std::initializer_list<T> inl)
-{
-  return thrust::host_vector<T>(inl.begin(), inl.end());
-}
-
 /**
  * @brief Owning object of a multipolygon array following geoarrow layout.
  *

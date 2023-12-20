@@ -97,7 +97,7 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_single)
                      max_size,
                      {0},
                      {0},
-                     cuspatial::test::make_host_vector({false}),
+                     thrust::host_vector{{false}},
                      {1},
                      {0});
 }
@@ -120,7 +120,7 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_two)
                      max_size,
                      {0, 3},
                      {0, 0},
-                     cuspatial::test::make_host_vector({false, false}),
+                     thrust::host_vector{{false, false}},
                      {1, 1},
                      {0, 1});
 }
@@ -142,7 +142,7 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_all_lowest_level_quads)
                      max_size,
                      {3, 12, 15},
                      {0, 1, 1},
-                     cuspatial::test::make_host_vector({true, false, false}),
+                     thrust::host_vector{{true, false, false}},
                      {2, 1, 1},
                      {1, 0, 1});
 }
@@ -203,20 +203,20 @@ TYPED_TEST(QuadtreeOnPointIndexingTest, test_small)
     max_size,
     {0, 1, 2, 0, 1, 3, 4, 7, 5, 6, 13, 14, 28, 31},
     {0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2},
-    cuspatial::test::make_host_vector({true,
-                                       true,
-                                       false,
-                                       false,
-                                       true,
-                                       true,
-                                       false,
-                                       true,
-                                       false,
-                                       false,
-                                       false,
-                                       false,
-                                       false,
-                                       false}),
+    thrust::host_vector{{true,
+                         true,
+                         false,
+                         false,
+                         true,
+                         true,
+                         false,
+                         true,
+                         false,
+                         false,
+                         false,
+                         false,
+                         false,
+                         false}},
     {3, 2, 11, 7, 2, 2, 9, 2, 9, 7, 5, 8, 8, 7},
     {3, 6, 60, 0, 8, 10, 36, 12, 7, 16, 23, 28, 45, 53});
 }
