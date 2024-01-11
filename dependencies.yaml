@@ -263,8 +263,8 @@ dependencies:
               cuda: "12.*"
             packages:
               - cuda-cudart-dev
-              - cuda-nvrtc-dev
               - cuda-cupti-dev
+              - cuda-nvrtc-dev
           - matrix:
               cuda: "11.*"
             packages:
