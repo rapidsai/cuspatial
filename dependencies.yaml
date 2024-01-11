@@ -8,7 +8,8 @@ files:
     includes:
       - build_cpp
       - build_python
-      - cudatoolkit
+      - cuda
+      - cuda_version
       - develop
       - docs
       - py_version
@@ -23,18 +24,18 @@ files:
   test_cpp:
     output: none
     includes:
-      - cudatoolkit
+      - cuda_version
   test_python:
     output: none
     includes:
-      - cudatoolkit
+      - cuda_version
       - py_version
       - test_python_cuspatial
       - test_python_cuproj
   test_notebooks:
     output: none
     includes:
-      - cudatoolkit
+      - cuda_version
       - depends_on_cuml
       - notebooks
       - py_version
@@ -46,7 +47,7 @@ files:
   docs:
     output: none
     includes:
-      - cudatoolkit
+      - cuda_version
       - docs
       - py_version
   py_build_cuspatial:
@@ -155,7 +156,6 @@ dependencies:
           - matrix:
               cuda: "12.0"
             packages:
-              - cuda-version=12.0
               - cuda-nvcc
   build_cpp_cuproj:
     common:
@@ -200,7 +200,6 @@ dependencies:
           - matrix:
               cuda: "12.0"
             packages:
-              - cuda-version=12.0
               - cuda-nvcc
   build_python:
     common:
@@ -232,36 +231,43 @@ dependencies:
         packages:
           - wheel
           - setuptools
-  cudatoolkit:
+  cuda_version:
     specific:
       - output_types: conda
         matrices:
           - matrix:
-              cuda: "12.0"
+              cuda: "11.2"
             packages:
-              - cuda-version=12.0
-              - cuda-cudart-dev
-              - cuda-nvrtc-dev
-              - cuda-cupti-dev
-          - matrix:
-              cuda: "11.8"
-            packages:
-              - cuda-version=11.8
-              - cudatoolkit
-          - matrix:
-              cuda: "11.5"
-            packages:
-              - cuda-version=11.5
-              - cudatoolkit
+              - cuda-version=11.2
           - matrix:
               cuda: "11.4"
             packages:
               - cuda-version=11.4
-              - cudatoolkit
           - matrix:
-              cuda: "11.2"
+              cuda: "11.5"
             packages:
-              - cuda-version=11.2
+              - cuda-version=11.5
+          - matrix:
+              cuda: "11.8"
+            packages:
+              - cuda-version=11.8
+          - matrix:
+              cuda: "12.0"
+            packages:
+              - cuda-version=12.0
+  cuda:
+    specific:
+      - output_types: conda
+        matrices:
+          - matrix:
+              cuda: "12.*"
+            packages:
+              - cuda-cudart-dev
+              - cuda-cupti-dev
+              - cuda-nvrtc-dev
+          - matrix:
+              cuda: "11.*"
+            packages:
               - cudatoolkit
   develop:
     common:
