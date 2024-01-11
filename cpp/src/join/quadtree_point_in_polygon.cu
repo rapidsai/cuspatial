@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include "rmm/device_buffer.hpp"
 #include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/range/multipoint_range.cuh>
 #include <cuspatial/range/multipolygon_range.cuh>
@@ -29,6 +28,7 @@
 #include <cudf/table/table_view.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/device_buffer.hpp>
 
 namespace cuspatial {
 namespace detail {

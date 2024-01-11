@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#pragma once
 
+#include <rmm/cuda_device.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/owning_wrapper.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
@@ -48,7 +50,8 @@ class rmm_pool_raii {
 
   inline auto make_pool()
   {
-    return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
+    return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(
+      make_cuda(), rmm::percent_of_free_device_memory(50));
   }
 
  public:
