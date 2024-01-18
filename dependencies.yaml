@@ -124,8 +124,8 @@ dependencies:
           - cxx-compiler
           - gmock>=1.13.0
           - gtest>=1.13.0
-          - libcudf==24.2.*
-          - librmm==24.2.*
+          - libcudf==24.4.*
+          - librmm==24.4.*
           - proj
           - sqlite
     specific:
@@ -169,7 +169,7 @@ dependencies:
           - cxx-compiler
           - gmock>=1.13.0
           - gtest>=1.13.0
-          - librmm==24.2.*
+          - librmm==24.4.*
           - proj
           - sqlite
     specific:
@@ -350,7 +350,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - &rmm_conda rmm==24.2.*
+          - &rmm_conda rmm==24.4.*
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -361,12 +361,12 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.2"}
             packages: &rmm_packages_pip_cu12
-              - rmm-cu12==24.2.*
+              - rmm-cu12==24.4.*
           - {matrix: {cuda: "12.1"}, packages: *rmm_packages_pip_cu12}
           - {matrix: {cuda: "12.0"}, packages: *rmm_packages_pip_cu12}
           - matrix: {cuda: "11.8"}
             packages: &rmm_packages_pip_cu11
-              - rmm-cu11==24.2.*
+              - rmm-cu11==24.4.*
           - {matrix: {cuda: "11.5"}, packages: *rmm_packages_pip_cu11}
           - {matrix: {cuda: "11.4"}, packages: *rmm_packages_pip_cu11}
           - {matrix: {cuda: "11.2"}, packages: *rmm_packages_pip_cu11}
@@ -376,7 +376,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - &cudf_conda cudf==24.2.*
+          - &cudf_conda cudf==24.4.*
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -387,12 +387,12 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.2"}
             packages: &cudf_packages_pip_cu12
-              - cudf-cu12==24.2.*
+              - cudf-cu12==24.4.*
           - {matrix: {cuda: "12.1"}, packages: *cudf_packages_pip_cu12}
           - {matrix: {cuda: "12.0"}, packages: *cudf_packages_pip_cu12}
           - matrix: {cuda: "11.8"}
             packages: &cudf_packages_pip_cu11
-              - cudf-cu11==24.2.*
+              - cudf-cu11==24.4.*
           - {matrix: {cuda: "11.5"}, packages: *cudf_packages_pip_cu11}
           - {matrix: {cuda: "11.4"}, packages: *cudf_packages_pip_cu11}
           - {matrix: {cuda: "11.2"}, packages: *cudf_packages_pip_cu11}
@@ -402,7 +402,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - &cuml_conda cuml==24.2.*
+          - &cuml_conda cuml==24.4.*
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -413,12 +413,12 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.2"}
             packages: &cuml_packages_pip_cu12
-              - cuml-cu12==24.2.*
+              - cuml-cu12==24.4.*
           - {matrix: {cuda: "12.1"}, packages: *cuml_packages_pip_cu12}
           - {matrix: {cuda: "12.0"}, packages: *cuml_packages_pip_cu12}
           - matrix: {cuda: "11.8"}
             packages: &cuml_packages_pip_cu11
-              - cuml-cu11==24.2.*
+              - cuml-cu11==24.4.*
           - {matrix: {cuda: "11.5"}, packages: *cuml_packages_pip_cu11}
           - {matrix: {cuda: "11.4"}, packages: *cuml_packages_pip_cu11}
           - {matrix: {cuda: "11.2"}, packages: *cuml_packages_pip_cu11}
@@ -428,7 +428,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - &cuspatial_conda cuspatial==24.2.*
+          - &cuspatial_conda cuspatial==24.4.*
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -439,12 +439,12 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.2"}
             packages: &cuspatial_packages_pip_cu12
-              - cuspatial-cu12==24.2.*
+              - cuspatial-cu12==24.4.*
           - {matrix: {cuda: "12.1"}, packages: *cuspatial_packages_pip_cu12}
           - {matrix: {cuda: "12.0"}, packages: *cuspatial_packages_pip_cu12}
           - matrix: {cuda: "11.8"}
             packages: &cuspatial_packages_pip_cu11
-              - cuspatial-cu11==24.2.*
+              - cuspatial-cu11==24.4.*
           - {matrix: {cuda: "11.5"}, packages: *cuspatial_packages_pip_cu11}
           - {matrix: {cuda: "11.4"}, packages: *cuspatial_packages_pip_cu11}
           - {matrix: {cuda: "11.2"}, packages: *cuspatial_packages_pip_cu11}
