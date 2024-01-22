@@ -8,7 +8,7 @@ import cupy as cp
 import pyarrow as pa
 
 import cudf
-from cudf.core.column import ColumnBase, arange, as_column, build_list_column
+from cudf.core.column import ColumnBase, as_column, build_list_column
 
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
 from cuspatial.utils.column_utils import empty_geometry_column
@@ -364,5 +364,5 @@ def _xy_as_variable_sized_list(xy: ColumnBase):
         raise ValueError("xy must have an even number of elements")
 
     num_points = len(xy) // 2
-    indices = arange(0, num_points * 2 + 1, 2, dtype="int32")
+    indices = as_column(range(0, num_points * 2 + 1, 2), dtype="int32")
     return build_list_column(indices=indices, elements=xy, size=num_points)

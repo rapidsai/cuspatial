@@ -3,7 +3,7 @@
 from typing import TYPE_CHECKING
 
 import cudf
-from cudf.core.column import arange, build_list_column
+from cudf.core.column import as_column, build_list_column
 
 from cuspatial._lib.intersection import (
     pairwise_linestring_intersection as c_pairwise_linestring_intersection,
@@ -93,7 +93,7 @@ def pairwise_linestring_intersection(
     ]
 
     linestring_column = build_list_column(
-        indices=arange(0, len(segments) + 1, dtype="int32"),
+        indices=as_column(range(0, len(segments) + 1), dtype="int32"),
         elements=segments,
         size=len(segments),
     )

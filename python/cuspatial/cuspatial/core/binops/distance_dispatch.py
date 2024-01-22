@@ -1,5 +1,5 @@
 import cudf
-from cudf.core.column import arange, full
+from cudf.core.column import as_column, full
 
 from cuspatial._lib.distance import (
     pairwise_linestring_distance,
@@ -190,8 +190,8 @@ class DistanceDispatch:
             float("nan"),
             dtype="float64",
         )
-        scatter_map = arange(
-            len(self._res_index), dtype="int32"
+        scatter_map = as_column(
+            range(len(self._res_index)), dtype="int32"
         ).apply_boolean_mask(self._non_null_mask)
 
         result[scatter_map] = dist

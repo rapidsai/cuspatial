@@ -124,8 +124,8 @@ dependencies:
           - cxx-compiler
           - gmock>=1.13.0
           - gtest>=1.13.0
-          - libcudf==24.2.*
-          - librmm==24.2.*
+          - libcudf==24.4.*
+          - librmm==24.4.*
           - proj
           - sqlite
     specific:
@@ -169,7 +169,7 @@ dependencies:
           - cxx-compiler
           - gmock>=1.13.0
           - gtest>=1.13.0
-          - librmm==24.2.*
+          - librmm==24.4.*
           - proj
           - sqlite
     specific:
@@ -354,7 +354,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - &rmm_conda rmm==24.2.*
+          - &rmm_conda rmm==24.4.*
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -375,7 +375,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - &cudf_conda cudf==24.2.*
+          - &cudf_conda cudf==24.4.*
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -396,7 +396,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - &cuml_conda cuml==24.2.*
+          - &cuml_conda cuml==24.4.*
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -417,7 +417,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - &cuspatial_conda cuspatial==24.2.*
+          - &cuspatial_conda cuspatial==24.4.*
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file

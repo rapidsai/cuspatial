@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@
 
 #include <rmm/device_vector.hpp>
 #include <rmm/exec_policy.hpp>
-#include <rmm/mr/device/pool_memory_resource.hpp>
 
 #include <thrust/binary_search.h>
 #include <thrust/sort.h>
