@@ -91,6 +91,8 @@ def directed_hausdorff_distance(multipoints: GeoSeries):
         as_column(multipoints.multipoints.geometry_offset[:-1]),
     )
 
+    # the column label of each column in result should be its int position
+    # e.g. a dict of {0: result[0], 1, result[1], ...}
     return DataFrame(dict(enumerate(result)))
 
 
