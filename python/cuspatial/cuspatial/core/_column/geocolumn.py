@@ -8,7 +8,7 @@ import cupy as cp
 import pyarrow as pa
 
 import cudf
-from cudf.core.column import ColumnBase, as_column, build_list_column
+from cudf.core.column import ColumnBase, as_column, ListColumn
 
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
 from cuspatial.utils.column_utils import empty_geometry_column
@@ -178,10 +178,11 @@ class GeoColumn(ColumnBase):
         if not multipoints_xy.dtype.kind == "f":
             raise ValueError("Coordinates must be floating point numbers.")
 
-        multipoint_col = build_list_column(
-            indices=geometry_offsets,
-            elements=_xy_as_variable_sized_list(multipoints_xy),
+        multi_elements = _xy_as_variable_sized_list(multipoints_xy)
+        multipoint_col = ListColumn(
+            dtype=cudf.ListDtype(multi_elements.dtype),
             size=len(geometry_offsets) - 1,
+            children=(geometry_offsets, multi_elements),
         )
         num_multipoints = len(multipoint_col)
 
@@ -232,15 +233,16 @@ class GeoColumn(ColumnBase):
         if not linestrings_xy.dtype.kind == "f":
             raise ValueError("Coordinates must be floating point numbers.")
 
-        parts_col = build_list_column(
-            indices=part_offsets,
-            elements=_xy_as_variable_sized_list(linestrings_xy),
+        parts_elements = _xy_as_variable_sized_list(linestrings_xy)
+        parts_col = ListColumn(
+            dtype=cudf.ListDtype(parts_elements.dtype),
             size=len(part_offsets) - 1,
+            children=(part_offsets, parts_elements),
         )
-        linestrings_col = build_list_column(
-            indices=geometry_offsets,
-            elements=parts_col,
+        linestrings_col = ListColumn(
+            dtype=cudf.ListDtype(parts_col.dtype),
             size=len(geometry_offsets) - 1,
+            children=(geometry_offsets, parts_col),
         )
         num_linestrings = len(linestrings_col)
 
@@ -292,20 +294,21 @@ class GeoColumn(ColumnBase):
         if not polygons_xy.dtype.kind == "f":
             raise ValueError("Coordinates must be floating point numbers.")
 
-        rings_col = build_list_column(
-            indices=ring_offsets,
-            elements=_xy_as_variable_sized_list(polygons_xy),
+        ring_elements = _xy_as_variable_sized_list(polygons_xy)
+        rings_col = ListColumn(
+            dtype=cudf.ListDtype(ring_elements.dtype),
             size=len(ring_offsets) - 1,
+            children=(ring_offsets, ring_elements)
         )
-        parts_col = build_list_column(
-            indices=part_offsets,
-            elements=rings_col,
+        parts_col = ListColumn(
+            dtype=cudf.ListDtype(rings_col.dtype),
             size=len(part_offsets) - 1,
+            children=(part_offsets, rings_col)
         )
-        polygons_col = build_list_column(
-            indices=geometry_offsets,
-            elements=parts_col,
+        polygons_col = ListColumn(
+            dtype=cudf.ListDtype(parts_col.dtype),
             size=len(geometry_offsets) - 1,
+            children=(geometry_offsets, parts_col)
         )
         num_polygons = len(polygons_col)
 
@@ -365,4 +368,8 @@ def _xy_as_variable_sized_list(xy: ColumnBase):
 
     num_points = len(xy) // 2
     indices = as_column(range(0, num_points * 2 + 1, 2), dtype="int32")
-    return build_list_column(indices=indices, elements=xy, size=num_points)
+    return ListColumn(
+        dtype=cudf.ListDtype(xy.dtype),
+        size=num_points,
+        children=(indices, xy)
+    )
