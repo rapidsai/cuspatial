@@ -25,7 +25,7 @@ conda env create -n cuspatial --file conda/environments/all_cuda-118_arch-x86_64
 
 ### From the cuSpatial Dev Container:
 
-Execute `build-cuspatial-cpp to build `libcuspatial`. The following options may be added.
+Execute `build-cuspatial-cpp` to build `libcuspatial`. The following options may be added.
  - `-DBUILD_TESTS=ON`: build `libcuspatial` unit tests.
  - `-DBUILD_BENCHMARKS=ON`: build `libcuspatial` benchmarks.
  - `-DCMAKE_BUILD_TYPE=Debug`: Create a Debug build of `libcuspatial` (default is Release).
