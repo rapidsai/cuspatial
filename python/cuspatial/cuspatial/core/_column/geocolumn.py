@@ -298,17 +298,17 @@ class GeoColumn(ColumnBase):
         rings_col = ListColumn(
             dtype=cudf.ListDtype(ring_elements.dtype),
             size=len(ring_offsets) - 1,
-            children=(ring_offsets, ring_elements)
+            children=(ring_offsets, ring_elements),
         )
         parts_col = ListColumn(
             dtype=cudf.ListDtype(rings_col.dtype),
             size=len(part_offsets) - 1,
-            children=(part_offsets, rings_col)
+            children=(part_offsets, rings_col),
         )
         polygons_col = ListColumn(
             dtype=cudf.ListDtype(parts_col.dtype),
             size=len(geometry_offsets) - 1,
-            children=(geometry_offsets, parts_col)
+            children=(geometry_offsets, parts_col),
         )
         num_polygons = len(polygons_col)
 
@@ -369,7 +369,5 @@ def _xy_as_variable_sized_list(xy: ColumnBase):
     num_points = len(xy) // 2
     indices = as_column(range(0, num_points * 2 + 1, 2), dtype="int32")
     return ListColumn(
-        dtype=cudf.ListDtype(xy.dtype),
-        size=num_points,
-        children=(indices, xy)
+        dtype=cudf.ListDtype(xy.dtype), size=num_points, children=(indices, xy)
     )

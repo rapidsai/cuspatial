@@ -87,7 +87,7 @@ def pairwise_linestring_intersection(
         ListColumn(
             dtype=cudf.ListDtype(id_.dtype),
             size=len(geometry_collection_offset) - 1,
-            children=(geometry_collection_offset, id_)
+            children=(geometry_collection_offset, id_),
         )
         for id_ in look_back_ids
     ]
@@ -95,7 +95,10 @@ def pairwise_linestring_intersection(
     linestring_column = ListColumn(
         dtype=cudf.ListDtype(segments.dtype),
         size=segments.size,
-        children=(as_column(range(0, len(segments) + 1), dtype="int32"), segments),
+        children=(
+            as_column(range(0, len(segments) + 1), dtype="int32"),
+            segments,
+        ),
     )
 
     coord_dtype = points.dtype.leaf_type
