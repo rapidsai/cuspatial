@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023, NVIDIA CORPORATION.
+# Copyright (c) 2019-2024, NVIDIA CORPORATION.
 
 repos:
       - repo: https://github.com/PyCQA/isort
@@ -47,6 +47,10 @@ repos:
         hooks:
             - id: rapids-dependency-file-generator
               args: ["--clean"]
+      - repo: https://github.com/KyleFromNVIDIA/pre-commit-hooks
+        rev: cf900c4b9657f8f00fbd29832191f71880673525
+        hooks:
+            - id: verify-copyright
 
 default_language_version:
       python: python3
