@@ -48,7 +48,7 @@ repos:
             - id: rapids-dependency-file-generator
               args: ["--clean"]
       - repo: https://github.com/KyleFromNVIDIA/pre-commit-hooks
-        rev: cf900c4b9657f8f00fbd29832191f71880673525
+        rev: 2011a2bbe195d97bd8d1eaccc9c8e4667e7dfc66
         hooks:
             - id: verify-copyright
 
