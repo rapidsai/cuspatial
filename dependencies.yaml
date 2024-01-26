@@ -365,10 +365,10 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.*"}
             packages:
-              - rmm-cu12==24.2.*
+              - rmm-cu12==24.4.*
           - matrix: {cuda: "11.*"}
             packages:
-              - rmm-cu11==24.2.*
+              - rmm-cu11==24.4.*
           - {matrix: null, packages: [*rmm_conda]}
 
   depends_on_cudf:
@@ -386,10 +386,10 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.*"}
             packages:
-              - cudf-cu12==24.2.*
+              - cudf-cu12==24.4.*
           - matrix: {cuda: "11.*"}
             packages:
-              - cudf-cu11==24.2.*
+              - cudf-cu11==24.4.*
           - {matrix: null, packages: [*cudf_conda]}
 
   depends_on_cuml:
@@ -407,10 +407,10 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.*"}
             packages:
-              - cuml-cu12==24.2.*
+              - cuml-cu12==24.4.*
           - matrix: {cuda: "11.*"}
             packages:
-              - cuml-cu11==24.2.*
+              - cuml-cu11==24.4.*
           - {matrix: null, packages: [*cuml_conda]}
 
   depends_on_cuspatial:
@@ -428,10 +428,10 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.*"}
             packages:
-              - cuspatial-cu12==24.2.*
+              - cuspatial-cu12==24.4.*
           - matrix: {cuda: "11.*"}
             packages:
-              - cuspatial-cu11==24.2.*
+              - cuspatial-cu11==24.4.*
           - {matrix: null, packages: [*cuspatial_conda]}
 
   depends_on_cupy:
