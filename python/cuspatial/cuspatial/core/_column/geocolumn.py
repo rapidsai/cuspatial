@@ -8,7 +8,7 @@ import cupy as cp
 import pyarrow as pa
 
 import cudf
-from cudf.core.column import ColumnBase, as_column, ListColumn
+from cudf.core.column import ColumnBase, ListColumn, as_column
 
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
 from cuspatial.utils.column_utils import empty_geometry_column

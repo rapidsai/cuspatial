@@ -3,7 +3,7 @@
 from typing import TYPE_CHECKING
 
 import cudf
-from cudf.core.column import as_column, ListColumn
+from cudf.core.column import ListColumn, as_column
 
 from cuspatial._lib.intersection import (
     pairwise_linestring_intersection as c_pairwise_linestring_intersection,
