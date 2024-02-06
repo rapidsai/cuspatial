@@ -698,7 +698,10 @@ class GeoSeries(cudf.Series):
         GeoSeries:
             A GeoSeries made of the points.
         """
-        return cls(GeoColumn._from_points_xy(as_column(points_xy)))
+        coords_dtype = "f8" if len(points_xy) == 0 else None
+        return cls(
+            GeoColumn._from_points_xy(as_column(points_xy, dtype=coords_dtype))
+        )
 
     @classmethod
     def from_multipoints_xy(cls, multipoints_xy, geometry_offset):
@@ -729,9 +732,10 @@ class GeoSeries(cudf.Series):
         1    MULTIPOINT (2.00000 2.00000, 3.00000 3.00000)
         dtype: geometry
         """
+        coords_dtype = "f8" if len(multipoints_xy) == 0 else None
         return cls(
             GeoColumn._from_multipoints_xy(
-                as_column(multipoints_xy),
+                as_column(multipoints_xy, dtype=coords_dtype),
                 as_column(geometry_offset, dtype="int32"),
             )
         )
@@ -773,9 +777,10 @@ class GeoSeries(cudf.Series):
         0    LINESTRING (0 0, 1 1, 2 2, 3 3, 4 4, 5 5)
         dtype: geometry
         """
+        coords_dtype = "f8" if len(linestrings_xy) == 0 else None
         return cls(
             GeoColumn._from_linestrings_xy(
-                as_column(linestrings_xy),
+                as_column(linestrings_xy, dtype=coords_dtype),
                 as_column(part_offset, dtype="int32"),
                 as_column(geometry_offset, dtype="int32"),
             )
@@ -822,9 +827,10 @@ class GeoSeries(cudf.Series):
         0    POLYGON (0 0, 1 1, 2 2, 3 3, 4 4, 5 5)
         dtype: geometry
         """
+        coords_dtype = "f8" if len(polygons_xy) == 0 else None
         return cls(
             GeoColumn._from_polygons_xy(
-                as_column(polygons_xy),
+                as_column(polygons_xy, dtype=coords_dtype),
                 as_column(ring_offset, dtype="int32"),
                 as_column(part_offset, dtype="int32"),
                 as_column(geometry_offset, dtype="int32"),
@@ -1001,15 +1007,14 @@ class GeoSeries(cudf.Series):
                 # The columns of the `cudf.DataFrame` are the new
                 # columns of the `GeoDataFrame`.
                 columns = {
-                    col: cudf_result[col] for col in cudf_result.columns
+                    col: cudf_result[col]
+                    for col in cudf_result.columns
+                    if col is not None
                 }
                 geo_result = GeoDataFrame(columns)
                 geo_series.index = geo_result.index
                 # Add the original `GeoSeries` as a column.
-                if name:
-                    geo_result[name] = geo_series
-                else:
-                    geo_result[0] = geo_series
+                geo_result[name] = geo_series
                 return geo_result
         else:
             self.index = cudf_series.index
