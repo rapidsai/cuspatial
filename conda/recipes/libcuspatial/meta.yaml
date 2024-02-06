@@ -69,13 +69,13 @@ outputs:
         - cuda-version ={{ cuda_version }}
         {% if cuda_major == "11" %}
         - cudatoolkit
-        {% else %}
-        - cuda-cudart-dev
         {% endif %}
       run:
         - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
         {% if cuda_major == "11" %}
         - cudatoolkit
+        {% else %}
+        - cuda-cudart
         {% endif %}
         - libcudf ={{ minor_version }}
         - librmm ={{ minor_version }}
@@ -104,13 +104,13 @@ outputs:
         - cuda-version ={{ cuda_version }}
         {% if cuda_major == "11" %}
         - cudatoolkit
-        {% else %}
-        - cuda-cudart-dev
         {% endif %}
       run:
         - {{ pin_subpackage('libcuspatial', exact=True) }}
         {% if cuda_major == "11" %}
         - cudatoolkit
+        {% else %}
+        - cuda-cudart
         {% endif %}
         - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
         - gmock {{ gtest_version }}
