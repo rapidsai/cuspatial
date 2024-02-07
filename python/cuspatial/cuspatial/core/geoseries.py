@@ -698,7 +698,8 @@ class GeoSeries(cudf.Series):
         GeoSeries:
             A GeoSeries made of the points.
         """
-        coords_dtype = "f8" if len(points_xy) == 0 else None
+        coords_dtype = _check_coords_dtype(points_xy)
+
         return cls(
             GeoColumn._from_points_xy(as_column(points_xy, dtype=coords_dtype))
         )
@@ -710,8 +711,9 @@ class GeoSeries(cudf.Series):
 
         Parameters
         ----------
-        points_xy: array-like
-            Coordinates of the points, interpreted as interleaved x-y coords.
+        multipoints_xy: array-like
+            Coordinates of the multipoints, interpreted as interleaved x-y
+            coords.
         geometry_offset: array-like
             Offsets indicating the starting index of the multipoint. Multiply
             the index by 2 results in the starting index of the coordinate.
@@ -732,7 +734,7 @@ class GeoSeries(cudf.Series):
         1    MULTIPOINT (2.00000 2.00000, 3.00000 3.00000)
         dtype: geometry
         """
-        coords_dtype = "f8" if len(multipoints_xy) == 0 else None
+        coords_dtype = coords_dtype = _check_coords_dtype(multipoints_xy)
         return cls(
             GeoColumn._from_multipoints_xy(
                 as_column(multipoints_xy, dtype=coords_dtype),
@@ -750,7 +752,8 @@ class GeoSeries(cudf.Series):
         Parameters
         ----------
         linestrings_xy : array-like
-            Coordinates of the points, interpreted as interleaved x-y coords.
+            Coordinates of the linestring, interpreted as interleaved x-y
+            coords.
         geometry_offset : array-like
             Offsets of the first coordinate of each geometry. The length of
             this array is the number of geometries.  Offsets with a difference
@@ -777,7 +780,7 @@ class GeoSeries(cudf.Series):
         0    LINESTRING (0 0, 1 1, 2 2, 3 3, 4 4, 5 5)
         dtype: geometry
         """
-        coords_dtype = "f8" if len(linestrings_xy) == 0 else None
+        coords_dtype = _check_coords_dtype(linestrings_xy)
         return cls(
             GeoColumn._from_linestrings_xy(
                 as_column(linestrings_xy, dtype=coords_dtype),
@@ -827,7 +830,7 @@ class GeoSeries(cudf.Series):
         0    POLYGON (0 0, 1 1, 2 2, 3 3, 4 4, 5 5)
         dtype: geometry
         """
-        coords_dtype = "f8" if len(polygons_xy) == 0 else None
+        coords_dtype = _check_coords_dtype(polygons_xy)
         return cls(
             GeoColumn._from_polygons_xy(
                 as_column(polygons_xy, dtype=coords_dtype),
@@ -1488,3 +1491,10 @@ class GeoSeries(cudf.Series):
         if other_is_scalar:
             res.index = self.index
         return res
+
+
+def _check_coords_dtype(coords):
+    if hasattr(coords, "dtype"):
+        return coords.dtype
+    else:
+        return "f8" if len(coords) == 0 else None

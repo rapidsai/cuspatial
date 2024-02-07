@@ -18,10 +18,10 @@ def test_linestring_bounding_boxes_empty():
         result,
         cudf.DataFrame(
             {
-                "minx": cudf.Series([]),
-                "miny": cudf.Series([]),
-                "maxx": cudf.Series([]),
-                "maxy": cudf.Series([]),
+                "minx": cudf.Series([], dtype=np.float64),
+                "miny": cudf.Series([], dtype=np.float64),
+                "maxx": cudf.Series([], dtype=np.float64),
+                "maxy": cudf.Series([], dtype=np.float64),
             }
         ),
     )

@@ -122,6 +122,16 @@ def trajectory_bounding_boxes(num_trajectories, object_ids, points: GeoSeries):
     1     1.0     1.0     3.0     3.0
     """
 
+    if len(points) == 0:
+        return DataFrame(
+            {
+                "x_min": Series([], dtype=points.points.x.dtype),
+                "y_min": Series([], dtype=points.points.x.dtype),
+                "x_max": Series([], dtype=points.points.x.dtype),
+                "y_max": Series([], dtype=points.points.x.dtype),
+            }
+        )
+
     if len(points) > 0 and not contains_only_points(points):
         raise ValueError("`points` must only contain point geometries.")
 
