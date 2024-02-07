@@ -576,8 +576,10 @@ def test_reset_index(level, drop, name, inplace):
         [Point(0, 0), Point(0, 1), Point(2, 2), Point(3, 3)], index=midx
     )
     gs = cuspatial.from_geopandas(gps)
-    expected = gps.reset_index(level, drop, name, inplace)
-    got = gs.reset_index(level, drop, name, inplace)
+    expected = gps.reset_index(
+        level=level, drop=drop, name=name, inplace=inplace
+    )
+    got = gs.reset_index(level=level, drop=drop, name=name, inplace=inplace)
     if inplace:
         expected = gps
         got = gs
