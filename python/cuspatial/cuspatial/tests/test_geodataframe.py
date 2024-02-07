@@ -435,8 +435,20 @@ def test_reset_index(level, drop, inplace, col_level, col_fill):
         index=midx,
     )
     gdf = cuspatial.from_geopandas(gpdf)
-    expected = gpdf.reset_index(level, drop, inplace, col_level, col_fill)
-    got = gdf.reset_index(level, drop, inplace, col_level, col_fill)
+    expected = gpdf.reset_index(
+        level=level,
+        drop=drop,
+        inplace=inplace,
+        col_level=col_level,
+        col_fill=col_fill,
+    )
+    got = gdf.reset_index(
+        level=level,
+        drop=drop,
+        inplace=inplace,
+        col_level=col_level,
+        col_fill=col_fill,
+    )
     if inplace:
         expected = gpdf
         got = gdf

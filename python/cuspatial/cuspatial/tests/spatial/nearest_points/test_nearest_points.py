@@ -1,4 +1,5 @@
 import geopandas as gpd
+import pandas as pd
 import pytest
 import shapely
 from geopandas.testing import assert_geodataframe_equal
@@ -73,9 +74,9 @@ def test_empty_input():
     )
     expected = gpd.GeoDataFrame(
         {
-            "point_geometry_id": [],
-            "linestring_geometry_id": [],
-            "segment_id": [],
+            "point_geometry_id": pd.Series([], dtype="i4"),
+            "linestring_geometry_id": pd.Series([], dtype="i4"),
+            "segment_id": pd.Series([], dtype="i4"),
             "geometry": gpd.GeoSeries(),
         }
     )

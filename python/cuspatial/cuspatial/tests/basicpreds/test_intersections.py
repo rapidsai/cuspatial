@@ -22,7 +22,7 @@ def test_empty():
     s1 = gpd.GeoSeries([])
     s2 = gpd.GeoSeries([])
 
-    expect_offset = pd.Series([0])
+    expect_offset = pd.Series([0], dtype="i4")
     expect_geom = gpd.GeoSeries([])
     expect_ids = pd.DataFrame(
         {
@@ -30,7 +30,8 @@ def test_empty():
             "lhs_segment_id": [],
             "rhs_linestring_id": [],
             "rhs_segment_id": [],
-        }
+        },
+        dtype="i4",
     )
 
     run_test(s1, s2, expect_offset, expect_geom, expect_ids)
