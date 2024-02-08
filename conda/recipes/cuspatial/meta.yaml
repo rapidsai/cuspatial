@@ -38,6 +38,7 @@ build:
     - {{ compiler('cuda11') }}
     {% else %}
     - {{ compiler('cuda') }}
+    - cuda-cudart-dev
     {% endif %}
 
 requirements:
@@ -53,6 +54,9 @@ requirements:
     - ninja
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
+    {% if cuda_major != "11" %}
+    - cuda-cudart-dev
+    {% endif %}
     - cuda-version ={{ cuda_version }}
     - cmake {{ cmake_version }}
     - cudf ={{ minor_version }}
@@ -65,6 +69,8 @@ requirements:
   run:
     {% if cuda_major == "11" %}
     - cudatoolkit
+    {% else %}
+    - cuda-cudart
     {% endif %}
     - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
     - cudf ={{ minor_version }}
