@@ -3,6 +3,6 @@
 
 set -euo pipefail
 
-export SKBUILD_CONFIGURE_OPTIONS="-DCUSPATIAL_BUILD_WHEELS=ON"
+export SKBUILD_CMAKE_ARGS="-DUSE_LIBARROW_FROM_PYARROW=ON"
 
 ci/build_wheel.sh cuspatial python/cuspatial

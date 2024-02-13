@@ -65,7 +65,7 @@ void run_test(T base)
   rmm::device_vector<T> d_first(first);
   rmm::device_vector<T> d_second(second);
 
-  auto expected = make_host_vector({true, false, true, false});
+  auto expected = thrust::host_vector{{true, false, true, false}};
   rmm::device_vector<bool> got(4);
 
   thrust::transform(

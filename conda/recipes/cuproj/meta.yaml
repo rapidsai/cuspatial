@@ -53,10 +53,10 @@ requirements:
   host:
     - cuda-version ={{ cuda_version }}
     - cmake {{ cmake_version }}
-    - cython >=0.29,<0.30
+    - cython >=3.0.0
     - python
     - rmm ={{ minor_version }}
-    - scikit-build >=0.13.1
+    - scikit-build-core >=0.7.0
     - setuptools
     - proj
     - sqlite
