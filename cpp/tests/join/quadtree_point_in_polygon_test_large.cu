@@ -159,9 +159,12 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
                                          quadtree,
                                          point_indices.begin(),
                                          point_indices.end(),
-                                         points.begin(),
+                                         points_in.begin(),
                                          multipolygons,
                                          this->stream());
+
+  EXPECT_GT(actual_point_indices.size(), 0);
+  EXPECT_GT(actual_poly_indices.size(), 0);
 
   thrust::stable_sort_by_key(rmm::exec_policy(this->stream()),
                              actual_point_indices.begin(),
@@ -207,6 +210,9 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
     // host vectors and a host stable_sort_by_key.
     auto d_expected_poly_indices  = rmm::device_vector<std::uint32_t>(expected_poly_indices);
     auto d_expected_point_indices = rmm::device_vector<std::uint32_t>(expected_point_indices);
+
+    EXPECT_GT(d_expected_poly_indices.size(), 0);
+    EXPECT_GT(d_expected_point_indices.size(), 0);
 
     thrust::stable_sort_by_key(rmm::exec_policy(this->stream()),
                                d_expected_point_indices.begin(),
