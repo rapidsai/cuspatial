@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,18 +52,18 @@ template <typename T>
 inline auto generate_points(
   std::vector<std::vector<T>> const& quads,
   uint32_t points_per_quad,
+  cuspatial::vec_2d<T> v_min,
+  cuspatial::vec_2d<T> v_max,
   std::size_t seed,
   rmm::cuda_stream_view stream,
   rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
 {
-  auto engine     = cuspatial::test::deterministic_engine(0);
-  auto uniform    = cuspatial::test::make_normal_dist<T>(0.0, 1.0);
-  auto pgen       = cuspatial::test::point_generator(cuspatial::vec_2d<T>{0.0, 0.0},
-                                               cuspatial::vec_2d<T>{1.0, 1.0},
-                                               engine,
-                                               engine,
-                                               uniform,
-                                               uniform);
+  auto engine_x  = cuspatial::test::deterministic_engine(42);
+  auto engine_y  = cuspatial::test::deterministic_engine(137);
+  auto uniform_x = cuspatial::test::make_normal_dist<T>(v_min.x, v_max.x);
+  auto uniform_y = cuspatial::test::make_normal_dist<T>(v_min.y, v_max.y);
+  auto pgen =
+    cuspatial::test::point_generator(v_min, v_max, engine_x, engine_y, uniform_x, uniform_y);
   auto num_points = quads.size() * points_per_quad;
   rmm::device_uvector<cuspatial::vec_2d<T>> points(num_points, stream, mr);
 
@@ -96,12 +96,12 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
                                     {7, 8, 3, 4},
                                     {0, 4, 4, 8}};
 
-  auto points_in = generate_points<T>(quads, min_size, 0, this->stream());
+  auto points_in = generate_points<T>(quads, min_size, v_min, v_max, 0, this->stream());
 
-  auto [point_indices, quadtree] = quadtree_on_points(
+  auto [point_indices, quadtree] = cuspatial::quadtree_on_points(
     points_in.begin(), points_in.end(), v_min, v_max, scale, max_depth, min_size, this->stream());
 
-  auto points = rmm::device_uvector<vec_2d<T>>(quads.size() * min_size, this->stream());
+  auto points = rmm::device_uvector<vec_2d<T>>(point_indices.size(), this->stream());
   thrust::gather(rmm::exec_policy(this->stream()),
                  point_indices.begin(),
                  point_indices.end(),
@@ -174,17 +174,17 @@ TYPED_TEST(PIPRefineTestLarge, TestLarge)
   {  // verify
     rmm::device_uvector<int32_t> hits(points.size(), this->stream());
 
-    auto points_range = make_multipoint_range(
+    auto points_range = cuspatial::make_multipoint_range(
       points.size(), thrust::make_counting_iterator(0), points.size(), points.begin());
 
-    auto polygons_range = make_multipolygon_range(multipolygons.size(),
-                                                  thrust::make_counting_iterator(0),
-                                                  multipolygons.size(),
-                                                  multipolygons.part_offset_begin(),
-                                                  multipolygons.num_rings(),
-                                                  multipolygons.ring_offset_begin(),
-                                                  multipolygons.num_points(),
-                                                  multipolygons.point_begin());
+    auto polygons_range = cuspatial::make_multipolygon_range(multipolygons.size(),
+                                                             thrust::make_counting_iterator(0),
+                                                             multipolygons.size(),
+                                                             multipolygons.part_offset_begin(),
+                                                             multipolygons.num_rings(),
+                                                             multipolygons.ring_offset_begin(),
+                                                             multipolygons.num_points(),
+                                                             multipolygons.point_begin());
 
     auto hits_end =
       cuspatial::point_in_polygon(points_range, polygons_range, hits.begin(), this->stream());
