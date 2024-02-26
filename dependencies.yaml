@@ -3,7 +3,7 @@ files:
   all:
     output: conda
     matrix:
-      cuda: ["11.8", "12.0"]
+      cuda: ["11.8", "12.2"]
       arch: [x86_64]
     includes:
       - build_cpp
@@ -154,7 +154,7 @@ dependencies:
             packages:
               - nvcc_linux-aarch64=11.8
           - matrix:
-              cuda: "12.0"
+              cuda: "12.*"
             packages:
               - cuda-nvcc
   build_cpp_cuproj:
@@ -198,7 +198,7 @@ dependencies:
             packages:
               - nvcc_linux-aarch64=11.8
           - matrix:
-              cuda: "12.0"
+              cuda: "12.*"
             packages:
               - cuda-nvcc
   build_python:
@@ -255,6 +255,10 @@ dependencies:
               cuda: "12.0"
             packages:
               - cuda-version=12.0
+          - matrix:
+              cuda: "12.2"
+            packages:
+              - cuda-version=12.2
   cuda:
     specific:
       - output_types: conda
@@ -359,17 +363,12 @@ dependencies:
     specific:
       - output_types: [requirements, pyproject]
         matrices:
-          - matrix: {cuda: "12.2"}
-            packages: &rmm_packages_pip_cu12
+          - matrix: {cuda: "12.*"}
+            packages:
               - rmm-cu12==24.4.*
-          - {matrix: {cuda: "12.1"}, packages: *rmm_packages_pip_cu12}
-          - {matrix: {cuda: "12.0"}, packages: *rmm_packages_pip_cu12}
-          - matrix: {cuda: "11.8"}
-            packages: &rmm_packages_pip_cu11
+          - matrix: {cuda: "11.*"}
+            packages:
               - rmm-cu11==24.4.*
-          - {matrix: {cuda: "11.5"}, packages: *rmm_packages_pip_cu11}
-          - {matrix: {cuda: "11.4"}, packages: *rmm_packages_pip_cu11}
-          - {matrix: {cuda: "11.2"}, packages: *rmm_packages_pip_cu11}
           - {matrix: null, packages: [*rmm_conda]}
 
   depends_on_cudf:
@@ -385,17 +384,12 @@ dependencies:
     specific:
       - output_types: [requirements, pyproject]
         matrices:
-          - matrix: {cuda: "12.2"}
-            packages: &cudf_packages_pip_cu12
+          - matrix: {cuda: "12.*"}
+            packages:
               - cudf-cu12==24.4.*
-          - {matrix: {cuda: "12.1"}, packages: *cudf_packages_pip_cu12}
-          - {matrix: {cuda: "12.0"}, packages: *cudf_packages_pip_cu12}
-          - matrix: {cuda: "11.8"}
-            packages: &cudf_packages_pip_cu11
+          - matrix: {cuda: "11.*"}
+            packages:
               - cudf-cu11==24.4.*
-          - {matrix: {cuda: "11.5"}, packages: *cudf_packages_pip_cu11}
-          - {matrix: {cuda: "11.4"}, packages: *cudf_packages_pip_cu11}
-          - {matrix: {cuda: "11.2"}, packages: *cudf_packages_pip_cu11}
           - {matrix: null, packages: [*cudf_conda]}
 
   depends_on_cuml:
@@ -411,17 +405,12 @@ dependencies:
     specific:
       - output_types: [requirements, pyproject]
         matrices:
-          - matrix: {cuda: "12.2"}
-            packages: &cuml_packages_pip_cu12
+          - matrix: {cuda: "12.*"}
+            packages:
               - cuml-cu12==24.4.*
-          - {matrix: {cuda: "12.1"}, packages: *cuml_packages_pip_cu12}
-          - {matrix: {cuda: "12.0"}, packages: *cuml_packages_pip_cu12}
-          - matrix: {cuda: "11.8"}
-            packages: &cuml_packages_pip_cu11
+          - matrix: {cuda: "11.*"}
+            packages:
               - cuml-cu11==24.4.*
-          - {matrix: {cuda: "11.5"}, packages: *cuml_packages_pip_cu11}
-          - {matrix: {cuda: "11.4"}, packages: *cuml_packages_pip_cu11}
-          - {matrix: {cuda: "11.2"}, packages: *cuml_packages_pip_cu11}
           - {matrix: null, packages: [*cuml_conda]}
 
   depends_on_cuspatial:
@@ -437,17 +426,12 @@ dependencies:
     specific:
       - output_types: [requirements, pyproject]
         matrices:
-          - matrix: {cuda: "12.2"}
-            packages: &cuspatial_packages_pip_cu12
+          - matrix: {cuda: "12.*"}
+            packages:
               - cuspatial-cu12==24.4.*
-          - {matrix: {cuda: "12.1"}, packages: *cuspatial_packages_pip_cu12}
-          - {matrix: {cuda: "12.0"}, packages: *cuspatial_packages_pip_cu12}
-          - matrix: {cuda: "11.8"}
-            packages: &cuspatial_packages_pip_cu11
+          - matrix: {cuda: "11.*"}
+            packages:
               - cuspatial-cu11==24.4.*
-          - {matrix: {cuda: "11.5"}, packages: *cuspatial_packages_pip_cu11}
-          - {matrix: {cuda: "11.4"}, packages: *cuspatial_packages_pip_cu11}
-          - {matrix: {cuda: "11.2"}, packages: *cuspatial_packages_pip_cu11}
           - {matrix: null, packages: [*cuspatial_conda]}
 
   depends_on_cupy:
@@ -458,33 +442,10 @@ dependencies:
     specific:
       - output_types: [requirements, pyproject]
         matrices:
-          # All CUDA 12 + x86_64 versions
-          - matrix: {cuda: "12.2", arch: x86_64}
-            packages: &cupy_packages_cu12_x86_64
+          - matrix: {cuda: "12.*"}
+            packages:
               - cupy-cuda12x>=12.0.0
-          - {matrix: {cuda: "12.1", arch: x86_64}, packages: *cupy_packages_cu12_x86_64}
-          - {matrix: {cuda: "12.0", arch: x86_64}, packages: *cupy_packages_cu12_x86_64}
-
-          # All CUDA 12 + aarch64 versions
-          - matrix: {cuda: "12.2", arch: aarch64}
-            packages: &cupy_packages_cu12_aarch64
-              - cupy-cuda12x -f https://pip.cupy.dev/aarch64 # TODO: Verify that this works.
-          - {matrix: {cuda: "12.1", arch: aarch64}, packages: *cupy_packages_cu12_aarch64}
-          - {matrix: {cuda: "12.0", arch: aarch64}, packages: *cupy_packages_cu12_aarch64}
-
-          # All CUDA 11 + x86_64 versions
-          - matrix: {cuda: "11.8", arch: x86_64}
-            packages: &cupy_packages_cu11_x86_64
+          - matrix: {cuda: "11.*"}
+            packages:
               - cupy-cuda11x>=12.0.0
-          - {matrix: {cuda: "11.5", arch: x86_64}, packages: *cupy_packages_cu11_x86_64}
-          - {matrix: {cuda: "11.4", arch: x86_64}, packages: *cupy_packages_cu11_x86_64}
-          - {matrix: {cuda: "11.2", arch: x86_64}, packages: *cupy_packages_cu11_x86_64}
-
-          # All CUDA 11 + aarch64 versions
-          - matrix: {cuda: "11.8", arch: aarch64}
-            packages: &cupy_packages_cu11_aarch64
-              - cupy-cuda11x -f https://pip.cupy.dev/aarch64 # TODO: Verify that this works.
-          - {matrix: {cuda: "11.5", arch: aarch64}, packages: *cupy_packages_cu11_aarch64}
-          - {matrix: {cuda: "11.4", arch: aarch64}, packages: *cupy_packages_cu11_aarch64}
-          - {matrix: {cuda: "11.2", arch: aarch64}, packages: *cupy_packages_cu11_aarch64}
           - {matrix: null, packages: [cupy-cuda11x>=12.0.0]}

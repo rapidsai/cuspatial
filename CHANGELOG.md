@@ -1,3 +1,33 @@
+# cuSpatial 24.02.00 (12 Feb 2024)
+
+## 🚨 Breaking Changes
+
+- Update to CCCL 2.2.0. ([#1315](https://github.com/rapidsai/cuspatial/pull/1315)) [@bdice](https://github.com/bdice)
+- Switch to scikit-build-core ([#1313](https://github.com/rapidsai/cuspatial/pull/1313)) [@vyasr](https://github.com/vyasr)
+
+## 🐛 Bug Fixes
+
+- Exclude tests from builds ([#1339](https://github.com/rapidsai/cuspatial/pull/1339)) [@vyasr](https://github.com/vyasr)
+- Make sure cudf uses pyarrow&#39;s libarrow during wheel builds ([#1334](https://github.com/rapidsai/cuspatial/pull/1334)) [@vyasr](https://github.com/vyasr)
+- Replace cudf _from_columns with a public API ([#1326](https://github.com/rapidsai/cuspatial/pull/1326)) [@mroeschke](https://github.com/mroeschke)
+- Update usage of cudf.core.column.arange to cudf.core.column.as_column ([#1323](https://github.com/rapidsai/cuspatial/pull/1323)) [@AjayThorve](https://github.com/AjayThorve)
+
+## 🚀 New Features
+
+- Use ListColumn instead of build_list_column ([#1327](https://github.com/rapidsai/cuspatial/pull/1327)) [@mroeschke](https://github.com/mroeschke)
+
+## 🛠️ Improvements
+
+- Remove usages of rapids-env-update ([#1321](https://github.com/rapidsai/cuspatial/pull/1321)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- Add explicit initial size to all pools and avoid RMM detail APIs ([#1319](https://github.com/rapidsai/cuspatial/pull/1319)) [@harrism](https://github.com/harrism)
+- refactor CUDA versions in dependencies.yaml ([#1317](https://github.com/rapidsai/cuspatial/pull/1317)) [@jameslamb](https://github.com/jameslamb)
+- Update to CCCL 2.2.0. ([#1315](https://github.com/rapidsai/cuspatial/pull/1315)) [@bdice](https://github.com/bdice)
+- Use cuda::proclaim_return_type on device lambdas. ([#1314](https://github.com/rapidsai/cuspatial/pull/1314)) [@bdice](https://github.com/bdice)
+- Switch to scikit-build-core ([#1313](https://github.com/rapidsai/cuspatial/pull/1313)) [@vyasr](https://github.com/vyasr)
+- Use Cython 3 for cuproj. ([#1309](https://github.com/rapidsai/cuspatial/pull/1309)) [@bdice](https://github.com/bdice)
+- Update dependencies.yaml to new pip index ([#1305](https://github.com/rapidsai/cuspatial/pull/1305)) [@vyasr](https://github.com/vyasr)
+- Remove CUSPATIAL_BUILD_WHEELS and standardize Python builds ([#1304](https://github.com/rapidsai/cuspatial/pull/1304)) [@vyasr](https://github.com/vyasr)
+
 # cuSpatial 23.12.00 (6 Dec 2023)
 
 ## 🐛 Bug Fixes

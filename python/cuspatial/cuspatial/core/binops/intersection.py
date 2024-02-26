@@ -3,7 +3,7 @@
 from typing import TYPE_CHECKING
 
 import cudf
-from cudf.core.column import as_column, build_list_column
+from cudf.core.column import ListColumn, as_column
 
 from cuspatial._lib.intersection import (
     pairwise_linestring_intersection as c_pairwise_linestring_intersection,
@@ -53,7 +53,7 @@ def pairwise_linestring_intersection(
 
     if len(linestrings1) == 0 and len(linestrings2) == 0:
         return (
-            cudf.Series([0]),
+            cudf.Series([0], dtype="i4"),
             GeoSeries([]),
             cudf.DataFrame(
                 {
@@ -61,7 +61,8 @@ def pairwise_linestring_intersection(
                     "lhs_segment_id": [],
                     "rhs_linestring_id": [],
                     "rhs_segment_id": [],
-                }
+                },
+                dtype="i4",
             ),
         )
 
@@ -84,18 +85,21 @@ def pairwise_linestring_intersection(
 
     # Organize the look back ids into list column
     (lhs_linestring_id, lhs_segment_id, rhs_linestring_id, rhs_segment_id,) = [
-        build_list_column(
-            indices=geometry_collection_offset,
-            elements=id_,
+        ListColumn(
+            dtype=cudf.ListDtype(id_.dtype),
             size=len(geometry_collection_offset) - 1,
+            children=(geometry_collection_offset, id_),
         )
         for id_ in look_back_ids
     ]
 
-    linestring_column = build_list_column(
-        indices=as_column(range(0, len(segments) + 1), dtype="int32"),
-        elements=segments,
-        size=len(segments),
+    linestring_column = ListColumn(
+        dtype=cudf.ListDtype(segments.dtype),
+        size=segments.size,
+        children=(
+            as_column(range(0, len(segments) + 1), dtype="int32"),
+            segments,
+        ),
     )
 
     coord_dtype = points.dtype.leaf_type
