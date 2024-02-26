@@ -125,7 +125,7 @@ cuSpatial can be installed with conda (miniconda, or the full Anaconda distribut
 
 ```shell
 conda install -c rapidsai -c conda-forge -c nvidia \
-    cuspatial=24.04 python=3.10 cudatoolkit=11.8
+    cuspatial=24.04 python=3.11 cudatoolkit=11.8
 ```
 We also provide nightly Conda packages built from the HEAD of our latest development branch.
 
