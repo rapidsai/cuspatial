@@ -27,6 +27,26 @@ function(find_and_configure_proj VERSION)
     GIT_TAG ${VERSION}
     GIT_SHALLOW TRUE
   )
+
+  if(PROJ_ADDED)
+    install(TARGETS proj EXPORT proj-exports)
+
+    # write build export rules
+    rapids_export(
+      BUILD PROJ
+      VERSION ${VERSION}
+      EXPORT_SET proj-exports
+      GLOBAL_TARGETS proj
+      NAMESPACE PROJ::)
+
+    include("${rapids-cmake-dir}/export/find_package_root.cmake")
+    # When using cuPROJ from the build dir, ensure PROJ is also found in cuPROJ's build dir. This
+    # line adds `set(PROJ_ROOT "${CMAKE_CURRENT_LIST_DIR}")` to build/cuproj-dependencies.cmake
+    rapids_export_find_package_root(
+      BUILD PROJ [=[${CMAKE_CURRENT_LIST_DIR}]=] EXPORT_SET cuproj-exports
+    )
+  endif()
+
 endfunction()
 
 find_and_configure_proj(9.2.0)
