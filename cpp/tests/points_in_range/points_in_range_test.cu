@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +20,14 @@
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/points_in_range.cuh>
 
-#include <limits>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/device_vector.hpp>
 
-#include <type_traits>
-
 #include <gtest/gtest.h>
+
+#include <limits>
+#include <type_traits>
 
 template <typename T>
 using Vec = cuspatial::vec_2d<T>;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
+#include <cuspatial_test/column_factories.hpp>
+#include <cuspatial_test/vector_equality.hpp>
+
 #include <cuspatial/column/geometry_column_view.hpp>
 #include <cuspatial/distance.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/types.hpp>
-
-#include <cuspatial_test/column_factories.hpp>
-#include <cuspatial_test/vector_equality.hpp>
 
 #include <cudf_test/column_utilities.hpp>
 #include <cudf_test/column_wrapper.hpp>

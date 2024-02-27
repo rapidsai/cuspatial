@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,16 @@
 
 #pragma once
 
-#include <thrust/binary_search.h>
-#include <thrust/distance.h>
-#include <thrust/iterator/transform_iterator.h>
-#include <thrust/pair.h>
-
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/geometry_collection/multipoint_ref.cuh>
 #include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/traits.hpp>
+
+#include <thrust/binary_search.h>
+#include <thrust/distance.h>
+#include <thrust/iterator/transform_iterator.h>
+#include <thrust/pair.h>
 
 namespace cuspatial {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#pragma once
+
+#include <rmm/cuda_stream_view.hpp>
+
+#include <driver_types.h>
+
+#include <benchmark/benchmark.h>
 
 /**
  * @file synchronization.hpp
@@ -52,21 +60,7 @@
     // Register the function as a benchmark. You will need to set the `UseManualTime()`
     // flag in order to use the timer embedded in this class.
     BENCHMARK(sample_cuda_benchmark)->UseManualTime();
-
-
  **/
-
-#ifndef CUDF_BENCH_SYNCHRONIZATION_H
-#define CUDF_BENCH_SYNCHRONIZATION_H
-
-// Google Benchmark library
-#include <benchmark/benchmark.h>
-
-#include <cudf/types.hpp>
-
-#include <rmm/cuda_stream_view.hpp>
-
-#include <driver_types.h>
 
 class cuda_event_timer {
  public:
@@ -99,5 +93,3 @@ class cuda_event_timer {
   rmm::cuda_stream_view stream;
   benchmark::State* p_state;
 };
-
-#endif

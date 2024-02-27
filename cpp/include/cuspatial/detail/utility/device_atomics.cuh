@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,10 @@
 
 #pragma once
 
+#include <cuda/atomic>
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/device_ptr.h>
 #include <thrust/device_reference.h>
-
-#include <cuda/atomic>
 
 #include <type_traits>
 

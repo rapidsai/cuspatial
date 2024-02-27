@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-#include <cuspatial/detail/utility/floating_point.cuh>
 #include <cuspatial_test/vector_factories.cuh>
 
-#include <limits>
+#include <cuspatial/detail/utility/floating_point.cuh>
+
 #include <rmm/device_vector.hpp>
 
 #include <gtest/gtest.h>
+
+#include <limits>
 
 using namespace cuspatial;
 using namespace cuspatial::test;

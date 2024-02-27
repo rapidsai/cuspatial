@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,12 @@
 #include <cudf/column/column_factories.hpp>
 #include <cudf/filling.hpp>
 #include <cudf/scalar/scalar_factories.hpp>
-
 #include <cudf_test/column_wrapper.hpp>
+
+#include <rmm/cuda_stream_view.hpp>
 
 #include <initializer_list>
 #include <memory>
-#include <rmm/cuda_stream_view.hpp>
 
 namespace cuspatial {
 namespace test {
