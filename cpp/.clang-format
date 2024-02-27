@@ -88,11 +88,11 @@ IncludeCategories:
   - Regex:           '^<(thrust|cub|cuda)/' # CCCL includes
     Priority:        7
   - Regex:           '^<(cooperative_groups|cuco|cuda.h|cuda_runtime|device_types|driver_types|math_constants|nvtx3)' # CUDA includes
-    Priority:        8
+    Priority:        7
   - Regex:           '^<.*\..*' # other system includes (e.g. with a '.')
-    Priority:        9
+    Priority:        8
   - Regex:           '^<[^.]+' # STL includes (no '.')
-    Priority:        10
+    Priority:        9
 IndentCaseLabels: true
 IndentPPDirectives: None
 IndentWidth:     2
