@@ -30,6 +30,7 @@ dependencies:
 - nbsphinx
 - ninja
 - notebook
+- numpy>=1.23
 - numpydoc
 - nvcc_linux-64=11.8
 - pre-commit

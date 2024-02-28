@@ -53,6 +53,7 @@ classifiers = [
 
 [project.optional-dependencies]
 test = [
+    "numpy>=1.23",
     "pytest",
     "pytest-cov",
     "pytest-xdist",

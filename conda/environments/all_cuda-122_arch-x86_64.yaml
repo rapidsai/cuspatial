@@ -33,6 +33,7 @@ dependencies:
 - nbsphinx
 - ninja
 - notebook
+- numpy>=1.23
 - numpydoc
 - pre-commit
 - proj

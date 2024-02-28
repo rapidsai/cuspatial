@@ -339,6 +339,7 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
+          - &numpy numpy>=1.23
           - pytest
           - pytest-cov
           - pytest-xdist
@@ -346,6 +347,7 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
+          - *numpy
           - pytest
           - pytest-cov
           - pytest-xdist
