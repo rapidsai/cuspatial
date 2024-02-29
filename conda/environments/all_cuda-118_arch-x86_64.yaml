@@ -30,6 +30,7 @@ dependencies:
 - nbsphinx
 - ninja
 - notebook
+- numpy>=1.23
 - numpydoc
 - nvcc_linux-64=11.8
 - pre-commit
@@ -39,7 +40,7 @@ dependencies:
 - pytest
 - pytest-cov
 - pytest-xdist
-- python>=3.9,<3.11
+- python>=3.9,<3.12
 - rmm==24.4.*
 - scikit-build-core>=0.7.0
 - scikit-image
