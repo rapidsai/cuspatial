@@ -335,11 +335,11 @@ dependencies:
       - output_types: [conda, requirements, pyproject]
         packages:
           - geopandas>=0.11.0
+          - &numpy numpy>=1.23
   test_python_cuspatial:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - &numpy numpy>=1.23
           - pytest
           - pytest-cov
           - pytest-xdist
