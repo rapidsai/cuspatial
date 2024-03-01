@@ -320,7 +320,10 @@ def test_boolmask(gpdf, df_boolmask):
     assert_eq_geo_df(gi[df_boolmask], cugpdf_back[df_boolmask])
 
 
-@pytest.mark.xfail(reason="Flaky memory test")
+@pytest.mark.xfail(
+    reason="Size discrepancies between Python versions. See "
+    "https://github.com/rapidsai/cuspatial/issues/1352"
+)
 def test_memory_usage(gs):
     assert gs.memory_usage() == 224
     host_dataframe = gpd.read_file(
