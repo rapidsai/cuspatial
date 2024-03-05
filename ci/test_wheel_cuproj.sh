@@ -22,5 +22,13 @@ python -m pip install $(echo ./dist/cuproj*.whl)[test]
 if [[ "$(arch)" == "aarch64" && ${RAPIDS_BUILD_TYPE} == "pull-request" ]]; then
     python ./ci/wheel_smoke_test_cuproj.py
 else
-    python -m pytest -n 8 ./python/cuproj/cuproj/tests
+    rapids-logger "pytest cuproj"
+    pushd python/cuproj/cuproj
+    python -m pytest \
+      --cache-clear \
+      --junitxml="${RAPIDS_TESTS_DIR}/junit-cuproj.xml" \
+      --numprocesses=8 \
+      --dist=worksteal \
+      tests
+    popd
 fi
