@@ -50,7 +50,7 @@ pytest \
   --cache-clear \
   --junitxml="${RAPIDS_TESTS_DIR}/junit-cuspatial.xml" \
   --numprocesses=8 \
-  --dist=loadscope \
+  --dist=worksteal \
   --cov-config=../.coveragerc \
   --cov=cuspatial \
   --cov-report=xml:"${RAPIDS_COVERAGE_DIR}/cuspatial-coverage.xml" \
@@ -65,7 +65,7 @@ pytest \
   --cache-clear \
   --junitxml="${RAPIDS_TESTS_DIR}/junit-cuproj.xml" \
   --numprocesses=8 \
-  --dist=loadscope \
+  --dist=worksteal \
   --cov-config=../.coveragerc \
   --cov=cuproj \
   --cov-report=xml:"${RAPIDS_COVERAGE_DIR}/cuproj-coverage.xml" \
