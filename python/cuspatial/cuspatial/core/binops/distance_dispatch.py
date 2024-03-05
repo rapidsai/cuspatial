@@ -186,7 +186,7 @@ class DistanceDispatch:
         # Rows with misaligned indices contains nan. Here we scatter the
         # distance values to the correct indices.
         result = as_column(
-            [float("nan")] * len(self._res_index), dtype="float64"
+            [float("nan")] * len(self._res_index), dtype="float64", nan_as_null=False
         )
         scatter_map = as_column(
             range(len(self._res_index)), dtype="int32"
