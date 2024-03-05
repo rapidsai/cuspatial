@@ -22,7 +22,7 @@ else
     pushd python/cuspatial/cuspatial
     python -m pytest \
       --cache-clear \
-      --junitxml="${RAPIDS_TESTS_DIR}/junit-cuproj.xml" \
+      --junitxml="${RAPIDS_TESTS_DIR}/junit-cuspatial.xml" \
       --numprocesses=8 \
       --dist=worksteal \
       tests
