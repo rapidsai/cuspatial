@@ -2,7 +2,7 @@
 
 from functools import cached_property
 from numbers import Integral
-from typing import Optional, Tuple, TypeVar, Union
+from typing import TYPE_CHECKING, Optional, Tuple, TypeVar, Union
 
 import cupy as cp
 import geopandas as gpd
@@ -23,7 +23,6 @@ from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry
 import cudf
 from cudf._typing import ColumnLike
 from cudf.core.column.column import as_column
-from cudf.core.copy_types import GatherMap
 
 import cuspatial.io.pygeoarrow as pygeoarrow
 from cuspatial.core._column.geocolumn import ColumnType, GeoColumn
@@ -47,6 +46,9 @@ from cuspatial.utils.column_utils import (
     contains_only_points,
     contains_only_polygons,
 )
+
+if TYPE_CHECKING:
+    from cudf.core.copy_types import GatherMap
 
 T = TypeVar("T", bound="GeoSeries")
 
