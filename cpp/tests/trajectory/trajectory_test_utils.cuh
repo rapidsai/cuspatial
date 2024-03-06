@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,15 @@
 
 #pragma once
 
+#include <cuspatial_test/test_util.cuh>
+
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/iterator_factory.cuh>
-
-#include <cuspatial_test/test_util.cuh>
 
 #include <rmm/device_vector.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <cuda/std/chrono>
 #include <thrust/binary_search.h>
 #include <thrust/gather.h>
 #include <thrust/iterator/constant_iterator.h>
@@ -33,8 +34,6 @@
 #include <thrust/shuffle.h>
 #include <thrust/tabulate.h>
 #include <thrust/transform.h>
-
-#include <cuda/std/chrono>
 
 #include <cstdint>
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,12 @@
 #include <cuspatial_test/vector_equality.hpp>
 #include <cuspatial_test/vector_factories.cuh>
 
-#include <rmm/cuda_stream_view.hpp>
-#include <rmm/device_vector.hpp>
-
 #include <cuspatial/detail/find/find_points_on_segments.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/range/range.cuh>
+
+#include <rmm/cuda_stream_view.hpp>
+#include <rmm/device_vector.hpp>
 
 #include <initializer_list>
 

@@ -1,5 +1,5 @@
 import cudf
-from cudf.core.column import as_column, full
+from cudf.core.column import as_column
 
 from cuspatial._lib.distance import (
     pairwise_linestring_distance,
@@ -185,10 +185,11 @@ class DistanceDispatch:
 
         # Rows with misaligned indices contains nan. Here we scatter the
         # distance values to the correct indices.
-        result = full(
-            len(self._res_index),
+        result = as_column(
             float("nan"),
+            length=len(self._res_index),
             dtype="float64",
+            nan_as_null=False,
         )
         scatter_map = as_column(
             range(len(self._res_index)), dtype="int32"

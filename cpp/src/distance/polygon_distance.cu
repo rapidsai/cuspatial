@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,13 @@
 
 #include "../utility/multi_geometry_dispatch.hpp"
 
+#include <cuspatial/column/geometry_column_view.hpp>
+#include <cuspatial/distance.cuh>
+#include <cuspatial/error.hpp>
+#include <cuspatial/iterator_factory.cuh>
+#include <cuspatial/range/multipolygon_range.cuh>
+#include <cuspatial/types.hpp>
+
 #include <cudf/column/column.hpp>
 #include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
@@ -25,13 +32,6 @@
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
-
-#include <cuspatial/column/geometry_column_view.hpp>
-#include <cuspatial/distance.cuh>
-#include <cuspatial/error.hpp>
-#include <cuspatial/iterator_factory.cuh>
-#include <cuspatial/range/multipolygon_range.cuh>
-#include <cuspatial/types.hpp>
 
 #include <thrust/iterator/counting_iterator.h>
 
