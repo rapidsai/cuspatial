@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -14,15 +14,13 @@
 
 cmake_minimum_required(VERSION 3.26.4 FATAL_ERROR)
 
-set(cuproj_version 24.04.00)
-
-include(../../fetch_rapids.cmake)
+include(../../rapids_config.cmake)
 include(rapids-cuda)
 rapids_cuda_init_architectures(cuproj-python)
 
 project(
   cuproj-python
-  VERSION ${cuproj_version}
+  VERSION "${RAPIDS_VERSION}"
   LANGUAGES CXX CUDA)
 
 option(FIND_CUPROJ_CPP "Search for existing cuproj C++ installations before defaulting to local files"
@@ -30,7 +28,7 @@ option(FIND_CUPROJ_CPP "Search for existing cuproj C++ installations before defa
 
 # If the user requested it we attempt to find cuproj.
 if(FIND_CUPROJ_CPP)
-  find_package(cuproj ${cuproj_version})
+  find_package(cuproj "${RAPIDS_VERSION}")
 else()
   set(cuproj_FOUND OFF)
 endif()

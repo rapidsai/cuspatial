@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 
 set -euo pipefail
 
@@ -27,7 +27,9 @@ rapids-mamba-retry install \
   cuspatial \
   cuproj
 
-export RAPIDS_VERSION_NUMBER="24.04"
+export RAPIDS_VERSION="$(cat VERSION)"
+export RAPIDS_VERSION_MAJOR_MINOR="$(sed -E -e 's/^([0-9]{2})\.([0-9]{2})\.([0-9]{2}).*$/\1.\2/')"
+export RAPIDS_VERSION_NUMBER="$RAPIDS_VERSION_MAJOR_MINOR"
 export RAPIDS_DOCS_DIR="$(mktemp -d)"
 
 rapids-logger "Build cuSpatial CPP docs"
