@@ -1,18 +1,16 @@
 # Copyright (c) 2020-2022, NVIDIA CORPORATION
-from typing import TYPE_CHECKING, Dict, Tuple, TypeVar, Union
+from typing import Dict, Tuple, TypeVar, Union
 
 import pandas as pd
 from geopandas import GeoDataFrame as gpGeoDataFrame
 from geopandas.geoseries import is_geometry_type as gp_is_geometry_type
 
 import cudf
+from cudf.core.copy_types import BooleanMask, GatherMap
 
 from cuspatial.core._column.geocolumn import GeoColumn, GeoMeta
 from cuspatial.core.geoseries import GeoSeries
 from cuspatial.io.geopandas_reader import GeoPandasReader
-
-if TYPE_CHECKING:
-    from cudf.core.copy_types import BooleanMask, GatherMap
 
 T = TypeVar("T", bound="GeoDataFrame")
 
