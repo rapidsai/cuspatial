@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
+#include <cuspatial_test/vector_equality.hpp>
+
 #include <cuspatial/constants.hpp>
 #include <cuspatial/error.hpp>
 #include <cuspatial/projection.cuh>
-#include <cuspatial_test/vector_equality.hpp>
 
 #include <rmm/device_vector.hpp>
 
-#include <gtest/gtest.h>
-
 #include <thrust/iterator/transform_iterator.h>
+
+#include <gtest/gtest.h>
 
 template <typename T>
 inline T midpoint(T a, T b)

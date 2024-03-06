@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
+#include <benchmarks/fixture/rmm_pool_raii.hpp>
+
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/point_quadtree.cuh>
 
-#include <benchmarks/fixture/rmm_pool_raii.hpp>
-#include <nvbench/nvbench.cuh>
-
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_vector.hpp>
-
 #include <rmm/exec_policy.hpp>
+
 #include <thrust/host_vector.h>
+
+#include <nvbench/nvbench.cuh>
 
 using namespace cuspatial;
 

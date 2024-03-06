@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include <cudf/utilities/default_stream.hpp>
 #include <cuspatial_test/column_factories.hpp>
 
 #include <cuspatial/error.hpp>
 #include <cuspatial/pairwise_multipoint_equals_count.hpp>
 
+#include <cudf/utilities/default_stream.hpp>
 #include <cudf_test/base_fixture.hpp>
 #include <cudf_test/column_utilities.hpp>
 #include <cudf_test/column_wrapper.hpp>
@@ -27,6 +27,7 @@
 #include <cudf_test/type_lists.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
+
 #include <type_traits>
 
 using namespace cuspatial;

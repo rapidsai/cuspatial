@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,11 @@
 
 #include <cuproj_test/convert_coordinates.hpp>
 #include <cuproj_test/coordinate_generator.cuh>
+#include <cuspatial_test/vector_equality.hpp>
 
 #include <cuproj/error.hpp>
 #include <cuproj/projection_factories.cuh>
 #include <cuproj/vec_2d.hpp>
-
-#include <cuspatial_test/vector_equality.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
@@ -30,9 +29,8 @@
 #include <thrust/host_vector.h>
 #include <thrust/tabulate.h>
 
-#include <proj.h>
-
 #include <gtest/gtest.h>
+#include <proj.h>
 
 #include <cmath>
 #include <iostream>
