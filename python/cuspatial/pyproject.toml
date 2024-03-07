@@ -1,4 +1,4 @@
-# Copyright (c) 2022-2023, NVIDIA CORPORATION.
+# Copyright (c) 2022-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -120,3 +120,9 @@ wheel.packages = ["cuspatial"]
 provider = "scikit_build_core.metadata.regex"
 input = "cuspatial/VERSION"
 regex = "(?P<value>.*)"
+
+[tool.pytest.ini_options]
+xfail_strict = true
+filterwarnings = [
+    "error:::cudf"
+]

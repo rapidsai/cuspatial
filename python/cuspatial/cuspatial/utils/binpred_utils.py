@@ -1,4 +1,4 @@
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 
 import cupy as cp
 import numpy as np
@@ -363,7 +363,7 @@ def _points_and_lines_to_multipoints(geoseries, offsets):
     points = geoseries[points_mask]
     lines = geoseries[lines_mask]
     points_offsets = _zero_series(len(geoseries))
-    points_offsets[points_mask] = 1
+    points_offsets[points_mask] = points_offsets.dtype.type(1)
     lines_series = geoseries[lines_mask]
     lines_sizes = lines_series.sizes
     xy = _zero_series(len(points.points.xy) + len(lines.lines.xy))
@@ -372,9 +372,10 @@ def _points_and_lines_to_multipoints(geoseries, offsets):
         lines_sizes.index = points_offsets[lines_mask].index
         points_offsets[lines_mask] = lines_series.sizes.values
         sizes[lines_mask] = lines.sizes.values * 2
-    sizes[points_mask] = 2
+    sizes[points_mask] = sizes.dtype.type(2)
     # TODO Inevitable host device copy
     points_xy_mask = cp.array(np.repeat(points_mask, sizes.values_host))
+    xy = xy.astype(points.points.xy.dtype)
     xy.iloc[points_xy_mask] = points.points.xy.reset_index(drop=True)
     xy.iloc[~points_xy_mask] = lines.lines.xy.reset_index(drop=True)
     collected_offsets = cudf.concat(
@@ -446,6 +447,7 @@ def _pli_features_rebuild_offsets(pli, features):
     # Recompute the offsets for the new series
     grouped_sizes = in_sizes.groupby(level=0).sum().sort_index()
     out_sizes = _zero_series(len(pli[0]) - 1)
+    out_sizes = out_sizes.astype(grouped_sizes.dtype)
     out_sizes.iloc[grouped_sizes.index] = grouped_sizes
     offsets = cudf.concat([cudf.Series([0]), out_sizes.cumsum()])
     return offsets
