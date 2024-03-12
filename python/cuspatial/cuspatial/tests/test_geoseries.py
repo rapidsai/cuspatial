@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2021, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 
 from enum import Enum
 from numbers import Integral
@@ -27,7 +27,7 @@ import cuspatial
 np.random.seed(0)
 
 
-class Test_Feature_Enum(Enum):
+class Example_Feature_Enum(Enum):
     POINT = 0
     MULTIPOINT = 1
     LINESTRING = 2
@@ -54,7 +54,7 @@ def random_multipolygon(size):
 
 
 def generate_random_shapely_feature(
-    size: Integral, has_z: bool = False, obj_type: Test_Feature_Enum = None
+    size: Integral, has_z: bool = False, obj_type: Example_Feature_Enum = None
 ):
     obj_type = obj_type.value if obj_type else np.random.randint(1, 7)
     if obj_type == 1:
@@ -78,7 +78,7 @@ def generate_random_shapely_feature(
             return random_multipolygon(size)
 
 
-def generator(size: Integral, obj_type: Test_Feature_Enum = None):
+def generator(size: Integral, obj_type: Example_Feature_Enum = None):
     geos_list = []
     for i in range(size):
         geo = generate_random_shapely_feature(3, obj_type)
@@ -257,7 +257,7 @@ def test_getitem_lines():
 
 
 def test_getitem_slice_same_index():
-    gps = gpd.GeoSeries(generator(3, Test_Feature_Enum.POINT))
+    gps = gpd.GeoSeries(generator(3, Example_Feature_Enum.POINT))
     cus = cuspatial.from_geopandas(gps)
     assert_eq_geo(cus[0:1].to_geopandas(), gps[0:1])
     assert_eq_geo(cus[0:1].to_geopandas(), gps[0:1])

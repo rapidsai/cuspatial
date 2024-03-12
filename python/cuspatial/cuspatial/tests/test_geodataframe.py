@@ -1,4 +1,6 @@
-# Copyright (c) 2020-2021, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+import sys
+
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -321,8 +323,9 @@ def test_boolmask(gpdf, df_boolmask):
 
 
 @pytest.mark.xfail(
+    sys.version_info.major >= 3 and sys.version_info.minor >= 11,
     reason="Size discrepancies between Python versions. See "
-    "https://github.com/rapidsai/cuspatial/issues/1352"
+    "https://github.com/rapidsai/cuspatial/issues/1352",
 )
 def test_memory_usage(gs):
     assert gs.memory_usage() == 224

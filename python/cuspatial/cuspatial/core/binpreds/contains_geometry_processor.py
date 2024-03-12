@@ -1,4 +1,4 @@
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 
 import cupy as cp
 
@@ -231,6 +231,7 @@ class ContainsGeometryProcessor(BinPred):
                 return count_result
             hits = result_df["point_index_x"]
             hits.index = count_result.iloc[result_df["rhs_index"]].index
+            count_result = count_result.astype(hits.dtype)
             count_result.iloc[result_df["rhs_index"]] = hits
             return count_result
 
