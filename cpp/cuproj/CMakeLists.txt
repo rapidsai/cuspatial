@@ -1,5 +1,5 @@
 #=============================================================================
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 cmake_minimum_required(VERSION 3.23.1 FATAL_ERROR)
 
-include(../../fetch_rapids.cmake)
+include(../../rapids_config.cmake)
 include(rapids-cmake)
 include(rapids-cpm)
 include(rapids-cuda)
@@ -25,7 +25,7 @@ include(rapids-find)
 
 rapids_cuda_init_architectures(CUPROJ)
 
-project(CUPROJ VERSION 24.04.00 LANGUAGES C CXX CUDA)
+project(CUPROJ VERSION "${RAPIDS_VERSION}" LANGUAGES C CXX CUDA)
 
 # Needed because GoogleBenchmark changes the state of FindThreads.cmake,
 # causing subsequent runs to have different values for the `Threads::Threads` target.
@@ -237,7 +237,7 @@ if(DOXYGEN_FOUND)
 add_custom_command(
   OUTPUT CUPROJ_DOXYGEN
   WORKING_DIRECTORY ${CUPROJ_SOURCE_DIR}/doxygen
-  COMMAND ${DOXYGEN_EXECUTABLE} Doxyfile
+  COMMAND ${CMAKE_COMMAND} -E env "RAPIDS_VERSION=${RAPIDS_VERSION}" "RAPIDS_VERSION_MAJOR_MINOR=${RAPIDS_VERSION_MAJOR_MINOR}" ${DOXYGEN_EXECUTABLE} Doxyfile
   VERBATIM
   COMMENT "Custom command for building cuproj doxygen docs."
 )
