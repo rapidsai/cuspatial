@@ -1,4 +1,6 @@
-# Copyright (c) 2022-2023, NVIDIA CORPORATION.
+# Copyright (c) 2022-2024, NVIDIA CORPORATION.
+import pathlib
+
 import cupy
 import geopandas
 import pytest
@@ -223,12 +225,16 @@ def bench_quadtree_point_to_nearest_linestring(benchmark):
     SCALE = 3
     MAX_DEPTH = 7
     MIN_SIZE = 125
-    host_countries = geopandas.read_file(
-        geopandas.datasets.get_path("naturalearth_lowres")
+    data_dir = (
+        pathlib.Path(__file__).parent.parent.parent
+        / "cuspatial"
+        / "tests"
+        / "data"
     )
-    host_cities = geopandas.read_file(
-        geopandas.datasets.get_path("naturalearth_cities")
-    )
+    naturalearth_lowres = data_dir / "naturalearth_lowres.shp"
+    naturalearth_cities = data_dir / "naturalearth_cities.shp"
+    host_countries = geopandas.read_file(naturalearth_lowres)
+    host_cities = geopandas.read_file(naturalearth_cities)
     gpu_countries = cuspatial.from_geopandas(
         host_countries[host_countries["geometry"].type == "Polygon"]
     )

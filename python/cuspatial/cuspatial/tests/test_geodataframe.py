@@ -327,12 +327,9 @@ def test_boolmask(gpdf, df_boolmask):
     reason="Size discrepancies between Python versions. See "
     "https://github.com/rapidsai/cuspatial/issues/1352",
 )
-def test_memory_usage(gs):
+def test_memory_usage(gs, naturalearth_lowres):
     assert gs.memory_usage() == 224
-    host_dataframe = gpd.read_file(
-        gpd.datasets.get_path("naturalearth_lowres")
-    )
-    gpu_dataframe = cuspatial.from_geopandas(host_dataframe)
+    gpu_dataframe = cuspatial.from_geopandas(naturalearth_lowres)
     # The df size is 8kb of cudf rows and 217kb of the geometry column
     assert gpu_dataframe.memory_usage().sum() == 224945
 
