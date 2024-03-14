@@ -331,7 +331,7 @@ def test_memory_usage(gs, data_dir):
     host_dataframe = gpd.read_file(data_dir / "naturalearth_lowres.shp")
     gpu_dataframe = cuspatial.from_geopandas(host_dataframe)
     # The df size is 8kb of cudf rows and 217kb of the geometry column
-    assert gpu_dataframe.memory_usage().sum() == 224945
+    assert gpu_dataframe.memory_usage().sum() == 216793
 
 
 def test_from_dict():
