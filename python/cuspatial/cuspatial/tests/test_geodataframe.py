@@ -189,10 +189,9 @@ def test_interleaved_polygons(gpdf, polys):
     )
 
 
-def test_to_geopandas_with_geopandas_dataset():
-    df = gpd.read_file(gpd.datasets.get_path("naturalearth_lowres"))
-    gdf = cuspatial.from_geopandas(df)
-    assert_eq_geo_df(df, gdf.to_geopandas())
+def test_to_geopandas_with_geopandas_dataset(naturalearth_lowres):
+    gdf = cuspatial.from_geopandas(naturalearth_lowres)
+    assert_eq_geo_df(naturalearth_lowres, gdf.to_geopandas())
 
 
 def test_to_shapely_random():
@@ -327,14 +326,12 @@ def test_boolmask(gpdf, df_boolmask):
     reason="Size discrepancies between Python versions. See "
     "https://github.com/rapidsai/cuspatial/issues/1352",
 )
-def test_memory_usage(gs):
+def test_memory_usage(gs, data_dir):
     assert gs.memory_usage() == 224
-    host_dataframe = gpd.read_file(
-        gpd.datasets.get_path("naturalearth_lowres")
-    )
+    host_dataframe = gpd.read_file(data_dir / "naturalearth_lowres.shp")
     gpu_dataframe = cuspatial.from_geopandas(host_dataframe)
     # The df size is 8kb of cudf rows and 217kb of the geometry column
-    assert gpu_dataframe.memory_usage().sum() == 224945
+    assert gpu_dataframe.memory_usage().sum() == 216793
 
 
 def test_from_dict():
