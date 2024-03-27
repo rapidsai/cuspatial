@@ -19,16 +19,12 @@ python -m pip install --no-deps ./local-cuspatial-dep/cuspatial*.whl
 # echo to expand wildcard before adding `[extra]` requires for pip
 python -m pip install $(echo ./dist/cuproj*.whl)[test]
 
-if [[ "$(arch)" == "aarch64" && ${RAPIDS_BUILD_TYPE} == "pull-request" ]]; then
-    python ./ci/wheel_smoke_test_cuproj.py
-else
-    rapids-logger "pytest cuproj"
-    pushd python/cuproj/cuproj
-    python -m pytest \
-      --cache-clear \
-      --junitxml="${RAPIDS_TESTS_DIR}/junit-cuproj.xml" \
-      --numprocesses=8 \
-      --dist=worksteal \
-      tests
-    popd
-fi
+rapids-logger "pytest cuproj"
+pushd python/cuproj/cuproj
+python -m pytest \
+  --cache-clear \
+  --junitxml="${RAPIDS_TESTS_DIR}/junit-cuproj.xml" \
+  --numprocesses=8 \
+  --dist=worksteal \
+  tests
+popd
