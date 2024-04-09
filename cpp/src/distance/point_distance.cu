@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <memory>
 #include <type_traits>
@@ -40,7 +41,7 @@ struct pairwise_point_distance_impl {
     geometry_column_view const& multipoints1,
     geometry_column_view const& multipoints2,
     rmm::cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr)
+    rmm::device_async_resource_ref mr)
   {
     auto size = multipoints1.size();
 
@@ -68,7 +69,7 @@ struct pairwise_point_distance_functor {
   std::unique_ptr<cudf::column> operator()(geometry_column_view const& multipoints1,
                                            geometry_column_view const& multipoints2,
                                            rmm::cuda_stream_view stream,
-                                           rmm::mr::device_memory_resource* mr)
+                                           rmm::device_async_resource_ref mr)
   {
     CUSPATIAL_EXPECTS(multipoints1.geometry_type() == geometry_type_id::POINT &&
                         multipoints2.geometry_type() == geometry_type_id::POINT,
@@ -94,7 +95,7 @@ struct pairwise_point_distance_functor {
 
 std::unique_ptr<cudf::column> pairwise_point_distance(geometry_column_view const& multipoints1,
                                                       geometry_column_view const& multipoints2,
-                                                      rmm::mr::device_memory_resource* mr)
+                                                      rmm::device_async_resource_ref mr)
 {
   return multi_geometry_double_dispatch<detail::pairwise_point_distance_functor>(
     multipoints1.collection_type(),

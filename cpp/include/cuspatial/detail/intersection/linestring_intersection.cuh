@@ -34,6 +34,7 @@
 #include <rmm/exec_policy.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <cuda/atomic>
 #include <thrust/binary_search.h>
@@ -142,7 +143,7 @@ std::unique_ptr<rmm::device_uvector<types_t>> compute_types_buffer(
   OffsetRangeB points_offset,
   OffsetRangeB segments_offset,
   rmm::cuda_stream_view stream,
-  rmm::mr::device_memory_resource* mr)
+  rmm::device_async_resource_ref mr)
 {
   auto types_buffer = std::make_unique<rmm::device_uvector<types_t>>(union_column_size, stream, mr);
   thrust::tabulate(rmm::exec_policy(stream),
@@ -162,7 +163,7 @@ std::unique_ptr<rmm::device_uvector<types_t>> compute_types_buffer(
 template <typename index_t, typename types_t>
 std::unique_ptr<rmm::device_uvector<index_t>> compute_offset_buffer(
   rmm::device_uvector<types_t> const& types_buffer,
-  rmm::mr::device_memory_resource* mr,
+  rmm::device_async_resource_ref mr,
   rmm::cuda_stream_view stream)
 {
   auto N                                = types_buffer.size();
@@ -202,7 +203,7 @@ template <typename T,
 linestring_intersection_result<T, index_t> pairwise_linestring_intersection(
   MultiLinestringRange1 multilinestrings1,
   MultiLinestringRange2 multilinestrings2,
-  rmm::mr::device_memory_resource* mr,
+  rmm::device_async_resource_ref mr,
   rmm::cuda_stream_view stream)
 {
   using types_t = typename linestring_intersection_result<T, index_t>::types_t;

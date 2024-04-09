@@ -27,6 +27,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <thrust/iterator/zip_iterator.h>
 
@@ -43,7 +44,7 @@ std::unique_ptr<cudf::table> compute_polygon_bounding_boxes(cudf::column_view co
                                                             cudf::column_view const& y,
                                                             T expansion_radius,
                                                             rmm::cuda_stream_view stream,
-                                                            rmm::mr::device_memory_resource* mr)
+                                                            rmm::device_async_resource_ref mr)
 {
   auto num_polygons = poly_offsets.size() > 0 ? poly_offsets.size() - 1 : 0;
 
@@ -96,7 +97,7 @@ struct dispatch_compute_polygon_bounding_boxes {
              cudf::column_view const& y,
              T expansion_radius,
              rmm::cuda_stream_view stream,
-             rmm::mr::device_memory_resource* mr)
+             rmm::device_async_resource_ref mr)
   {
     return compute_polygon_bounding_boxes<T>(
       poly_offsets, ring_offsets, x, y, expansion_radius, stream, mr);
@@ -113,7 +114,7 @@ std::unique_ptr<cudf::table> polygon_bounding_boxes(cudf::column_view const& pol
                                                     cudf::column_view const& y,
                                                     double expansion_radius,
                                                     rmm::cuda_stream_view stream,
-                                                    rmm::mr::device_memory_resource* mr)
+                                                    rmm::device_async_resource_ref mr)
 {
   return cudf::type_dispatcher(x.type(),
                                dispatch_compute_polygon_bounding_boxes{},
@@ -133,7 +134,7 @@ std::unique_ptr<cudf::table> polygon_bounding_boxes(cudf::column_view const& pol
                                                     cudf::column_view const& x,
                                                     cudf::column_view const& y,
                                                     double expansion_radius,
-                                                    rmm::mr::device_memory_resource* mr)
+                                                    rmm::device_async_resource_ref mr)
 {
   auto num_polys = poly_offsets.size() > 0 ? poly_offsets.size() - 1 : 0;
   auto num_rings = ring_offsets.size() > 0 ? ring_offsets.size() - 1 : 0;

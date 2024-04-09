@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <memory>
 #include <vector>
@@ -43,7 +44,7 @@ struct derive_trajectories_dispatch {
     cudf::column_view const& y,
     cudf::column_view const& timestamp,
     rmm::cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr)
+    rmm::device_async_resource_ref mr)
   {
     auto cols = std::vector<std::unique_ptr<cudf::column>>{};
     cols.reserve(4);
@@ -95,7 +96,7 @@ std::pair<std::unique_ptr<cudf::table>, std::unique_ptr<cudf::column>> derive_tr
   cudf::column_view const& y,
   cudf::column_view const& timestamp,
   rmm::cuda_stream_view stream,
-  rmm::mr::device_memory_resource* mr)
+  rmm::device_async_resource_ref mr)
 {
   return cudf::double_type_dispatcher(x.type(),
                                       timestamp.type(),
@@ -114,7 +115,7 @@ std::pair<std::unique_ptr<cudf::table>, std::unique_ptr<cudf::column>> derive_tr
   cudf::column_view const& x,
   cudf::column_view const& y,
   cudf::column_view const& timestamp,
-  rmm::mr::device_memory_resource* mr)
+  rmm::device_async_resource_ref mr)
 {
   CUSPATIAL_EXPECTS(
     x.size() == y.size() && x.size() == object_id.size() && x.size() == timestamp.size(),

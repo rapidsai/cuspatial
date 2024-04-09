@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <thrust/pair.h>
 
@@ -87,8 +88,8 @@ template <typename T,
 linestring_intersection_result<T, index_t> pairwise_linestring_intersection(
   MultiLinestringRange1 multilinestrings1,
   MultiLinestringRange2 multilinestrings2,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource(),
-  rmm::cuda_stream_view stream        = rmm::cuda_stream_default);
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource(),
+  rmm::cuda_stream_view stream      = rmm::cuda_stream_default);
 
 }  // namespace cuspatial
 

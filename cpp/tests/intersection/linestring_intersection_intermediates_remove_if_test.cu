@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@
 #include <rmm/device_vector.hpp>
 #include <rmm/exec_policy.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <thrust/iterator/zip_iterator.h>
 
@@ -44,7 +45,7 @@ auto make_linestring_intersection_intermediates(std::initializer_list<IndexType>
                                                 std::initializer_list<IndexType> rhs_linestring_ids,
                                                 std::initializer_list<IndexType> rhs_segment_ids,
                                                 rmm::cuda_stream_view stream,
-                                                rmm::mr::device_memory_resource* mr)
+                                                rmm::device_async_resource_ref mr)
 {
   auto d_offset             = make_device_uvector<IndexType>(offsets, stream, mr);
   auto d_geoms              = make_device_uvector<Geom>(geoms, stream, mr);
@@ -66,7 +67,7 @@ auto make_linestring_intersection_intermediates(std::initializer_list<IndexType>
 template <typename T>
 struct LinestringIntersectionIntermediatesRemoveIfTest : public ::testing::Test {
   rmm::cuda_stream_view stream() { return rmm::cuda_stream_default; }
-  rmm::mr::device_memory_resource* mr() { return rmm::mr::get_current_device_resource(); }
+  rmm::device_async_resource_ref mr() { return rmm::mr::get_current_device_resource(); }
 
   template <typename FlagType, typename IntermediateType>
   void run_single(IntermediateType& intermediates,

@@ -32,6 +32,7 @@
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <thrust/iterator/counting_iterator.h>
 
@@ -52,7 +53,7 @@ struct pairwise_polygon_distance_impl {
   std::unique_ptr<cudf::column> operator()(geometry_column_view const& lhs,
                                            geometry_column_view const& rhs,
                                            rmm::cuda_stream_view stream,
-                                           rmm::mr::device_memory_resource* mr)
+                                           rmm::device_async_resource_ref mr)
   {
     auto lhs_range = make_multipolygon_range<is_multi_polygon_lhs, T, cudf::size_type>(lhs);
     auto rhs_range = make_multipolygon_range<is_multi_polygon_rhs, T, cudf::size_type>(rhs);
@@ -80,7 +81,7 @@ struct pairwise_polygon_distance {
   std::unique_ptr<cudf::column> operator()(geometry_column_view const& lhs,
                                            geometry_column_view const& rhs,
                                            rmm::cuda_stream_view stream,
-                                           rmm::mr::device_memory_resource* mr)
+                                           rmm::device_async_resource_ref mr)
   {
     CUSPATIAL_EXPECTS(lhs.geometry_type() == geometry_type_id::POLYGON &&
                         rhs.geometry_type() == geometry_type_id::POLYGON,
@@ -106,7 +107,7 @@ struct pairwise_polygon_distance {
 
 std::unique_ptr<cudf::column> pairwise_polygon_distance(geometry_column_view const& lhs,
                                                         geometry_column_view const& rhs,
-                                                        rmm::mr::device_memory_resource* mr)
+                                                        rmm::device_async_resource_ref mr)
 {
   return multi_geometry_double_dispatch<detail::pairwise_polygon_distance>(
     lhs.collection_type(), rhs.collection_type(), lhs, rhs, rmm::cuda_stream_default, mr);

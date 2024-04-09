@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <thrust/iterator/zip_iterator.h>
 
@@ -45,7 +46,7 @@ struct dispatch_element {
     cudf::column_view const& x,
     cudf::column_view const& y,
     rmm::cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr)
+    rmm::device_async_resource_ref mr)
   {
     // Construct output columns
     auto type = cudf::data_type{cudf::type_to_id<T>()};
@@ -101,7 +102,7 @@ std::unique_ptr<cudf::table> trajectory_bounding_boxes(cudf::size_type num_traje
                                                        cudf::column_view const& x,
                                                        cudf::column_view const& y,
                                                        rmm::cuda_stream_view stream,
-                                                       rmm::mr::device_memory_resource* mr)
+                                                       rmm::device_async_resource_ref mr)
 {
   return cudf::type_dispatcher(
     x.type(), dispatch_element{}, num_trajectories, object_id, x, y, stream, mr);
@@ -112,7 +113,7 @@ std::unique_ptr<cudf::table> trajectory_bounding_boxes(cudf::size_type num_traje
                                                        cudf::column_view const& object_id,
                                                        cudf::column_view const& x,
                                                        cudf::column_view const& y,
-                                                       rmm::mr::device_memory_resource* mr)
+                                                       rmm::device_async_resource_ref mr)
 {
   CUSPATIAL_EXPECTS(object_id.size() == x.size() && x.size() == y.size(), "Data size mismatch");
   CUSPATIAL_EXPECTS(x.type().id() == y.type().id(), "Data type mismatch");

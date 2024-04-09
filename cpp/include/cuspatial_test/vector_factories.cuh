@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/device_vector.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
@@ -56,7 +57,7 @@ auto make_device_vector(std::initializer_list<T> inl)
 template <typename T>
 auto make_device_uvector(std::initializer_list<T> inl,
                          rmm::cuda_stream_view stream,
-                         rmm::mr::device_memory_resource* mr)
+                         rmm::device_async_resource_ref mr)
 {
   std::vector<T> hvec(inl.begin(), inl.end());
   auto res = rmm::device_uvector<T>(inl.size(), stream, mr);

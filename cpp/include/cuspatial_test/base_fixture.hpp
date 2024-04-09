@@ -20,6 +20,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 namespace cuspatial {
 namespace test {
@@ -28,7 +29,7 @@ namespace test {
  * @brief Mixin to supply rmm resources for fixtures
  */
 class RMMResourceMixin {
-  rmm::mr::device_memory_resource* _mr{rmm::mr::get_current_device_resource()};
+  rmm::device_async_resource_ref _mr{rmm::mr::get_current_device_resource()};
   rmm::cuda_stream_view _stream{rmm::cuda_stream_default};
 
  public:
@@ -37,7 +38,7 @@ class RMMResourceMixin {
    * all tests inheriting from this fixture
    * @return pointer to memory resource
    */
-  rmm::mr::device_memory_resource* mr() { return _mr; }
+  rmm::device_async_resource_ref mr() { return _mr; }
 
   /**
    * @brief Returns `cuda_stream_view` that should be used for computation in

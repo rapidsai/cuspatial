@@ -27,6 +27,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <tuple>
 
@@ -42,7 +43,7 @@ struct dispatch_quadtree_bounding_box_join {
                                                  double y_min,
                                                  double scale,
                                                  int8_t max_depth,
-                                                 rmm::mr::device_memory_resource* mr,
+                                                 rmm::device_async_resource_ref mr,
                                                  rmm::cuda_stream_view stream)
   {
     auto bbox_min = cuspatial::make_vec_2d_iterator(bbox.column(0).template begin<T>(),
@@ -94,7 +95,7 @@ std::unique_ptr<cudf::table> join_quadtree_and_bounding_boxes(cudf::table_view c
                                                               double y_max,
                                                               double scale,
                                                               int8_t max_depth,
-                                                              rmm::mr::device_memory_resource* mr)
+                                                              rmm::device_async_resource_ref mr)
 {
   CUSPATIAL_EXPECTS(quadtree.num_columns() == 5, "quadtree table must have 5 columns");
   CUSPATIAL_EXPECTS(bbox.num_columns() == 4, "bbox table must have 4 columns");

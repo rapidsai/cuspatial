@@ -21,6 +21,7 @@
 #include <cudf/types.hpp>
 
 #include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <memory>
 
@@ -69,6 +70,6 @@ namespace cuspatial {
 std::unique_ptr<cudf::column> pairwise_multipoint_equals_count(
   geometry_column_view const& lhs,
   geometry_column_view const& rhs,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
 
 }  // namespace cuspatial

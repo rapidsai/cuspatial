@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <limits>
 #include <memory>
@@ -54,7 +55,7 @@ struct compute_quadtree_point_to_nearest_linestring {
     cudf::column_view const& linestring_points_x,
     cudf::column_view const& linestring_points_y,
     rmm::cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr)
+    rmm::device_async_resource_ref mr)
   {
     auto linestring_indices = linestring_quad_pairs.column(0);
     auto quad_indices       = linestring_quad_pairs.column(1);
@@ -120,7 +121,7 @@ std::unique_ptr<cudf::table> quadtree_point_to_nearest_linestring(
   cudf::column_view const& linestring_points_x,
   cudf::column_view const& linestring_points_y,
   rmm::cuda_stream_view stream,
-  rmm::mr::device_memory_resource* mr)
+  rmm::device_async_resource_ref mr)
 {
   return cudf::type_dispatcher(point_x.type(),
                                compute_quadtree_point_to_nearest_linestring{},
@@ -147,7 +148,7 @@ std::unique_ptr<cudf::table> quadtree_point_to_nearest_linestring(
   cudf::column_view const& linestring_offsets,
   cudf::column_view const& linestring_points_x,
   cudf::column_view const& linestring_points_y,
-  rmm::mr::device_memory_resource* mr)
+  rmm::device_async_resource_ref mr)
 {
   CUSPATIAL_EXPECTS(linestring_quad_pairs.num_columns() == 2,
                     "a quadrant-linestring table must have 2 columns");

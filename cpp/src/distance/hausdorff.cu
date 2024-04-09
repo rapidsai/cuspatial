@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <thrust/binary_search.h>
 #include <thrust/distance.h>
@@ -81,7 +82,7 @@ struct hausdorff_functor {
              cudf::column_view const& ys,
              cudf::column_view const& space_offsets,
              rmm::cuda_stream_view stream,
-             rmm::mr::device_memory_resource* mr)
+             rmm::device_async_resource_ref mr)
   {
     auto const num_points = static_cast<uint32_t>(xs.size());
     auto const num_spaces = static_cast<uint32_t>(space_offsets.size());
@@ -120,7 +121,7 @@ std::pair<std::unique_ptr<cudf::column>, cudf::table_view> directed_hausdorff_di
   cudf::column_view const& xs,
   cudf::column_view const& ys,
   cudf::column_view const& space_offsets,
-  rmm::mr::device_memory_resource* mr)
+  rmm::device_async_resource_ref mr)
 {
   CUSPATIAL_EXPECTS(xs.type() == ys.type(), "Inputs `xs` and `ys` must have same type.");
   CUSPATIAL_EXPECTS(xs.size() == ys.size(), "Inputs `xs` and `ys` must have same length.");

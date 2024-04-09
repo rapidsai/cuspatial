@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/pair.h>
@@ -47,7 +48,7 @@ struct pairwise_multipoint_equals_count_impl {
   std::unique_ptr<cudf::column> operator()(geometry_column_view const& lhs,
                                            geometry_column_view const& rhs,
                                            rmm::cuda_stream_view stream,
-                                           rmm::mr::device_memory_resource* mr)
+                                           rmm::device_async_resource_ref mr)
   {
     auto size = lhs.size();  // lhs is a buffer of xy coords
     auto type = cudf::data_type(cudf::type_to_id<uint32_t>());
@@ -78,7 +79,7 @@ struct pairwise_multipoint_equals_count {
   std::unique_ptr<cudf::column> operator()(geometry_column_view lhs,
                                            geometry_column_view rhs,
                                            rmm::cuda_stream_view stream,
-                                           rmm::mr::device_memory_resource* mr)
+                                           rmm::device_async_resource_ref mr)
   {
     return cudf::type_dispatcher(
       lhs.coordinate_type(),
@@ -94,7 +95,7 @@ struct pairwise_multipoint_equals_count {
 
 std::unique_ptr<cudf::column> pairwise_multipoint_equals_count(geometry_column_view const& lhs,
                                                                geometry_column_view const& rhs,
-                                                               rmm::mr::device_memory_resource* mr)
+                                                               rmm::device_async_resource_ref mr)
 {
   CUSPATIAL_EXPECTS(lhs.geometry_type() == geometry_type_id::POINT &&
                       rhs.geometry_type() == geometry_type_id::POINT,

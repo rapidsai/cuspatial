@@ -28,6 +28,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_buffer.hpp>
+#include <rmm/resource_ref.hpp>
 
 namespace cuspatial {
 namespace detail {
@@ -52,7 +53,7 @@ struct compute_quadtree_point_in_polygon {
     cudf::column_view const& poly_points_x,
     cudf::column_view const& poly_points_y,
     rmm::cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr)
+    rmm::device_async_resource_ref mr)
   {
     auto poly_indices = poly_quad_pairs.column(0);
     auto quad_indices = poly_quad_pairs.column(1);
@@ -120,7 +121,7 @@ std::unique_ptr<cudf::table> quadtree_point_in_polygon(cudf::table_view const& p
                                                        cudf::column_view const& poly_points_x,
                                                        cudf::column_view const& poly_points_y,
                                                        rmm::cuda_stream_view stream,
-                                                       rmm::mr::device_memory_resource* mr)
+                                                       rmm::device_async_resource_ref mr)
 {
   return cudf::type_dispatcher(point_x.type(),
                                compute_quadtree_point_in_polygon{},
@@ -148,7 +149,7 @@ std::unique_ptr<cudf::table> quadtree_point_in_polygon(cudf::table_view const& p
                                                        cudf::column_view const& ring_offsets,
                                                        cudf::column_view const& poly_points_x,
                                                        cudf::column_view const& poly_points_y,
-                                                       rmm::mr::device_memory_resource* mr)
+                                                       rmm::device_async_resource_ref mr)
 {
   CUSPATIAL_EXPECTS(poly_quad_pairs.num_columns() == 2,
                     "a quadrant-polygon table must have 2 columns");

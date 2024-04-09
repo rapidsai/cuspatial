@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <memory>
 
@@ -72,7 +73,7 @@ struct dispatch_construct_quadtree {
     int8_t max_depth,
     cudf::size_type max_size,
     rmm::cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr)
+    rmm::device_async_resource_ref mr)
   {
     auto points = cuspatial::make_vec_2d_iterator(x.begin<T>(), y.begin<T>());
     auto [point_indices, tree] =
@@ -131,7 +132,7 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_
   int8_t max_depth,
   cudf::size_type max_size,
   rmm::cuda_stream_view stream,
-  rmm::mr::device_memory_resource* mr)
+  rmm::device_async_resource_ref mr)
 {
   return cudf::type_dispatcher(x.type(),
                                dispatch_construct_quadtree{},
@@ -160,7 +161,7 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::table>> quadtree_
   double scale,
   int8_t max_depth,
   cudf::size_type max_size,
-  rmm::mr::device_memory_resource* mr)
+  rmm::device_async_resource_ref mr)
 {
   CUSPATIAL_EXPECTS(x.size() == y.size(), "x and y columns must have the same length");
   if (x.is_empty() || y.is_empty()) {
