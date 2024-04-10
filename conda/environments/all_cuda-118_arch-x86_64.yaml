@@ -11,8 +11,8 @@ dependencies:
 - cmake>=3.26.4
 - cuda-version=11.8
 - cudatoolkit
-- cudf==24.2.*
-- cuml==24.2.*
+- cudf==24.4.*
+- cuml==24.4.*
 - cupy>=12.0.0
 - curl
 - cxx-compiler
@@ -24,12 +24,13 @@ dependencies:
 - gtest>=1.13.0
 - ipython
 - ipywidgets
-- libcudf==24.2.*
-- librmm==24.2.*
+- libcudf==24.4.*
+- librmm==24.4.*
 - myst-parser
 - nbsphinx
 - ninja
 - notebook
+- numpy>=1.23,<2.0a0
 - numpydoc
 - nvcc_linux-64=11.8
 - pre-commit
@@ -39,8 +40,8 @@ dependencies:
 - pytest
 - pytest-cov
 - pytest-xdist
-- python>=3.9,<3.11
-- rmm==24.2.*
+- python>=3.9,<3.12
+- rmm==24.4.*
 - scikit-build-core>=0.7.0
 - scikit-image
 - shapely

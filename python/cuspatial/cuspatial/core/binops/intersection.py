@@ -53,7 +53,7 @@ def pairwise_linestring_intersection(
 
     if len(linestrings1) == 0 and len(linestrings2) == 0:
         return (
-            cudf.Series([0]),
+            cudf.Series([0], dtype="i4"),
             GeoSeries([]),
             cudf.DataFrame(
                 {
@@ -61,7 +61,8 @@ def pairwise_linestring_intersection(
                     "lhs_segment_id": [],
                     "rhs_linestring_id": [],
                     "rhs_segment_id": [],
-                }
+                },
+                dtype="i4",
             ),
         )
 

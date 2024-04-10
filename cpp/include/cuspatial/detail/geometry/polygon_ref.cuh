@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,12 @@
 
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/geometry/segment.cuh>
+#include <cuspatial/geometry/vec_2d.hpp>
+#include <cuspatial/geometry/vec_3d.hpp>
 #include <cuspatial/geometry_collection/multilinestring_ref.cuh>
 #include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/traits.hpp>
 
-#include <cuspatial/geometry/vec_2d.hpp>
-#include <cuspatial/geometry/vec_3d.hpp>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/tuple.h>
 

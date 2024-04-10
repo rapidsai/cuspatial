@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,8 +30,6 @@
 #include <rmm/exec_policy.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
-#include <ranger/ranger.hpp>
-
 #include <thrust/binary_search.h>
 #include <thrust/distance.h>
 #include <thrust/iterator/counting_iterator.h>
@@ -41,6 +39,8 @@
 #include <thrust/scan.h>
 #include <thrust/tuple.h>
 #include <thrust/uninitialized_fill.h>
+
+#include <ranger/ranger.hpp>
 
 #include <type_traits>
 #include <utility>

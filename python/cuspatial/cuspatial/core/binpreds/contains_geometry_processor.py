@@ -1,10 +1,8 @@
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 
 import cupy as cp
 
 import cudf
-from cudf.core.dataframe import DataFrame
-from cudf.core.series import Series
 
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core.binpreds.binpred_interface import (
@@ -117,7 +115,7 @@ class ContainsGeometryProcessor(BinPred):
             ["polygon_index", "point_index"]
         ]
 
-    def _reindex_allpairs(self, lhs, op_result) -> DataFrame:
+    def _reindex_allpairs(self, lhs, op_result) -> cudf.DataFrame:
         """Prepare the allpairs result of a contains_properly call as
         the first step of postprocessing. An allpairs result is reindexed
         by replacing the polygon index with the original index of the
@@ -154,7 +152,7 @@ class ContainsGeometryProcessor(BinPred):
         # Replace the polygon index with the original index
         allpairs_result["polygon_index"] = allpairs_result[
             "polygon_index"
-        ].replace(Series(lhs.index, index=cp.arange(len(lhs.index))))
+        ].replace(cudf.Series(lhs.index, index=cp.arange(len(lhs.index))))
 
         return allpairs_result
 
@@ -202,7 +200,7 @@ class ContainsGeometryProcessor(BinPred):
 
         point_indices = preprocessor_result.point_indices
         allpairs_result = self._reindex_allpairs(lhs, op_result)
-        if isinstance(allpairs_result, Series):
+        if isinstance(allpairs_result, cudf.Series):
             return allpairs_result
         # Hits is the number of calculated points in each polygon
         # Expected count is the sizes of the features in the right-hand
@@ -233,6 +231,7 @@ class ContainsGeometryProcessor(BinPred):
                 return count_result
             hits = result_df["point_index_x"]
             hits.index = count_result.iloc[result_df["rhs_index"]].index
+            count_result = count_result.astype(hits.dtype)
             count_result.iloc[result_df["rhs_index"]] = hits
             return count_result
 

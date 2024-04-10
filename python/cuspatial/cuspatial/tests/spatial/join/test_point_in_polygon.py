@@ -247,7 +247,7 @@ def test_pip_bitmap_column_to_binary_array():
     )
     np.testing.assert_array_equal(got.copy_to_host(), expected)
 
-    col = cudf.Series([])._column
+    col = cudf.Series([], dtype="i8")._column
     got = pip_bitmap_column_to_binary_array(col, width=0)
     expected = np.array([], dtype="int8").reshape(0, 0)
     np.testing.assert_array_equal(got.copy_to_host(), expected)

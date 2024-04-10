@@ -113,19 +113,19 @@ An example command from the Release Selector:
 docker run --gpus all --pull always --rm -it \
     --shm-size=1g --ulimit memlock=-1 --ulimit stack=67108864 \
     -p 8888:8888 -p 8787:8787 -p 8786:8786 \
-    nvcr.io/nvidia/rapidsai/notebooks:24.02-cuda11.8-py3.10
+    nvcr.io/nvidia/rapidsai/notebooks:24.04-cuda11.8-py3.10
 ```
 
 ### Install with Conda
 
 To install via conda:
-> **Note** cuSpatial is supported only on Linux or [through WSL](https://rapids.ai/wsl2.html), and with Python versions 3.9 and 3.10
+> **Note** cuSpatial is supported only on Linux or [through WSL](https://rapids.ai/wsl2.html), and with Python versions 3.9, 3.10, and 3.11.
 
 cuSpatial can be installed with conda (miniconda, or the full Anaconda distribution) from the rapidsai channel:
 
 ```shell
 conda install -c rapidsai -c conda-forge -c nvidia \
-    cuspatial=24.02 python=3.10 cudatoolkit=11.8
+    cuspatial=24.04 python=3.11 cudatoolkit=11.8
 ```
 We also provide nightly Conda packages built from the HEAD of our latest development branch.
 
@@ -134,7 +134,7 @@ See the [RAPIDS installation documentation](https://docs.rapids.ai/install) for 
 ### Install with pip
 
 To install via pip:
-> **Note** cuSpatial is supported only on Linux or [through WSL](https://rapids.ai/wsl2.html), and with Python versions 3.9 and 3.10
+> **Note** cuSpatial is supported only on Linux or [through WSL](https://rapids.ai/wsl2.html), and with Python versions 3.9, 3.10, and 3.11.
 
 The cuSpatial pip packages can be installed from NVIDIA's PyPI index. pip installations require using the matching wheel to the system's installed CUDA toolkit.
 - For CUDA 11 toolkits, install the `-cu11` wheels
@@ -184,7 +184,7 @@ To build and install cuSpatial from source please see the [build documentation](
 If you find cuSpatial useful in your published work, please consider citing the repository.
 
 ```bibtex
-@misc{cuspatial:24.02,
+@misc{cuspatial:24.04,
     author = {{NVIDIA Corporation}},
     title = {cuSpatial: GPU-Accelerated Geospatial and Spatiotemporal Algorithms},
     year = {2023},

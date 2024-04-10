@@ -1,5 +1,6 @@
 import cupy as cp
 
+import cudf
 from cudf.core.column import as_column
 
 import cuspatial._lib.nearest_points as nearest_points
@@ -51,9 +52,9 @@ def pairwise_point_linestring_nearest_points(
 
     if len(points) == 0:
         data = {
-            "point_geometry_id": [],
-            "linestring_geometry_id": [],
-            "segment_id": [],
+            "point_geometry_id": cudf.Series([], dtype="i4"),
+            "linestring_geometry_id": cudf.Series([], dtype="i4"),
+            "segment_id": cudf.Series([], dtype="i4"),
             "geometry": GeoSeries([]),
         }
         return GeoDataFrame._from_data(data)

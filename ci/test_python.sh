@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2022-2023, NVIDIA CORPORATION.
+# Copyright (c) 2022-2024, NVIDIA CORPORATION.
 
 set -euo pipefail
 
@@ -11,7 +11,7 @@ rapids-dependency-file-generator \
   --file_key test_python \
   --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION}" | tee env.yaml
 
-rapids-mamba-retry env create --force -f env.yaml -n test
+rapids-mamba-retry env create --yes -f env.yaml -n test
 
 # Temporarily allow unbound variables for conda activation.
 set +u
@@ -50,7 +50,7 @@ pytest \
   --cache-clear \
   --junitxml="${RAPIDS_TESTS_DIR}/junit-cuspatial.xml" \
   --numprocesses=8 \
-  --dist=loadscope \
+  --dist=worksteal \
   --cov-config=../.coveragerc \
   --cov=cuspatial \
   --cov-report=xml:"${RAPIDS_COVERAGE_DIR}/cuspatial-coverage.xml" \
@@ -65,7 +65,7 @@ pytest \
   --cache-clear \
   --junitxml="${RAPIDS_TESTS_DIR}/junit-cuproj.xml" \
   --numprocesses=8 \
-  --dist=loadscope \
+  --dist=worksteal \
   --cov-config=../.coveragerc \
   --cov=cuproj \
   --cov-report=xml:"${RAPIDS_COVERAGE_DIR}/cuproj-coverage.xml" \

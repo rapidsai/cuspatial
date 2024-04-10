@@ -1,5 +1,5 @@
 #=============================================================================
-# Copyright (c) 2019-2020, NVIDIA CORPORATION.
+# Copyright (c) 2019-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 #=============================================================================
 cmake_minimum_required(VERSION 3.26.4 FATAL_ERROR)
 
-include(../../../../fetch_rapids.cmake)
+include(../../../../rapids_config.cmake)
 
 # TODO: The logic for setting the architectures was previously not here. Was
 # that just an oversight, or is there a reason not to include this here?
