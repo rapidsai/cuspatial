@@ -1,3 +1,34 @@
+# cuSpatial 24.04.00 (10 Apr 2024)
+
+## 🐛 Bug Fixes
+
+- Update pre-commit-hooks to v0.0.3 ([#1361](https://github.com/rapidsai/cuspatial/pull/1361)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- Fix Python 3.11 test failures ([#1351](https://github.com/rapidsai/cuspatial/pull/1351)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- Fix Broken CI for 24.04 ([#1338](https://github.com/rapidsai/cuspatial/pull/1338)) [@isVoid](https://github.com/isVoid)
+- handle more RAPIDS version formats in update-version.sh, refactor dependencies.yaml ([#1329](https://github.com/rapidsai/cuspatial/pull/1329)) [@jameslamb](https://github.com/jameslamb)
+
+## 📖 Documentation
+
+- fix formatting in developer guide ([#1330](https://github.com/rapidsai/cuspatial/pull/1330)) [@jameslamb](https://github.com/jameslamb)
+
+## 🛠️ Improvements
+
+- Use `conda env create --yes` instead of `--force` ([#1364](https://github.com/rapidsai/cuspatial/pull/1364)) [@bdice](https://github.com/bdice)
+- Add upper bound to prevent usage of NumPy 2 ([#1359](https://github.com/rapidsai/cuspatial/pull/1359)) [@bdice](https://github.com/bdice)
+- Enable pytest failures on warnings from cudf (Ensure values being set are casted to the object&#39;s type) ([#1358](https://github.com/rapidsai/cuspatial/pull/1358)) [@mroeschke](https://github.com/mroeschke)
+- Remove hard-coding of RAPIDS version where possible ([#1357](https://github.com/rapidsai/cuspatial/pull/1357)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- Replace `cudf.core` imports with public APIs ([#1356](https://github.com/rapidsai/cuspatial/pull/1356)) [@mroeschke](https://github.com/mroeschke)
+- Switch `pytest-xdist` algorithm to `worksteal` ([#1355](https://github.com/rapidsai/cuspatial/pull/1355)) [@bdice](https://github.com/bdice)
+- Replace cudf column.full with cudf.as_column ([#1350](https://github.com/rapidsai/cuspatial/pull/1350)) [@mroeschke](https://github.com/mroeschke)
+- Automate C++ include file grouping and ordering using clang-format ([#1349](https://github.com/rapidsai/cuspatial/pull/1349)) [@harrism](https://github.com/harrism)
+- Add support for Python 3.11, require NumPy 1.23+ ([#1348](https://github.com/rapidsai/cuspatial/pull/1348)) [@jameslamb](https://github.com/jameslamb)
+- write PROJ build dir export rules ([#1347](https://github.com/rapidsai/cuspatial/pull/1347)) [@trxcllnt](https://github.com/trxcllnt)
+- Update devcontainers to CUDA Toolkit 12.2 ([#1344](https://github.com/rapidsai/cuspatial/pull/1344)) [@trxcllnt](https://github.com/trxcllnt)
+- target branch-24.04 for GitHub Actions workflows ([#1343](https://github.com/rapidsai/cuspatial/pull/1343)) [@jameslamb](https://github.com/jameslamb)
+- Update ops-bot.yaml ([#1337](https://github.com/rapidsai/cuspatial/pull/1337)) [@AyodeAwe](https://github.com/AyodeAwe)
+- Remove -DNVBench_ENABLE_CUPTI=OFF. ([#1325](https://github.com/rapidsai/cuspatial/pull/1325)) [@bdice](https://github.com/bdice)
+- Support CUDA 12.2 ([#1320](https://github.com/rapidsai/cuspatial/pull/1320)) [@jameslamb](https://github.com/jameslamb)
+
 # cuSpatial 24.02.00 (12 Feb 2024)
 
 ## 🚨 Breaking Changes
