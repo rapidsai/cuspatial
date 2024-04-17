@@ -84,7 +84,7 @@ Examples:
 
 ```c++
 template <typename IteratorType>
-void algorithm_function(int x, rmm::cuda_stream_view s, rmm::device_memory_resource* mr)
+void algorithm_function(int x, rmm::cuda_stream_view s, rmm::device_async_resource_ref mr)
 {
   ...
 }
@@ -233,9 +233,10 @@ std::unique_ptr<cudf::table> points_in_spatial_window(
   cudf::column_view const& y);
 ```
 
-## RMM Memory Resources (`rmm::device_memory_resource`)
+## Memory Resources (`rmm::device_memory_resource`)
 
-libcuspatial allocates all device memory via RMM memory resources (MR). See the
+libcuspatial allocates all device memory via RMM memory resources (MR) or CUDA MRs. Either type
+can be passed to libcuspatial functions via `rmm::device_async_resource_ref` parameters. See the
 [RMM documentation](https://github.com/rapidsai/rmm/blob/main/README.md) for details.
 
 ### Current Device Memory Resource
@@ -439,8 +440,8 @@ There are a few key points to notice.
      cuSpatial APIs will not need to use this returned iterator.
   9. All APIs that run CUDA device code (including Thrust algorithms) or allocate memory take a CUDA
      stream on which to execute the device code and allocate memory.
-  10. Any API that allocate and return device data (not shown here) should also take an
-      `rmm::device_memory_resource` to use for output memory allocation.
+  10. Any API that allocates and returns device data (not shown here) should also take an
+      `rmm::device_async_resource_ref` to use for output memory allocation.
 
 ### (Multiple) Return Values
 
@@ -542,21 +543,27 @@ control how device memory is allocated.
 
 ### Output Memory
 
-Any libcuspatial API that allocates memory that is *returned* to a user must accept a pointer to a
-`device_memory_resource` as the last parameter. Inside the API, this memory resource must be used
-to allocate any memory for returned objects. It should therefore be passed into functions whose
-outputs will be returned. Example:
+Any libcuspatial API that allocates memory that is *returned* to a user must accept a
+`rmm::device_async_resource_ref` as the last parameter. Inside the API, this memory resource must
+be used to allocate any memory for returned objects. It should therefore be passed into functions
+whose outputs will be returned. Example:
 
 ```c++
 // Returned `column` contains newly allocated memory,
 // therefore the API must accept a memory resource pointer
 std::unique_ptr<column> returns_output_memory(
-  ..., rmm::device_memory_resource * mr = rmm::mr::get_current_device_resource());
+  ..., rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
 
 // This API does not allocate any new *output* memory, therefore
 // a memory resource is unnecessary
 void does_not_allocate_output_memory(...);
 ```
+
+This rule automatically applies to all detail APIs that allocate memory. Any detail API may be
+called by any public API, and therefore could be allocating memory that is returned to the user.
+To support such uses cases, all detail APIs allocating memory resources should accept an `mr`
+parameter. Callers are responsible for either passing through a provided `mr` or
+`rmm::mr::get_current_device_resource()` as needed.
 
 ### Temporary Memory
 
@@ -566,7 +573,7 @@ obtained from `rmm::mr::get_current_device_resource()` for temporary memory allo
 
 ```c++
 rmm::device_buffer some_function(
-  ..., rmm::mr::device_memory_resource mr * = rmm::mr::get_current_device_resource()) {
+  ..., rmm::mr::device_async_resource_ref mr = rmm::mr::get_current_device_resource()) {
     rmm::device_buffer returned_buffer(..., mr); // Returned buffer uses the passed in MR
     ...
     rmm::device_buffer temporary_buffer(...); // Temporary buffer uses default MR
@@ -578,12 +585,12 @@ rmm::device_buffer some_function(
 ### Memory Management
 
 libcuspatial code eschews raw pointers and direct memory allocation. Use RMM classes built to
-use [`device_memory_resource`](https://github.com/rapidsai/rmm/#device_memory_resource) for device
+use [memory resources](https://github.com/rapidsai/rmm/#device_memory_resource) for device
 memory allocation with automated lifetime management.
 
 #### rmm::device_buffer
 Allocates a specified number of bytes of untyped, uninitialized device memory using a
-`device_memory_resource`. If no resource is explicitly provided, uses
+memory resource. If no `rmm::device_async_resource_ref` is explicitly provided, uses
 `rmm::mr::get_current_device_resource()`.
 
 `rmm::device_buffer` is movable and copyable on a stream. A copy performs a deep copy of the
