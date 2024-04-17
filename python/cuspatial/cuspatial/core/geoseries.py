@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023, NVIDIA CORPORATION
+# Copyright (c) 2020-2024, NVIDIA CORPORATION
 
 from functools import cached_property
 from numbers import Integral
@@ -660,15 +660,15 @@ class GeoSeries(cudf.Series):
                 index, how, sort, allow_non_unique
             )
         ).astype("int32")
-        aligned_union_offsets[
-            aligned_union_offsets.isna()
-        ] = Feature_Enum.NONE.value
+        aligned_union_offsets[aligned_union_offsets.isna()] = np.int32(
+            Feature_Enum.NONE.value
+        )
         aligned_input_types = self._column._meta.input_types._align_to_index(
             index, how, sort, allow_non_unique
         ).astype("int8")
-        aligned_input_types[
-            aligned_input_types.isna()
-        ] = Feature_Enum.NONE.value
+        aligned_input_types[aligned_input_types.isna()] = np.int8(
+            Feature_Enum.NONE.value
+        )
         column = GeoColumn(
             (
                 self._column.points,

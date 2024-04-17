@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright (c) 2019-2024, NVIDIA CORPORATION.
 #############################
 # cuSpatial Version Updater #
 #############################
@@ -29,32 +30,8 @@ function sed_runner() {
     sed -i.bak ''"$1"'' $2 && rm -f ${2}.bak
 }
 
-# python/cpp update
-sed_runner 's/'"CUSPATIAL VERSION .* LANGUAGES"'/'"CUSPATIAL VERSION ${NEXT_FULL_TAG} LANGUAGES"'/g' cpp/CMakeLists.txt
-sed_runner 's/'"CUPROJ VERSION .* LANGUAGES"'/'"CUPROJ VERSION ${NEXT_FULL_TAG} LANGUAGES"'/g' cpp/cuproj/CMakeLists.txt
-sed_runner 's/'"cuspatial_version .*)"'/'"cuspatial_version ${NEXT_FULL_TAG})"'/g' python/cuspatial/CMakeLists.txt
-sed_runner 's/'"cuproj_version .*)"'/'"cuproj_version ${NEXT_FULL_TAG})"'/g' python/cuproj/CMakeLists.txt
-sed_runner 's/'"cuproj_version .*)"'/'"cuproj_version ${NEXT_FULL_TAG})"'/g' python/cuproj/cuproj/cuprojshim/CMakeLists.txt
-
-# RTD update
-sed_runner 's/version = .*/version = '"'${NEXT_SHORT_TAG}'"'/g' docs/source/conf.py
-sed_runner 's/release = .*/release = '"'${NEXT_FULL_TAG}'"'/g' docs/source/conf.py
-sed_runner 's/version = .*/version = '"'${NEXT_SHORT_TAG}'"'/g' docs/cuproj/source/conf.py
-sed_runner 's/release = .*/release = '"'${NEXT_FULL_TAG}'"'/g' docs/cuproj/source/conf.py
-
 # Centralized version file update
 echo "${NEXT_FULL_TAG}" > VERSION
-
-# rapids-cmake version
-sed_runner 's/'"branch-.*\/RAPIDS.cmake"'/'"branch-${NEXT_SHORT_TAG}\/RAPIDS.cmake"'/g' fetch_rapids.cmake
-
-# Doxyfile update - cuspatial
-sed_runner "/PROJECT_NUMBER[ ]*=/ s|=.*|= ${NEXT_FULL_TAG}|g" cpp/doxygen/Doxyfile
-sed_runner "/TAGFILES/ s|[0-9]\+.[0-9]\+|${NEXT_SHORT_TAG}|g" cpp/doxygen/Doxyfile
-
-#Doxyfile update - cuproj
-sed_runner "/PROJECT_NUMBER[ ]*=/ s|=.*|= ${NEXT_FULL_TAG}|g" cpp/cuproj/doxygen/Doxyfile
-sed_runner "/TAGFILES/ s|[0-9]\+.[0-9]\+|${NEXT_SHORT_TAG}|g" cpp/cuproj/doxygen/Doxyfile
 
 # CI files
 for FILE in .github/workflows/*.yaml; do

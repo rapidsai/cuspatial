@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,10 @@
 #include <cuspatial/column/geometry_column_view.hpp>
 #include <cuspatial/types.hpp>
 
+#include <cudf/utilities/default_stream.hpp>
+
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
-
-#include <cudf/utilities/default_stream.hpp>
 
 namespace cuspatial {
 namespace test {

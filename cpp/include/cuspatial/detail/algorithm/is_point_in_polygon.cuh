@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,12 @@
 
 #pragma once
 
+#include <cuspatial/detail/utility/floating_point.cuh>
+#include <cuspatial/geometry/polygon_ref.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/geometry/vec_3d.hpp>
 #include <cuspatial/geometry_collection/multipoint_ref.cuh>
 #include <cuspatial/traits.hpp>
-
-#include <cuspatial/detail/utility/floating_point.cuh>
-#include <cuspatial/geometry/polygon_ref.cuh>
 
 #include <thrust/swap.h>
 

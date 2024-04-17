@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 
 #include <benchmarks/fixture/rmm_pool_raii.hpp>
+
 #include <cuspatial_test/random.cuh>
 
 #include <cuspatial/detail/utility/floating_point.cuh>
@@ -23,9 +24,9 @@
 #include <rmm/device_vector.hpp>
 #include <rmm/exec_policy.hpp>
 
-#include <nvbench/nvbench.cuh>
-
 #include <thrust/tabulate.h>
+
+#include <nvbench/nvbench.cuh>
 
 #include <memory>
 #include <type_traits>

@@ -14,8 +14,8 @@ dependencies:
 - cuda-nvcc
 - cuda-nvrtc-dev
 - cuda-version=12.2
-- cudf==24.4.*
-- cuml==24.4.*
+- cudf==24.6.*
+- cuml==24.6.*
 - cupy>=12.0.0
 - curl
 - cxx-compiler
@@ -27,12 +27,13 @@ dependencies:
 - gtest>=1.13.0
 - ipython
 - ipywidgets
-- libcudf==24.4.*
-- librmm==24.4.*
+- libcudf==24.6.*
+- librmm==24.6.*
 - myst-parser
 - nbsphinx
 - ninja
 - notebook
+- numpy>=1.23,<2.0a0
 - numpydoc
 - pre-commit
 - proj
@@ -41,8 +42,8 @@ dependencies:
 - pytest
 - pytest-cov
 - pytest-xdist
-- python>=3.9,<3.11
-- rmm==24.4.*
+- python>=3.9,<3.12
+- rmm==24.6.*
 - scikit-build-core>=0.7.0
 - scikit-image
 - shapely

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
 
-#include <ranger/ranger.hpp>
-
+#include <cuda/atomic>
 #include <thrust/advance.h>
 #include <thrust/binary_search.h>
 #include <thrust/distance.h>
@@ -33,7 +32,7 @@
 #include <thrust/fill.h>
 #include <thrust/memory.h>
 
-#include <cuda/atomic>
+#include <ranger/ranger.hpp>
 
 #include <type_traits>
 

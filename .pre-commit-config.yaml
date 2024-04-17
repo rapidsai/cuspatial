@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2023, NVIDIA CORPORATION.
+# Copyright (c) 2019-2024, NVIDIA CORPORATION.
 
 repos:
       - repo: https://github.com/PyCQA/isort
@@ -39,14 +39,19 @@ repos:
       - repo: https://github.com/codespell-project/codespell
         rev: v2.2.4
         hooks:
-              - id: codespell
-                args: ["--config pyproject.toml"]
-                additional_dependencies: ["tomli"]
+            - id: codespell
+              args: ["--config pyproject.toml"]
+              additional_dependencies: ["tomli"]
       - repo: https://github.com/rapidsai/dependency-file-generator
         rev: v1.8.0
         hooks:
             - id: rapids-dependency-file-generator
               args: ["--clean"]
+      - repo: https://github.com/rapidsai/pre-commit-hooks
+        rev: v0.0.3
+        hooks:
+            - id: verify-copyright
+
 
 default_language_version:
       python: python3

@@ -1,4 +1,4 @@
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 
 import cudf
 
@@ -67,7 +67,7 @@ def _basic_intersects_count(lhs, rhs):
     is_degenerate = _multipoints_is_degenerate(intersections)
     # If all the points in the intersection are in the rhs
     if len(is_degenerate) > 0:
-        sizes[is_degenerate] = 1
+        sizes[is_degenerate] = sizes.dtype.type(1)
     return sizes
 
 

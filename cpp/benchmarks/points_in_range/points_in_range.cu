@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,13 +26,13 @@
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
 
-#include <nvbench/nvbench.cuh>
-
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/random/linear_congruential_engine.h>
 #include <thrust/random/normal_distribution.h>
 #include <thrust/random/uniform_int_distribution.h>
 #include <thrust/tabulate.h>
+
+#include <nvbench/nvbench.cuh>
 
 #include <memory>
 

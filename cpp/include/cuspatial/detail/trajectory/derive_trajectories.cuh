@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,14 +23,13 @@
 #include <rmm/device_vector.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <cub/device/device_merge_sort.cuh>
 #include <thrust/gather.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/reduce.h>
 #include <thrust/sort.h>
-
-#include <cub/device/device_merge_sort.cuh>
 
 #include <cstdint>
 
