@@ -1,4 +1,4 @@
-# Copyright 2022 NVIDIA Corporation
+# Copyright (c) 2022-2024, NVIDIA CORPORATION
 
 import cupy as cp
 import geopandas as gpd
@@ -18,10 +18,10 @@ import cuspatial
     "range, expected",
     [[slice(0, 3), [0, 3, 4, 5]], [slice(3, 6), [0, 30, 40, 41]]],
 )
-def test_GeoColumnAccessor_polygon_offset(range, expected):
-    gpdf = cuspatial.from_geopandas(
-        gpd.read_file(gpd.datasets.get_path("naturalearth_lowres"))
-    )
+def test_GeoColumnAccessor_polygon_offset(
+    range, expected, naturalearth_lowres
+):
+    gpdf = cuspatial.from_geopandas(naturalearth_lowres)
     shorter = gpdf[range]["geometry"]
     expected = cp.array(expected)
     got = shorter.polygons.geometry_offset

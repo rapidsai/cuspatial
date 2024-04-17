@@ -124,5 +124,9 @@ regex = "(?P<value>.*)"
 [tool.pytest.ini_options]
 xfail_strict = true
 filterwarnings = [
-    "error:::cudf"
+    "error:::cudf",
+    "error::FutureWarning",
+    "error::DeprecationWarning",
+    # https://github.com/pytest-dev/pytest-cov/issues/557
+    "ignore:The --rsyncdir command line argument:DeprecationWarning",
 ]

@@ -1,4 +1,5 @@
-# Copyright (c) 2020-2023, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+import pathlib
 
 import geopandas as gpd
 import numpy as np
@@ -308,13 +309,18 @@ def mask_factory(request):
 
 
 @pytest.fixture
-def naturalearth_cities():
-    return gpd.read_file(gpd.datasets.get_path("naturalearth_cities"))
+def data_dir():
+    return pathlib.Path(__file__).parent / "data"
 
 
 @pytest.fixture
-def naturalearth_lowres():
-    return gpd.read_file(gpd.datasets.get_path("naturalearth_lowres"))
+def naturalearth_cities(data_dir):
+    return gpd.read_file(data_dir / "naturalearth_cities.shp")
+
+
+@pytest.fixture
+def naturalearth_lowres(data_dir):
+    return gpd.read_file(data_dir / "naturalearth_lowres.shp")
 
 
 @pytest.fixture(scope="session")
