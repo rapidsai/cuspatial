@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 #include <cudf/column/column.hpp>
 
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 namespace cuspatial {
 /**
@@ -54,6 +55,6 @@ struct linestring_intersection_column_result {
 linestring_intersection_column_result pairwise_linestring_intersection(
   geometry_column_view const& multilinestrings_lhs,
   geometry_column_view const& multilinestrings_rhs,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
 
 }  // namespace cuspatial

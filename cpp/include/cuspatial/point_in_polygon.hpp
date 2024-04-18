@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 #include <cudf/types.hpp>
 
 #include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <memory>
 
@@ -78,7 +79,7 @@ std::unique_ptr<cudf::column> point_in_polygon(
   cudf::column_view const& poly_ring_offsets,
   cudf::column_view const& poly_points_x,
   cudf::column_view const& poly_points_y,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
 
 /**
  * @brief Given (point, polygon pairs), tests whether the point of each pair is inside the polygon
@@ -127,7 +128,7 @@ std::unique_ptr<cudf::column> pairwise_point_in_polygon(
   cudf::column_view const& poly_ring_offsets,
   cudf::column_view const& poly_points_x,
   cudf::column_view const& poly_points_y,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
 
 /**
  * @} // end of doxygen group

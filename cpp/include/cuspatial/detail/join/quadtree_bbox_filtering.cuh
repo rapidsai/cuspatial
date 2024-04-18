@@ -22,6 +22,8 @@
 #include <cuspatial/point_quadtree.cuh>
 #include <cuspatial/traits.hpp>
 
+#include <rmm/resource_ref.hpp>
+
 #include <cuda/functional>
 #include <thrust/iterator/discard_iterator.h>
 
@@ -39,7 +41,7 @@ join_quadtree_and_bounding_boxes(point_quadtree_ref quadtree,
                                  T scale,
                                  int8_t max_depth,
                                  rmm::cuda_stream_view stream,
-                                 rmm::mr::device_memory_resource* mr)
+                                 rmm::device_async_resource_ref mr)
 {
   static_assert(is_same<T, cuspatial::iterator_vec_base_type<BoundingBoxIterator>>(),
                 "Iterator value_type mismatch");
