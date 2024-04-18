@@ -252,7 +252,7 @@ Memory resources are passed via resource ref parameters. A resource ref is memor
 that enables consumers to specify properties of resources that they expect. These are defined
 in the `cuda::mr` namespace of libcu++, but RMM provides some convenience wrappers in
 `rmm/resource_ref.hpp`:
- - `rmm::device_async_resource_ref` accepts a memory resource that provides synchronous allocation
+ - `rmm::device_resource_ref` accepts a memory resource that provides synchronous allocation
     of device-accessible memory.
  - `rmm::device_async_resource_ref` accepts a memory resource that provides stream-ordered allocation
     of device-accessible memory.
@@ -262,8 +262,8 @@ in the `cuda::mr` namespace of libcu++, but RMM provides some convenience wrappe
     of host-accessible memory.
  - `rmm::host_device_resource_ref` accepts a memory resource that provides synchronous allocation of
     host- and device-accessible memory.
- - `rmm::host_async_resource_ref` accepts a memory resource that provides stream-ordered allocation
-    of host- and device-accessible memory.
+ - `rmm::host_device_async_resource_ref` accepts a memory resource that provides stream-ordered
+    allocation of host- and device-accessible memory.
 
 See the libcu++ [docs on `resource_ref`](https://nvidia.github.io/cccl/libcudacxx/extended_api/memory_resource/resource_ref.html) for more information.
 
