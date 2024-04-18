@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <thrust/copy.h>
 #include <thrust/count.h>
@@ -309,7 +310,7 @@ inline rmm::device_uvector<bool> construct_non_leaf_indicator(
   int32_t num_parent_nodes,
   int32_t num_valid_nodes,
   int32_t max_size,
-  rmm::mr::device_memory_resource* mr,
+  rmm::device_async_resource_ref mr,
   rmm::cuda_stream_view stream)
 {
   //

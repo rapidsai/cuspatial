@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <memory>
 #include <type_traits>
@@ -49,7 +50,7 @@ struct haversine_functor {
     cudf::column_view const& b_lat,
     T radius,
     rmm::cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr)
+    rmm::device_async_resource_ref mr)
   {
     if (a_lon.is_empty()) { return cudf::empty_like(a_lon); }
 
@@ -81,7 +82,7 @@ std::unique_ptr<cudf::column> haversine_distance(cudf::column_view const& a_lon,
                                                  cudf::column_view const& b_lat,
                                                  double radius,
                                                  rmm::cuda_stream_view stream,
-                                                 rmm::mr::device_memory_resource* mr)
+                                                 rmm::device_async_resource_ref mr)
 {
   CUSPATIAL_EXPECTS(radius > 0, "radius must be positive.");
 
@@ -108,7 +109,7 @@ std::unique_ptr<cudf::column> haversine_distance(cudf::column_view const& a_lon,
                                                  cudf::column_view const& b_lon,
                                                  cudf::column_view const& b_lat,
                                                  double radius,
-                                                 rmm::mr::device_memory_resource* mr)
+                                                 rmm::device_async_resource_ref mr)
 {
   return cuspatial::detail::haversine_distance(
     a_lon, a_lat, b_lon, b_lat, radius, rmm::cuda_stream_default, mr);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
@@ -56,7 +57,7 @@ struct pairwise_point_linestring_nearest_points_impl {
     cudf::device_span<cudf::size_type const> linestring_offsets,
     cudf::column_view linestring_points_xy,
     rmm::cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr)
+    rmm::device_async_resource_ref mr)
   {
     auto num_points            = static_cast<SizeType>(points_xy.size() / 2);
     auto num_linestring_points = static_cast<SizeType>(linestring_points_xy.size() / 2);
@@ -219,7 +220,7 @@ struct pairwise_point_linestring_nearest_points_functor {
     cudf::device_span<cudf::size_type const> linestring_part_offsets,
     cudf::column_view linestring_points_xy,
     rmm::cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr)
+    rmm::device_async_resource_ref mr)
   {
     CUSPATIAL_EXPECTS(points_xy.size() % 2 == 0 && linestring_points_xy.size() % 2 == 0,
                       "Points array must contain even number of coordinates.");
@@ -258,7 +259,7 @@ point_linestring_nearest_points_result pairwise_point_linestring_nearest_points(
   std::optional<cudf::device_span<cudf::size_type const>> multilinestring_geometry_offsets,
   cudf::device_span<cudf::size_type const> linestring_part_offsets,
   cudf::column_view linestring_points_xy,
-  rmm::mr::device_memory_resource* mr)
+  rmm::device_async_resource_ref mr)
 {
   return double_boolean_dispatch<detail::pairwise_point_linestring_nearest_points_functor>(
     multipoint_geometry_offsets.has_value(),

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@
 
 #include <cudf/column/column_view.hpp>
 #include <cudf/utilities/span.hpp>
+
+#include <rmm/resource_ref.hpp>
 
 #include <optional>
 
@@ -165,7 +167,7 @@ point_linestring_nearest_points_result pairwise_point_linestring_nearest_points(
   std::optional<cudf::device_span<cudf::size_type const>> multilinestring_geometry_offsets,
   cudf::device_span<cudf::size_type const> linestring_part_offsets,
   cudf::column_view linestring_points_xy,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
 
 /**
  * @} // end of doxygen group

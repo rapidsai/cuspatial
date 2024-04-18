@@ -31,6 +31,7 @@
 #include <rmm/exec_policy.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <cub/device/device_segmented_sort.cuh>
 #include <thrust/gather.h>
@@ -72,7 +73,7 @@ using namespace cuspatial::test;
 template <typename Intermediate>
 Intermediate segmented_sort_intersection_intermediates(Intermediate& intermediate,
                                                        rmm::cuda_stream_view stream,
-                                                       rmm::mr::device_memory_resource* mr)
+                                                       rmm::device_async_resource_ref mr)
 {
   using GeomType  = typename Intermediate::geometry_t;
   using IndexType = typename Intermediate::index_t;
@@ -126,7 +127,7 @@ Intermediate segmented_sort_intersection_intermediates(Intermediate& intermediat
 template <typename T>
 struct LinestringIntersectionDuplicatesTest : public ::testing::Test {
   rmm::cuda_stream_view stream() { return rmm::cuda_stream_default; }
-  rmm::mr::device_memory_resource* mr() { return rmm::mr::get_current_device_resource(); }
+  rmm::device_async_resource_ref mr() { return rmm::mr::get_current_device_resource(); }
 
   template <typename IndexType, typename MultilinestringRange1, typename MultilinestringRange2>
   void run_single(MultilinestringRange1 lhs,

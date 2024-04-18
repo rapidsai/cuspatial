@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <memory>
 #include <type_traits>
@@ -42,7 +43,7 @@ struct pairwise_linestring_distance_launch {
   std::unique_ptr<cudf::column> operator()(geometry_column_view const& multilinestrings1,
                                            geometry_column_view const& multilinestrings2,
                                            rmm::cuda_stream_view stream,
-                                           rmm::mr::device_memory_resource* mr)
+                                           rmm::device_async_resource_ref mr)
   {
     auto size = multilinestrings1.size();
 
@@ -71,7 +72,7 @@ struct pairwise_linestring_distance_functor {
   std::unique_ptr<cudf::column> operator()(geometry_column_view const& multilinestrings1,
                                            geometry_column_view const& multilinestrings2,
                                            rmm::cuda_stream_view stream,
-                                           rmm::mr::device_memory_resource* mr)
+                                           rmm::device_async_resource_ref mr)
   {
     CUSPATIAL_EXPECTS(multilinestrings1.geometry_type() == geometry_type_id::LINESTRING &&
                         multilinestrings2.geometry_type() == geometry_type_id::LINESTRING,
@@ -96,7 +97,7 @@ struct pairwise_linestring_distance_functor {
 std::unique_ptr<cudf::column> pairwise_linestring_distance(
   geometry_column_view const& multilinestrings1,
   geometry_column_view const& multilinestrings2,
-  rmm::mr::device_memory_resource* mr)
+  rmm::device_async_resource_ref mr)
 {
   return multi_geometry_double_dispatch<detail::pairwise_linestring_distance_functor>(
     multilinestrings1.collection_type(),

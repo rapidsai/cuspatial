@@ -34,6 +34,7 @@
 #include <cudf/utilities/type_dispatcher.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <thrust/iterator/counting_iterator.h>
 
@@ -54,7 +55,7 @@ struct pairwise_point_polygon_distance_impl {
   std::unique_ptr<cudf::column> operator()(geometry_column_view const& multipoints,
                                            geometry_column_view const& multipolygons,
                                            rmm::cuda_stream_view stream,
-                                           rmm::mr::device_memory_resource* mr)
+                                           rmm::device_async_resource_ref mr)
   {
     auto multipoints_range = make_multipoint_range<is_multi_point, T, cudf::size_type>(multipoints);
     auto multipolygons_range =
@@ -83,7 +84,7 @@ struct pairwise_point_polygon_distance {
   std::unique_ptr<cudf::column> operator()(geometry_column_view const& multipoints,
                                            geometry_column_view const& multipolygons,
                                            rmm::cuda_stream_view stream,
-                                           rmm::mr::device_memory_resource* mr)
+                                           rmm::device_async_resource_ref mr)
   {
     return cudf::type_dispatcher(
       multipoints.coordinate_type(),
@@ -100,7 +101,7 @@ struct pairwise_point_polygon_distance {
 std::unique_ptr<cudf::column> pairwise_point_polygon_distance(
   geometry_column_view const& multipoints,
   geometry_column_view const& multipolygons,
-  rmm::mr::device_memory_resource* mr)
+  rmm::device_async_resource_ref mr)
 {
   CUSPATIAL_EXPECTS(multipoints.geometry_type() == geometry_type_id::POINT &&
                       multipolygons.geometry_type() == geometry_type_id::POLYGON,

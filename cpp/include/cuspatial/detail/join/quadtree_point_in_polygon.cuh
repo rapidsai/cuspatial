@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@
 
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/scan.h>
@@ -108,7 +109,7 @@ std::pair<rmm::device_uvector<IndexType>, rmm::device_uvector<IndexType>> quadtr
   PointIterator points_first,
   MultiPolygonRange polygons,
   rmm::cuda_stream_view stream,
-  rmm::mr::device_memory_resource* mr)
+  rmm::device_async_resource_ref mr)
 {
   using T = iterator_vec_base_type<PointIterator>;
 

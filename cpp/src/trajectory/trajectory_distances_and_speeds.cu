@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <thrust/adjacent_difference.h>
 #include <thrust/functional.h>
@@ -54,7 +55,7 @@ struct dispatch_timestamp {
     cudf::column_view const& y,
     cudf::column_view const& timestamp,
     rmm::cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr)
+    rmm::device_async_resource_ref mr)
   {
     // Construct output columns
     auto type = cudf::data_type{cudf::type_to_id<T>()};
@@ -102,7 +103,7 @@ struct dispatch_element {
     cudf::column_view const& y,
     cudf::column_view const& timestamp,
     rmm::cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr)
+    rmm::device_async_resource_ref mr)
   {
     return cudf::type_dispatcher(timestamp.type(),
                                  dispatch_timestamp<Element>{},
@@ -132,7 +133,7 @@ std::unique_ptr<cudf::table> trajectory_distances_and_speeds(cudf::size_type num
                                                              cudf::column_view const& y,
                                                              cudf::column_view const& timestamp,
                                                              rmm::cuda_stream_view stream,
-                                                             rmm::mr::device_memory_resource* mr)
+                                                             rmm::device_async_resource_ref mr)
 {
   return cudf::type_dispatcher(
     x.type(), dispatch_element{}, num_trajectories, object_id, x, y, timestamp, stream, mr);
@@ -144,7 +145,7 @@ std::unique_ptr<cudf::table> trajectory_distances_and_speeds(cudf::size_type num
                                                              cudf::column_view const& x,
                                                              cudf::column_view const& y,
                                                              cudf::column_view const& timestamp,
-                                                             rmm::mr::device_memory_resource* mr)
+                                                             rmm::device_async_resource_ref mr)
 {
   CUSPATIAL_EXPECTS(
     x.size() == y.size() && x.size() == object_id.size() && x.size() == timestamp.size(),

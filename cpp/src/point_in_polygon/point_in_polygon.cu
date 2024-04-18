@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <memory>
 #include <type_traits>
@@ -56,7 +57,7 @@ struct point_in_polygon_functor {
                                            cudf::column_view const& poly_points_y,
                                            bool pairwise,
                                            rmm::cuda_stream_view stream,
-                                           rmm::mr::device_memory_resource* mr)
+                                           rmm::device_async_resource_ref mr)
   {
     auto size = test_points_x.size();
     auto tid  = pairwise ? cudf::type_to_id<uint8_t>() : cudf::type_to_id<int32_t>();
@@ -112,7 +113,7 @@ std::unique_ptr<cudf::column> point_in_polygon(cudf::column_view const& test_poi
                                                cudf::column_view const& poly_points_y,
                                                bool pairwise,
                                                rmm::cuda_stream_view stream,
-                                               rmm::mr::device_memory_resource* mr)
+                                               rmm::device_async_resource_ref mr)
 {
   CUSPATIAL_EXPECTS(
     test_points_x.size() == test_points_y.size() and poly_points_x.size() == poly_points_y.size(),
@@ -155,7 +156,7 @@ std::unique_ptr<cudf::column> point_in_polygon(cudf::column_view const& test_poi
                                                cudf::column_view const& poly_ring_offsets,
                                                cudf::column_view const& poly_points_x,
                                                cudf::column_view const& poly_points_y,
-                                               rmm::mr::device_memory_resource* mr)
+                                               rmm::device_async_resource_ref mr)
 {
   return cuspatial::detail::point_in_polygon(test_points_x,
                                              test_points_y,
@@ -174,7 +175,7 @@ std::unique_ptr<cudf::column> pairwise_point_in_polygon(cudf::column_view const&
                                                         cudf::column_view const& poly_ring_offsets,
                                                         cudf::column_view const& poly_points_x,
                                                         cudf::column_view const& poly_points_y,
-                                                        rmm::mr::device_memory_resource* mr)
+                                                        rmm::device_async_resource_ref mr)
 {
   return cuspatial::detail::point_in_polygon(test_points_x,
                                              test_points_y,

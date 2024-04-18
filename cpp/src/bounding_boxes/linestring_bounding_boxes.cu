@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <thrust/iterator/zip_iterator.h>
 
@@ -43,7 +44,7 @@ std::unique_ptr<cudf::table> compute_linestring_bounding_boxes(
   cudf::column_view const& y,
   T expansion_radius,
   rmm::cuda_stream_view stream,
-  rmm::mr::device_memory_resource* mr)
+  rmm::device_async_resource_ref mr)
 {
   auto num_linestrings = linestring_offsets.size() > 0 ? linestring_offsets.size() - 1 : 0;
 
@@ -93,7 +94,7 @@ struct dispatch_compute_linestring_bounding_boxes {
              cudf::column_view const& y,
              double expansion_radius,
              rmm::cuda_stream_view stream,
-             rmm::mr::device_memory_resource* mr)
+             rmm::device_async_resource_ref mr)
   {
     return compute_linestring_bounding_boxes<T>(
       linestring_offsets, x, y, static_cast<T>(expansion_radius), stream, mr);
@@ -109,7 +110,7 @@ std::unique_ptr<cudf::table> linestring_bounding_boxes(cudf::column_view const& 
                                                        cudf::column_view const& y,
                                                        double expansion_radius,
                                                        rmm::cuda_stream_view stream,
-                                                       rmm::mr::device_memory_resource* mr)
+                                                       rmm::device_async_resource_ref mr)
 {
   return cudf::type_dispatcher(x.type(),
                                dispatch_compute_linestring_bounding_boxes{},
@@ -127,7 +128,7 @@ std::unique_ptr<cudf::table> linestring_bounding_boxes(cudf::column_view const& 
                                                        cudf::column_view const& x,
                                                        cudf::column_view const& y,
                                                        double expansion_radius,
-                                                       rmm::mr::device_memory_resource* mr)
+                                                       rmm::device_async_resource_ref mr)
 {
   auto num_linestrings = linestring_offsets.size() > 0 ? linestring_offsets.size() - 1 : 0;
 

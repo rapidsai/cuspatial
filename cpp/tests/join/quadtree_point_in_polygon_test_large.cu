@@ -31,6 +31,7 @@
 #include <rmm/exec_policy.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <thrust/gather.h>
 #include <thrust/sort.h>
@@ -54,7 +55,7 @@ inline auto generate_points(
   uint32_t points_per_quad,
   std::size_t seed,
   rmm::cuda_stream_view stream,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource())
 {
   auto engine     = cuspatial::test::deterministic_engine(0);
   auto uniform    = cuspatial::test::make_normal_dist<T>(0.0, 1.0);
