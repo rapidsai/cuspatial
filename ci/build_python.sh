@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2022-2024, NVIDIA CORPORATION.
 
 set -euo pipefail
 
@@ -27,19 +27,13 @@ CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
 
 rapids-logger "Begin py build cuSpatial"
 
-# TODO: Remove `--no-test` flag once importing on a CPU
-# node works correctly
 RAPIDS_PACKAGE_VERSION=${version} rapids-conda-retry mambabuild \
-  --no-test \
   --channel "${CPP_CHANNEL}" \
   conda/recipes/cuspatial
 
 rapids-logger "Begin py build cuProj"
 
-# TODO: Remove `--no-test` flag once importing on a CPU
-# node works correctly
 RAPIDS_PACKAGE_VERSION=${version} rapids-conda-retry mambabuild \
-  --no-test \
   --channel "${CPP_CHANNEL}" \
   conda/recipes/cuproj
 

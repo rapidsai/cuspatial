@@ -82,6 +82,8 @@ requirements:
 test:            # [linux64]
   imports:       # [linux64]
     - cuspatial  # [linux64]
+  env:
+    - RAPIDS_NO_INITIALIZE=1
 
 about:
   home: https://rapids.ai/
