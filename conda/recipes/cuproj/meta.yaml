@@ -84,8 +84,6 @@ test:            # [linux64]
     - cupy>=12.0.0
     - cuspatial ={{ minor_version }}
     - rmm ={{ minor_version }}
-  env:
-    - RAPIDS_NO_INITIALIZE=1
 
 
 about:
