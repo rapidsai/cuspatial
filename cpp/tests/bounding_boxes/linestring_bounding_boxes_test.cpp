@@ -21,6 +21,8 @@
 #include <cudf/table/table_view.hpp>
 #include <cudf_test/column_wrapper.hpp>
 
+#include <gtest/gtest.h>
+
 struct LinestringBoundingBoxErrorTest : public ::testing::Test {};
 
 using T = float;
