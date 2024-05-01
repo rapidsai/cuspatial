@@ -111,3 +111,11 @@ wheel.packages = ["cuproj"]
 provider = "scikit_build_core.metadata.regex"
 input = "cuproj/VERSION"
 regex = "(?P<value>.*)"
+
+[tool.pytest.ini_options]
+xfail_strict = true
+filterwarnings = [
+    "error",
+    # https://github.com/pytest-dev/pytest-cov/issues/557
+    "ignore:The --rsyncdir command line argument:DeprecationWarning",
+]
