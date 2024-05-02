@@ -23,6 +23,8 @@
 #include <cudf_test/column_utilities.hpp>
 #include <cudf_test/column_wrapper.hpp>
 
+#include <gtest/gtest.h>
+
 struct PolygonBoundingBoxErrorTest : public ::testing::Test {};
 
 using T = float;

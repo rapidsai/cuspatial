@@ -122,8 +122,6 @@ dependencies:
         packages:
           - c-compiler
           - cxx-compiler
-          - gmock>=1.13.0
-          - gtest>=1.13.0
           - libcudf==24.6.*
           - librmm==24.6.*
           - proj
@@ -167,8 +165,6 @@ dependencies:
         packages:
           - c-compiler
           - cxx-compiler
-          - gmock>=1.13.0
-          - gtest>=1.13.0
           - librmm==24.6.*
           - proj
           - sqlite
