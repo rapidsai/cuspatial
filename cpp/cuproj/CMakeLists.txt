@@ -95,8 +95,9 @@ include(cmake/thirdparty/get_rmm.cmake)
 
 # find or install GoogleTest and Proj
 if (CUPROJ_BUILD_TESTS)
-    include(cmake/thirdparty/get_gtest.cmake)
-    include(cmake/thirdparty/get_proj.cmake)
+  include(${rapids-cmake-dir}/cpm/gtest.cmake)
+  rapids_cpm_gtest(BUILD_STATIC)
+  include(cmake/thirdparty/get_proj.cmake)
 endif()
 
 ###################################################################################################
@@ -162,7 +163,7 @@ endif()
 if(CUPROJ_BUILD_BENCHMARKS)
     # Find or install GoogleBench
     include(${rapids-cmake-dir}/cpm/gbench.cmake)
-    rapids_cpm_gbench()
+    rapids_cpm_gbench(BUILD_STATIC)
 
     # Find or install NVBench Temporarily force downloading of fmt because current versions of nvbench
     # do not support the latest version of fmt, which is automatically pulled into our conda
