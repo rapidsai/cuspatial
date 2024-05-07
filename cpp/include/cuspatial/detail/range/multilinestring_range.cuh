@@ -74,6 +74,7 @@ template <typename GeometryIterator, typename PartIterator, typename VecIterator
 class multilinestring_range;
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE
 multilinestring_range<GeometryIterator, PartIterator, VecIterator>::multilinestring_range(
   GeometryIterator geometry_begin,
   GeometryIterator geometry_end,
