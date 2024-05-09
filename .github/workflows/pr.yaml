@@ -125,6 +125,8 @@ jobs:
           -j$(nproc --ignore=1) -v \
           -DBUILD_TESTS=ON \
           -DBUILD_BENCHMARKS=ON \
+          -DCUSPATIAL_CUDF_GIT_REPO="https://github.com/trxcllnt/cudf.git" \
+          -DCUSPATIAL_CUDF_GIT_TAG="fix/cccl-2.5" \
           -DCMAKE_CXX_FLAGS="-ftemplate-backtrace-limit=0" \
           -DCMAKE_CUDA_FLAGS="-ftemplate-backtrace-limit=0" \
           -DRAPIDS_CMAKE_CPM_DEFAULT_VERSION_FILE="${HOME}/rapids-cmake-override-versions.json";
