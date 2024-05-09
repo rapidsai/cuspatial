@@ -85,9 +85,9 @@ inline rmm::device_uvector<uint32_t> flatten_point_keys(
                     keys_and_levels + num_valid_nodes,
                     flattened_keys.begin(),
                     [last_level = max_depth - 1] __device__(auto const& val) {
-                      auto& is_parent = thrust::get<0>(val);
-                      auto& key       = thrust::get<1>(val);
-                      auto& level     = thrust::get<2>(val);
+                      auto& key       = thrust::get<0>(val);
+                      auto& level     = thrust::get<1>(val);
+                      auto& is_parent = thrust::get<2>(val);
                       // if this is a parent node, return max_key. otherwise
                       // compute the key for one level up the tree. Leaf nodes
                       // whose keys are zero will be removed in a subsequent
