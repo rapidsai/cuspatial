@@ -1,6 +1,6 @@
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2022-2024, NVIDIA CORPORATION.
 from cudf._lib.column cimport Column
-from cudf._lib.cpp.column.column_view cimport column_view
+from cudf._lib.pylibcudf.libcudf.column.column_view cimport column_view
 
 from cuspatial._lib.cpp.optional cimport nullopt, optional
 
