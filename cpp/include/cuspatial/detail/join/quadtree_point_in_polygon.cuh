@@ -221,7 +221,7 @@ std::pair<rmm::device_uvector<IndexType>, rmm::device_uvector<IndexType>> quadtr
     // First attempt to run the hit test assuming allocating space for all possible intersections
     // fits into the available memory.
     return run_quadtree_point_in_polygon(num_total_points);
-  } catch (std::exception const&) {
+  } catch (rmm::out_of_memory const&) {
     // If we OOM the first time, pre-compute the number of hits and allocate only that amount of
     // space for the output buffers. This halves performance, but it should at least return valid
     // results.
