@@ -111,7 +111,5 @@ jobs:
       cuda: '["12.2"]'
       build_command: |
         sccache -z;
-        build-all --verbose -DBUILD_TESTS=ON -DBUILD_BENCHMARKS=ON \
-          -DCUSPATIAL_CUDF_GIT_REPO="https://github.com/trxcllnt/cudf.git" \
-          -DCUSPATIAL_CUDF_GIT_TAG="fix/cccl-2.5";
+        build-all -DBUILD_TESTS=ON -DBUILD_BENCHMARKS=ON --verbose;
         sccache -s;
