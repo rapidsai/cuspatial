@@ -1,8 +1,8 @@
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 
 from libcpp.memory cimport unique_ptr
 
-from cudf._lib.cpp.column.column cimport column
+from cudf._lib.pylibcudf.libcudf.column.column cimport column
 
 from cuspatial._lib.cpp.column.geometry_column_view cimport (
     geometry_column_view,
