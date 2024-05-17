@@ -1,11 +1,11 @@
-# Copyright (c) 2020-2022, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 
 from libc.stdint cimport int8_t
 from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
 
 from cudf._lib.column cimport Column, column_view
-from cudf._lib.cpp.table.table cimport table, table_view
+from cudf._lib.pylibcudf.libcudf.table.table cimport table, table_view
 from cudf._lib.utils cimport data_from_unique_ptr, table_view_from_table
 
 from cuspatial._lib.cpp.spatial_join cimport (
