@@ -14,8 +14,8 @@ dependencies:
 - cuda-nvcc
 - cuda-nvrtc-dev
 - cuda-version=12.2
-- cudf==24.6.*
-- cuml==24.6.*
+- cudf==24.8.*
+- cuml==24.8.*
 - cupy>=12.0.0
 - curl
 - cxx-compiler
@@ -25,8 +25,8 @@ dependencies:
 - geopandas>=0.11.0
 - ipython
 - ipywidgets
-- libcudf==24.6.*
-- librmm==24.6.*
+- libcudf==24.8.*
+- librmm==24.8.*
 - myst-parser
 - nbsphinx
 - ninja
@@ -41,7 +41,7 @@ dependencies:
 - pytest-cov
 - pytest-xdist
 - python>=3.9,<3.12
-- rmm==24.6.*
+- rmm==24.8.*
 - scikit-build-core>=0.7.0
 - scikit-image
 - shapely

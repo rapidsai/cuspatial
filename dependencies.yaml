@@ -122,8 +122,8 @@ dependencies:
         packages:
           - c-compiler
           - cxx-compiler
-          - libcudf==24.6.*
-          - librmm==24.6.*
+          - libcudf==24.8.*
+          - librmm==24.8.*
           - proj
           - sqlite
     specific:
@@ -165,7 +165,7 @@ dependencies:
         packages:
           - c-compiler
           - cxx-compiler
-          - librmm==24.6.*
+          - librmm==24.8.*
           - proj
           - sqlite
     specific:
@@ -356,7 +356,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - &rmm_conda rmm==24.6.*
+          - &rmm_conda rmm==24.8.*
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -367,17 +367,17 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.*"}
             packages:
-              - rmm-cu12==24.6.*
+              - rmm-cu12==24.8.*
           - matrix: {cuda: "11.*"}
             packages:
-              - rmm-cu11==24.6.*
+              - rmm-cu11==24.8.*
           - {matrix: null, packages: [*rmm_conda]}
 
   depends_on_cudf:
     common:
       - output_types: conda
         packages:
-          - &cudf_conda cudf==24.6.*
+          - &cudf_conda cudf==24.8.*
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -388,17 +388,17 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.*"}
             packages:
-              - cudf-cu12==24.6.*
+              - cudf-cu12==24.8.*
           - matrix: {cuda: "11.*"}
             packages:
-              - cudf-cu11==24.6.*
+              - cudf-cu11==24.8.*
           - {matrix: null, packages: [*cudf_conda]}
 
   depends_on_cuml:
     common:
       - output_types: conda
         packages:
-          - &cuml_conda cuml==24.6.*
+          - &cuml_conda cuml==24.8.*
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -409,17 +409,17 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.*"}
             packages:
-              - cuml-cu12==24.6.*
+              - cuml-cu12==24.8.*
           - matrix: {cuda: "11.*"}
             packages:
-              - cuml-cu11==24.6.*
+              - cuml-cu11==24.8.*
           - {matrix: null, packages: [*cuml_conda]}
 
   depends_on_cuspatial:
     common:
       - output_types: conda
         packages:
-          - &cuspatial_conda cuspatial==24.6.*
+          - &cuspatial_conda cuspatial==24.8.*
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -430,10 +430,10 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.*"}
             packages:
-              - cuspatial-cu12==24.6.*
+              - cuspatial-cu12==24.8.*
           - matrix: {cuda: "11.*"}
             packages:
-              - cuspatial-cu11==24.6.*
+              - cuspatial-cu11==24.8.*
           - {matrix: null, packages: [*cuspatial_conda]}
 
   depends_on_cupy:
