@@ -55,7 +55,7 @@ BUILD_DISABLE_DEPRECATION_WARNING=ON
 #  FIXME: if INSTALL_PREFIX is not set, check PREFIX, then check
 #         CONDA_PREFIX, but there is no fallback from there!
 INSTALL_PREFIX=${INSTALL_PREFIX:=${PREFIX:=${CONDA_PREFIX}}}
-PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc)}
+PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc --all)}
 
 function hasArg {
     (( ${NUMARGS} != 0 )) && (echo " ${ARGS} " | grep -q " $1 ")
