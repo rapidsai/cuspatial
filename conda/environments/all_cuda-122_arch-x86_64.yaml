@@ -21,13 +21,13 @@ dependencies:
 - cxx-compiler
 - cython>=3.0.0
 - doxygen
+- file:///tmp/cpp_channel::libcuspatial-tests==24.6.*
+- file:///tmp/cpp_channel::libcuspatial==24.6.*
 - gcc_linux-64=11.*
 - geopandas>=0.11.0
 - ipython
 - ipywidgets
 - libcudf==24.6.*
-- libcuspatial-tests==24.6.*
-- libcuspatial==24.6.*
 - librmm==24.6.*
 - myst-parser
 - nbsphinx
