@@ -18,6 +18,7 @@ files:
       - depends_on_cuml
       - depends_on_cupy
       - run_python_cuspatial
+      - test_libcuspatial
       - test_python_cuspatial
       - test_python_cuproj
       - notebooks
@@ -25,6 +26,7 @@ files:
     output: none
     includes:
       - cuda_version
+      - test_libcuspatial
   test_python:
     output: none
     includes:
@@ -39,6 +41,7 @@ files:
       - depends_on_cuml
       - notebooks
       - py_version
+      - test_cuspatial
   checks:
     output: none
     includes:
@@ -105,6 +108,7 @@ files:
     includes:
       - test_python_cuproj
       - depends_on_cuspatial
+      - test_cuspatial
 
 channels:
   - rapidsai
@@ -451,3 +455,16 @@ dependencies:
             packages:
               - cupy-cuda11x>=12.0.0
           - {matrix: null, packages: [cupy-cuda11x>=12.0.0]}
+  test_libcuspatial:
+    common:
+      - output_types: conda
+        packages:
+          - libcuspatial==24.6.*
+          - libcuspatial-tests==24.6.*
+  test_cuspatial:
+    common:
+      - output_types: conda
+        packages:
+          - libcuspatial==24.6.*
+          - cuspatial==24.6.*
+          - cuproj==24.6.*
