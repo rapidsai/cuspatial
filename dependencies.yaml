@@ -54,6 +54,7 @@ files:
       - cuda_version
       - docs
       - py_version
+      - test_cuspatial
   py_build_cuspatial:
     output: [pyproject]
     pyproject_dir: python/cuspatial
@@ -460,12 +461,12 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - file:///tmp/cpp_channel::libcuspatial==24.6.*
-          - file:///tmp/cpp_channel::libcuspatial-tests==24.6.*
+          - libcuspatial==24.6.*
+          - libcuspatial-tests==24.6.*
   test_cuspatial:
     common:
       - output_types: conda
         packages:
-          - file:///tmp/cpp_channel::libcuspatial==24.6.*
-          - file:///tmp/python_channel::cuspatial==24.6.*
-          - file:///tmp/python_channel::cuproj==24.6.*
+          - libcuspatial==24.6.*
+          - cuspatial==24.6.*
+          - cuproj==24.6.*
