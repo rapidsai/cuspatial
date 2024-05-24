@@ -45,7 +45,10 @@ NEXT_SHORT_TAG_PEP440=$(python -c "from setuptools.extern import packaging; prin
 DEPENDENCIES=(
   cudf
   cuml
+  cuspatial
   libcudf
+  libcuspatial
+  libcuspatial-tests
   librmm
   rmm
   cuspatial
