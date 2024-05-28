@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,9 +40,9 @@ class alignas(sizeof(Vertex)) box {
 
  private:
   /**
-   * @brief Output stream operator for `vec_2d<T>` for human-readable formatting
+   * @brief Output stream operator for `box<T>` for human-readable formatting
    */
-  friend std::ostream& operator<<(std::ostream& os, cuspatial::box<T> const& b)
+  friend std::ostream& operator<<(std::ostream& os, cuspatial::box<T, Vertex> const& b)
   {
     return os << "{" << b.v1 << ", " << b.v2 << "}";
   }
