@@ -33,6 +33,8 @@
 
 #include <ranger/ranger.hpp>
 
+#include <cmath>
+
 namespace cuspatial {
 namespace test {
 
@@ -399,8 +401,9 @@ auto generate_multipoint_array(multipoint_generator_parameter<T> params,
                    std::size_t{0},
                    params.num_points_per_multipoints);
 
-  auto engine_x = deterministic_engine(params.num_points());
-  auto engine_y = deterministic_engine(2 * params.num_points());
+  auto golden_ratio = (1 + std::sqrt(T{5})) / 2;
+  auto engine_x     = deterministic_engine(golden_ratio * params.num_points());
+  auto engine_y     = deterministic_engine((1 / golden_ratio) * params.num_points());
 
   auto x_dist = make_uniform_dist(params.lower_left.x, params.upper_right.x);
   auto y_dist = make_uniform_dist(params.lower_left.y, params.upper_right.y);
