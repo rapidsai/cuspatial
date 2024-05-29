@@ -363,6 +363,17 @@ class multipoint_array {
       _geometry_offsets.begin(), _geometry_offsets.end(), _coordinates.begin(), _coordinates.end()};
   }
 
+  /**
+   * @brief Copy the offset arrays to host.
+   */
+  auto to_host() const
+  {
+    auto geometry_offsets   = cuspatial::test::to_host<geometry_t>(_geometry_offsets);
+    auto coordinate_offsets = cuspatial::test::to_host<coord_t>(_coordinates);
+
+    return std::tuple{geometry_offsets, coordinate_offsets};
+  }
+
   /// Release ownership
   auto release() { return std::pair{std::move(_geometry_offsets), std::move(_coordinates)}; }
 

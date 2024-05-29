@@ -23,6 +23,8 @@ dependencies:
 - ipython
 - ipywidgets
 - libcudf==24.8.*
+- libcuspatial-tests==24.8.*
+- libcuspatial==24.8.*
 - librmm==24.8.*
 - myst-parser
 - nbsphinx
