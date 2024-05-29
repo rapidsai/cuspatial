@@ -461,12 +461,12 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - libcuspatial==24.6.*
-          - libcuspatial-tests==24.6.*
+          - libcuspatial==24.8.*
+          - libcuspatial-tests==24.8.*
   test_cuspatial:
     common:
       - output_types: conda
         packages:
-          - libcuspatial==24.6.*
-          - cuspatial==24.6.*
-          - cuproj==24.6.*
+          - libcuspatial==24.8.*
+          - cuspatial==24.8.*
+          - cuproj==24.8.*
