@@ -65,7 +65,6 @@ requirements:
     - python
     - rmm ={{ minor_version }}
     - scikit-build-core >=0.7.0
-    - setuptools
   run:
     {% if cuda_major == "11" %}
     - cudatoolkit

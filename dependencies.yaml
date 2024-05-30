@@ -232,7 +232,6 @@ dependencies:
       - output_types: [requirements, pyproject]
         packages:
           - wheel
-          - setuptools
   cuda_version:
     specific:
       - output_types: conda
