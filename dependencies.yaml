@@ -17,6 +17,7 @@ files:
       - depends_on_cudf
       - depends_on_cuml
       - depends_on_cupy
+      - rapids_build_skbuild
       - run_python_cuspatial
       - test_libcuspatial
       - test_python_cuspatial
