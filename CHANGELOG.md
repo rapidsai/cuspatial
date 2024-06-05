@@ -1,3 +1,27 @@
+# cuspatial 24.06.00 (5 Jun 2024)
+
+## 🚨 Breaking Changes
+
+- Replace rmm::mr::device_memory_resource* with rmm::device_async_resource_ref ([#1373](https://github.com/rapidsai/cuspatial/pull/1373)) [@harrism](https://github.com/harrism)
+
+## 🐛 Bug Fixes
+
+- create conda ci test env in one step ([#1387](https://github.com/rapidsai/cuspatial/pull/1387)) [@msarahan](https://github.com/msarahan)
+
+## 🛠️ Improvements
+
+- Fix up imports for cudf changes ([#1383](https://github.com/rapidsai/cuspatial/pull/1383)) [@vyasr](https://github.com/vyasr)
+- Fix building cuspatial with CCCL main ([#1382](https://github.com/rapidsai/cuspatial/pull/1382)) [@trxcllnt](https://github.com/trxcllnt)
+- Fix quadtree spatial join OOMs on large numbers of input polygons ([#1381](https://github.com/rapidsai/cuspatial/pull/1381)) [@trxcllnt](https://github.com/trxcllnt)
+- Enable warnings-as-errors for cuproj tests ([#1379](https://github.com/rapidsai/cuspatial/pull/1379)) [@mroeschke](https://github.com/mroeschke)
+- Always use a static gtest and gbench ([#1377](https://github.com/rapidsai/cuspatial/pull/1377)) [@trxcllnt](https://github.com/trxcllnt)
+- Migrate to `{{ stdlib(&quot;c&quot;) }}` ([#1376](https://github.com/rapidsai/cuspatial/pull/1376)) [@hcho3](https://github.com/hcho3)
+- add --rm and --name to devcontainer run args ([#1375](https://github.com/rapidsai/cuspatial/pull/1375)) [@trxcllnt](https://github.com/trxcllnt)
+- Replace rmm::mr::device_memory_resource* with rmm::device_async_resource_ref ([#1373](https://github.com/rapidsai/cuspatial/pull/1373)) [@harrism](https://github.com/harrism)
+- Enable all tests for `arm` jobs ([#1365](https://github.com/rapidsai/cuspatial/pull/1365)) [@galipremsagar](https://github.com/galipremsagar)
+- Enable pytest failures on warnings on FutureWarnings (Replace deprecated `geopandas.dataset`  module) ([#1360](https://github.com/rapidsai/cuspatial/pull/1360)) [@mroeschke](https://github.com/mroeschke)
+- Fix `JOIN_POINT_IN_POLYGON_LARGE_TEST_EXP` test ([#1346](https://github.com/rapidsai/cuspatial/pull/1346)) [@trxcllnt](https://github.com/trxcllnt)
+
 # cuSpatial 24.04.00 (10 Apr 2024)
 
 ## 🐛 Bug Fixes
