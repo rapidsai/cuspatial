@@ -11,8 +11,8 @@ dependencies:
 - cmake>=3.26.4
 - cuda-version=11.8
 - cudatoolkit
-- cudf==24.4.*
-- cuml==24.4.*
+- cudf==24.6.*
+- cuml==24.6.*
 - cupy>=12.0.0
 - curl
 - cxx-compiler
@@ -20,12 +20,12 @@ dependencies:
 - doxygen
 - gcc_linux-64=11.*
 - geopandas>=0.11.0
-- gmock>=1.13.0
-- gtest>=1.13.0
 - ipython
 - ipywidgets
-- libcudf==24.4.*
-- librmm==24.4.*
+- libcudf==24.6.*
+- libcuspatial-tests==24.6.*
+- libcuspatial==24.6.*
+- librmm==24.6.*
 - myst-parser
 - nbsphinx
 - ninja
@@ -41,7 +41,7 @@ dependencies:
 - pytest-cov
 - pytest-xdist
 - python>=3.9,<3.12
-- rmm==24.4.*
+- rmm==24.6.*
 - scikit-build-core>=0.7.0
 - scikit-image
 - shapely

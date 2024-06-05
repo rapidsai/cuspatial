@@ -24,6 +24,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <cuda/functional>
 #include <thrust/copy.h>
@@ -65,7 +66,7 @@ compute_point_keys_and_sorted_indices(PointIt points_first,
                                       T scale,
                                       int8_t max_depth,
                                       rmm::cuda_stream_view stream,
-                                      rmm::mr::device_memory_resource* mr)
+                                      rmm::device_async_resource_ref mr)
 {
   auto num_points = thrust::distance(points_first, points_last);
   rmm::device_uvector<uint32_t> keys(num_points, stream);
@@ -259,7 +260,7 @@ inline auto make_full_levels(PointIt points_first,
                              T scale,
                              int8_t max_depth,
                              rmm::cuda_stream_view stream,
-                             rmm::mr::device_memory_resource* mr)
+                             rmm::device_async_resource_ref mr)
 {
   auto num_points = thrust::distance(points_first, points_last);
   // Compute point keys and sort into bottom-level quadrants

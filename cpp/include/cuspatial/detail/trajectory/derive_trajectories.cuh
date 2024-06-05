@@ -22,6 +22,7 @@
 #include <rmm/device_uvector.hpp>
 #include <rmm/device_vector.hpp>
 #include <rmm/exec_policy.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <cub/device/device_merge_sort.cuh>
 #include <thrust/gather.h>
@@ -63,7 +64,7 @@ void order_trajectories(IdInputIt ids_first,
                         PointOutputIt points_out_first,
                         TimestampOutputIt timestamps_out_first,
                         rmm::cuda_stream_view stream,
-                        rmm::mr::device_memory_resource* mr)
+                        rmm::device_async_resource_ref mr)
 {
   using id_type        = iterator_value_type<IdInputIt>;
   using timestamp_type = iterator_value_type<TimestampInputIt>;
@@ -116,7 +117,7 @@ std::unique_ptr<rmm::device_uvector<OffsetType>> derive_trajectories(
   PointOutputIt points_out_first,
   TimestampOutputIt timestamps_out_first,
   rmm::cuda_stream_view stream,
-  rmm::mr::device_memory_resource* mr)
+  rmm::device_async_resource_ref mr)
 {
   detail::order_trajectories(ids_first,
                              ids_last,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/geometry/segment.cuh>
 #include <cuspatial/intersection.cuh>
+
+#include <rmm/resource_ref.hpp>
 
 #include <thrust/copy.h>
 #include <thrust/iterator/zip_iterator.h>
@@ -89,7 +91,7 @@ struct order_key_value_pairs {
 template <typename T, typename IndexType, typename type_t>
 linestring_intersection_result<T, IndexType> segment_sort_intersection_result(
   linestring_intersection_result<T, IndexType>& result,
-  rmm::mr::device_memory_resource* mr,
+  rmm::device_async_resource_ref mr,
   rmm::cuda_stream_view stream)
 {
   auto const num_points   = result.points_coords->size();
@@ -189,7 +191,7 @@ auto make_linestring_intersection_result(
   std::initializer_list<IndexType> rhs_linestring_ids,
   std::initializer_list<IndexType> rhs_segment_ids,
   rmm::cuda_stream_view stream,
-  rmm::mr::device_memory_resource* mr)
+  rmm::device_async_resource_ref mr)
 {
   auto d_geometry_collection_offset =
     make_device_uvector<IndexType>(geometry_collection_offset, stream, mr);

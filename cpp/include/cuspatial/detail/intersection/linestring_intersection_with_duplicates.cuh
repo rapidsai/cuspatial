@@ -29,6 +29,7 @@
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <thrust/binary_search.h>
 #include <thrust/distance.h>
@@ -228,7 +229,7 @@ struct linestring_intersection_intermediates {
   /** @brief Construct a zero-pair, zero-geometry intermediate object
    */
   linestring_intersection_intermediates(rmm::cuda_stream_view stream,
-                                        rmm::mr::device_memory_resource* mr)
+                                        rmm::device_async_resource_ref mr)
     : offsets(std::make_unique<rmm::device_uvector<IndexType>>(1, stream)),
       geoms(std::make_unique<rmm::device_uvector<GeomType>>(0, stream, mr)),
       lhs_linestring_ids(std::make_unique<rmm::device_uvector<IndexType>>(0, stream)),
@@ -244,7 +245,7 @@ struct linestring_intersection_intermediates {
                                         std::size_t num_geoms,
                                         rmm::device_uvector<IndexType> const& num_geoms_per_pair,
                                         rmm::cuda_stream_view stream,
-                                        rmm::mr::device_memory_resource* mr)
+                                        rmm::device_async_resource_ref mr)
     : offsets(std::make_unique<rmm::device_uvector<IndexType>>(num_pairs + 1, stream)),
       geoms(std::make_unique<rmm::device_uvector<GeomType>>(num_geoms, stream, mr)),
       lhs_linestring_ids(std::make_unique<rmm::device_uvector<IndexType>>(num_geoms, stream)),
@@ -472,7 +473,7 @@ std::pair<linestring_intersection_intermediates<vec_2d<T>, index_t>,
           linestring_intersection_intermediates<segment<T>, index_t>>
 pairwise_linestring_intersection_with_duplicates(MultiLinestringRange1 multilinestrings1,
                                                  MultiLinestringRange2 multilinestrings2,
-                                                 rmm::mr::device_memory_resource* mr,
+                                                 rmm::device_async_resource_ref mr,
                                                  rmm::cuda_stream_view stream)
 {
   static_assert(std::is_integral_v<index_t>, "Index type must be integral.");

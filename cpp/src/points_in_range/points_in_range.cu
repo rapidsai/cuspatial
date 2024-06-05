@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@
 #include <cudf/table/table.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <memory>
 #include <type_traits>
@@ -42,7 +43,7 @@ struct points_in_range_dispatch {
                                           cudf::column_view const& x,
                                           cudf::column_view const& y,
                                           rmm::cuda_stream_view stream,
-                                          rmm::mr::device_memory_resource* mr)
+                                          rmm::device_async_resource_ref mr)
   {
     auto points_begin = cuspatial::make_vec_2d_iterator(x.begin<T>(), y.begin<T>());
 
@@ -98,7 +99,7 @@ std::unique_ptr<cudf::table> points_in_range(double range_min_x,
                                              cudf::column_view const& x,
                                              cudf::column_view const& y,
                                              rmm::cuda_stream_view stream,
-                                             rmm::mr::device_memory_resource* mr)
+                                             rmm::device_async_resource_ref mr)
 {
   CUSPATIAL_EXPECTS(x.type() == y.type(), "Type mismatch between x and y arrays");
   CUSPATIAL_EXPECTS(x.size() == y.size(), "Size mismatch between x and y arrays");
@@ -129,7 +130,7 @@ std::unique_ptr<cudf::table> points_in_range(double range_min_x,
                                              double range_max_y,
                                              cudf::column_view const& x,
                                              cudf::column_view const& y,
-                                             rmm::mr::device_memory_resource* mr)
+                                             rmm::device_async_resource_ref mr)
 {
   return detail::points_in_range(
     range_min_x, range_max_x, range_min_y, range_max_y, x, y, rmm::cuda_stream_default, mr);

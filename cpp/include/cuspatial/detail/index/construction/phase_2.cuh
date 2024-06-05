@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <thrust/copy.h>
 #include <thrust/count.h>
@@ -84,9 +85,9 @@ inline rmm::device_uvector<uint32_t> flatten_point_keys(
                     keys_and_levels + num_valid_nodes,
                     flattened_keys.begin(),
                     [last_level = max_depth - 1] __device__(auto const& val) {
-                      bool is_parent{false};
-                      uint32_t key{}, level{};
-                      thrust::tie(key, level, is_parent) = val;
+                      auto& key       = thrust::get<0>(val);
+                      auto& level     = thrust::get<1>(val);
+                      auto& is_parent = thrust::get<2>(val);
                       // if this is a parent node, return max_key. otherwise
                       // compute the key for one level up the tree. Leaf nodes
                       // whose keys are zero will be removed in a subsequent
@@ -309,7 +310,7 @@ inline rmm::device_uvector<bool> construct_non_leaf_indicator(
   int32_t num_parent_nodes,
   int32_t num_valid_nodes,
   int32_t max_size,
-  rmm::mr::device_memory_resource* mr,
+  rmm::device_async_resource_ref mr,
   rmm::cuda_stream_view stream)
 {
   //

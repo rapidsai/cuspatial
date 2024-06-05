@@ -24,6 +24,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <cuda/functional>
 #include <thrust/distance.h>
@@ -48,7 +49,7 @@ inline point_quadtree make_quad_tree(rmm::device_uvector<uint32_t>& keys,
                                      int32_t max_size,
                                      int32_t level_1_size,
                                      rmm::cuda_stream_view stream,
-                                     rmm::mr::device_memory_resource* mr)
+                                     rmm::device_async_resource_ref mr)
 {
   // count the number of child nodes
   auto num_child_nodes = thrust::reduce(rmm::exec_policy(stream),
@@ -155,7 +156,7 @@ inline point_quadtree make_leaf_tree(rmm::device_uvector<uint32_t>& keys,
                                      rmm::device_uvector<uint32_t>& lengths,
                                      int32_t num_top_quads,
                                      rmm::cuda_stream_view stream,
-                                     rmm::mr::device_memory_resource* mr)
+                                     rmm::device_async_resource_ref mr)
 {
   rmm::device_uvector<uint8_t> levels(num_top_quads, stream, mr);
   rmm::device_uvector<bool> is_internal_node(num_top_quads, stream, mr);
@@ -195,7 +196,7 @@ inline std::pair<rmm::device_uvector<uint32_t>, point_quadtree> construct_quadtr
   T scale,
   int8_t max_depth,
   int32_t max_size,
-  rmm::mr::device_memory_resource* mr,
+  rmm::device_async_resource_ref mr,
   rmm::cuda_stream_view stream)
 {
   // Construct the full set of non-empty subquadrants starting from the lowest level.
@@ -243,7 +244,7 @@ std::pair<rmm::device_uvector<uint32_t>, point_quadtree> quadtree_on_points(
   int8_t max_depth,
   int32_t max_size,
   rmm::cuda_stream_view stream,
-  rmm::mr::device_memory_resource* mr)
+  rmm::device_async_resource_ref mr)
 {
   auto num_points = thrust::distance(points_first, points_last);
   if (num_points <= 0) {

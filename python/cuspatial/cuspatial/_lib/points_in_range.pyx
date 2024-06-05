@@ -1,10 +1,10 @@
-# Copyright (c) 2020-2023, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 
 from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
 
 from cudf._lib.column cimport Column, column_view
-from cudf._lib.cpp.table.table cimport table
+from cudf._lib.pylibcudf.libcudf.table.table cimport table
 from cudf._lib.utils cimport data_from_unique_ptr
 
 from cuspatial._lib.cpp.points_in_range cimport (

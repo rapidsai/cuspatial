@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 #include <cuspatial/traits.hpp>
 
 #include <rmm/device_uvector.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <iterator>
 #include <utility>
@@ -69,8 +70,8 @@ join_quadtree_and_bounding_boxes(
   vec_2d<T> const& v_min,
   T scale,
   int8_t max_depth,
-  rmm::cuda_stream_view stream        = rmm::cuda_stream_default,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+  rmm::cuda_stream_view stream      = rmm::cuda_stream_default,
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
 
 /**
  * @brief Test whether the specified points are inside any of the specified polygons.
@@ -127,8 +128,8 @@ std::pair<rmm::device_uvector<IndexType>, rmm::device_uvector<IndexType>> quadtr
   PointIndexIterator point_indices_last,
   PointIterator points_first,
   MultiPolygonRange polygons,
-  rmm::cuda_stream_view stream        = rmm::cuda_stream_default,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+  rmm::cuda_stream_view stream      = rmm::cuda_stream_default,
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
 
 /**
  * @brief Finds the nearest linestring to each point in a quadrant, and computes the distances
@@ -184,8 +185,8 @@ quadtree_point_to_nearest_linestring(
   PointIndexIterator point_indices_last,
   PointIterator points_first,
   MultiLinestringRange linestrings,
-  rmm::cuda_stream_view stream        = rmm::cuda_stream_default,
-  rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource());
+  rmm::cuda_stream_view stream      = rmm::cuda_stream_default,
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
 
 }  // namespace cuspatial
 

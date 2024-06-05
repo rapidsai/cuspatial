@@ -37,6 +37,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <initializer_list>
 #include <memory>
@@ -116,7 +117,7 @@ std::pair<collection_type_id, std::unique_ptr<cudf::column>> make_linestring_col
 
 struct LinestringIntersectionTestBase : public BaseFixture {
   rmm::cuda_stream_view stream{rmm::cuda_stream_default};
-  rmm::mr::device_memory_resource* mr{rmm::mr::get_current_device_resource()};
+  rmm::device_async_resource_ref mr{rmm::mr::get_current_device_resource()};
 };
 
 template <typename T>

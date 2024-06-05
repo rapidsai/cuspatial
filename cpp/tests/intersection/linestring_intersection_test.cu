@@ -30,6 +30,7 @@
 
 #include <rmm/device_vector.hpp>
 #include <rmm/exec_policy.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <thrust/binary_search.h>
 #include <thrust/sort.h>
@@ -43,7 +44,7 @@ using namespace cuspatial::test;
 template <typename T>
 struct LinestringIntersectionTest : public ::testing::Test {
   rmm::cuda_stream_view stream() { return rmm::cuda_stream_default; }
-  rmm::mr::device_memory_resource* mr() { return rmm::mr::get_current_device_resource(); }
+  rmm::device_async_resource_ref mr() { return rmm::mr::get_current_device_resource(); }
 
   template <typename IndexType, typename MultiLinestringRange, typename IntersectionResult>
   void run_single_test(MultiLinestringRange lhs,

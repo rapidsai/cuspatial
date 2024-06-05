@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <memory>
 #include <type_traits>
@@ -43,7 +44,7 @@ namespace detail {
 
 std::unique_ptr<cudf::column> even_sequence(cudf::size_type size,
                                             rmm::cuda_stream_view stream,
-                                            rmm::mr::device_memory_resource* mr)
+                                            rmm::device_async_resource_ref mr)
 {
   auto res = cudf::make_numeric_column(cudf::data_type{cudf::type_to_id<cudf::size_type>()},
                                        size,
@@ -67,7 +68,7 @@ struct pairwise_linestring_intersection_launch {
   operator()(geometry_column_view const& multilinestrings1,
              geometry_column_view const& multilinestrings2,
              rmm::cuda_stream_view stream,
-             rmm::mr::device_memory_resource* mr)
+             rmm::device_async_resource_ref mr)
   {
     using index_t = cudf::size_type;
 
@@ -155,7 +156,7 @@ struct pairwise_linestring_intersection {
   linestring_intersection_column_result operator()(geometry_column_view const& linestrings1,
                                                    geometry_column_view const& linestrings2,
                                                    rmm::cuda_stream_view stream,
-                                                   rmm::mr::device_memory_resource* mr)
+                                                   rmm::device_async_resource_ref mr)
   {
     CUSPATIAL_EXPECTS(linestrings1.coordinate_type() == linestrings2.coordinate_type(),
                       "Input linestring coordinates must be the same type.");
@@ -176,7 +177,7 @@ struct pairwise_linestring_intersection {
 linestring_intersection_column_result pairwise_linestring_intersection(
   geometry_column_view const& lhs,
   geometry_column_view const& rhs,
-  rmm::mr::device_memory_resource* mr)
+  rmm::device_async_resource_ref mr)
 {
   CUSPATIAL_EXPECTS(lhs.geometry_type() == geometry_type_id::LINESTRING &&
                       rhs.geometry_type() == geometry_type_id::LINESTRING,

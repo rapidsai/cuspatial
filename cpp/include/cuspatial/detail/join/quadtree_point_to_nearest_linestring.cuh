@@ -27,6 +27,7 @@
 
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <cuda/functional>
 #include <thrust/detail/raw_reference_cast.h>
@@ -156,7 +157,7 @@ quadtree_point_to_nearest_linestring(LinestringIndexIterator linestring_indices_
                                      PointIterator points_first,
                                      MultiLinestringRange linestrings,
                                      rmm::cuda_stream_view stream,
-                                     rmm::mr::device_memory_resource* mr)
+                                     rmm::device_async_resource_ref mr)
 {
   CUSPATIAL_EXPECTS(linestrings.num_multilinestrings() == linestrings.num_linestrings(),
                     "Only one linestring per multilinestring currently supported.");
