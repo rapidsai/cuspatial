@@ -13,7 +13,7 @@
 # limitations under the License.
 
 [build-system]
-build-backend = "scikit_build_core.build"
+build-backend = "rapids_build_backend.build"
 requires = [
     "rapids-build-backend>=0.3.0,<0.4.0.dev0",
     "scikit-build-core[pyproject]>=0.7.0",
@@ -126,6 +126,8 @@ filterwarnings = [
 ]
 
 [tool.rapids-build-backend]
+build-backend = "scikit_build_core.build"
+dependencies-file = "../../dependencies.yaml"
 requires = [
     "cmake>=3.26.4",
     "cudf==24.8.*,>=0.0.0a0",
