@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2019, NVIDIA CORPORATION.
+# Copyright (c) 2019-2024, NVIDIA CORPORATION.
 
 # cuSpatial build script
 
@@ -183,7 +183,7 @@ if (( ${NUMARGS} == 0 )) || hasArg cuspatial; then
 
     cd ${REPODIR}/python/cuspatial
     SKBUILD_CMAKE_ARGS="-DCMAKE_PREFIX_PATH=${INSTALL_PREFIX};-DCMAKE_LIBRARY_PATH=${LIBCUSPATIAL_BUILD_DIR};${EXTRA_CMAKE_ARGS}" \
-        python -m pip install --no-build-isolation --no-deps .
+        python -m pip install --no-build-isolation --no-deps --config-settings rapidsai.disable-cuda=true .
 fi
 
 # Build and install the cuproj Python package
@@ -191,5 +191,5 @@ if (( ${NUMARGS} == 0 )) || hasArg cuproj; then
 
     cd ${REPODIR}/python/cuproj
     SKBUILD_CMAKE_ARGS="-DCMAKE_PREFIX_PATH=${INSTALL_PREFIX};-DCMAKE_LIBRARY_PATH=${LIBCUPROJ_BUILD_DIR};${EXTRA_CMAKE_ARGS}" \
-        python -m pip install --no-build-isolation --no-deps .
+        python -m pip install --no-build-isolation --no-deps --config-settings rapidsai.disable-cuda=true .
 fi
