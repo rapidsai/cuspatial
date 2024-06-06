@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,6 +74,7 @@ template <typename GeometryIterator, typename PartIterator, typename VecIterator
 class multilinestring_range;
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
+CUSPATIAL_HOST_DEVICE
 multilinestring_range<GeometryIterator, PartIterator, VecIterator>::multilinestring_range(
   GeometryIterator geometry_begin,
   GeometryIterator geometry_end,
