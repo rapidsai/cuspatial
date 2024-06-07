@@ -43,14 +43,14 @@ popd
 rapids-logger "Build cuSpatial Python docs"
 pushd docs
 sphinx-build -b dirhtml source _html -W
-mkdir -p "${RAPIDS_DOCS_DIR}/cuspatial/"html
+mkdir -p "${RAPIDS_DOCS_DIR}/cuspatial/html"
 mv _html/* "${RAPIDS_DOCS_DIR}/cuspatial/html"
 popd
 
 rapids-logger "Build cuProj Python docs"
 pushd docs/cuproj
 sphinx-build -b dirhtml source _html -W
-mkdir -p "${RAPIDS_DOCS_DIR}/cuproj/"html
+mkdir -p "${RAPIDS_DOCS_DIR}/cuproj/html"
 mv _html/* "${RAPIDS_DOCS_DIR}/cuproj/html"
 popd
 
