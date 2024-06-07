@@ -1,3 +1,5 @@
+# Copyright (c) 2024, NVIDIA CORPORATION.
+
 import geopandas as gpd
 import pandas as pd
 from geopandas.testing import assert_geoseries_equal
@@ -13,7 +15,9 @@ def run_test(s1, s2, expect_offset, expect_geom, expect_ids):
         cuspatial.from_geopandas(s1), cuspatial.from_geopandas(s2)
     )
 
-    assert_series_equal(expect_offset, offset.to_pandas(), check_dtype=False)
+    assert_series_equal(
+        expect_offset, pd.Series(offset.to_pandas()), check_dtype=False
+    )
     assert_geoseries_equal(expect_geom, geoms.to_geopandas())
     assert_frame_equal(expect_ids, ids.to_pandas())
 
