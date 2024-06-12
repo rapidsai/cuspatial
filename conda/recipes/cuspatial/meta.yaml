@@ -63,6 +63,7 @@ requirements:
     - cython >=3.0.0
     - libcuspatial ={{ version }}
     - python
+    - rapids-build-backend >=0.3.0,<0.4.0.dev0
     - rmm ={{ minor_version }}
     - scikit-build-core >=0.7.0
   run:

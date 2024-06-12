@@ -17,6 +17,7 @@ files:
       - depends_on_cudf
       - depends_on_cuml
       - depends_on_cupy
+      - rapids_build_skbuild
       - run_python_cuspatial
       - test_libcuspatial
       - test_python_cuspatial
@@ -61,6 +62,14 @@ files:
     extras:
       table: build-system
     includes:
+      - rapids_build_skbuild
+  py_rapids_build_cuspatial:
+    output: [pyproject]
+    pyproject_dir: python/cuspatial
+    extras:
+      table: tool.rapids-build-backend
+      key: requires
+    includes:
       - depends_on_rmm
       - depends_on_cudf
       - build_cpp
@@ -88,6 +97,14 @@ files:
     pyproject_dir: python/cuproj
     extras:
       table: build-system
+    includes:
+      - rapids_build_skbuild
+  py_rapids_build_cuproj:
+    output: [pyproject]
+    pyproject_dir: python/cuproj
+    extras:
+      table: tool.rapids-build-backend
+      key: requires
     includes:
       - depends_on_rmm
       - build_cpp_cuproj
@@ -171,7 +188,7 @@ dependencies:
         packages:
           - c-compiler
           - cxx-compiler
-          - librmm==24.8.*
+          - librmm==24.8.*,>=0.0.0a0
           - proj
           - sqlite
     specific:
@@ -208,12 +225,6 @@ dependencies:
       - output_types: [conda, requirements, pyproject]
         packages:
           - cython>=3.0.0
-      - output_types: conda
-        packages:
-          - scikit-build-core>=0.7.0
-      - output_types: [requirements, pyproject]
-        packages:
-          - scikit-build-core[pyproject]>=0.7.0
     specific:
       - output_types: conda
         matrices:
@@ -232,6 +243,17 @@ dependencies:
       - output_types: [requirements, pyproject]
         packages:
           - wheel
+  rapids_build_skbuild:
+    common:
+      - output_types: [conda, requirements, pyproject]
+        packages:
+          - &rapids_build_backend rapids-build-backend>=0.3.0,<0.4.0.dev0
+      - output_types: conda
+        packages:
+          - scikit-build-core>=0.7.0
+      - output_types: [requirements, pyproject]
+        packages:
+          - scikit-build-core[pyproject]>=0.7.0
   cuda_version:
     specific:
       - output_types: conda
@@ -361,7 +383,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - &rmm_conda rmm==24.8.*
+          - &rmm_conda rmm==24.8.*,>=0.0.0a0
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -372,17 +394,17 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.*"}
             packages:
-              - rmm-cu12==24.8.*
+              - rmm-cu12==24.8.*,>=0.0.0a0
           - matrix: {cuda: "11.*"}
             packages:
-              - rmm-cu11==24.8.*
+              - rmm-cu11==24.8.*,>=0.0.0a0
           - {matrix: null, packages: [*rmm_conda]}
 
   depends_on_cudf:
     common:
       - output_types: conda
         packages:
-          - &cudf_conda cudf==24.8.*
+          - &cudf_conda cudf==24.8.*,>=0.0.0a0
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -393,17 +415,17 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.*"}
             packages:
-              - cudf-cu12==24.8.*
+              - cudf-cu12==24.8.*,>=0.0.0a0
           - matrix: {cuda: "11.*"}
             packages:
-              - cudf-cu11==24.8.*
+              - cudf-cu11==24.8.*,>=0.0.0a0
           - {matrix: null, packages: [*cudf_conda]}
 
   depends_on_cuml:
     common:
       - output_types: conda
         packages:
-          - &cuml_conda cuml==24.8.*
+          - &cuml_conda cuml==24.8.*,>=0.0.0a0
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -414,17 +436,17 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.*"}
             packages:
-              - cuml-cu12==24.8.*
+              - cuml-cu12==24.8.*,>=0.0.0a0
           - matrix: {cuda: "11.*"}
             packages:
-              - cuml-cu11==24.8.*
+              - cuml-cu11==24.8.*,>=0.0.0a0
           - {matrix: null, packages: [*cuml_conda]}
 
   depends_on_cuspatial:
     common:
       - output_types: conda
         packages:
-          - &cuspatial_conda cuspatial==24.8.*
+          - &cuspatial_conda cuspatial==24.8.*,>=0.0.0a0
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -435,10 +457,10 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.*"}
             packages:
-              - cuspatial-cu12==24.8.*
+              - cuspatial-cu12==24.8.*,>=0.0.0a0
           - matrix: {cuda: "11.*"}
             packages:
-              - cuspatial-cu11==24.8.*
+              - cuspatial-cu11==24.8.*,>=0.0.0a0
           - {matrix: null, packages: [*cuspatial_conda]}
 
   depends_on_cupy:
@@ -454,8 +476,8 @@ dependencies:
               - cupy-cuda12x>=12.0.0
           - matrix: {cuda: "11.*"}
             packages:
-              - cupy-cuda11x>=12.0.0
-          - {matrix: null, packages: [cupy-cuda11x>=12.0.0]}
+              - &cupy_cu11 cupy-cuda11x>=12.0.0
+          - {matrix: null, packages: [*cupy_cu11]}
   test_libcuspatial:
     common:
       - output_types: conda

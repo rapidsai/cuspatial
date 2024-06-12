@@ -12,7 +12,7 @@ PYTHON_CHANNEL="$(rapids-download-conda-from-s3 python)"
 
 rapids-dependency-file-generator \
   --output conda \
-  --file_key docs \
+  --file-key docs \
   --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION}" \
   --prepend-channel "${CPP_CHANNEL}" --prepend-channel "${PYTHON_CHANNEL}" | tee env.yaml
 

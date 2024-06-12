@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2022-2024, NVIDIA CORPORATION.
 
 set -euo pipefail
 
@@ -15,13 +15,7 @@ rapids-print-env
 
 package_dir="python"
 
-version=$(rapids-generate-version)
-commit=$(git rev-parse HEAD)
-
-echo "${version}" > VERSION
-for package_name in cuspatial cuproj; do
-    sed -i "/^__git_commit__/ s/= .*/= \"${commit}\"/g" "${package_dir}/${package_name}/${package_name}/_version.py"
-done
+rapids-generate-version > ./VERSION
 
 CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
 
@@ -29,7 +23,7 @@ rapids-logger "Begin py build cuSpatial"
 
 # TODO: Remove `--no-test` flag once importing on a CPU
 # node works correctly
-RAPIDS_PACKAGE_VERSION=${version} rapids-conda-retry mambabuild \
+RAPIDS_PACKAGE_VERSION=$(head -1 ./VERSION) rapids-conda-retry mambabuild \
   --no-test \
   --channel "${CPP_CHANNEL}" \
   conda/recipes/cuspatial
@@ -38,7 +32,7 @@ rapids-logger "Begin py build cuProj"
 
 # TODO: Remove `--no-test` flag once importing on a CPU
 # node works correctly
-RAPIDS_PACKAGE_VERSION=${version} rapids-conda-retry mambabuild \
+RAPIDS_PACKAGE_VERSION=$(head -1 ./VERSION) rapids-conda-retry mambabuild \
   --no-test \
   --channel "${CPP_CHANNEL}" \
   conda/recipes/cuproj
