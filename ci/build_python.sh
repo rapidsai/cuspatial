@@ -21,6 +21,7 @@ CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
 
 rapids-logger "Begin py build cuSpatial"
 
+conda config --set path_conflict prevent
 # TODO: Remove `--no-test` flag once importing on a CPU
 # node works correctly
 RAPIDS_PACKAGE_VERSION=$(head -1 ./VERSION) rapids-conda-retry mambabuild \
