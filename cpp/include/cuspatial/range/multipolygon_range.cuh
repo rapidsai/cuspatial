@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,10 +115,10 @@ class multipolygon_range {
   CUSPATIAL_HOST_DEVICE auto point_end();
 
   /// Return the iterator to the first geometry offset in the range.
-  CUSPATIAL_HOST_DEVICE auto geometry_offset_begin() { return _part_begin; }
+  CUSPATIAL_HOST_DEVICE auto geometry_offset_begin() { return _geometry_begin; }
 
   /// Return the iterator to the one past the last geometry offset in the range.
-  CUSPATIAL_HOST_DEVICE auto geometry_offset_end() { return _part_end; }
+  CUSPATIAL_HOST_DEVICE auto geometry_offset_end() { return _geometry_end; }
 
   /// Return the iterator to the first part offset in the range.
   CUSPATIAL_HOST_DEVICE auto part_offset_begin() { return _part_begin; }
