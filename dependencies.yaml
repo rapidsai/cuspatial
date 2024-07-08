@@ -41,6 +41,7 @@ files:
     includes:
       - cuda_version
       - depends_on_cuml
+      - test_notebooks
       - notebooks
       - py_version
       - test_cuspatial
@@ -334,6 +335,12 @@ dependencies:
       - output_types: [conda]
         packages:
           - curl
+  # TODO: Remove geopandas.dataset usage in cuspatial_api_examples.ipynb
+  test_notebooks:
+    common:
+      - output_types: [conda, requirements, pyproject]
+        packages:
+          - geopandas<1
   py_version:
     specific:
       - output_types: conda
