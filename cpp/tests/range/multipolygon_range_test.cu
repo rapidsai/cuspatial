@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1069,7 +1069,7 @@ class MultipolygonRangeOneTest : public MultipolygonRangeTestBase<T> {
   void test_geometry_offsets_it()
   {
     rmm::device_uvector<std::size_t> d_offsets = this->copy_geometry_offsets();
-    auto expected                              = make_device_vector<std::size_t>({0, 1});
+    auto expected                              = make_device_vector<std::size_t>({0, 2});
 
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(d_offsets, expected);
   }
