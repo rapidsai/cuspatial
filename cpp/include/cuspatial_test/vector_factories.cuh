@@ -164,10 +164,26 @@ class multipolygon_array {
   {
     auto [geometry_offsets, part_offsets, ring_offsets, coordinates] = arr.to_host();
 
-    return os << "Geometry Offsets:\n\t{" << geometry_offsets << "}\n"
-              << "Part Offsets:\n\t{" << part_offsets << "}\n"
-              << "Ring Offsets: \n\t{" << ring_offsets << "}\n"
-              << "Coordinates: \n\t{" << coordinates << "}\n";
+    auto print_vector = [&](auto const& vec) {
+      for (auto it = vec.begin(); it != vec.end(); it++) {
+        os << *it;
+        if (std::next(it) != vec.end()) { os << ", "; }
+      }
+    };
+
+    os << "Geometry Offsets:\n\t{";
+    print_vector(geometry_offsets);
+    os << "}\n";
+    os << "Part Offsets:\n\t{";
+    print_vector(part_offsets);
+    os << "}\n";
+    os << "Ring Offsets: \n\t{";
+    print_vector(ring_offsets);
+    os << "}\n";
+    os << "Coordinates: \n\t{";
+    print_vector(coordinates);
+    os << "}\n";
+    return os;
   }
 
  protected:
