@@ -24,8 +24,7 @@ get_ipython().run_cell_magic=my_run_cell_magic
 "
 
 NO_COLORS=--colors=NoColor
-NBTMPDIR="$WORKSPACE/tmp"
-mkdir -p ${NBTMPDIR}
+NBTMPDIR="$(mktemp -d)"
 
 EXITCODE=0
 trap "EXITCODE=1" ERR
