@@ -800,16 +800,16 @@ class GeoSeries(cudf.Series):
         ----------
         polygons_xy : array-like
             Coordinates of the points, interpreted as interleaved x-y coords.
+        ring_offset : array-like
+            Offsets into the part array indicating the beginning of each ring.
+            The length of this array is the number of rings.
+        part_offset : array-like
+            Offsets into the coordinates array indicating the beginning of
+            each part. The length of this array is the number of parts.
         geometry_offset : array-like
             Offsets of the first coordinate of each geometry. The length of
             this array is the number of geometries.  Offsets with a difference
             greater than 1 indicate a MultiLinestring.
-        part_offset : array-like
-            Offsets into the coordinates array indicating the beginning of
-            each part. The length of this array is the number of parts.
-        rint_offset : array-like
-            Offsets into the part array indicating the beginning of each ring.
-            The length of this array is the number of rings.
 
         Returns
         -------
