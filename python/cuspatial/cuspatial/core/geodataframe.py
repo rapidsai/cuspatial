@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2022, NVIDIA CORPORATION
+# Copyright (c) 2020-2024, NVIDIA CORPORATION
 from typing import Dict, Tuple, TypeVar, Union
 
 import pandas as pd
@@ -303,7 +303,7 @@ class GeoDataFrame(cudf.DataFrame):
 
 class _GeoSeriesUtility:
     @classmethod
-    def _from_data(cls, new_data, name=None, index=False):
+    def _from_data(cls, new_data, name=None, index=None):
         new_column = new_data.columns[0]
         if is_geometry_type(new_column):
             return GeoSeries(new_column, name=name, index=index)
