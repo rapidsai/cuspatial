@@ -1,6 +1,8 @@
 #!/bin/bash
 # Copyright (c) 2023, NVIDIA CORPORATION.
 
+set -e -u -o pipefail
+
 MAGIC_OVERRIDE_CODE="
 def my_run_line_magic(*args, **kwargs):
     g=globals()

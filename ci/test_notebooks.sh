@@ -45,7 +45,7 @@ test_notebooks() {
             echo "--------------------------------------------------------------------------------"
         else
             nvidia-smi
-            ${NBTEST} ${nbBasename}
+            ${NBTEST} "${nb}"
         fi
     done
 }
