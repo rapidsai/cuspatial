@@ -22,6 +22,7 @@ dependencies:
 - cython>=3.0.0
 - doxygen
 - gcc_linux-64=11.*
+- geopandas<1
 - geopandas>=0.11.0
 - ipython
 - ipywidgets
@@ -35,6 +36,7 @@ dependencies:
 - notebook
 - numpy>=1.23,<2.0a0
 - numpydoc
+- osmnx>=1.9.3
 - pre-commit
 - proj
 - pydata-sphinx-theme!=0.14.2
