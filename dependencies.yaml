@@ -20,6 +20,7 @@ files:
       - rapids_build_skbuild
       - run_python_cuspatial
       - test_libcuspatial
+      - test_notebooks
       - test_python_cuspatial
       - test_python_cuproj
       - notebooks
@@ -345,6 +346,9 @@ dependencies:
       - output_types: [conda, requirements, pyproject]
         packages:
           - geopandas<1
+      - output_types: conda
+        packages:
+          - osmnx>=1.9.3
   py_version:
     specific:
       - output_types: conda

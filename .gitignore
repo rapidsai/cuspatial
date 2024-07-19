@@ -148,10 +148,13 @@ ENV/
 .mypy_cache/
 
 # notebook/example generated files
+docs/source/user_guide/cache/
+docs/source/user_guide/*.csv
 notebooks/taxi2016.csv
 notebooks/taxi2017.csv
 notebooks/tzones_lonlat.json
 notebooks/cu_taxi.zones.*
+*.parquet
 
 # clang tooling
 compile_commands.json

@@ -1,5 +1,7 @@
 #!/bin/bash
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
+
+set -e -u -o pipefail
 
 MAGIC_OVERRIDE_CODE="
 def my_run_line_magic(*args, **kwargs):
@@ -22,8 +24,7 @@ get_ipython().run_cell_magic=my_run_cell_magic
 "
 
 NO_COLORS=--colors=NoColor
-NBTMPDIR="$WORKSPACE/tmp"
-mkdir -p ${NBTMPDIR}
+NBTMPDIR="$(mktemp -d)"
 
 EXITCODE=0
 trap "EXITCODE=1" ERR
