@@ -147,8 +147,8 @@ dependencies:
         packages:
           - c-compiler
           - cxx-compiler
-          - libcudf==24.8.*
-          - librmm==24.8.*
+          - libcudf==24.8.*,>=0.0.0a0
+          - librmm==24.8.*,>=0.0.0a0
           - proj
           - sqlite
     specific:
@@ -504,5 +504,5 @@ dependencies:
       - output_types: conda
         packages:
           - libcuspatial==24.8.*
-          - cuspatial==24.8.*
-          - cuproj==24.8.*
+          - cuspatial==24.8.*,>=0.0.0a0
+          - cuproj==24.8.*,>=0.0.0a0
