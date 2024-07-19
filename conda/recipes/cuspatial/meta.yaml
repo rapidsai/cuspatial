@@ -51,6 +51,7 @@ requirements:
     - {{ compiler('cuda') }}
     {% endif %}
     - cuda-version ={{ cuda_version }}
+    - cmake {{ cmake_version }}
     - ninja
     - {{ stdlib("c") }}
   host:
@@ -58,7 +59,6 @@ requirements:
     - cuda-cudart-dev
     {% endif %}
     - cuda-version ={{ cuda_version }}
-    - cmake {{ cmake_version }}
     - cudf ={{ minor_version }}
     - cython >=3.0.0
     - libcuspatial ={{ version }}
