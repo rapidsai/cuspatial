@@ -398,7 +398,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - &rmm_conda rmm==24.8.*,>=0.0.0a0
+          - &rmm_unsuffixed rmm==24.8.*,>=0.0.0a0
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -413,27 +413,17 @@ dependencies:
             packages:
               - rmm-cu12==24.8.*,>=0.0.0a0
           - matrix:
-              cuda: "12.*"
-              cuda_suffixed: "false"
-            packages:
-              - *rmm_conda
-          - matrix:
               cuda: "11.*"
               cuda_suffixed: "true"
             packages:
               - rmm-cu11==24.8.*,>=0.0.0a0
-          - matrix:
-              cuda: "11.*"
-              cuda_suffixed: "false"
-            packages:
-              - *rmm_conda
-          - {matrix: null, packages: [*rmm_conda]}
+          - {matrix: null, packages: [*rmm_unsuffixed]}
 
   depends_on_cudf:
     common:
       - output_types: conda
         packages:
-          - &cudf_conda cudf==24.8.*,>=0.0.0a0
+          - &cudf_unsuffixed cudf==24.8.*,>=0.0.0a0
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -448,27 +438,17 @@ dependencies:
             packages:
               - cudf-cu12==24.8.*,>=0.0.0a0
           - matrix:
-              cuda: "12.*"
-              cuda_suffixed: "false"
-            packages:
-              - *cudf_conda
-          - matrix:
               cuda: "11.*"
               cuda_suffixed: "true"
             packages:
               - cudf-cu11==24.8.*,>=0.0.0a0
-          - matrix:
-              cuda: "11.*"
-              cuda_suffixed: "false"
-            packages:
-              - *cudf_conda
-          - {matrix: null, packages: [*cudf_conda]}
+          - {matrix: null, packages: [*cudf_unsuffixed]}
 
   depends_on_cuml:
     common:
       - output_types: conda
         packages:
-          - &cuml_conda cuml==24.8.*,>=0.0.0a0
+          - &cuml_unsuffixed cuml==24.8.*,>=0.0.0a0
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -483,27 +463,17 @@ dependencies:
             packages:
               - cuml-cu12==24.8.*,>=0.0.0a0
           - matrix:
-              cuda: "12.*"
-              cuda_suffixed: "false"
-            packages:
-              - *cuml_conda
-          - matrix:
               cuda: "11.*"
               cuda_suffixed: "true"
             packages:
               - cuml-cu11==24.8.*,>=0.0.0a0
-          - matrix:
-              cuda: "11.*"
-              cuda_suffixed: "false"
-            packages:
-              - *cuml_conda
-          - {matrix: null, packages: [*cuml_conda]}
+          - {matrix: null, packages: [*cuml_unsuffixed]}
 
   depends_on_cuspatial:
     common:
       - output_types: conda
         packages:
-          - &cuspatial_conda cuspatial==24.8.*,>=0.0.0a0
+          - &cuspatial_unsuffixed cuspatial==24.8.*,>=0.0.0a0
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -518,21 +488,11 @@ dependencies:
             packages:
               - cuspatial-cu12==24.8.*,>=0.0.0a0
           - matrix:
-              cuda: "12.*"
-              cuda_suffixed: "false"
-            packages:
-              - *cuspatial_conda
-          - matrix:
               cuda: "11.*"
               cuda_suffixed: "true"
             packages:
               - cuspatial-cu11==24.8.*,>=0.0.0a0
-          - matrix:
-              cuda: "11.*"
-              cuda_suffixed: "false"
-            packages:
-              - *cuspatial_conda
-          - {matrix: null, packages: [*cuspatial_conda]}
+          - {matrix: null, packages: [*cuspatial_unsuffixed]}
 
   depends_on_cupy:
     common:
