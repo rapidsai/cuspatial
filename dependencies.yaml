@@ -407,12 +407,26 @@ dependencies:
     specific:
       - output_types: [requirements, pyproject]
         matrices:
-          - matrix: {cuda: "12.*"}
+          - matrix:
+              cuda: "12.*"
+              cuda_suffixed: "true"
             packages:
               - rmm-cu12==24.8.*,>=0.0.0a0
-          - matrix: {cuda: "11.*"}
+          - matrix:
+              cuda: "12.*"
+              cuda_suffixed: "false"
+            packages:
+              - *rmm_conda
+          - matrix:
+              cuda: "11.*"
+              cuda_suffixed: "true"
             packages:
               - rmm-cu11==24.8.*,>=0.0.0a0
+          - matrix:
+              cuda: "11.*"
+              cuda_suffixed: "false"
+            packages:
+              - *rmm_conda
           - {matrix: null, packages: [*rmm_conda]}
 
   depends_on_cudf:
@@ -428,12 +442,26 @@ dependencies:
     specific:
       - output_types: [requirements, pyproject]
         matrices:
-          - matrix: {cuda: "12.*"}
+          - matrix:
+              cuda: "12.*"
+              cuda_suffixed: "true"
             packages:
               - cudf-cu12==24.8.*,>=0.0.0a0
-          - matrix: {cuda: "11.*"}
+          - matrix:
+              cuda: "12.*"
+              cuda_suffixed: "false"
+            packages:
+              - *cudf_conda
+          - matrix:
+              cuda: "11.*"
+              cuda_suffixed: "true"
             packages:
               - cudf-cu11==24.8.*,>=0.0.0a0
+          - matrix:
+              cuda: "11.*"
+              cuda_suffixed: "false"
+            packages:
+              - *cudf_conda
           - {matrix: null, packages: [*cudf_conda]}
 
   depends_on_cuml:
@@ -449,12 +477,26 @@ dependencies:
     specific:
       - output_types: [requirements, pyproject]
         matrices:
-          - matrix: {cuda: "12.*"}
+          - matrix:
+              cuda: "12.*"
+              cuda_suffixed: "true"
             packages:
               - cuml-cu12==24.8.*,>=0.0.0a0
-          - matrix: {cuda: "11.*"}
+          - matrix:
+              cuda: "12.*"
+              cuda_suffixed: "false"
+            packages:
+              - *cuml_conda
+          - matrix:
+              cuda: "11.*"
+              cuda_suffixed: "true"
             packages:
               - cuml-cu11==24.8.*,>=0.0.0a0
+          - matrix:
+              cuda: "11.*"
+              cuda_suffixed: "false"
+            packages:
+              - *cuml_conda
           - {matrix: null, packages: [*cuml_conda]}
 
   depends_on_cuspatial:
@@ -470,12 +512,26 @@ dependencies:
     specific:
       - output_types: [requirements, pyproject]
         matrices:
-          - matrix: {cuda: "12.*"}
+          - matrix:
+              cuda: "12.*"
+              cuda_suffixed: "false"
             packages:
               - cuspatial-cu12==24.8.*,>=0.0.0a0
-          - matrix: {cuda: "11.*"}
+          - matrix:
+              cuda: "12.*"
+              cuda_suffixed: "true"
+            packages:
+              - *cuspatial_conda
+          - matrix:
+              cuda: "11.*"
+              cuda_suffixed: "false"
             packages:
               - cuspatial-cu11==24.8.*,>=0.0.0a0
+          - matrix:
+              cuda: "11.*"
+              cuda_suffixed: "true"
+            packages:
+              - *cuspatial_conda
           - {matrix: null, packages: [*cuspatial_conda]}
 
   depends_on_cupy:
@@ -483,6 +539,8 @@ dependencies:
       - output_types: conda
         packages:
           - cupy>=12.0.0
+    # NOTE: cupy dependency is not broken into groups by a 'cuda_suffixed' selector like
+    #       other packages in this file because DLFW builds expect it to have a -cuda{nn}x suffix
     specific:
       - output_types: [requirements, pyproject]
         matrices:

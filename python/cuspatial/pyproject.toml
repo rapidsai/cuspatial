@@ -128,6 +128,7 @@ filterwarnings = [
 [tool.rapids-build-backend]
 build-backend = "scikit_build_core.build"
 dependencies-file = "../../dependencies.yaml"
+matrix-entry = "cuda-suffixed=true"
 requires = [
     "cmake>=3.26.4,!=3.30.0",
     "cudf==24.8.*,>=0.0.0a0",
