@@ -8,8 +8,7 @@ from geopandas import GeoDataFrame as gpGeoDataFrame
 from geopandas.geoseries import is_geometry_type as gp_is_geometry_type
 
 import cudf
-import cudf.core.column
-from cudf.core.column import as_column
+from cudf.core.column import ColumnBase, as_column
 from cudf.core.copy_types import BooleanMask, GatherMap
 
 from cuspatial.core._column.geocolumn import GeoColumn, GeoMeta
@@ -162,7 +161,7 @@ class GeoDataFrame(cudf.DataFrame):
 
     def _recombine_columns(
         self, geo_columns, data_columns
-    ) -> dict[Any, cudf.core.column.ColumnBase]:
+    ) -> dict[Any, ColumnBase]:
         """
         Combine a GeoDataFrame of only geometry columns with a DataFrame
         of non-geometry columns in the same order as the columns in `self`
