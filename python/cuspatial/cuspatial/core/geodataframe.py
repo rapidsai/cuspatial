@@ -1,11 +1,15 @@
 # Copyright (c) 2020-2024, NVIDIA CORPORATION
-from typing import Dict, Tuple, TypeVar, Union
+from __future__ import annotations
+
+from typing import Any, Dict, TypeVar, Union
 
 import pandas as pd
 from geopandas import GeoDataFrame as gpGeoDataFrame
 from geopandas.geoseries import is_geometry_type as gp_is_geometry_type
 
 import cudf
+import cudf.core.column
+from cudf.core.column import as_column
 from cudf.core.copy_types import BooleanMask, GatherMap
 
 from cuspatial.core._column.geocolumn import GeoColumn, GeoMeta
@@ -41,7 +45,7 @@ class GeoDataFrame(cudf.DataFrame):
                     column = GeoColumn(adapter._get_geotuple(), pandas_meta)
                     self._data[col] = column
                 else:
-                    self._data[col] = data[col]
+                    self._data[col] = as_column(data[col])
         elif isinstance(data, dict):
             for key in data.keys():
                 try:
@@ -137,7 +141,9 @@ class GeoDataFrame(cudf.DataFrame):
 
         return type_copied
 
-    def _split_out_geometry_columns(self) -> Tuple:
+    def _split_out_geometry_columns(
+        self,
+    ) -> tuple[GeoDataFrame, cudf.DataFrame]:
         """
         Break the geometry columns and non-geometry columns into
         separate dataframes and return them separated.
@@ -154,7 +160,9 @@ class GeoDataFrame(cudf.DataFrame):
         )
         return (geo_columns, data_columns)
 
-    def _recombine_columns(self, geo_columns, data_columns):
+    def _recombine_columns(
+        self, geo_columns, data_columns
+    ) -> dict[Any, cudf.core.column.ColumnBase]:
         """
         Combine a GeoDataFrame of only geometry columns with a DataFrame
         of non-geometry columns in the same order as the columns in `self`
@@ -164,7 +172,11 @@ class GeoDataFrame(cudf.DataFrame):
             [isinstance(self[col], GeoSeries) for col in self.columns]
         )
         return {
-            name: (geo_columns[name] if mask else data_columns[name])
+            name: (
+                as_column(geo_columns[name])
+                if mask
+                else as_column(data_columns[name])
+            )
             for name, mask in zip(columns_mask.values, geocolumn_mask.values)
         }
 
@@ -196,9 +208,9 @@ class GeoDataFrame(cudf.DataFrame):
         return res
 
     def _gather(self, gather_map: GatherMap, keep_index=True):
-        geo_data, cudf_data = self._split_out_geometry_columns()
+        geo_data, df = self._split_out_geometry_columns()
         # gather cudf columns
-        df = cudf.DataFrame._from_data(data=cudf_data, index=self.index)
+        df.index = self.index
 
         cudf_gathered = df._gather(gather_map, keep_index=keep_index)
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2022-2023, NVIDIA CORPORATION.
+# Copyright (c) 2022-2024, NVIDIA CORPORATION.
 
 import warnings
 
@@ -87,7 +87,7 @@ def point_in_polygon(points: GeoSeries, polygons: GeoSeries):
     )
 
     result.columns = polygons.index[::-1]
-    return DataFrame._from_data(
+    return DataFrame(
         {
             name: result[name].astype("bool")
             for name in reversed(result.columns)

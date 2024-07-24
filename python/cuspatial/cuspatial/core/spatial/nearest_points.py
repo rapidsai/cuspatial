@@ -1,6 +1,5 @@
-import cupy as cp
+# Copyright (c) 2024, NVIDIA CORPORATION.
 
-import cudf
 from cudf.core.column import as_column
 
 import cuspatial._lib.nearest_points as nearest_points
@@ -52,10 +51,10 @@ def pairwise_point_linestring_nearest_points(
 
     if len(points) == 0:
         data = {
-            "point_geometry_id": cudf.Series([], dtype="i4"),
-            "linestring_geometry_id": cudf.Series([], dtype="i4"),
-            "segment_id": cudf.Series([], dtype="i4"),
-            "geometry": GeoSeries([]),
+            "point_geometry_id": as_column([], dtype="i4"),
+            "linestring_geometry_id": as_column([], dtype="i4"),
+            "segment_id": as_column([], dtype="i4"),
+            "geometry": GeoColumn([]),
         }
         return GeoDataFrame._from_data(data)
 
@@ -97,11 +96,12 @@ def pairwise_point_linestring_nearest_points(
         as_column(linestrings.lines.geometry_offset),
     )
 
-    point_on_linestring = GeoColumn._from_points_xy(point_on_linestring_xy)
-    nearest_points_on_linestring = GeoSeries(point_on_linestring)
+    nearest_points_on_linestring = GeoColumn._from_points_xy(
+        point_on_linestring_xy
+    )
 
     if not point_geometry_id:
-        point_geometry_id = cp.zeros(len(points), dtype=cp.int32)
+        point_geometry_id = as_column(0, length=len(points), dtype="int32")
 
     data = {
         "point_geometry_id": point_geometry_id,
