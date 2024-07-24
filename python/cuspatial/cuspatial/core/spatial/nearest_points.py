@@ -1,5 +1,6 @@
 # Copyright (c) 2024, NVIDIA CORPORATION.
 
+import cudf
 from cudf.core.column import as_column
 
 import cuspatial._lib.nearest_points as nearest_points
@@ -51,12 +52,12 @@ def pairwise_point_linestring_nearest_points(
 
     if len(points) == 0:
         data = {
-            "point_geometry_id": as_column([], dtype="i4"),
-            "linestring_geometry_id": as_column([], dtype="i4"),
-            "segment_id": as_column([], dtype="i4"),
-            "geometry": GeoColumn([]),
+            "point_geometry_id": cudf.Series([], dtype="i4"),
+            "linestring_geometry_id": cudf.Series([], dtype="i4"),
+            "segment_id": cudf.Series([], dtype="i4"),
+            "geometry": GeoSeries([]),
         }
-        return GeoDataFrame._from_data(data)
+        return GeoDataFrame(data)
 
     if not contains_only_points(points):
         raise ValueError("`points` must contain only point geometries.")

@@ -8,7 +8,7 @@ from geopandas import GeoDataFrame as gpGeoDataFrame
 from geopandas.geoseries import is_geometry_type as gp_is_geometry_type
 
 import cudf
-from cudf.core.column import ColumnBase, as_column
+from cudf.core.column import as_column
 from cudf.core.copy_types import BooleanMask, GatherMap
 
 from cuspatial.core._column.geocolumn import GeoColumn, GeoMeta
@@ -160,23 +160,19 @@ class GeoDataFrame(cudf.DataFrame):
         return (geo_columns, data_columns)
 
     def _recombine_columns(
-        self, geo_columns, data_columns
-    ) -> dict[Any, ColumnBase]:
+        self, geo_columns: GeoDataFrame, data_columns: cudf.DataFrame
+    ) -> dict[Any, GeoSeries | cudf.Series]:
         """
         Combine a GeoDataFrame of only geometry columns with a DataFrame
         of non-geometry columns in the same order as the columns in `self`
         """
-        columns_mask = pd.Series(self.columns)
-        geocolumn_mask = pd.Series(
-            [isinstance(self[col], GeoSeries) for col in self.columns]
+        columns_mask = self.columns
+        geocolumn_mask = (
+            isinstance(self[col], GeoSeries) for col in columns_mask
         )
         return {
-            name: (
-                as_column(geo_columns[name])
-                if mask
-                else as_column(data_columns[name])
-            )
-            for name, mask in zip(columns_mask.values, geocolumn_mask.values)
+            name: (geo_columns[name] if mask else data_columns[name])
+            for name, mask in zip(columns_mask, geocolumn_mask)
         }
 
     def _slice(self: T, arg: slice) -> T:
@@ -201,7 +197,7 @@ class GeoDataFrame(cudf.DataFrame):
             {name: geo_columns[name][mask.column] for name in geo_columns}
         )
 
-        res = self.__class__._from_data(self._recombine_columns(geo, data))
+        res = self.__class__(self._recombine_columns(geo, data))
         if keep_index:
             res.index = data.index
         return res
@@ -221,7 +217,7 @@ class GeoDataFrame(cudf.DataFrame):
         geo_gathered = GeoDataFrame(gathered)
 
         # combine
-        result = GeoDataFrame._from_data(
+        result = GeoDataFrame(
             self._recombine_columns(geo_gathered, cudf_gathered)
         )
         result.index = geo_gathered.index
@@ -305,7 +301,7 @@ class GeoDataFrame(cudf.DataFrame):
             # Reset the index of the GeoDataFrame to match the
             # cudf DataFrame and recombine.
             geo_data.index = cudf_reindexed.index
-            result = GeoDataFrame._from_data(
+            result = GeoDataFrame(
                 recombiner._recombine_columns(geo_data, cudf_reindexed)
             )
             result.index = geo_data.index
