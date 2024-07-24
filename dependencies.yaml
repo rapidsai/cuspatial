@@ -514,22 +514,22 @@ dependencies:
         matrices:
           - matrix:
               cuda: "12.*"
-              cuda_suffixed: "false"
+              cuda_suffixed: "true"
             packages:
               - cuspatial-cu12==24.8.*,>=0.0.0a0
           - matrix:
               cuda: "12.*"
-              cuda_suffixed: "true"
+              cuda_suffixed: "false"
             packages:
               - *cuspatial_conda
           - matrix:
               cuda: "11.*"
-              cuda_suffixed: "false"
+              cuda_suffixed: "true"
             packages:
               - cuspatial-cu11==24.8.*,>=0.0.0a0
           - matrix:
               cuda: "11.*"
-              cuda_suffixed: "true"
+              cuda_suffixed: "false"
             packages:
               - *cuspatial_conda
           - {matrix: null, packages: [*cuspatial_conda]}
