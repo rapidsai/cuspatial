@@ -1,4 +1,4 @@
-# Copyright (c) 2022-2023, NVIDIA CORPORATION.
+# Copyright (c) 2022-2024, NVIDIA CORPORATION.
 
 from math import ceil, sqrt
 
@@ -110,7 +110,7 @@ def _brute_force_contains_properly(points, polygons):
             width=len(polygons.polygons.part_offset) - 1,
         )
     )
-    final_result = DataFrame._from_data(
+    final_result = DataFrame(
         {
             name: result[name].astype("bool")
             for name in reversed(result.columns)
