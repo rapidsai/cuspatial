@@ -398,7 +398,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - &rmm_conda rmm==24.10.*,>=0.0.0a0
+          - &rmm_unsuffixed rmm==24.10.*,>=0.0.0a0
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -407,19 +407,23 @@ dependencies:
     specific:
       - output_types: [requirements, pyproject]
         matrices:
-          - matrix: {cuda: "12.*"}
+          - matrix:
+              cuda: "12.*"
+              cuda_suffixed: "true"
             packages:
               - rmm-cu12==24.10.*,>=0.0.0a0
-          - matrix: {cuda: "11.*"}
+          - matrix:
+              cuda: "11.*"
+              cuda_suffixed: "true"
             packages:
               - rmm-cu11==24.10.*,>=0.0.0a0
-          - {matrix: null, packages: [*rmm_conda]}
+          - {matrix: null, packages: [*rmm_unsuffixed]}
 
   depends_on_cudf:
     common:
       - output_types: conda
         packages:
-          - &cudf_conda cudf==24.10.*,>=0.0.0a0
+          - &cudf_unsuffixed cudf==24.10.*,>=0.0.0a0
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -428,19 +432,23 @@ dependencies:
     specific:
       - output_types: [requirements, pyproject]
         matrices:
-          - matrix: {cuda: "12.*"}
+          - matrix:
+              cuda: "12.*"
+              cuda_suffixed: "true"
             packages:
               - cudf-cu12==24.10.*,>=0.0.0a0
-          - matrix: {cuda: "11.*"}
+          - matrix:
+              cuda: "11.*"
+              cuda_suffixed: "true"
             packages:
               - cudf-cu11==24.10.*,>=0.0.0a0
-          - {matrix: null, packages: [*cudf_conda]}
+          - {matrix: null, packages: [*cudf_unsuffixed]}
 
   depends_on_cuml:
     common:
       - output_types: conda
         packages:
-          - &cuml_conda cuml==24.10.*,>=0.0.0a0
+          - &cuml_unsuffixed cuml==24.10.*,>=0.0.0a0
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -449,19 +457,23 @@ dependencies:
     specific:
       - output_types: [requirements, pyproject]
         matrices:
-          - matrix: {cuda: "12.*"}
+          - matrix:
+              cuda: "12.*"
+              cuda_suffixed: "true"
             packages:
               - cuml-cu12==24.10.*,>=0.0.0a0
-          - matrix: {cuda: "11.*"}
+          - matrix:
+              cuda: "11.*"
+              cuda_suffixed: "true"
             packages:
               - cuml-cu11==24.10.*,>=0.0.0a0
-          - {matrix: null, packages: [*cuml_conda]}
+          - {matrix: null, packages: [*cuml_unsuffixed]}
 
   depends_on_cuspatial:
     common:
       - output_types: conda
         packages:
-          - &cuspatial_conda cuspatial==24.10.*,>=0.0.0a0
+          - &cuspatial_unsuffixed cuspatial==24.10.*,>=0.0.0a0
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -470,19 +482,25 @@ dependencies:
     specific:
       - output_types: [requirements, pyproject]
         matrices:
-          - matrix: {cuda: "12.*"}
+          - matrix:
+              cuda: "12.*"
+              cuda_suffixed: "true"
             packages:
               - cuspatial-cu12==24.10.*,>=0.0.0a0
-          - matrix: {cuda: "11.*"}
+          - matrix:
+              cuda: "11.*"
+              cuda_suffixed: "true"
             packages:
               - cuspatial-cu11==24.10.*,>=0.0.0a0
-          - {matrix: null, packages: [*cuspatial_conda]}
+          - {matrix: null, packages: [*cuspatial_unsuffixed]}
 
   depends_on_cupy:
     common:
       - output_types: conda
         packages:
           - cupy>=12.0.0
+    # NOTE: cupy dependency is not broken into groups by a 'cuda_suffixed' selector like
+    #       other packages in this file because DLFW builds expect it to have a -cuda{nn}x suffix
     specific:
       - output_types: [requirements, pyproject]
         matrices:
