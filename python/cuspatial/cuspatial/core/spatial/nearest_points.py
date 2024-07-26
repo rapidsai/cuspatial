@@ -1,4 +1,4 @@
-import cupy as cp
+# Copyright (c) 2024, NVIDIA CORPORATION.
 
 import cudf
 from cudf.core.column import as_column
@@ -57,7 +57,7 @@ def pairwise_point_linestring_nearest_points(
             "segment_id": cudf.Series([], dtype="i4"),
             "geometry": GeoSeries([]),
         }
-        return GeoDataFrame._from_data(data)
+        return GeoDataFrame(data)
 
     if not contains_only_points(points):
         raise ValueError("`points` must contain only point geometries.")
@@ -97,11 +97,12 @@ def pairwise_point_linestring_nearest_points(
         as_column(linestrings.lines.geometry_offset),
     )
 
-    point_on_linestring = GeoColumn._from_points_xy(point_on_linestring_xy)
-    nearest_points_on_linestring = GeoSeries(point_on_linestring)
+    nearest_points_on_linestring = GeoColumn._from_points_xy(
+        point_on_linestring_xy
+    )
 
     if not point_geometry_id:
-        point_geometry_id = cp.zeros(len(points), dtype=cp.int32)
+        point_geometry_id = as_column(0, length=len(points), dtype="int32")
 
     data = {
         "point_geometry_id": point_geometry_id,

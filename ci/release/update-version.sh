@@ -63,9 +63,6 @@ for DEP in "${DEPENDENCIES[@]}"; do
   sed_runner "s/${DEP}\(-cu[[:digit:]]\{2\}\)\{0,1\}==.*\",/${DEP}==${NEXT_SHORT_TAG_PEP440}.*,>=0.0.0a0\",/g" python/cuproj/pyproject.toml
 done
 
-# Dependency versions in dependencies.yaml
-sed_runner "/-cu[0-9]\{2\}==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}.*/g" dependencies.yaml
-
 # Version in cuspatial_api_examples.ipynb
 sed_runner "s/rapids-[0-9]*\.[0-9]*/rapids-${NEXT_SHORT_TAG}/g" docs/source/user_guide/cuspatial_api_examples.ipynb
 sed_runner "s/cuproj=[0-9]*\.[0-9]*/cuproj=${NEXT_SHORT_TAG}/g" docs/source/user_guide/cuspatial_api_examples.ipynb
