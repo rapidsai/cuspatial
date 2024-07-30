@@ -1,9 +1,9 @@
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 
 import operator
 
-from numba import cuda
 import cupy as cp
+from numba import cuda
 
 import rmm
 from cudf.core.buffer import acquire_spill_lock
