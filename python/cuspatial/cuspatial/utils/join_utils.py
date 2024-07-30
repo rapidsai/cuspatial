@@ -3,6 +3,7 @@
 import operator
 
 from numba import cuda
+import cupy as cp
 
 import rmm
 from cudf.core.buffer import acquire_spill_lock
@@ -31,7 +32,7 @@ def apply_binarize(in_col, width):
     if out.size > 0:
         out[:] = 0
         binarize.forall(out.size)(in_col, out, width)
-    return out
+    return cp.asarray(out)
 
 
 def pip_bitmap_column_to_binary_array(polygon_bitmap_column, width):
