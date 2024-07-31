@@ -1,7 +1,8 @@
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 
 import operator
 
+import cupy as cp
 from numba import cuda
 
 import rmm
@@ -27,7 +28,7 @@ def binarize(in_col, out, width):
 
 def apply_binarize(in_col, width):
     buf = rmm.DeviceBuffer(size=(in_col.size * width))
-    out = cuda.as_cuda_array(buf).view("int8").reshape((in_col.size, width))
+    out = cp.asarray(buf).view("int8").reshape((in_col.size, width))
     if out.size > 0:
         out[:] = 0
         binarize.forall(out.size)(in_col, out, width)
