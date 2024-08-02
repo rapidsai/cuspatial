@@ -193,7 +193,8 @@ class GeoDataFrame(cudf.DataFrame):
         )
         sliced_data_columns = data_columns._slice(arg)
         return self._from_data(
-            self._recombine_columns(sliced_geo_columns, sliced_data_columns)
+            self._recombine_columns(sliced_geo_columns, sliced_data_columns),
+            index=sliced_data_columns.index,
         )
 
     def _apply_boolean_mask(self, mask: BooleanMask, keep_index=True) -> T:
@@ -275,7 +276,7 @@ class GeoDataFrame(cudf.DataFrame):
         if not drop:
             if not isinstance(cudf_data.index, cudf.MultiIndex):
                 recombiner.insert(
-                    loc=0, name="index", value=cudf_reindexed["index"]
+                    loc=0, column="index", value=cudf_reindexed["index"]
                 )
             # If the index is a MultiIndex, we need to insert the
             # individual levels into the GeoDataFrame.
@@ -293,7 +294,7 @@ class GeoDataFrame(cudf.DataFrame):
                 for n, name in enumerate(levels):
                     recombiner.insert(
                         loc=n,
-                        name=name,
+                        column=name,
                         value=cudf_reindexed[name].reset_index(drop=True),
                     )
                 recombiner.index = cudf_reindexed.index
@@ -305,6 +306,7 @@ class GeoDataFrame(cudf.DataFrame):
         else:
             # Reset the index of the GeoDataFrame to match the
             # cudf DataFrame and recombine.
+            geo_data.index = cudf_reindexed.index
             return GeoDataFrame._from_data(
                 recombiner._recombine_columns(geo_data, cudf_reindexed),
                 index=cudf_reindexed.index,
