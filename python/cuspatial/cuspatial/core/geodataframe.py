@@ -288,7 +288,7 @@ class GeoDataFrame(cudf.DataFrame):
                 for n, name in enumerate(levels):
                     recombiner.insert(
                         loc=n,
-                        name=name,
+                        column=name,
                         value=cudf_reindexed[name].reset_index(drop=True),
                     )
                 recombiner.index = cudf_reindexed.index
