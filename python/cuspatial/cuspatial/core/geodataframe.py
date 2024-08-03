@@ -8,7 +8,6 @@ from geopandas import GeoDataFrame as gpGeoDataFrame
 from geopandas.geoseries import is_geometry_type as gp_is_geometry_type
 
 import cudf
-import cudf.core.column
 from cudf.core.column import as_column
 from cudf.core.copy_types import BooleanMask, GatherMap
 
