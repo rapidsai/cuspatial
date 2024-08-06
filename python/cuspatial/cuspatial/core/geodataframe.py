@@ -222,6 +222,8 @@ class GeoDataFrame(cudf.DataFrame):
             for geo in geo_data.keys()
         }
         geo_gathered = GeoDataFrame(gathered)
+        # _gather may have discarded the index, so re-add
+        cudf_gathered.index = geo_gathered.index
 
         # combine
         return GeoDataFrame._from_data(
