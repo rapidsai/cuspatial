@@ -87,14 +87,14 @@ class GeoSeries(cudf.Series):
             data = gpGeoSeries(data)
         # Create column
         if isinstance(data, GeoSeries):
-            column = data
+            gser = type(self)._from_column(data._column, name=data.name)
         elif isinstance(data, gpGeoSeries):
             from cuspatial.io.geopandas_reader import GeoPandasReader
 
             adapter = GeoPandasReader(data)
             pandas_meta = GeoMeta(adapter.get_geopandas_meta())
             geocolumn = GeoColumn(adapter._get_geotuple(), pandas_meta)
-            column = type(self)._from_column(geocolumn)
+            gser = type(self)._from_column(geocolumn, name=data.name)
         else:
             raise TypeError(
                 f"Incompatible object passed to GeoSeries ctor {type(data)}"
@@ -102,12 +102,12 @@ class GeoSeries(cudf.Series):
         # Condition index
         if isinstance(data, (gpGeoSeries, GeoSeries)):
             if index is None:
-                index = data.index
+                gser.index = data.index
         if index is None:
-            index = cudf.RangeIndex(0, len(column))
-        super().__init__(
-            column, index, dtype=dtype, name=name, nan_as_null=nan_as_null
-        )
+            gser.index = cudf.RangeIndex(len(gser))
+        if name is not None:
+            gser.name = name
+        super().__init__(gser, dtype=dtype, nan_as_null=nan_as_null)
 
     @property
     def feature_types(self):
@@ -434,9 +434,11 @@ class GeoSeries(cudf.Series):
             )
 
             if isinstance(indexes, Integral):
-                return GeoSeries(column, name=self._sr.name).to_shapely()
+                return GeoSeries._from_column(
+                    column, name=self._sr.name
+                ).to_shapely()
             else:
-                return GeoSeries(
+                return GeoSeries._from_column(
                     column, index=self._sr.index[indexes], name=self._sr.name
                 )
 
@@ -453,7 +455,7 @@ class GeoSeries(cudf.Series):
                 "union_offsets": union.offsets,
             },
         )
-        return GeoSeries(column)
+        return GeoSeries._from_column(column)
 
     @property
     def loc(self):
@@ -680,7 +682,7 @@ class GeoSeries(cudf.Series):
                 "union_offsets": aligned_union_offsets,
             },
         )
-        return GeoSeries(column)
+        return GeoSeries._from_column(column)
 
     @classmethod
     def from_points_xy(cls, points_xy):
@@ -699,7 +701,7 @@ class GeoSeries(cudf.Series):
         """
         coords_dtype = _check_coords_dtype(points_xy)
 
-        return cls(
+        return cls._from_column(
             GeoColumn._from_points_xy(as_column(points_xy, dtype=coords_dtype))
         )
 
@@ -734,7 +736,7 @@ class GeoSeries(cudf.Series):
         dtype: geometry
         """
         coords_dtype = coords_dtype = _check_coords_dtype(multipoints_xy)
-        return cls(
+        return cls._from_column(
             GeoColumn._from_multipoints_xy(
                 as_column(multipoints_xy, dtype=coords_dtype),
                 as_column(geometry_offset, dtype="int32"),
@@ -780,7 +782,7 @@ class GeoSeries(cudf.Series):
         dtype: geometry
         """
         coords_dtype = _check_coords_dtype(linestrings_xy)
-        return cls(
+        return cls._from_column(
             GeoColumn._from_linestrings_xy(
                 as_column(linestrings_xy, dtype=coords_dtype),
                 as_column(part_offset, dtype="int32"),
@@ -830,7 +832,7 @@ class GeoSeries(cudf.Series):
         dtype: geometry
         """
         coords_dtype = _check_coords_dtype(polygons_xy)
-        return cls(
+        return cls._from_column(
             GeoColumn._from_polygons_xy(
                 as_column(polygons_xy, dtype=coords_dtype),
                 as_column(ring_offset, dtype="int32"),

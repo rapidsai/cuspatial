@@ -1,10 +1,10 @@
-# Copyright (c) 2021-2022 NVIDIA CORPORATION
+# Copyright (c) 2021-2024, NVIDIA CORPORATION
 
 # This allows GeoMeta as its own init type
 from __future__ import annotations
 
 from enum import Enum
-from typing import Union
+from typing import Literal, Union
 
 import cudf
 
@@ -26,12 +26,23 @@ class GeoMeta:
     GeoSeries if necessary.
     """
 
-    def __init__(self, meta: Union[GeoMeta, dict]):
+    def __init__(
+        self,
+        meta: Union[
+            GeoMeta,
+            dict[
+                Literal["input_types", "union_offsets"],
+                cudf.core.column.ColumnBase,
+            ],
+        ],
+    ):
         if isinstance(meta, dict):
-            self.input_types = cudf.Series(meta["input_types"], dtype="int8")
-            self.union_offsets = cudf.Series(
-                meta["union_offsets"], dtype="int32"
-            )
+            self.input_types = cudf.Series._from_column(
+                meta["input_types"]
+            ).astype("int8")
+            self.union_offsets = cudf.Series._from_column(
+                meta["union_offsets"]
+            ).astype("int32")
         else:
             self.input_types = cudf.Series(meta.input_types, dtype="int8")
             self.union_offsets = cudf.Series(meta.union_offsets, dtype="int32")

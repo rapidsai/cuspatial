@@ -109,7 +109,7 @@ def pairwise_linestring_intersection(
     )
     from cuspatial.core.geoseries import GeoSeries
 
-    geometries = GeoSeries(
+    geometries = GeoSeries._from_column(
         GeoColumn(
             (
                 cudf.Series._from_column(points),
