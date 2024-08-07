@@ -7,6 +7,7 @@ from enum import Enum
 from typing import Literal, Union
 
 import cudf
+import cudf.core.column
 
 
 # This causes arrow to encode NONE as =255, which I'll accept now
@@ -37,12 +38,22 @@ class GeoMeta:
         ],
     ):
         if isinstance(meta, dict):
-            self.input_types = cudf.Series._from_column(
-                meta["input_types"]
-            ).astype("int8")
-            self.union_offsets = cudf.Series._from_column(
-                meta["union_offsets"]
-            ).astype("int32")
+            meta_it = meta["input_types"]
+            if isinstance(meta_it, cudf.core.column.ColumnBase):
+                self.input_types = cudf.Series._from_column(meta_it).astype(
+                    "int8"
+                )
+            else:
+                # Could be Series from GeoSeries.__getitem__
+                self.input_types = cudf.Series(meta_it, dtype="int8")
+            meta_uo = meta["union_offsets"]
+            if isinstance(meta_uo, cudf.core.column.ColumnBase):
+                self.union_offsets = cudf.Series._from_column(meta_uo).astype(
+                    "int8"
+                )
+            else:
+                # Could be Series from GeoSeries.__getitem__
+                self.union_offsets = cudf.Series(meta_uo, dtype="int8")
         else:
             self.input_types = cudf.Series(meta.input_types, dtype="int8")
             self.union_offsets = cudf.Series(meta.union_offsets, dtype="int32")

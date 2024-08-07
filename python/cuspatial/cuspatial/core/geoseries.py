@@ -87,24 +87,25 @@ class GeoSeries(cudf.Series):
             data = gpGeoSeries(data)
         # Create column
         if isinstance(data, GeoSeries):
-            gser = type(self)._from_column(data._column, name=data.name)
+            gser = type(self)._from_column(
+                data._column, index=data.index, name=data.name
+            )
         elif isinstance(data, gpGeoSeries):
             from cuspatial.io.geopandas_reader import GeoPandasReader
 
             adapter = GeoPandasReader(data)
             pandas_meta = GeoMeta(adapter.get_geopandas_meta())
             geocolumn = GeoColumn(adapter._get_geotuple(), pandas_meta)
-            gser = type(self)._from_column(geocolumn, name=data.name)
+            gser = type(self)._from_column(
+                geocolumn, index=cudf.Index(data.index), name=data.name
+            )
         else:
             raise TypeError(
                 f"Incompatible object passed to GeoSeries ctor {type(data)}"
             )
         # Condition index
-        if isinstance(data, (gpGeoSeries, GeoSeries)):
-            if index is None:
-                gser.index = data.index
-        if index is None:
-            gser.index = cudf.RangeIndex(len(gser))
+        if index is not None:
+            gser.index = cudf.Index(index)
         if name is not None:
             gser.name = name
         super().__init__(gser, dtype=dtype, nan_as_null=nan_as_null)
@@ -637,7 +638,7 @@ class GeoSeries(cudf.Series):
 
         return pa.UnionArray.from_dense(
             self._column._meta.input_types.to_arrow(),
-            self._column._meta.union_offsets.to_arrow(),
+            self._column._meta.union_offsets.astype("int32").to_arrow(),
             [
                 arrow_points,
                 arrow_mpoints,
