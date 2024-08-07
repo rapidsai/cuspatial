@@ -77,7 +77,7 @@ class GeoSeries(cudf.Series):
         data: Optional[
             Union[gpd.GeoSeries, Tuple, T, pd.Series, GeoColumn, list]
         ],
-        index: Union[cudf.Index, pd.Index] = None,
+        index: Union[cudf.Index, pd.Index, None] = None,
         dtype=None,
         name=None,
         nan_as_null=True,
@@ -86,16 +86,15 @@ class GeoSeries(cudf.Series):
         if data is None or isinstance(data, (pd.Series, list)):
             data = gpGeoSeries(data)
         # Create column
-        if isinstance(data, GeoColumn):
+        if isinstance(data, GeoSeries):
             column = data
-        elif isinstance(data, GeoSeries):
-            column = data._column
         elif isinstance(data, gpGeoSeries):
             from cuspatial.io.geopandas_reader import GeoPandasReader
 
             adapter = GeoPandasReader(data)
             pandas_meta = GeoMeta(adapter.get_geopandas_meta())
-            column = GeoColumn(adapter._get_geotuple(), pandas_meta)
+            geocolumn = GeoColumn(adapter._get_geotuple(), pandas_meta)
+            column = type(self)._from_column(geocolumn)
         else:
             raise TypeError(
                 f"Incompatible object passed to GeoSeries ctor {type(data)}"

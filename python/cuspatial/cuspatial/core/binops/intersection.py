@@ -1,4 +1,4 @@
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 
 from typing import TYPE_CHECKING
 
@@ -112,12 +112,12 @@ def pairwise_linestring_intersection(
     geometries = GeoSeries(
         GeoColumn(
             (
-                cudf.Series(points),
-                cudf.Series(
+                cudf.Series._from_column(points),
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.MULTIPOINT, coord_dtype)
                 ),
-                cudf.Series(linestring_column),
-                cudf.Series(
+                cudf.Series._from_column(linestring_column),
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.POLYGON, coord_dtype)
                 ),
             ),
