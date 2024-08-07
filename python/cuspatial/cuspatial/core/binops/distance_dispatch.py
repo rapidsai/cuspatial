@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024, NVIDIA CORPORATION
+# Copyright (c) 2024, NVIDIA CORPORATION
 
 import cudf
 from cudf.core.column import as_column
