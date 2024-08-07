@@ -147,8 +147,8 @@ dependencies:
         packages:
           - c-compiler
           - cxx-compiler
-          - libcudf==24.8.*,>=0.0.0a0
-          - librmm==24.8.*,>=0.0.0a0
+          - libcudf==24.10.*,>=0.0.0a0
+          - librmm==24.10.*,>=0.0.0a0
           - proj
           - sqlite
     specific:
@@ -190,7 +190,7 @@ dependencies:
         packages:
           - c-compiler
           - cxx-compiler
-          - librmm==24.8.*,>=0.0.0a0
+          - librmm==24.10.*,>=0.0.0a0
           - proj
           - sqlite
     specific:
@@ -398,7 +398,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - &rmm_unsuffixed rmm==24.8.*,>=0.0.0a0
+          - &rmm_unsuffixed rmm==24.10.*,>=0.0.0a0
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -411,19 +411,19 @@ dependencies:
               cuda: "12.*"
               cuda_suffixed: "true"
             packages:
-              - rmm-cu12==24.8.*,>=0.0.0a0
+              - rmm-cu12==24.10.*,>=0.0.0a0
           - matrix:
               cuda: "11.*"
               cuda_suffixed: "true"
             packages:
-              - rmm-cu11==24.8.*,>=0.0.0a0
+              - rmm-cu11==24.10.*,>=0.0.0a0
           - {matrix: null, packages: [*rmm_unsuffixed]}
 
   depends_on_cudf:
     common:
       - output_types: conda
         packages:
-          - &cudf_unsuffixed cudf==24.8.*,>=0.0.0a0
+          - &cudf_unsuffixed cudf==24.10.*,>=0.0.0a0
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -436,19 +436,19 @@ dependencies:
               cuda: "12.*"
               cuda_suffixed: "true"
             packages:
-              - cudf-cu12==24.8.*,>=0.0.0a0
+              - cudf-cu12==24.10.*,>=0.0.0a0
           - matrix:
               cuda: "11.*"
               cuda_suffixed: "true"
             packages:
-              - cudf-cu11==24.8.*,>=0.0.0a0
+              - cudf-cu11==24.10.*,>=0.0.0a0
           - {matrix: null, packages: [*cudf_unsuffixed]}
 
   depends_on_cuml:
     common:
       - output_types: conda
         packages:
-          - &cuml_unsuffixed cuml==24.8.*,>=0.0.0a0
+          - &cuml_unsuffixed cuml==24.10.*,>=0.0.0a0
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -461,19 +461,19 @@ dependencies:
               cuda: "12.*"
               cuda_suffixed: "true"
             packages:
-              - cuml-cu12==24.8.*,>=0.0.0a0
+              - cuml-cu12==24.10.*,>=0.0.0a0
           - matrix:
               cuda: "11.*"
               cuda_suffixed: "true"
             packages:
-              - cuml-cu11==24.8.*,>=0.0.0a0
+              - cuml-cu11==24.10.*,>=0.0.0a0
           - {matrix: null, packages: [*cuml_unsuffixed]}
 
   depends_on_cuspatial:
     common:
       - output_types: conda
         packages:
-          - &cuspatial_unsuffixed cuspatial==24.8.*,>=0.0.0a0
+          - &cuspatial_unsuffixed cuspatial==24.10.*,>=0.0.0a0
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -486,12 +486,12 @@ dependencies:
               cuda: "12.*"
               cuda_suffixed: "true"
             packages:
-              - cuspatial-cu12==24.8.*,>=0.0.0a0
+              - cuspatial-cu12==24.10.*,>=0.0.0a0
           - matrix:
               cuda: "11.*"
               cuda_suffixed: "true"
             packages:
-              - cuspatial-cu11==24.8.*,>=0.0.0a0
+              - cuspatial-cu11==24.10.*,>=0.0.0a0
           - {matrix: null, packages: [*cuspatial_unsuffixed]}
 
   depends_on_cupy:
@@ -515,12 +515,12 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - libcuspatial==24.8.*,>=0.0.0a0
-          - libcuspatial-tests==24.8.*,>=0.0.0a0
+          - libcuspatial==24.10.*,>=0.0.0a0
+          - libcuspatial-tests==24.10.*,>=0.0.0a0
   test_cuspatial:
     common:
       - output_types: conda
         packages:
-          - libcuspatial==24.8.*,>=0.0.0a0
-          - cuspatial==24.8.*,>=0.0.0a0
-          - cuproj==24.8.*,>=0.0.0a0
+          - libcuspatial==24.10.*,>=0.0.0a0
+          - cuspatial==24.10.*,>=0.0.0a0
+          - cuproj==24.10.*,>=0.0.0a0

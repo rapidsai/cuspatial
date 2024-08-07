@@ -25,40 +25,40 @@ jobs:
       - wheel-tests-cuproj
       - devcontainer
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-24.08
+    uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-24.10
   checks:
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@branch-24.08
+    uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@branch-24.10
     with:
       enable_check_generated_files: false
   conda-cpp-build:
     needs: checks
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@branch-24.08
+    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@branch-24.10
     with:
       build_type: pull-request
   conda-cpp-tests:
     needs: conda-cpp-build
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-tests.yaml@branch-24.08
+    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-tests.yaml@branch-24.10
     with:
       build_type: pull-request
   conda-python-build:
     needs: conda-cpp-build
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@branch-24.08
+    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@branch-24.10
     with:
       build_type: pull-request
   conda-python-tests:
     needs: conda-python-build
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@branch-24.08
+    uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@branch-24.10
     with:
       build_type: pull-request
   conda-notebook-tests:
     needs: conda-python-build
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@branch-24.08
+    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@branch-24.10
     with:
       build_type: pull-request
       node_type: "gpu-v100-latest-1"
@@ -68,7 +68,7 @@ jobs:
   docs-build:
     needs: conda-python-build
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@branch-24.08
+    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@branch-24.10
     with:
       build_type: pull-request
       node_type: "gpu-v100-latest-1"
@@ -78,34 +78,34 @@ jobs:
   wheel-build-cuspatial:
     needs: checks
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-24.08
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-24.10
     with:
       build_type: pull-request
       script: ci/build_wheel_cuspatial.sh
   wheel-tests-cuspatial:
     needs: wheel-build-cuspatial
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@branch-24.08
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@branch-24.10
     with:
       build_type: pull-request
       script: ci/test_wheel_cuspatial.sh
   wheel-build-cuproj:
     needs: checks
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-24.08
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-24.10
     with:
       build_type: pull-request
       script: ci/build_wheel_cuproj.sh
   wheel-tests-cuproj:
     needs: [wheel-build-cuspatial, wheel-build-cuproj]
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@branch-24.08
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@branch-24.10
     with:
       build_type: pull-request
       script: ci/test_wheel_cuproj.sh
   devcontainer:
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@branch-24.08
+    uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@branch-24.10
     with:
       arch: '["amd64"]'
       cuda: '["12.5"]'
