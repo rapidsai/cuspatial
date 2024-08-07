@@ -1,3 +1,30 @@
+# cuspatial 24.08.00 (7 Aug 2024)
+
+## 🐛 Bug Fixes
+
+- Unskip taxi notebook from CI ([#1422](https://github.com/rapidsai/cuspatial/pull/1422)) [@harrism](https://github.com/harrism)
+- Use CuPy array in `pip_bitmap_column_to_binary_array` ([#1418](https://github.com/rapidsai/cuspatial/pull/1418)) [@isVoid](https://github.com/isVoid)
+- Conda: Move `cmake` to `requirements/build` ([#1409](https://github.com/rapidsai/cuspatial/pull/1409)) [@jakirkham](https://github.com/jakirkham)
+- test notebooks in &#39;docs/&#39;, make cuspatial_api_examples self-contained, skip long-running notebook, fix some docs ([#1407](https://github.com/rapidsai/cuspatial/pull/1407)) [@jameslamb](https://github.com/jameslamb)
+- Fix geopandas upgrades ([#1404](https://github.com/rapidsai/cuspatial/pull/1404)) [@quasiben](https://github.com/quasiben)
+- Fix multipolygon geometry iterator. ([#1402](https://github.com/rapidsai/cuspatial/pull/1402)) [@bdice](https://github.com/bdice)
+- Change _GeoSeriesUtility._from_data(index=) default to None ([#1400](https://github.com/rapidsai/cuspatial/pull/1400)) [@mroeschke](https://github.com/mroeschke)
+- Fix test_intersections.py post cudf refactor ([#1398](https://github.com/rapidsai/cuspatial/pull/1398)) [@mroeschke](https://github.com/mroeschke)
+- Allow anonymous user in devcontainer name ([#1396](https://github.com/rapidsai/cuspatial/pull/1396)) [@bdice](https://github.com/bdice)
+
+## 🛠️ Improvements
+
+- Ensure _from_data accepts columns objects only ([#1415](https://github.com/rapidsai/cuspatial/pull/1415)) [@mroeschke](https://github.com/mroeschke)
+- split up CUDA-suffixed dependencies in dependencies.yaml ([#1414](https://github.com/rapidsai/cuspatial/pull/1414)) [@jameslamb](https://github.com/jameslamb)
+- Build and test with CUDA 12.5.1 ([#1405](https://github.com/rapidsai/cuspatial/pull/1405)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- skip CMake 3.30.0 ([#1401](https://github.com/rapidsai/cuspatial/pull/1401)) [@jameslamb](https://github.com/jameslamb)
+- Use verify-alpha-spec hook ([#1399](https://github.com/rapidsai/cuspatial/pull/1399)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- Adopt CI/packaging codeowners ([#1397](https://github.com/rapidsai/cuspatial/pull/1397)) [@bdice](https://github.com/bdice)
+- Remove text builds of documentation ([#1394](https://github.com/rapidsai/cuspatial/pull/1394)) [@vyasr](https://github.com/vyasr)
+- use rapids-build-backend ([#1393](https://github.com/rapidsai/cuspatial/pull/1393)) [@jameslamb](https://github.com/jameslamb)
+- Fix forward-merge `branch-24.06` into `branch-24.08` ([#1390](https://github.com/rapidsai/cuspatial/pull/1390)) [@trxcllnt](https://github.com/trxcllnt)
+- remove unnecessary &#39;setuptools&#39; dependencies ([#1389](https://github.com/rapidsai/cuspatial/pull/1389)) [@jameslamb](https://github.com/jameslamb)
+
 # cuspatial 24.06.00 (5 Jun 2024)
 
 ## 🚨 Breaking Changes
