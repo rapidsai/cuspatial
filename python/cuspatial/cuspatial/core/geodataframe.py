@@ -270,7 +270,7 @@ class GeoDataFrame(cudf.DataFrame):
         if not drop:
             if not isinstance(cudf_data.index, cudf.MultiIndex):
                 recombiner.insert(
-                    loc=0, name="index", value=cudf_reindexed["index"]
+                    loc=0, column="index", value=cudf_reindexed["index"]
                 )
             # If the index is a MultiIndex, we need to insert the
             # individual levels into the GeoDataFrame.
@@ -288,7 +288,7 @@ class GeoDataFrame(cudf.DataFrame):
                 for n, name in enumerate(levels):
                     recombiner.insert(
                         loc=n,
-                        name=name,
+                        column=name,
                         value=cudf_reindexed[name].reset_index(drop=True),
                     )
                 recombiner.index = cudf_reindexed.index
