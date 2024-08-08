@@ -49,11 +49,11 @@ class GeoMeta:
             meta_uo = meta["union_offsets"]
             if isinstance(meta_uo, cudf.core.column.ColumnBase):
                 self.union_offsets = cudf.Series._from_column(meta_uo).astype(
-                    "int8"
+                    "int32"
                 )
             else:
                 # Could be Series from GeoSeries.__getitem__
-                self.union_offsets = cudf.Series(meta_uo, dtype="int8")
+                self.union_offsets = cudf.Series(meta_uo, dtype="int32")
         else:
             self.input_types = cudf.Series(meta.input_types, dtype="int8")
             self.union_offsets = cudf.Series(meta.union_offsets, dtype="int32")
