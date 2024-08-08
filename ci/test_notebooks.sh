@@ -26,7 +26,6 @@ set -u
 rapids-print-env
 
 NBTEST="$(realpath "$(dirname "$0")/utils/nbtest.sh")"
-pushd notebooks
 
 # Add notebooks that should be skipped here
 # (space-separated list of filenames without paths)
@@ -36,17 +35,30 @@ EXITCODE=0
 trap "EXITCODE=1" ERR
 
 set +e
-for nb in $(find . -name "*.ipynb"); do
-    nbBasename=$(basename ${nb})
-    if (echo " ${SKIPNBS} " | grep -q " ${nbBasename} "); then
-        echo "--------------------------------------------------------------------------------"
-        echo "SKIPPING: ${nb} (listed in skip list)"
-        echo "--------------------------------------------------------------------------------"
-    else
-        nvidia-smi
-        ${NBTEST} ${nbBasename}
-    fi
-done
+
+test_notebooks() {
+    for nb in $(find . -name "*.ipynb"); do
+        nbBasename=$(basename ${nb})
+        if (echo " ${SKIPNBS} " | grep -q " ${nbBasename} "); then
+            echo "--------------------------------------------------------------------------------"
+            echo "SKIPPING: ${nb} (listed in skip list)"
+            echo "--------------------------------------------------------------------------------"
+        else
+            nvidia-smi
+            ${NBTEST} "${nb}"
+        fi
+    done
+}
+
+# test notebooks in notebooks/
+pushd notebooks
+test_notebooks
+popd
+
+# test notebooks in docs/
+pushd docs
+test_notebooks
+popd
 
 rapids-logger "Notebook test script exiting with value: $EXITCODE"
 exit ${EXITCODE}

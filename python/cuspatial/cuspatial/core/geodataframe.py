@@ -1,11 +1,14 @@
-# Copyright (c) 2020-2022, NVIDIA CORPORATION
-from typing import Dict, Tuple, TypeVar, Union
+# Copyright (c) 2020-2024, NVIDIA CORPORATION
+from __future__ import annotations
+
+from typing import Any, Dict, TypeVar, Union
 
 import pandas as pd
 from geopandas import GeoDataFrame as gpGeoDataFrame
 from geopandas.geoseries import is_geometry_type as gp_is_geometry_type
 
 import cudf
+from cudf.core.column import as_column
 from cudf.core.copy_types import BooleanMask, GatherMap
 
 from cuspatial.core._column.geocolumn import GeoColumn, GeoMeta
@@ -41,7 +44,7 @@ class GeoDataFrame(cudf.DataFrame):
                     column = GeoColumn(adapter._get_geotuple(), pandas_meta)
                     self._data[col] = column
                 else:
-                    self._data[col] = data[col]
+                    self._data[col] = as_column(data[col])
         elif isinstance(data, dict):
             for key in data.keys():
                 try:
@@ -137,7 +140,9 @@ class GeoDataFrame(cudf.DataFrame):
 
         return type_copied
 
-    def _split_out_geometry_columns(self) -> Tuple:
+    def _split_out_geometry_columns(
+        self,
+    ) -> tuple[GeoDataFrame, cudf.DataFrame]:
         """
         Break the geometry columns and non-geometry columns into
         separate dataframes and return them separated.
@@ -154,18 +159,20 @@ class GeoDataFrame(cudf.DataFrame):
         )
         return (geo_columns, data_columns)
 
-    def _recombine_columns(self, geo_columns, data_columns):
+    def _recombine_columns(
+        self, geo_columns: GeoDataFrame, data_columns: cudf.DataFrame
+    ) -> dict[Any, GeoSeries | cudf.Series]:
         """
         Combine a GeoDataFrame of only geometry columns with a DataFrame
         of non-geometry columns in the same order as the columns in `self`
         """
-        columns_mask = pd.Series(self.columns)
-        geocolumn_mask = pd.Series(
-            [isinstance(self[col], GeoSeries) for col in self.columns]
+        columns_mask = self.columns
+        geocolumn_mask = (
+            isinstance(self[col], GeoSeries) for col in columns_mask
         )
         return {
             name: (geo_columns[name] if mask else data_columns[name])
-            for name, mask in zip(columns_mask.values, geocolumn_mask.values)
+            for name, mask in zip(columns_mask, geocolumn_mask)
         }
 
     def _slice(self: T, arg: slice) -> T:
@@ -190,15 +197,15 @@ class GeoDataFrame(cudf.DataFrame):
             {name: geo_columns[name][mask.column] for name in geo_columns}
         )
 
-        res = self.__class__._from_data(self._recombine_columns(geo, data))
+        res = self.__class__(self._recombine_columns(geo, data))
         if keep_index:
             res.index = data.index
         return res
 
     def _gather(self, gather_map: GatherMap, keep_index=True):
-        geo_data, cudf_data = self._split_out_geometry_columns()
+        geo_data, df = self._split_out_geometry_columns()
         # gather cudf columns
-        df = cudf.DataFrame._from_data(data=cudf_data, index=self.index)
+        df.index = self.index
 
         cudf_gathered = df._gather(gather_map, keep_index=keep_index)
 
@@ -210,7 +217,7 @@ class GeoDataFrame(cudf.DataFrame):
         geo_gathered = GeoDataFrame(gathered)
 
         # combine
-        result = GeoDataFrame._from_data(
+        result = GeoDataFrame(
             self._recombine_columns(geo_gathered, cudf_gathered)
         )
         result.index = geo_gathered.index
@@ -294,7 +301,7 @@ class GeoDataFrame(cudf.DataFrame):
             # Reset the index of the GeoDataFrame to match the
             # cudf DataFrame and recombine.
             geo_data.index = cudf_reindexed.index
-            result = GeoDataFrame._from_data(
+            result = GeoDataFrame(
                 recombiner._recombine_columns(geo_data, cudf_reindexed)
             )
             result.index = geo_data.index
@@ -303,7 +310,7 @@ class GeoDataFrame(cudf.DataFrame):
 
 class _GeoSeriesUtility:
     @classmethod
-    def _from_data(cls, new_data, name=None, index=False):
+    def _from_data(cls, new_data, name=None, index=None):
         new_column = new_data.columns[0]
         if is_geometry_type(new_column):
             return GeoSeries(new_column, name=name, index=index)

@@ -51,6 +51,7 @@ requirements:
     - {{ compiler('cuda') }}
     {% endif %}
     - cuda-version ={{ cuda_version }}
+    - cmake {{ cmake_version }}
     - ninja
     - {{ stdlib("c") }}
   host:
@@ -58,12 +59,11 @@ requirements:
     - cuda-cudart-dev
     {% endif %}
     - cuda-version ={{ cuda_version }}
-    - cmake {{ cmake_version }}
     - cython >=3.0.0
     - python
+    - rapids-build-backend >=0.3.0,<0.4.0.dev0
     - rmm ={{ minor_version }}
     - scikit-build-core >=0.7.0
-    - setuptools
     - proj
     - sqlite
   run:
