@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ using namespace cuspatial;
 using namespace cuspatial::test;
 
 template <typename MultiPointRange, typename OutputIt>
-void __global__ array_access_tester(MultiPointRange multipoints,
+CUSPATIAL_KERNEL void array_access_tester(MultiPointRange multipoints,
                                     std::size_t i,
                                     OutputIt output_points)
 {
@@ -48,7 +48,7 @@ void __global__ array_access_tester(MultiPointRange multipoints,
 }
 
 template <typename MultiPointRange, typename OutputIt>
-void __global__ point_accessor_tester(MultiPointRange multipoints, std::size_t i, OutputIt point)
+CUSPATIAL_KERNEL void point_accessor_tester(MultiPointRange multipoints, std::size_t i, OutputIt point)
 {
   using T  = typename MultiPointRange::element_t;
   point[0] = multipoints.point(i);

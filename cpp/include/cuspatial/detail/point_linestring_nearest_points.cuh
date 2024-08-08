@@ -54,7 +54,7 @@ template <class Vec2dItA,
           class OffsetIteratorB,
           class OffsetIteratorC,
           class OutputIt>
-void __global__
+void CUSPATIAL_KERNEL
 pairwise_point_linestring_nearest_points_kernel(OffsetIteratorA points_geometry_offsets_first,
                                                 OffsetIteratorA points_geometry_offsets_last,
                                                 Vec2dItA points_first,
