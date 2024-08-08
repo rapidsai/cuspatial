@@ -648,7 +648,9 @@ TYPED_TEST(MultipolygonRangeTest, MultipolygonAsMultiPoint3)
 }
 
 template <typename MultiPolygonRange, typename PointOutputIt>
-CUSPATIAL_KERNEL void array_access_tester(MultiPolygonRange rng, std::size_t i, PointOutputIt output)
+CUSPATIAL_KERNEL void array_access_tester(MultiPolygonRange rng,
+                                          std::size_t i,
+                                          PointOutputIt output)
 {
   thrust::copy(thrust::seq, rng[i].point_begin(), rng[i].point_end(), output);
 }

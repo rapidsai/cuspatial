@@ -40,15 +40,17 @@ using namespace cuspatial::test;
 
 template <typename MultiPointRange, typename OutputIt>
 CUSPATIAL_KERNEL void array_access_tester(MultiPointRange multipoints,
-                                    std::size_t i,
-                                    OutputIt output_points)
+                                          std::size_t i,
+                                          OutputIt output_points)
 {
   using T = typename MultiPointRange::element_t;
   thrust::copy(thrust::seq, multipoints[i].begin(), multipoints[i].end(), output_points);
 }
 
 template <typename MultiPointRange, typename OutputIt>
-CUSPATIAL_KERNEL void point_accessor_tester(MultiPointRange multipoints, std::size_t i, OutputIt point)
+CUSPATIAL_KERNEL void point_accessor_tester(MultiPointRange multipoints,
+                                            std::size_t i,
+                                            OutputIt point)
 {
   using T  = typename MultiPointRange::element_t;
   point[0] = multipoints.point(i);

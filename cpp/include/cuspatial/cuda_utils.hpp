@@ -19,7 +19,7 @@
 
 #ifdef __CUDACC__
 #define CUSPATIAL_HOST_DEVICE __host__ __device__
-#define CUSPATIAL_KERNEL __global__ static
+#define CUSPATIAL_KERNEL      __global__ static
 #else
 #define CUSPATIAL_HOST_DEVICE
 #define CUSPATIAL_KERNEL

@@ -38,7 +38,9 @@ using namespace cuspatial;
 using namespace cuspatial::test;
 
 template <typename MultiLineStringRange, typename OutputIt>
-CUSPATIAL_KERNEL void array_access_tester(MultiLineStringRange mls, std::size_t i, OutputIt output_points)
+CUSPATIAL_KERNEL void array_access_tester(MultiLineStringRange mls,
+                                          std::size_t i,
+                                          OutputIt output_points)
 {
   thrust::copy(thrust::seq, mls[i].point_begin(), mls[i].point_end(), output_points);
 }

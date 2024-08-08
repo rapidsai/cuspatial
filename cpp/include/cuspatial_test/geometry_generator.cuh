@@ -194,8 +194,8 @@ ring_centroid_displacement(vec_2d<T> centroid, std::size_t ring_local_idx, T rad
  * @param params Parameters to generate the mulitpolygons
  */
 template <typename T, typename MultipolygonRange>
-CUSPATIAL_KERNEL void generate_multipolygon_array_coordinates(MultipolygonRange multipolygons,
-                                                              multipolygon_generator_parameter<T> params)
+CUSPATIAL_KERNEL void generate_multipolygon_array_coordinates(
+  MultipolygonRange multipolygons, multipolygon_generator_parameter<T> params)
 {
   for (auto idx : ranger::grid_stride_range(multipolygons.num_points())) {
     auto ring_idx     = multipolygons.ring_idx_from_point_idx(idx);

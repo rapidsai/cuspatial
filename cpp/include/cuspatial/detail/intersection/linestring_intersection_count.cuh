@@ -34,10 +34,11 @@ template <typename MultiLinestringRange1,
           typename MultiLinestringRange2,
           typename OutputIt1,
           typename OutputIt2>
-CUSPATIAL_KERNEL void count_intersection_and_overlaps_simple(MultiLinestringRange1 multilinestrings1,
-                                                             MultiLinestringRange2 multilinestrings2,
-                                                             OutputIt1 point_count_it,
-                                                             OutputIt2 segment_count_it)
+CUSPATIAL_KERNEL void count_intersection_and_overlaps_simple(
+  MultiLinestringRange1 multilinestrings1,
+  MultiLinestringRange2 multilinestrings2,
+  OutputIt1 point_count_it,
+  OutputIt2 segment_count_it)
 {
   using T = typename MultiLinestringRange1::element_t;
   for (auto idx : ranger::grid_stride_range(multilinestrings1.num_points())) {
