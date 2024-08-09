@@ -1,4 +1,4 @@
-# Copyright (c) 2022-2023, NVIDIA CORPORATION.
+# Copyright (c) 2022-2024, NVIDIA CORPORATION.
 
 import warnings
 
@@ -187,4 +187,4 @@ def quadtree_on_points(
         max_depth,
         max_size,
     )
-    return Series(key_to_point), DataFrame._from_data(*quadtree)
+    return Series._from_column(key_to_point), DataFrame._from_data(*quadtree)
