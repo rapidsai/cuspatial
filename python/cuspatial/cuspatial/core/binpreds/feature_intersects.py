@@ -1,4 +1,4 @@
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 
 
 import cupy as cp
@@ -70,7 +70,7 @@ class IntersectsPredicateBase(BinPred):
         a set of lengths from the returned offsets buffer, then
         returns an integer index for all of the offset sizes that
         are larger than 0."""
-        is_offsets = cudf.Series(op_result.result[0])
+        is_offsets = cudf.Series._from_column(op_result.result[0])
         is_sizes = is_offsets[1:].reset_index(drop=True) - is_offsets[
             :-1
         ].reset_index(drop=True)

@@ -1,4 +1,4 @@
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 
 from typing import TypeVar
 
@@ -71,7 +71,7 @@ class ContainsPredicate(ContainsGeometryProcessor):
         if len(pli_features) == 0:
             return _zero_series(len(lhs))
 
-        pli_offsets = cudf.Series(pli[0])
+        pli_offsets = cudf.Series._from_column(pli[0])
 
         # Convert the pli to multipoints for equality checking
         multipoints = _points_and_lines_to_multipoints(

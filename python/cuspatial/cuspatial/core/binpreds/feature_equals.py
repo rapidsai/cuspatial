@@ -1,4 +1,4 @@
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 
 from __future__ import annotations
 
@@ -236,7 +236,7 @@ class EqualsPredicateBase(BinPred, Generic[GeoSeries]):
             lhs, rhs, PreprocessorResult(None, rhs.point_indices)
         )
 
-    def _vertices_equals(self, lhs: Series, rhs: Series):
+    def _vertices_equals(self, lhs: Series, rhs: Series) -> Series:
         """Compute the equals relationship between interleaved xy
         coordinate buffers."""
         if not isinstance(lhs, Series):
@@ -246,7 +246,7 @@ class EqualsPredicateBase(BinPred, Generic[GeoSeries]):
         length = min(len(lhs), len(rhs))
         a = lhs[:length:2]._column == rhs[:length:2]._column
         b = rhs[1:length:2]._column == lhs[1:length:2]._column
-        return a & b
+        return Series._from_column(a & b)
 
     def _compute_predicate(self, lhs, rhs, preprocessor_result):
         """Perform the binary predicate operation on the input GeoSeries.
