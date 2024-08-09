@@ -1,4 +1,4 @@
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 
 import cudf
 
@@ -76,4 +76,4 @@ def pairwise_multipoint_equals_count(lhs, rhs):
     rhs_column = rhs._column.mpoints._column
     result = c_pairwise_multipoint_equals_count(lhs_column, rhs_column)
 
-    return cudf.Series(result)
+    return cudf.Series._from_column(result)
