@@ -1,4 +1,4 @@
-# Copyright (c) 2022-2023, NVIDIA CORPORATION.
+# Copyright (c) 2022-2024, NVIDIA CORPORATION.
 
 import cudf
 from cudf import DataFrame, Series
@@ -217,15 +217,13 @@ def pairwise_point_distance(points1: GeoSeries, points2: GeoSeries):
         rhs_point_collection_type,
     ) = _extract_point_column_and_collection_type(points2)
 
-    return Series._from_data(
-        {
-            None: cpp_pairwise_point_distance(
-                lhs_point_collection_type,
-                rhs_point_collection_type,
-                lhs_column,
-                rhs_column,
-            )
-        }
+    return Series._from_column(
+        cpp_pairwise_point_distance(
+            lhs_point_collection_type,
+            rhs_point_collection_type,
+            lhs_column,
+            rhs_column,
+        )
     )
 
 
@@ -293,13 +291,11 @@ def pairwise_linestring_distance(
     if len(multilinestrings1) == 0:
         return cudf.Series(dtype="float64")
 
-    return Series._from_data(
-        {
-            None: cpp_pairwise_linestring_distance(
-                multilinestrings1.lines.column(),
-                multilinestrings2.lines.column(),
-            )
-        }
+    return Series._from_column(
+        cpp_pairwise_linestring_distance(
+            multilinestrings1.lines.column(),
+            multilinestrings2.lines.column(),
+        )
     )
 
 
@@ -583,8 +579,8 @@ def pairwise_linestring_polygon_distance(
     linestrings_column = linestrings.lines.column()
     polygon_column = polygons.polygons.column()
 
-    return Series._from_data(
-        {None: c_pairwise_line_poly_dist(linestrings_column, polygon_column)}
+    return Series._from_column(
+        c_pairwise_line_poly_dist(linestrings_column, polygon_column)
     )
 
 

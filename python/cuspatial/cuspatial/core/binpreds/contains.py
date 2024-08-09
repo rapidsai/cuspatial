@@ -155,7 +155,7 @@ def _pairwise_contains_properly(points, polygons):
     # point) pair where the point is contained properly by the polygon. We can
     # use this to create a dataframe with only (polygon, point) pairs that
     # satisfy the relationship.
-    pip_result = cudf.Series(result_column, dtype="bool")
+    pip_result = cudf.Series._from_column(result_column).astype("bool")
     trues = pip_result[pip_result].index
     true_pairs = cudf.DataFrame(
         {
