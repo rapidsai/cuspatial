@@ -1,4 +1,8 @@
-# Copyright (c) 2020-2022 NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+
+from __future__ import annotations
+
+from typing import Literal
 
 from geopandas import GeoSeries as gpGeoSeries
 from shapely.geometry import (
@@ -12,6 +16,7 @@ from shapely.geometry import (
 )
 
 import cudf
+import cudf.core.column
 
 from cuspatial.core._column.geometa import Feature_Enum
 from cuspatial.io import pygeoarrow
@@ -119,7 +124,11 @@ class GeoPandasReader:
             polygons,
         )
 
-    def get_geopandas_meta(self) -> dict:
+    def get_geopandas_meta(
+        self,
+    ) -> dict[
+        Literal["input_types", "union_offsets"], cudf.core.column.ColumnBase
+    ]:
         """
         Returns the metadata that was created converting the GeoSeries into
         GeoArrow format. The metadata essentially contains the object order
@@ -129,6 +138,6 @@ class GeoPandasReader:
         """
         buffers = self.buffers
         return {
-            "input_types": buffers.type_codes,
-            "union_offsets": buffers.offsets,
+            "input_types": cudf.core.column.as_column(buffers.type_codes),
+            "union_offsets": cudf.core.column.as_column(buffers.offsets),
         }

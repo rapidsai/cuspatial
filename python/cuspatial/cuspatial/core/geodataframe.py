@@ -201,7 +201,10 @@ class GeoDataFrame(cudf.DataFrame):
         data = data_columns._apply_boolean_mask(mask, keep_index)
 
         geo = GeoDataFrame(
-            {name: geo_columns[name][mask.column] for name in geo_columns}
+            {
+                name: geo_columns[name][cudf.Index._from_column(mask.column)]
+                for name in geo_columns
+            }
         )
 
         res = self._from_data(self._recombine_columns(geo, data))
@@ -319,9 +322,9 @@ class _GeoSeriesUtility:
     def _from_data(cls, new_data, name=None, index=None):
         new_column = new_data.columns[0]
         if is_geometry_type(new_column):
-            return GeoSeries(new_column, name=name, index=index)
+            return GeoSeries._from_column(new_column, name=name, index=index)
         else:
-            return cudf.Series(new_column, name=name, index=index)
+            return cudf.Series._from_column(new_column, name=name, index=index)
 
 
 def is_geometry_type(obj):

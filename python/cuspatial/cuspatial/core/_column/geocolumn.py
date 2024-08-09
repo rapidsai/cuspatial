@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2023 NVIDIA CORPORATION
+# Copyright (c) 2021-2024, NVIDIA CORPORATION
 
 from enum import Enum
 from functools import cached_property
@@ -153,14 +153,14 @@ class GeoColumn(ColumnBase):
         coord_dtype = points_xy.dtype
         return cls(
             (
-                cudf.Series(point_col),
-                cudf.Series(
+                cudf.Series._from_column(point_col),
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.MULTIPOINT, coord_dtype)
                 ),
-                cudf.Series(
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.LINESTRING, coord_dtype)
                 ),
-                cudf.Series(
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.POLYGON, coord_dtype)
                 ),
             ),
@@ -205,14 +205,14 @@ class GeoColumn(ColumnBase):
 
         return cls(
             (
-                cudf.Series(
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.POINT, coord_dtype)
                 ),
-                cudf.Series(multipoint_col),
-                cudf.Series(
+                cudf.Series._from_column(multipoint_col),
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.LINESTRING, coord_dtype)
                 ),
-                cudf.Series(
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.POLYGON, coord_dtype)
                 ),
             ),
@@ -265,14 +265,14 @@ class GeoColumn(ColumnBase):
 
         return cls(
             (
-                cudf.Series(
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.POINT, coord_dtype)
                 ),
-                cudf.Series(
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.MULTIPOINT, coord_dtype)
                 ),
-                cudf.Series(linestrings_col),
-                cudf.Series(
+                cudf.Series._from_column(linestrings_col),
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.POLYGON, coord_dtype)
                 ),
             ),
@@ -331,16 +331,16 @@ class GeoColumn(ColumnBase):
 
         return cls(
             (
-                cudf.Series(
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.POINT, coord_dtype)
                 ),
-                cudf.Series(
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.MULTIPOINT, coord_dtype)
                 ),
-                cudf.Series(
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.LINESTRING, coord_dtype)
                 ),
-                cudf.Series(polygons_col),
+                cudf.Series._from_column(polygons_col),
             ),
             meta,
         )
