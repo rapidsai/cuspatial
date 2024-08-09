@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2021, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 import geopandas as gpd
 import pandas as pd
 from shapely.geometry import (
@@ -63,7 +63,9 @@ def test_from_geopandas_multipoint():
         cudf.Series([1.0, 2.0, 3.0, 4.0], dtype="float64"),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series(cugs._column.mpoints._column.base_children[0]),
+        cudf.Series._from_column(
+            cugs._column.mpoints._column.base_children[0]
+        ),
         cudf.Series([0, 2], dtype="int32"),
     )
 
@@ -75,7 +77,7 @@ def test_from_geopandas_linestring():
         cugs.lines.xy, cudf.Series([4.0, 3.0, 2.0, 1.0], dtype="float64")
     )
     cudf.testing.assert_series_equal(
-        cudf.Series(cugs._column.lines._column.base_children[0]),
+        cudf.Series._from_column(cugs._column.lines._column.base_children[0]),
         cudf.Series([0, 1], dtype="int32"),
     )
 
@@ -95,7 +97,7 @@ def test_from_geopandas_multilinestring():
         cudf.Series([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], dtype="float64"),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series(cugs._column.lines._column.base_children[0]),
+        cudf.Series._from_column(cugs._column.lines._column.base_children[0]),
         cudf.Series([0, 2], dtype="int32"),
     )
 
@@ -112,11 +114,13 @@ def test_from_geopandas_polygon():
         cudf.Series([0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0], dtype="float64"),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series(cugs._column.polygons._column.base_children[0]),
+        cudf.Series._from_column(
+            cugs._column.polygons._column.base_children[0]
+        ),
         cudf.Series([0, 1], dtype="int32"),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series(
+        cudf.Series._from_column(
             cugs._column.polygons._column.base_children[1].base_children[0]
         ),
         cudf.Series([0, 1], dtype="int32"),
@@ -156,11 +160,13 @@ def test_from_geopandas_polygon_hole():
         ),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series(cugs._column.polygons._column.base_children[0]),
+        cudf.Series._from_column(
+            cugs._column.polygons._column.base_children[0]
+        ),
         cudf.Series([0, 1], dtype="int32"),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series(
+        cudf.Series._from_column(
             cugs._column.polygons._column.base_children[1].base_children[0]
         ),
         cudf.Series([0, 2], dtype="int32"),
@@ -204,11 +210,13 @@ def test_from_geopandas_multipolygon():
         ),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series(cugs._column.polygons._column.base_children[0]),
+        cudf.Series._from_column(
+            cugs._column.polygons._column.base_children[0]
+        ),
         cudf.Series([0, 1], dtype="int32"),
     )
     cudf.testing.assert_series_equal(
-        cudf.Series(
+        cudf.Series._from_column(
             cugs._column.polygons._column.base_children[1].base_children[0]
         ),
         cudf.Series([0, 2], dtype="int32"),

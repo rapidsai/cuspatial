@@ -4,6 +4,7 @@ import cupy as cp
 import numpy as np
 
 import cudf
+import cudf.core.column
 
 import cuspatial
 from cuspatial.core._column.geocolumn import ColumnType
@@ -425,7 +426,13 @@ def _pli_features_rebuild_offsets(pli, features):
     in_sizes = (
         features.sizes if len(features) > 0 else _zero_series(len(pli[0]) - 1)
     )
-    offsets = cudf.Series(pli[0])
+    if isinstance(pli[0], cudf.core.column.ColumnBase):
+        offsets = cudf.Series._from_column(pli[0])
+    else:
+        # TODO: Can be removed if pairwise_linestring_intersection
+        # always returns a cudf.Series
+        # in the first element
+        offsets = cudf.Series(pli[0])
     offset_sizes = offsets[1:].reset_index(drop=True) - offsets[
         :-1
     ].reset_index(drop=True)

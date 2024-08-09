@@ -1,3 +1,5 @@
+# Copyright (c) 2024, NVIDIA CORPORATION
+
 import cudf
 from cudf.core.column import as_column
 
@@ -200,4 +202,4 @@ class DistanceDispatch:
         # If `align==False`, geopandas preserves lhs index.
         index = None if self._align else self._res_index
 
-        return cudf.Series(result, index=index, nan_as_null=False)
+        return cudf.Series._from_column(result, index=index)
