@@ -18,10 +18,13 @@ CURRENT_MINOR=$(echo $CURRENT_TAG | awk '{split($0, a, "."); print a[2]}')
 CURRENT_PATCH=$(echo $CURRENT_TAG | awk '{split($0, a, "."); print a[3]}')
 CURRENT_SHORT_TAG=${CURRENT_MAJOR}.${CURRENT_MINOR}
 
-#Get <major>.<minor> for next version
+# Get <major>.<minor> for next version
 NEXT_MAJOR=$(echo $NEXT_FULL_TAG | awk '{split($0, a, "."); print a[1]}')
 NEXT_MINOR=$(echo $NEXT_FULL_TAG | awk '{split($0, a, "."); print a[2]}')
 NEXT_SHORT_TAG=${NEXT_MAJOR}.${NEXT_MINOR}
+
+# Need to distutils-normalize the original version
+NEXT_SHORT_TAG_PEP440=$(python -c "from setuptools.extern import packaging; print(packaging.version.Version('${NEXT_SHORT_TAG}'))")
 
 echo "Preparing release $CURRENT_TAG => $NEXT_FULL_TAG"
 
@@ -39,9 +42,6 @@ for FILE in .github/workflows/*.yaml; do
 done
 sed_runner "s/RAPIDS_VERSION_NUMBER=\".*/RAPIDS_VERSION_NUMBER=\"${NEXT_SHORT_TAG}\"/g" ci/build_docs.sh
 
-# Need to distutils-normalize the original version
-NEXT_SHORT_TAG_PEP440=$(python -c "from setuptools.extern import packaging; print(packaging.version.Version('${NEXT_SHORT_TAG}'))")
-
 DEPENDENCIES=(
   cudf
   cuml
@@ -54,20 +54,21 @@ DEPENDENCIES=(
   cuspatial
   cuproj
 )
-
 for DEP in "${DEPENDENCIES[@]}"; do
   for FILE in dependencies.yaml conda/environments/*.yaml; do
     sed_runner "/-.* ${DEP}\(-cu[[:digit:]]\{2\}\)\{0,1\}==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}.*,>=0.0.0a0/g" "${FILE}"
   done
-  sed_runner "s/${DEP}\(-cu[[:digit:]]\{2\}\)\{0,1\}==.*\",/${DEP}==${NEXT_SHORT_TAG_PEP440}.*,>=0.0.0a0\",/g" python/cuspatial/pyproject.toml
-  sed_runner "s/${DEP}\(-cu[[:digit:]]\{2\}\)\{0,1\}==.*\",/${DEP}==${NEXT_SHORT_TAG_PEP440}.*,>=0.0.0a0\",/g" python/cuproj/pyproject.toml
+  for FILE in python/*/pyproject.toml; do
+    sed_runner "/\"${DEP}==/ s/==.*\"/==${NEXT_SHORT_TAG_PEP440}.*,>=0.0.0a0\"/g" "${FILE}"
+  done
 done
 
-# Version in cuspatial_api_examples.ipynb
+# Versions in cuspatial_api_examples.ipynb
 sed_runner "s/rapids-[0-9]*\.[0-9]*/rapids-${NEXT_SHORT_TAG}/g" docs/source/user_guide/cuspatial_api_examples.ipynb
 sed_runner "s/cuproj=[0-9]*\.[0-9]*/cuproj=${NEXT_SHORT_TAG}/g" docs/source/user_guide/cuspatial_api_examples.ipynb
 sed_runner "s/cuspatial=[0-9]*\.[0-9]*/cuspatial=${NEXT_SHORT_TAG}/g" docs/source/user_guide/cuspatial_api_examples.ipynb
-# Version in cuproj_api_examples.ipynb
+
+# Versions in cuproj_api_examples.ipynb
 sed_runner "s/rapids-[0-9]*\.[0-9]*/rapids-${NEXT_SHORT_TAG}/g" docs/cuproj/source/user_guide/cuproj_api_examples.ipynb
 sed_runner "s/cuproj=[0-9]*\.[0-9]*/cuproj-${NEXT_SHORT_TAG}/g" docs/cuproj/source/user_guide/cuproj_api_examples.ipynb
 sed_runner "s/cuspatial=[0-9]*\.[0-9]*/cuspatial=${NEXT_SHORT_TAG}/g" docs/cuproj/source/user_guide/cuproj_api_examples.ipynb
