@@ -54,18 +54,18 @@ template <class Vec2dItA,
           class OffsetIteratorB,
           class OffsetIteratorC,
           class OutputIt>
-CUSPATIAL_KERNEL void
-pairwise_point_linestring_nearest_points_kernel(OffsetIteratorA points_geometry_offsets_first,
-                                                OffsetIteratorA points_geometry_offsets_last,
-                                                Vec2dItA points_first,
-                                                Vec2dItA points_last,
-                                                OffsetIteratorB linestring_geometry_offsets_first,
-                                                OffsetIteratorB linestring_geometry_offsets_last,
-                                                OffsetIteratorC linestring_part_offsets_first,
-                                                OffsetIteratorC linestring_part_offsets_last,
-                                                Vec2dItB linestring_points_first,
-                                                Vec2dItB linestring_points_last,
-                                                OutputIt output_first)
+CUSPATIAL_KERNEL void pairwise_point_linestring_nearest_points_kernel(
+  OffsetIteratorA points_geometry_offsets_first,
+  OffsetIteratorA points_geometry_offsets_last,
+  Vec2dItA points_first,
+  Vec2dItA points_last,
+  OffsetIteratorB linestring_geometry_offsets_first,
+  OffsetIteratorB linestring_geometry_offsets_last,
+  OffsetIteratorC linestring_part_offsets_first,
+  OffsetIteratorC linestring_part_offsets_last,
+  Vec2dItB linestring_points_first,
+  Vec2dItB linestring_points_last,
+  OutputIt output_first)
 {
   using T         = iterator_vec_base_type<Vec2dItA>;
   using IndexType = iterator_value_type<OffsetIteratorA>;
