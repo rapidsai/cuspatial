@@ -169,8 +169,10 @@ class GeoDataFrame(cudf.DataFrame):
         The output is meant for GeoDataFrame._from_data.
         """
         if not (
-            geo_columns.empty or data_columns.empty
-        ) and not geo_columns.index.equals(data_columns.index):
+            geo_columns.empty or
+            data_columns.empty or
+            geo_columns.index.equals(data_columns.index)
+        ):
             raise ValueError("geo_columns.index must equal data_columns.index")
 
         columns_mask = self.columns
