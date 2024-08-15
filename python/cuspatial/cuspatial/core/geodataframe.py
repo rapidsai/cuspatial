@@ -134,7 +134,6 @@ class GeoDataFrame(cudf.DataFrame):
                         other_col.polygons,
                     ),
                     other_col._meta,
-                    cudf.Index(col),
                 )
                 type_copied._data.set_by_label(name, col, validate=False)
 
