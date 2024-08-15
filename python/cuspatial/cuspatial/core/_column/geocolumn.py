@@ -1,8 +1,9 @@
 # Copyright (c) 2021-2024, NVIDIA CORPORATION
+from __future__ import annotations
 
 from enum import Enum
 from functools import cached_property
-from typing import Tuple, TypeVar
+from typing import TypeVar
 
 import cupy as cp
 import pyarrow as pa
@@ -41,9 +42,8 @@ class GeoColumn(ColumnBase):
 
     def __init__(
         self,
-        data: Tuple,
+        data: tuple[cudf.Series, cudf.Series, cudf.Series, cudf.Series],
         meta: GeoMeta = None,
-        shuffle_order: cudf.Index = None,
     ):
         if (
             isinstance(data[0], cudf.Series)
@@ -61,7 +61,7 @@ class GeoColumn(ColumnBase):
             self.polygons = data[3]
             self.polygons.name = "polygons"
         else:
-            raise TypeError("All four Tuple arguments must be cudf.ListSeries")
+            raise TypeError("All four Tuple arguments must be cudf.Series")
         super().__init__(None, size=len(self), dtype="geometry")
 
     def to_arrow(self):
