@@ -4,10 +4,10 @@ from libc.stdint cimport int8_t
 from libcpp.memory cimport unique_ptr
 from libcpp.pair cimport pair
 
-from cudf._lib.pylibcudf.libcudf.column.column cimport column
-from cudf._lib.pylibcudf.libcudf.column.column_view cimport column_view
-from cudf._lib.pylibcudf.libcudf.table.table cimport table
-from cudf._lib.pylibcudf.libcudf.types cimport size_type
+from pylibcudf.libcudf.column.column cimport column
+from pylibcudf.libcudf.column.column_view cimport column_view
+from pylibcudf.libcudf.table.table cimport table
+from pylibcudf.libcudf.types cimport size_type
 
 
 cdef extern from "cuspatial/point_quadtree.hpp" namespace "cuspatial" nogil:

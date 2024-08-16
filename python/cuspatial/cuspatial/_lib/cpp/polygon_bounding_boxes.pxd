@@ -2,8 +2,8 @@
 
 from libcpp.memory cimport unique_ptr
 
-from cudf._lib.pylibcudf.libcudf.column.column_view cimport column_view
-from cudf._lib.pylibcudf.libcudf.table.table cimport table
+from pylibcudf.libcudf.column.column_view cimport column_view
+from pylibcudf.libcudf.table.table cimport table
 
 
 cdef extern from "cuspatial/bounding_boxes.hpp" \

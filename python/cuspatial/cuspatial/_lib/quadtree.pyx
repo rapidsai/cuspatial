@@ -6,11 +6,11 @@ from libcpp.pair cimport pair
 from libcpp.utility cimport move
 
 from cudf._lib.column cimport Column
-from cudf._lib.pylibcudf.libcudf.column.column cimport column
-from cudf._lib.pylibcudf.libcudf.column.column_view cimport column_view
-from cudf._lib.pylibcudf.libcudf.table.table cimport table
-from cudf._lib.pylibcudf.libcudf.types cimport size_type
 from cudf._lib.utils cimport data_from_unique_ptr
+from pylibcudf.libcudf.column.column cimport column
+from pylibcudf.libcudf.column.column_view cimport column_view
+from pylibcudf.libcudf.table.table cimport table
+from pylibcudf.libcudf.types cimport size_type
 
 from cuspatial._lib.cpp.quadtree cimport (
     quadtree_on_points as cpp_quadtree_on_points,

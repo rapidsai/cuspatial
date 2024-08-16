@@ -72,6 +72,7 @@ known_dask = [
 known_rapids = [
     "rmm",
     "cudf",
+    "pylibcudf",
 ]
 known_first_party = [
     "cuspatial",

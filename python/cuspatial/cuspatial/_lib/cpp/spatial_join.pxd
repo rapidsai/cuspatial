@@ -3,8 +3,10 @@
 from libc.stdint cimport int8_t
 from libcpp.memory cimport unique_ptr
 
-from cudf._lib.column cimport column_view
-from cudf._lib.pylibcudf.libcudf.table.table cimport table, table_view
+from pylibcudf.libcudf.column.column cimport column
+from pylibcudf.libcudf.column.column_view cimport column_view
+from pylibcudf.libcudf.table.table cimport table
+from pylibcudf.libcudf.table.table_view cimport table_view
 
 
 cdef extern from "cuspatial/spatial_join.hpp" namespace "cuspatial" nogil:
