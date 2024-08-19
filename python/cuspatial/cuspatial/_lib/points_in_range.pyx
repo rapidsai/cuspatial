@@ -3,9 +3,10 @@
 from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
 
-from cudf._lib.column cimport Column, column_view
-from cudf._lib.pylibcudf.libcudf.table.table cimport table
+from cudf._lib.column cimport Column
 from cudf._lib.utils cimport data_from_unique_ptr
+from pylibcudf.libcudf.column.column_view cimport column_view
+from pylibcudf.libcudf.table.table cimport table
 
 from cuspatial._lib.cpp.points_in_range cimport (
     points_in_range as cpp_points_in_range,

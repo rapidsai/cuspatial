@@ -1,9 +1,11 @@
-# Copyright (c) 2020, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 
 from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
 
-from cudf._lib.column cimport Column, column, column_view
+from cudf._lib.column cimport Column
+from pylibcudf.libcudf.column.column cimport column
+from pylibcudf.libcudf.column.column_view cimport column_view
 
 from cuspatial._lib.cpp.point_in_polygon cimport (
     point_in_polygon as cpp_point_in_polygon,

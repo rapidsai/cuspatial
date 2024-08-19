@@ -2,7 +2,7 @@
 
 from libcpp.memory cimport unique_ptr
 
-from cudf._lib.pylibcudf.libcudf.column.column cimport column
+from pylibcudf.libcudf.column.column cimport column
 
 from cuspatial._lib.cpp.column.geometry_column_view cimport (
     geometry_column_view,
