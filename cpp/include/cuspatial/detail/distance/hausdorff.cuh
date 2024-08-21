@@ -82,7 +82,7 @@ constexpr auto magnitude_squared(T a, T b)
  * @param results directed Hausdorff distances computed by kernel
  */
 template <typename T, typename Index, typename PointIt, typename OffsetIt, typename OutputIt>
-__global__ void kernel_hausdorff(
+CUSPATIAL_KERNEL void kernel_hausdorff(
   Index num_points, PointIt points, Index num_spaces, OffsetIt space_offsets, OutputIt results)
 {
   using Point = typename std::iterator_traits<PointIt>::value_type;

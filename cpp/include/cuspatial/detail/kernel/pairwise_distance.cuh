@@ -48,10 +48,10 @@ namespace detail {
  * @note This kernel does not compute pairs that contains empty geometry.
  */
 template <class MultiLinestringRange1, class MultiLinestringRange2, class OutputIt>
-__global__ void linestring_distance(MultiLinestringRange1 multilinestrings1,
-                                    MultiLinestringRange2 multilinestrings2,
-                                    thrust::optional<uint8_t*> intersects,
-                                    OutputIt distances_first)
+CUSPATIAL_KERNEL void linestring_distance(MultiLinestringRange1 multilinestrings1,
+                                          MultiLinestringRange2 multilinestrings2,
+                                          thrust::optional<uint8_t*> intersects,
+                                          OutputIt distances_first)
 {
   using T = typename MultiLinestringRange1::element_t;
 
@@ -91,10 +91,10 @@ __global__ void linestring_distance(MultiLinestringRange1 multilinestrings1,
  * set to nullopt, no distance computation will be bypassed.
  */
 template <class MultiPointRange, class MultiLinestringRange, class OutputIterator>
-__global__ void point_linestring_distance(MultiPointRange multipoints,
-                                          MultiLinestringRange multilinestrings,
-                                          thrust::optional<uint8_t*> intersects,
-                                          OutputIterator distances)
+CUSPATIAL_KERNEL void point_linestring_distance(MultiPointRange multipoints,
+                                                MultiLinestringRange multilinestrings,
+                                                thrust::optional<uint8_t*> intersects,
+                                                OutputIterator distances)
 {
   using T = typename MultiPointRange::element_t;
 

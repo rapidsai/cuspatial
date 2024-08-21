@@ -48,9 +48,9 @@ namespace detail {
  * 2. Repeat 1 until all mergeable group is processed.
  */
 template <typename OffsetRange, typename SegmentRange, typename OutputIt>
-void __global__ simple_find_and_combine_segments_kernel(OffsetRange offsets,
-                                                        SegmentRange segments,
-                                                        OutputIt merged_flag)
+CUSPATIAL_KERNEL void simple_find_and_combine_segments_kernel(OffsetRange offsets,
+                                                              SegmentRange segments,
+                                                              OutputIt merged_flag)
 {
   for (auto pair_idx : ranger::grid_stride_range(offsets.size() - 1)) {
     // Zero-initialize flags for all segments in current space.
