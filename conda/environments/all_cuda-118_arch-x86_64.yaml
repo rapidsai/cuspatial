@@ -39,6 +39,7 @@ dependencies:
 - proj
 - pydata-sphinx-theme!=0.14.2
 - pydeck
+- pylibcudf==24.10.*,>=0.0.0a0
 - pytest
 - pytest-cov
 - pytest-xdist

@@ -4,9 +4,10 @@ from libc.stdint cimport int8_t
 from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
 
-from cudf._lib.column cimport Column, column_view
-from cudf._lib.pylibcudf.libcudf.table.table cimport table, table_view
+from cudf._lib.column cimport Column
 from cudf._lib.utils cimport data_from_unique_ptr, table_view_from_table
+from pylibcudf.libcudf.column.column_view cimport column_view
+from pylibcudf.libcudf.table.table cimport table, table_view
 
 from cuspatial._lib.cpp.spatial_join cimport (
     join_quadtree_and_bounding_boxes as cpp_join_quadtree_and_bounding_boxes,

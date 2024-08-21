@@ -43,6 +43,7 @@ done
 sed_runner "s/RAPIDS_VERSION_NUMBER=\".*/RAPIDS_VERSION_NUMBER=\"${NEXT_SHORT_TAG}\"/g" ci/build_docs.sh
 
 DEPENDENCIES=(
+  pylibcudf
   cudf
   cuml
   cuspatial
