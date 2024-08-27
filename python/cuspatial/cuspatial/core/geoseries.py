@@ -229,26 +229,28 @@ class GeoSeries(cudf.Series):
 
         @property
         def x(self):
-            return self.xy[::2].reset_index(drop=True)
+            return cudf.Series(self.xy.values[::2])
 
         @property
         def y(self):
-            return self.xy[1::2].reset_index(drop=True)
+            return cudf.Series(self.xy.values[1::2])
 
-        @property
+        @cached_property
         def xy(self):
-            features = self._get_current_features(self._type)
+            features = self.column
             if hasattr(features, "leaves"):
-                return cudf.Series(features.leaves().values)
+                return cudf.Series._from_column(features.leaves())
             else:
                 return cudf.Series()
 
-        def _get_current_features(self, type):
+        @cached_property
+        def column(self):
+            """Return the ListColumn reordered by union offset."""
             # Resample the existing features so that the offsets returned
             # by `_offset` methods reflect previous slicing, and match
             # the values returned by .xy.
             existing_indices = self._meta.union_offsets[
-                self._meta.input_types == type.value
+                self._meta.input_types == self._type.value
             ]
             existing_features = self._col.take(existing_indices._column)
             return existing_features
@@ -265,10 +267,6 @@ class GeoSeries(cudf.Series):
                 self._meta.input_types != -1
             ]
 
-        def column(self):
-            """Return the ListColumn reordered by union offset."""
-            return self._get_current_features(self._type)
-
     class MultiPointGeoColumnAccessor(GeoColumnAccessor):
         def __init__(self, list_series, meta):
             super().__init__(list_series, meta)
@@ -276,7 +274,7 @@ class GeoSeries(cudf.Series):
 
         @property
         def geometry_offset(self):
-            return self._get_current_features(self._type).offsets.values
+            return self.column.offsets.values
 
         def point_indices(self):
             # Return a cupy.ndarray containing the index values from the
@@ -292,13 +290,11 @@ class GeoSeries(cudf.Series):
 
         @property
         def geometry_offset(self):
-            return self._get_current_features(self._type).offsets.values
+            return self.column.offsets.values
 
         @property
         def part_offset(self):
-            return self._get_current_features(
-                self._type
-            ).elements.offsets.values
+            return self.column.elements.offsets.values
 
         def point_indices(self):
             # Return a cupy.ndarray containing the index values from the
@@ -314,19 +310,15 @@ class GeoSeries(cudf.Series):
 
         @property
         def geometry_offset(self):
-            return self._get_current_features(self._type).offsets.values
+            return self.column.offsets.values
 
         @property
         def part_offset(self):
-            return self._get_current_features(
-                self._type
-            ).elements.offsets.values
+            return self.column.elements.offsets.values
 
         @property
         def ring_offset(self):
-            return self._get_current_features(
-                self._type
-            ).elements.elements.offsets.values
+            return self.column.elements.elements.offsets.values
 
         def point_indices(self):
             # Return a cupy.ndarray containing the index values from the
