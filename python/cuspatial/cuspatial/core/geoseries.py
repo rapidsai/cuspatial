@@ -221,11 +221,18 @@ class GeoSeries(cudf.Series):
             )
 
     class GeoColumnAccessor:
-        def __init__(self, list_series, meta):
+        def __init__(self, list_series, meta, typ):
             self._series = list_series
             self._col = self._series._column
             self._meta = meta
-            self._type = Feature_Enum.POINT
+            self._type = typ
+            # Resample the existing features so that the offsets returned
+            # by `_offset` methods reflect previous slicing, and match
+            # the values returned by .xy.
+            existing_indices = self._meta.union_offsets[
+                self._meta.input_types == self._type.value
+            ]
+            self._existing_features = self._col.take(existing_indices._column)
 
         @property
         def x(self):
@@ -237,23 +244,15 @@ class GeoSeries(cudf.Series):
 
         @cached_property
         def xy(self):
-            features = self.column
+            features = self.column()
             if hasattr(features, "leaves"):
                 return cudf.Series._from_column(features.leaves())
             else:
                 return cudf.Series()
 
-        @cached_property
         def column(self):
             """Return the ListColumn reordered by union offset."""
-            # Resample the existing features so that the offsets returned
-            # by `_offset` methods reflect previous slicing, and match
-            # the values returned by .xy.
-            existing_indices = self._meta.union_offsets[
-                self._meta.input_types == self._type.value
-            ]
-            existing_features = self._col.take(existing_indices._column)
-            return existing_features
+            return self._existing_features
 
         def point_indices(self):
             # Return a cupy.ndarray containing the index values that each
@@ -268,13 +267,9 @@ class GeoSeries(cudf.Series):
             ]
 
     class MultiPointGeoColumnAccessor(GeoColumnAccessor):
-        def __init__(self, list_series, meta):
-            super().__init__(list_series, meta)
-            self._type = Feature_Enum.MULTIPOINT
-
         @property
         def geometry_offset(self):
-            return self.column.offsets.values
+            return self.column().offsets.values
 
         def point_indices(self):
             # Return a cupy.ndarray containing the index values from the
@@ -284,17 +279,13 @@ class GeoSeries(cudf.Series):
             return cp.repeat(self._meta.input_types.index, sizes)
 
     class LineStringGeoColumnAccessor(GeoColumnAccessor):
-        def __init__(self, list_series, meta):
-            super().__init__(list_series, meta)
-            self._type = Feature_Enum.LINESTRING
-
         @property
         def geometry_offset(self):
-            return self.column.offsets.values
+            return self.column().offsets.values
 
         @property
         def part_offset(self):
-            return self.column.elements.offsets.values
+            return self.column().elements.offsets.values
 
         def point_indices(self):
             # Return a cupy.ndarray containing the index values from the
@@ -304,21 +295,17 @@ class GeoSeries(cudf.Series):
             return cp.repeat(self._meta.input_types.index, sizes)
 
     class PolygonGeoColumnAccessor(GeoColumnAccessor):
-        def __init__(self, list_series, meta):
-            super().__init__(list_series, meta)
-            self._type = Feature_Enum.POLYGON
-
         @property
         def geometry_offset(self):
-            return self.column.offsets.values
+            return self.column().offsets.values
 
         @property
         def part_offset(self):
-            return self.column.elements.offsets.values
+            return self.column().elements.offsets.values
 
         @property
         def ring_offset(self):
-            return self.column.elements.elements.offsets.values
+            return self.column().elements.elements.offsets.values
 
         def point_indices(self):
             # Return a cupy.ndarray containing the index values from the
@@ -332,27 +319,29 @@ class GeoSeries(cudf.Series):
     @property
     def points(self):
         """Access the `PointsArray` of the underlying `GeoArrowBuffers`."""
-        return self.GeoColumnAccessor(self._column.points, self._column._meta)
+        return self.GeoColumnAccessor(
+            self._column.points, self._column._meta, Feature_Enum.POINT
+        )
 
     @property
     def multipoints(self):
         """Access the `MultiPointArray` of the underlying `GeoArrowBuffers`."""
         return self.MultiPointGeoColumnAccessor(
-            self._column.mpoints, self._column._meta
+            self._column.mpoints, self._column._meta, Feature_Enum.MULTIPOINT
         )
 
     @property
     def lines(self):
         """Access the `LineArray` of the underlying `GeoArrowBuffers`."""
         return self.LineStringGeoColumnAccessor(
-            self._column.lines, self._column._meta
+            self._column.lines, self._column._meta, Feature_Enum.LINESTRING
         )
 
     @property
     def polygons(self):
         """Access the `PolygonArray` of the underlying `GeoArrowBuffers`."""
         return self.PolygonGeoColumnAccessor(
-            self._column.polygons, self._column._meta
+            self._column.polygons, self._column._meta, Feature_Enum.POLYGON
         )
 
     def __repr__(self):
