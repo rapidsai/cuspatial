@@ -3,4 +3,4 @@
 
 set -euo pipefail
 
-ci/build_wheel.sh cuspatial python/cuspatial
+ci/build_wheel.sh cuspatial python/cuspatial python

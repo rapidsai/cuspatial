@@ -5,6 +5,7 @@ set -euo pipefail
 
 package_name=$1
 package_dir=$2
+package_type=$3
 
 source rapids-configure-sccache
 source rapids-date-string
@@ -20,10 +21,7 @@ python -m pip wheel . -w dist -vvv --no-deps --disable-pip-version-check
 mkdir -p final_dist
 python -m auditwheel repair \
     --exclude libcudf.so \
-    --exclude libnvcomp.so \
-    --exclude libnvcomp_bitcomp.so \
-    --exclude libnvcomp_gdeflate.so \
     -w final_dist \
     dist/*
 
-RAPIDS_PY_WHEEL_NAME="${package_name}_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 final_dist
+RAPIDS_PY_WHEEL_NAME="${package_name}_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 "${package_type}" final_dist
