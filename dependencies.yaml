@@ -193,6 +193,7 @@ dependencies:
         packages:
           - c-compiler
           - cxx-compiler
+          - &librmm_unsuffixed librmm==24.10.*,>=0.0.0a0
           - proj
           - sqlite
     specific:
@@ -555,7 +556,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - &librmm_unsuffixed librmm==24.10.*,>=0.0.0a0
+          - *librmm_unsuffixed
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
