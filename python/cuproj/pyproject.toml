@@ -122,7 +122,6 @@ matrix-entry = "cuda_suffixed=true"
 requires = [
     "cmake>=3.26.4,!=3.30.0",
     "cython>=3.0.0",
-    "librmm==24.10.*,>=0.0.0a0",
     "ninja",
     "rmm==24.10.*,>=0.0.0a0",
     "wheel",

@@ -117,7 +117,6 @@ files:
       - build_cpp_cuproj
       - build_python
       - build_wheels
-      - depends_on_librmm
   py_run_cuproj:
     output: [pyproject]
     pyproject_dir: python/cuproj
