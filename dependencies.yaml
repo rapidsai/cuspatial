@@ -17,6 +17,8 @@ files:
       - depends_on_cudf
       - depends_on_cuml
       - depends_on_cupy
+      - depends_on_libcudf
+      - depends_on_librmm
       - rapids_build_skbuild
       - run_python_cuspatial
       - test_libcuspatial
@@ -77,14 +79,17 @@ files:
       - build_cpp
       - build_python
       - build_wheels
+      - depends_on_libcudf
+      - depends_on_librmm
   py_run_cuspatial:
     output: [pyproject]
     pyproject_dir: python/cuspatial
     extras:
       table: project
     includes:
-      - depends_on_rmm
       - depends_on_cudf
+      - depends_on_libcudf
+      - depends_on_rmm
       - run_python_cuspatial
   py_test_cuspatial:
     output: [pyproject]
@@ -141,14 +146,12 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - ninja
-          - cmake>=3.26.4,!=3.30.0
+          - &ninja ninja
+          - &cmake cmake>=3.26.4,!=3.30.0
       - output_types: conda
         packages:
           - c-compiler
           - cxx-compiler
-          - libcudf==24.10.*,>=0.0.0a0
-          - librmm==24.10.*,>=0.0.0a0
           - proj
           - sqlite
     specific:
@@ -184,13 +187,13 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - ninja
-          - cmake>=3.26.4,!=3.30.0
+          - *ninja
+          - *cmake
       - output_types: conda
         packages:
           - c-compiler
           - cxx-compiler
-          - librmm==24.10.*,>=0.0.0a0
+          - &librmm_unsuffixed librmm==24.10.*,>=0.0.0a0
           - proj
           - sqlite
     specific:
@@ -443,6 +446,31 @@ dependencies:
               - pylibcudf-cu11==24.10.*,>=0.0.0a0
           - {matrix: null, packages: [*cudf_unsuffixed]}
 
+  depends_on_libcudf:
+    common:
+      - output_types: conda
+        packages:
+          - &libcudf_unsuffixed libcudf==24.10.*,>=0.0.0a0
+      - output_types: requirements
+        packages:
+          # pip recognizes the index as a global option for the requirements.txt file
+          - --extra-index-url=https://pypi.nvidia.com
+          - --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple
+    specific:
+      - output_types: [requirements, pyproject]
+        matrices:
+          - matrix:
+              cuda: "12.*"
+              cuda_suffixed: "true"
+            packages:
+              - libcudf-cu12==24.10.*,>=0.0.0a0
+          - matrix:
+              cuda: "11.*"
+              cuda_suffixed: "true"
+            packages:
+              - libcudf-cu11==24.10.*,>=0.0.0a0
+          - {matrix: null, packages: [*libcudf_unsuffixed]}
+
   depends_on_cuml:
     common:
       - output_types: conda
@@ -523,3 +551,28 @@ dependencies:
           - libcuspatial==24.10.*,>=0.0.0a0
           - cuspatial==24.10.*,>=0.0.0a0
           - cuproj==24.10.*,>=0.0.0a0
+
+  depends_on_librmm:
+    common:
+      - output_types: conda
+        packages:
+          - *librmm_unsuffixed
+      - output_types: requirements
+        packages:
+          # pip recognizes the index as a global option for the requirements.txt file
+          - --extra-index-url=https://pypi.nvidia.com
+          - --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple
+    specific:
+      - output_types: [requirements, pyproject]
+        matrices:
+          - matrix:
+              cuda: "12.*"
+              cuda_suffixed: "true"
+            packages:
+              - librmm-cu12==24.10.*,>=0.0.0a0
+          - matrix:
+              cuda: "11.*"
+              cuda_suffixed: "true"
+            packages:
+              - librmm-cu11==24.10.*,>=0.0.0a0
+          - {matrix: null, packages: [*librmm_unsuffixed]}
