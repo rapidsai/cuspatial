@@ -1,4 +1,8 @@
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
+
+# load cudf before any other imports, to be sure libcudf's symbols are found
+# in the libcudf.so from the libcudf wheel (if one is installed)
+import cudf
 
 from ._version import __git_commit__, __version__
 from .core.geodataframe import GeoDataFrame
