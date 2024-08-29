@@ -110,6 +110,7 @@ files:
       - build_python
       - build_wheels
       - depends_on_libcudf
+      - depends_on_libcuspatial
       - depends_on_librmm
   py_run_cuspatial:
     output: [pyproject]
@@ -119,6 +120,7 @@ files:
     includes:
       - depends_on_cudf
       - depends_on_libcudf
+      - depends_on_libcuspatial
       - depends_on_rmm
       - run_python_cuspatial
   py_test_cuspatial:

@@ -10,13 +10,15 @@ RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen ${RAPIDS_CUDA_VERSION})"
 apt update
 DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libgdal-dev
 
-# Download the cuspatial built in the previous step
+# Download the cuspatial and libcuspatial built in the previous step
 RAPIDS_PY_WHEEL_NAME="cuspatial_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-from-s3 python ./dist
+RAPIDS_PY_WHEEL_NAME="libcuspatial_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-from-s3 cpp ./dist
 
 # echo to expand wildcard before adding `[extra]` requires for pip
 python -m pip install \
   --no-binary 'fiona' \
   "$(echo ./dist/cuspatial*.whl)[test]" \
+  "$(echo ./dist/libcuspatial*.whl)" \
   'fiona>=1.8.19,<1.9'
 
 rapids-logger "pytest cuspatial"

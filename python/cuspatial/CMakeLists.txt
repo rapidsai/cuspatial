@@ -23,34 +23,9 @@ project(
   VERSION "${RAPIDS_VERSION}"
   LANGUAGES CXX CUDA)
 
-option(FIND_CUSPATIAL_CPP "Search for existing cuspatial C++ installations before defaulting to local files"
-       OFF)
-
-# If the user requested it we attempt to find cuspatial.
-if(FIND_CUSPATIAL_CPP)
-  find_package(cuspatial "${RAPIDS_VERSION}")
-else()
-  set(cuspatial_FOUND OFF)
-endif()
-
-if(NOT cuspatial_FOUND)
-  set(BUILD_TESTS OFF)
-  set(BUILD_BENCHMARKS OFF)
-  set(CUDA_STATIC_RUNTIME ON)
-  set(CUSPATIAL_USE_CUDF_STATIC ON)
-  set(CUSPATIAL_EXCLUDE_CUDF_FROM_ALL ON)
-
-  add_subdirectory(../../cpp cuspatial-cpp EXCLUDE_FROM_ALL)
-
-  set(cython_lib_dir cuspatial)
-  install(TARGETS cuspatial DESTINATION ${cython_lib_dir})
-endif()
+find_package(cuspatial "${RAPIDS_VERSION}" REQUIRED)
 
 include(rapids-cython-core)
 rapids_cython_init()
 
 add_subdirectory(cuspatial/_lib)
-
-if(DEFINED cython_lib_dir)
-  rapids_cython_add_rpath_entries(TARGET cuspatial PATHS "${cython_lib_dir}")
-endif()
