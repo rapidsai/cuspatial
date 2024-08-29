@@ -43,11 +43,7 @@ if(NOT cuspatial_FOUND)
   add_subdirectory(../../cpp cuspatial-cpp EXCLUDE_FROM_ALL)
 
   set(cython_lib_dir cuspatial)
-  include(cmake/Modules/WheelHelpers.cmake)
-  install_aliased_imported_targets(
-    TARGETS cuspatial
-    DESTINATION ${cython_lib_dir}
-  )
+  install(TARGETS cuspatial DESTINATION ${cython_lib_dir})
 endif()
 
 include(rapids-cython-core)
