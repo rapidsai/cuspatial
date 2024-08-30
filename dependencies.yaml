@@ -523,7 +523,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - cupy>=12.0.0
+          - cupy>=13.2.0
     # NOTE: cupy dependency is not broken into groups by a 'cuda_suffixed' selector like
     #       other packages in this file because DLFW builds expect it to have a -cuda{nn}x suffix
     specific:
@@ -531,10 +531,10 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.*"}
             packages:
-              - cupy-cuda12x>=12.0.0
+              - cupy-cuda12x>=13.2.0
           - matrix: {cuda: "11.*"}
             packages:
-              - &cupy_cu11 cupy-cuda11x>=12.0.0
+              - &cupy_cu11 cupy-cuda11x>=13.2.0
           - {matrix: null, packages: [*cupy_cu11]}
   test_libcuspatial:
     common:
