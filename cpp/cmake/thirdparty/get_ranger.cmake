@@ -33,7 +33,6 @@ function(find_and_configure_ranger)
       OPTIONS "BUILD_TESTS OFF"
       FIND_PACKAGE_ARGUMENTS "${find_package_args}"
     )
-
 endfunction()
 
 find_and_configure_ranger()

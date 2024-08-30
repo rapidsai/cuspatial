@@ -8,7 +8,7 @@ package_dir=$2
 package_type=$3
 
 # The 'libcuspatial' wheel should package 'libcuspatial.so', and all others
-# should exclude it (they dynamically link load it if they need it).
+# should exclude it (they dynamically load it if they need it).
 #
 # Capturing that here in argument-parsing to allow this build_wheel.sh
 # script to be re-used by all wheel builds in the project.
