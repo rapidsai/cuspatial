@@ -31,10 +31,7 @@ endif()
 
 unset(cuspatial_FOUND)
 
-# # Find Python early so that later commands can use it
-# find_package(Python 3.10 REQUIRED COMPONENTS Interpreter)
-
-# set options that only have 1 correct values in the context of libcuspatial wheel builds
+# set options for building libcuspatial
 set(BUILD_SHARED_LIBS ON)
 set(BUILD_TESTS OFF)
 set(BUILD_BENCHMARKS OFF)
