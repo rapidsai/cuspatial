@@ -21,7 +21,6 @@ files:
       - depends_on_librmm
       - rapids_build_skbuild
       - run_python_cuspatial
-      - test_libcuspatial
       - test_notebooks
       - test_python_cuspatial
       - test_python_cuproj
@@ -30,24 +29,27 @@ files:
     output: none
     includes:
       - cuda_version
+      - depends_on_libcuspatial
       - test_libcuspatial
   test_python:
     output: none
     includes:
       - cuda_version
+      - depends_on_cuproj
+      - depends_on_cuspatial
       - py_version
       - test_python_cuspatial
       - test_python_cuproj
-      - test_cuspatial
   test_notebooks:
     output: none
     includes:
       - cuda_version
       - depends_on_cuml
+      - depends_on_cuproj
+      - depends_on_cuspatial
       - test_notebooks
       - notebooks
       - py_version
-      - test_cuspatial
   checks:
     output: none
     includes:
@@ -57,9 +59,11 @@ files:
     output: none
     includes:
       - cuda_version
+      - depends_on_libcuspatial
+      - depends_on_cuspatial
+      - depends_on_cuproj
       - docs
       - py_version
-      - test_cuspatial
   py_build_cuspatial:
     output: [pyproject]
     pyproject_dir: python/cuspatial
@@ -133,7 +137,6 @@ files:
     includes:
       - test_python_cuproj
       - depends_on_cuspatial
-      - test_cuspatial
 
 channels:
   - rapidsai
@@ -391,6 +394,12 @@ dependencies:
         packages:
           - pyproj>=3.6.0,<3.7a0
 
+  depends_on_libcuspatial:
+    common:
+      - output_types: conda
+        packages:
+          - &libcuspatial_unsuffixed libcuspatial==24.10.*,>=0.0.0a0
+
   depends_on_rmm:
     common:
       - output_types: conda
@@ -519,6 +528,31 @@ dependencies:
               - cuspatial-cu11==24.10.*,>=0.0.0a0
           - {matrix: null, packages: [*cuspatial_unsuffixed]}
 
+  depends_on_cuproj:
+    common:
+      - output_types: conda
+        packages:
+          - &cuproj_unsuffixed cuproj==24.10.*,>=0.0.0a0
+      - output_types: requirements
+        packages:
+          # pip recognizes the index as a global option for the requirements.txt file
+          - --extra-index-url=https://pypi.nvidia.com
+          - --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple
+    specific:
+      - output_types: [requirements, pyproject]
+        matrices:
+          - matrix:
+              cuda: "12.*"
+              cuda_suffixed: "true"
+            packages:
+              - cuproj-cu12==24.10.*,>=0.0.0a0
+          - matrix:
+              cuda: "11.*"
+              cuda_suffixed: "true"
+            packages:
+              - cuproj-cu11==24.10.*,>=0.0.0a0
+          - {matrix: null, packages: [*cuproj_unsuffixed]}
+
   depends_on_cupy:
     common:
       - output_types: conda
@@ -540,15 +574,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - libcuspatial==24.10.*,>=0.0.0a0
           - libcuspatial-tests==24.10.*,>=0.0.0a0
-  test_cuspatial:
-    common:
-      - output_types: conda
-        packages:
-          - libcuspatial==24.10.*,>=0.0.0a0
-          - cuspatial==24.10.*,>=0.0.0a0
-          - cuproj==24.10.*,>=0.0.0a0
 
   depends_on_librmm:
     common:
