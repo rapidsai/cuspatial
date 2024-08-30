@@ -165,6 +165,7 @@ files:
     includes:
       - test_python_cuproj
       - depends_on_cuspatial
+      - test_cuspatial
 
 channels:
   - rapidsai
