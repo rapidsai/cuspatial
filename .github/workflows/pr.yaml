@@ -21,6 +21,7 @@ jobs:
       - conda-notebook-tests
       - docs-build
       - wheel-build-cuspatial
+      - wheel-build-libcuspatial
       - wheel-tests-cuspatial
       - wheel-build-cuproj
       - wheel-tests-cuproj
