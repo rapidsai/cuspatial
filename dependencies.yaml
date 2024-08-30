@@ -145,17 +145,16 @@ files:
       table: tool.rapids-build-backend
       key: requires
     includes:
-      - depends_on_rmm
       - build_cpp_cuproj
       - build_python
       - build_wheels
+      - depends_on_librmm
   py_run_cuproj:
     output: [pyproject]
     pyproject_dir: python/cuproj
     extras:
       table: project
     includes:
-      - depends_on_rmm
       - depends_on_cupy
   py_test_cuproj:
     output: [pyproject]
@@ -224,7 +223,6 @@ dependencies:
         packages:
           - c-compiler
           - cxx-compiler
-          - &librmm_unsuffixed librmm==24.10.*,>=0.0.0a0
           - proj
           - sqlite
     specific:
@@ -610,7 +608,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - *librmm_unsuffixed
+          - &librmm_unsuffixed librmm==24.10.*,>=0.0.0a0
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
