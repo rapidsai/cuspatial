@@ -26,8 +26,6 @@ function(find_and_configure_ranger)
     rapids_cpm_find(
       ranger 00.01.00
       GLOBAL_TARGETS "${global_targets}"
-      BUILD_EXPORT_SET cuspatial-exports
-      INSTALL_EXPORT_SET cuspatial-exports
       CPM_ARGS
       GIT_REPOSITORY https://github.com/harrism/ranger.git
       GIT_TAG main
@@ -35,6 +33,7 @@ function(find_and_configure_ranger)
       OPTIONS "BUILD_TESTS OFF"
       FIND_PACKAGE_ARGUMENTS "${find_package_args}"
     )
+
 endfunction()
 
 find_and_configure_ranger()
