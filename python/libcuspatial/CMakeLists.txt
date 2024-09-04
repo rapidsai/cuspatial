@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2022-2024, NVIDIA CORPORATION.
+# Copyright (c) 2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -15,17 +15,28 @@
 cmake_minimum_required(VERSION 3.26.4 FATAL_ERROR)
 
 include(../../rapids_config.cmake)
-include(rapids-cuda)
-rapids_cuda_init_architectures(cuspatial-python)
 
 project(
-  cuspatial-python
+  libcuspatial-python
   VERSION "${RAPIDS_VERSION}"
-  LANGUAGES CXX CUDA)
+  LANGUAGES CXX
+)
 
-find_package(cuspatial "${RAPIDS_VERSION}" REQUIRED)
+# Check if cuspatial is already available. If so, it is the user's responsibility to ensure that the
+# CMake package is also available at build time of the Python cuspatial package.
+find_package(cuspatial "${RAPIDS_VERSION}")
+if(cuspatial_FOUND)
+  return()
+endif()
 
-include(rapids-cython-core)
-rapids_cython_init()
+unset(cuspatial_FOUND)
 
-add_subdirectory(cuspatial/_lib)
+# set options for building libcuspatial
+set(BUILD_SHARED_LIBS ON)
+set(BUILD_TESTS OFF)
+set(BUILD_BENCHMARKS OFF)
+set(CUDA_STATIC_RUNTIME ON)
+set(CUSPATIAL_USE_CUDF_STATIC OFF)
+set(CUSPATIAL_EXCLUDE_CUDF_FROM_ALL ON)
+
+add_subdirectory(../../cpp cuspatial-cpp)
