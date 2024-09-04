@@ -7,8 +7,16 @@ mkdir -p ./dist
 RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen ${RAPIDS_CUDA_VERSION})"
 
 # install build dependencies for fiona
-apt update
-DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libgdal-dev
+if type -f yum > /dev/null 2>&1; then
+  yum update -y
+  # some of gdal-devel's dependencies, like 'libdap', come from the powertools repo
+  yum config-manager --set-enabled powertools
+  yum update -y
+  yum install -y gdal-devel
+else
+  apt update
+  DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libgdal-dev
+fi
 
 # Download the cuproj and cuspatial built in the previous step
 RAPIDS_PY_WHEEL_NAME="cuproj_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-from-s3 python ./dist

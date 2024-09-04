@@ -164,6 +164,13 @@ There are two ways to fix this:
     sudo -y add-apt-repository ppa:ubuntugis/ppa
     sudo apt install libgdal-dev
     ```
+  * Rocky Linux users can install a newer GDAL as follows
+    ```shell
+    yum update -y
+    yum config-manager --set-enabled powertools
+    yum update -y
+    yum install -y gdal-devel
+    ```
 2. Pin fiona's version to a range that's compatible with your version of `libgdal-dev`
   * For Ubuntu20.04 ([GDAL v3.0.4](https://packages.ubuntu.com/focal/libgdal-dev)):
     ```shell
