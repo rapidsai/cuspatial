@@ -1,4 +1,16 @@
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
+
+# If libcuspatial was installed as a wheel, we must request it to load the library
+# symbols. Otherwise, we assume that the library was installed in a system path that ld
+# can find.
+try:
+    import libcuspatial
+except ModuleNotFoundError:
+    pass
+else:
+    libcuspatial.load_library()
+    del libcuspatial
+
 
 from ._version import __git_commit__, __version__
 from .core.geodataframe import GeoDataFrame
