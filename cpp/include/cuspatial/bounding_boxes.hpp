@@ -54,7 +54,7 @@ std::unique_ptr<cudf::table> linestring_bounding_boxes(
   cudf::column_view const& x,
   cudf::column_view const& y,
   double expansion_radius,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @brief Compute minimum bounding box for each polygon in a list.
@@ -82,7 +82,7 @@ std::unique_ptr<cudf::table> polygon_bounding_boxes(
   cudf::column_view const& x,
   cudf::column_view const& y,
   double expansion_radius           = 0.0,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @} // end of doxygen group

@@ -72,7 +72,7 @@ std::unique_ptr<cudf::table> join_quadtree_and_bounding_boxes(
   double y_max,
   double scale,
   int8_t max_depth,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @brief Test whether the specified points are inside any of the specified polygons.
@@ -123,7 +123,7 @@ std::unique_ptr<cudf::table> quadtree_point_in_polygon(
   cudf::column_view const& ring_offsets,
   cudf::column_view const& poly_points_x,
   cudf::column_view const& poly_points_y,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @brief Finds the nearest linestring to each point in a quadrant, and computes the distances
@@ -172,7 +172,7 @@ std::unique_ptr<cudf::table> quadtree_point_to_nearest_linestring(
   cudf::column_view const& linestring_offsets,
   cudf::column_view const& linestring_points_x,
   cudf::column_view const& linestring_points_y,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @} // end of doxygen group

@@ -71,7 +71,7 @@ join_quadtree_and_bounding_boxes(
   T scale,
   int8_t max_depth,
   rmm::cuda_stream_view stream      = rmm::cuda_stream_default,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @brief Test whether the specified points are inside any of the specified polygons.
@@ -129,7 +129,7 @@ std::pair<rmm::device_uvector<IndexType>, rmm::device_uvector<IndexType>> quadtr
   PointIterator points_first,
   MultiPolygonRange polygons,
   rmm::cuda_stream_view stream      = rmm::cuda_stream_default,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @brief Finds the nearest linestring to each point in a quadrant, and computes the distances
@@ -186,7 +186,7 @@ quadtree_point_to_nearest_linestring(
   PointIterator points_first,
   MultiLinestringRange linestrings,
   rmm::cuda_stream_view stream      = rmm::cuda_stream_default,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 }  // namespace cuspatial
 

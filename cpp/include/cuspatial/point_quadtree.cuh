@@ -177,7 +177,7 @@ std::pair<rmm::device_uvector<uint32_t>, point_quadtree> quadtree_on_points(
   int8_t max_depth,
   int32_t max_size,
   rmm::cuda_stream_view stream      = rmm::cuda_stream_default,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @} // end of doxygen group

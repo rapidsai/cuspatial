@@ -127,7 +127,7 @@ Intermediate segmented_sort_intersection_intermediates(Intermediate& intermediat
 template <typename T>
 struct LinestringIntersectionDuplicatesTest : public ::testing::Test {
   rmm::cuda_stream_view stream() { return rmm::cuda_stream_default; }
-  rmm::device_async_resource_ref mr() { return rmm::mr::get_current_device_resource(); }
+  rmm::device_async_resource_ref mr() { return rmm::mr::get_current_device_resource_ref(); }
 
   template <typename IndexType, typename MultilinestringRange1, typename MultilinestringRange2>
   void run_single(MultilinestringRange1 lhs,

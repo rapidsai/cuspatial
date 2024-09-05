@@ -167,7 +167,7 @@ point_linestring_nearest_points_result pairwise_point_linestring_nearest_points(
   std::optional<cudf::device_span<cudf::size_type const>> multilinestring_geometry_offsets,
   cudf::device_span<cudf::size_type const> linestring_part_offsets,
   cudf::column_view linestring_points_xy,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @} // end of doxygen group

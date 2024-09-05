@@ -79,7 +79,7 @@ std::unique_ptr<cudf::column> point_in_polygon(
   cudf::column_view const& poly_ring_offsets,
   cudf::column_view const& poly_points_x,
   cudf::column_view const& poly_points_y,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @brief Given (point, polygon pairs), tests whether the point of each pair is inside the polygon
@@ -128,7 +128,7 @@ std::unique_ptr<cudf::column> pairwise_point_in_polygon(
   cudf::column_view const& poly_ring_offsets,
   cudf::column_view const& poly_points_x,
   cudf::column_view const& poly_points_y,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @} // end of doxygen group

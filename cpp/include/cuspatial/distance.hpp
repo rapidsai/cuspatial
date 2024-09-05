@@ -55,7 +55,7 @@ std::unique_ptr<cudf::column> haversine_distance(
   cudf::column_view const& b_lon,
   cudf::column_view const& b_lat,
   double const radius               = EARTH_RADIUS_KM,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @brief computes Hausdorff distances for all pairs in a collection of spaces
@@ -125,7 +125,7 @@ std::pair<std::unique_ptr<cudf::column>, cudf::table_view> directed_hausdorff_di
   cudf::column_view const& xs,
   cudf::column_view const& ys,
   cudf::column_view const& space_offsets,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @brief Compute pairwise (multi)point-to-(multi)point Cartesian distance
@@ -145,7 +145,7 @@ std::pair<std::unique_ptr<cudf::column>, cudf::table_view> directed_hausdorff_di
 std::unique_ptr<cudf::column> pairwise_point_distance(
   geometry_column_view const& multipoints1,
   geometry_column_view const& multipoints2,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @brief Compute pairwise (multi)points-to-(multi)linestrings Cartesian distance
@@ -167,7 +167,7 @@ std::unique_ptr<cudf::column> pairwise_point_distance(
 std::unique_ptr<cudf::column> pairwise_point_linestring_distance(
   geometry_column_view const& multipoints,
   geometry_column_view const& multilinestrings,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @brief Compute pairwise (multi)point-to-(multi)polygon Cartesian distance
@@ -191,7 +191,7 @@ std::unique_ptr<cudf::column> pairwise_point_linestring_distance(
 std::unique_ptr<cudf::column> pairwise_point_polygon_distance(
   geometry_column_view const& multipoints,
   geometry_column_view const& multipolygons,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @brief Compute pairwise (multi)linestring-to-(multi)linestring Cartesian distance
@@ -213,7 +213,7 @@ std::unique_ptr<cudf::column> pairwise_point_polygon_distance(
 std::unique_ptr<cudf::column> pairwise_linestring_distance(
   geometry_column_view const& multilinestrings1,
   geometry_column_view const& multilinestrings2,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @brief Compute pairwise (multi)linestring-to-(multi)polygon Cartesian distance
@@ -238,7 +238,7 @@ std::unique_ptr<cudf::column> pairwise_linestring_distance(
 std::unique_ptr<cudf::column> pairwise_linestring_polygon_distance(
   geometry_column_view const& multilinestrings,
   geometry_column_view const& multipolygons,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @brief Compute pairwise (multi)polygon-to-(multi)polygon Cartesian distance
@@ -257,7 +257,7 @@ std::unique_ptr<cudf::column> pairwise_linestring_polygon_distance(
 std::unique_ptr<cudf::column> pairwise_polygon_distance(
   geometry_column_view const& multipolygons1,
   geometry_column_view const& multipolygons2,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @} // end of doxygen group

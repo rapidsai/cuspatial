@@ -88,7 +88,7 @@ template <typename T,
 linestring_intersection_result<T, index_t> pairwise_linestring_intersection(
   MultiLinestringRange1 multilinestrings1,
   MultiLinestringRange2 multilinestrings2,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource(),
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref(),
   rmm::cuda_stream_view stream      = rmm::cuda_stream_default);
 
 }  // namespace cuspatial

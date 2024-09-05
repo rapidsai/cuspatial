@@ -37,7 +37,7 @@ double constexpr PI = 3.14159265358979323846;
 template <typename T>
 struct PairwisePointPolygonDistanceTest : public ::testing::Test {
   rmm::cuda_stream_view stream() { return rmm::cuda_stream_default; }
-  rmm::device_async_resource_ref mr() { return rmm::mr::get_current_device_resource(); }
+  rmm::device_async_resource_ref mr() { return rmm::mr::get_current_device_resource_ref(); }
 
   void run_single(std::initializer_list<std::initializer_list<vec_2d<T>>> multipoints,
                   std::initializer_list<std::size_t> multipolygon_geometry_offsets,
