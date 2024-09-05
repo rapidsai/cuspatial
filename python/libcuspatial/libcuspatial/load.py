@@ -24,7 +24,7 @@ def load_library():
         import libcudf
         libcudf.load_library()
     except ModuleNotFoundError:
-        # 'libcuspatial' has a runtime dependency on 'libcudf'. However, 
+        # 'libcuspatial' has a runtime dependency on 'libcudf'. However,
         # that dependency might be satisfied by the 'libcudf' conda package
         # (which does not have any Python modules), instead of the
         # 'libcudf' wheel.
