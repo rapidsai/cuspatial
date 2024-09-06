@@ -16,13 +16,22 @@
 import ctypes
 import os
 
-import libcudf
-
 
 def load_library():
-    # libcudf must be loaded before libcuspatial because libcuspatial
-    # references its symbols
-    libcudf.load_library()
+    try:
+        # libcudf must be loaded before libcuspatial because libcuspatial
+        # references its symbols
+        import libcudf
+        libcudf.load_library()
+    except ModuleNotFoundError:
+        # 'libcuspatial' has a runtime dependency on 'libcudf'. However,
+        # that dependency might be satisfied by the 'libcudf' conda package
+        # (which does not have any Python modules), instead of the
+        # 'libcudf' wheel.
+        #
+        # In that situation, assume that 'libcudf.so' is in a place where
+        # the loader can find it.
+        pass
 
     # Dynamically load libcuspatial.so. Prefer a system library if one is
     # present to avoid clobbering symbols that other packages might expect,
