@@ -376,9 +376,6 @@ dependencies:
   # TODO: Remove geopandas.dataset usage in cuspatial_api_examples.ipynb
   test_notebooks:
     common:
-      - output_types: [conda, requirements, pyproject]
-        packages:
-          - geopandas<1
       - output_types: conda
         packages:
           - osmnx>=1.9.3
@@ -405,7 +402,7 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - geopandas>=0.11.0
+          - &geopandas geopandas>=1.0.0
           - &numpy numpy>=1.23,<2.0a0
   test_python_cuspatial:
     common:
@@ -422,7 +419,7 @@ dependencies:
           - pytest
           - pytest-cov
           - pytest-xdist
-          - geopandas>=0.11.0
+          - *geopandas
       - output_types: [requirements, pyproject]
         packages:
           - pyproj>=3.6.0,<3.7a0

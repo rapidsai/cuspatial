@@ -19,8 +19,7 @@ dependencies:
 - cython>=3.0.0
 - doxygen
 - gcc_linux-64=11.*
-- geopandas<1
-- geopandas>=0.11.0
+- geopandas>=1.0.0
 - ipython
 - ipywidgets
 - libcudf==24.10.*,>=0.0.0a0
