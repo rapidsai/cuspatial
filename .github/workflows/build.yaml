@@ -68,7 +68,7 @@ jobs:
       sha: ${{ inputs.sha }}
   wheel-build-libcuspatial:
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-24.10
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@python-3.12
     with:
       # build for every combination of arch and CUDA version, but only for the latest Python
       matrix_filter: group_by([.ARCH, (.CUDA_VER|split(".")|map(tonumber)|.[0])]) | map(max_by(.PY_VER|split(".")|map(tonumber)))
@@ -80,7 +80,7 @@ jobs:
   wheel-publish-libcuspatial:
     needs: wheel-build-libcuspatial
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-publish.yaml@branch-24.10
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-publish.yaml@python-3.12
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       branch: ${{ inputs.branch }}
