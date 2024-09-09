@@ -24,8 +24,6 @@ dependencies:
 - ipython
 - ipywidgets
 - libcudf==24.10.*,>=0.0.0a0
-- libcuspatial-tests==24.10.*,>=0.0.0a0
-- libcuspatial==24.10.*,>=0.0.0a0
 - librmm==24.10.*,>=0.0.0a0
 - myst-parser
 - nbsphinx
