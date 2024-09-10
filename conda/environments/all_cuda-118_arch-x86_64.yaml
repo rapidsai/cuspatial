@@ -19,13 +19,10 @@ dependencies:
 - cython>=3.0.0
 - doxygen
 - gcc_linux-64=11.*
-- geopandas<1
-- geopandas>=0.11.0
+- geopandas>=1.0.0
 - ipython
 - ipywidgets
 - libcudf==24.10.*,>=0.0.0a0
-- libcuspatial-tests==24.10.*,>=0.0.0a0
-- libcuspatial==24.10.*,>=0.0.0a0
 - librmm==24.10.*,>=0.0.0a0
 - myst-parser
 - nbsphinx
@@ -36,14 +33,14 @@ dependencies:
 - nvcc_linux-64=11.8
 - osmnx>=1.9.3
 - pre-commit
-- proj
+- proj >=9.3.0,<9.3.1.0a0
 - pydata-sphinx-theme!=0.14.2
 - pydeck
 - pylibcudf==24.10.*,>=0.0.0a0
 - pytest
 - pytest-cov
 - pytest-xdist
-- python>=3.10,<3.12
+- python>=3.10,<3.13
 - rapids-build-backend>=0.3.0,<0.4.0.dev0
 - rmm==24.10.*,>=0.0.0a0
 - scikit-build-core>=0.10.0
