@@ -35,7 +35,7 @@ dependencies:
 - nbsphinx
 - ninja
 - notebook
-- numpy>=2.1.0,<3.0a0
+- numpy>=2.0.0,<3.0a0
 - numpydoc
 - osmnx>=1.9.3
 - pre-commit
