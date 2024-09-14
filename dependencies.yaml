@@ -21,7 +21,6 @@ files:
       - depends_on_librmm
       - rapids_build_skbuild
       - run_python_cuspatial
-      - test_libcuspatial
       - test_notebooks
       - test_python_cuspatial
       - test_python_cuproj
@@ -30,24 +29,27 @@ files:
     output: none
     includes:
       - cuda_version
+      - depends_on_libcuspatial
       - test_libcuspatial
   test_python:
     output: none
     includes:
       - cuda_version
+      - depends_on_cuproj
+      - depends_on_cuspatial
       - py_version
       - test_python_cuspatial
       - test_python_cuproj
-      - test_cuspatial
   test_notebooks:
     output: none
     includes:
       - cuda_version
       - depends_on_cuml
+      - depends_on_cuproj
+      - depends_on_cuspatial
       - test_notebooks
       - notebooks
       - py_version
-      - test_cuspatial
   checks:
     output: none
     includes:
@@ -57,9 +59,35 @@ files:
     output: none
     includes:
       - cuda_version
+      - depends_on_cuspatial
+      - depends_on_cuproj
       - docs
       - py_version
-      - test_cuspatial
+  py_build_libcuspatial:
+    output: [pyproject]
+    pyproject_dir: python/libcuspatial
+    extras:
+      table: build-system
+    includes:
+      - rapids_build_skbuild
+  py_rapids_build_libcuspatial:
+    output: [pyproject]
+    pyproject_dir: python/libcuspatial
+    extras:
+      table: tool.rapids-build-backend
+      key: requires
+    includes:
+      - build_cpp
+      - build_wheels
+      - depends_on_libcudf
+      - depends_on_librmm
+  py_run_libcuspatial:
+    output: [pyproject]
+    pyproject_dir: python/libcuspatial
+    extras:
+      table: project
+    includes:
+      - depends_on_libcudf
   py_build_cuspatial:
     output: [pyproject]
     pyproject_dir: python/cuspatial
@@ -80,6 +108,7 @@ files:
       - build_python
       - build_wheels
       - depends_on_libcudf
+      - depends_on_libcuspatial
       - depends_on_librmm
   py_run_cuspatial:
     output: [pyproject]
@@ -89,6 +118,7 @@ files:
     includes:
       - depends_on_cudf
       - depends_on_libcudf
+      - depends_on_libcuspatial
       - depends_on_rmm
       - run_python_cuspatial
   py_test_cuspatial:
@@ -133,7 +163,6 @@ files:
     includes:
       - test_python_cuproj
       - depends_on_cuspatial
-      - test_cuspatial
 
 channels:
   - rapidsai
@@ -151,7 +180,7 @@ dependencies:
         packages:
           - c-compiler
           - cxx-compiler
-          - proj
+          - proj >=9.3.0,<9.3.1.0a0  # TODO: proj is being held back due to needing spdlog/fmt upgrades to support recent conda-forge builds of tiledb
           - sqlite
     specific:
       - output_types: conda
@@ -344,9 +373,6 @@ dependencies:
   # TODO: Remove geopandas.dataset usage in cuspatial_api_examples.ipynb
   test_notebooks:
     common:
-      - output_types: [conda, requirements, pyproject]
-        packages:
-          - geopandas<1
       - output_types: conda
         packages:
           - osmnx>=1.9.3
@@ -363,13 +389,17 @@ dependencies:
             packages:
               - python=3.11
           - matrix:
+              py: "3.12"
             packages:
-              - python>=3.10,<3.12
+              - python=3.12
+          - matrix:
+            packages:
+              - python>=3.10,<3.13
   run_python_cuspatial:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - geopandas>=0.11.0
+          - &geopandas geopandas>=1.0.0
           - &numpy numpy>=2.0.0,<3.0a0
           - llvmlite>=0.43.0
   test_python_cuspatial:
@@ -387,7 +417,7 @@ dependencies:
           - pytest
           - pytest-cov
           - pytest-xdist
-          - geopandas>=0.11.0
+          - *geopandas
       - output_types: [requirements, pyproject]
         packages:
           - pyproj>=3.6.0,<3.7a0
@@ -520,6 +550,31 @@ dependencies:
               - cuspatial-cu11==24.10.*,>=0.0.0a0
           - {matrix: null, packages: [*cuspatial_unsuffixed]}
 
+  depends_on_cuproj:
+    common:
+      - output_types: conda
+        packages:
+          - &cuproj_unsuffixed cuproj==24.10.*,>=0.0.0a0
+      - output_types: requirements
+        packages:
+          # pip recognizes the index as a global option for the requirements.txt file
+          - --extra-index-url=https://pypi.nvidia.com
+          - --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple
+    specific:
+      - output_types: [requirements, pyproject]
+        matrices:
+          - matrix:
+              cuda: "12.*"
+              cuda_suffixed: "true"
+            packages:
+              - cuproj-cu12==24.10.*,>=0.0.0a0
+          - matrix:
+              cuda: "11.*"
+              cuda_suffixed: "true"
+            packages:
+              - cuproj-cu11==24.10.*,>=0.0.0a0
+          - {matrix: null, packages: [*cuproj_unsuffixed]}
+
   depends_on_cupy:
     common:
       - output_types: conda
@@ -541,15 +596,31 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - libcuspatial==24.10.*,>=0.0.0a0
           - libcuspatial-tests==24.10.*,>=0.0.0a0
-  test_cuspatial:
+  depends_on_libcuspatial:
     common:
       - output_types: conda
         packages:
-          - libcuspatial==24.10.*,>=0.0.0a0
-          - cuspatial==24.10.*,>=0.0.0a0
-          - cuproj==24.10.*,>=0.0.0a0
+          - &libcuspatial_unsuffixed libcuspatial==24.10.*,>=0.0.0a0
+      - output_types: requirements
+        packages:
+          # pip recognizes the index as a global option for the requirements.txt file
+          - --extra-index-url=https://pypi.nvidia.com
+          - --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple
+    specific:
+      - output_types: [requirements, pyproject]
+        matrices:
+          - matrix:
+              cuda: "12.*"
+              cuda_suffixed: "true"
+            packages:
+              - libcuspatial-cu12==24.10.*,>=0.0.0a0
+          - matrix:
+              cuda: "11.*"
+              cuda_suffixed: "true"
+            packages:
+              - libcuspatial-cu11==24.10.*,>=0.0.0a0
+          - {matrix: null, packages: [*libcuspatial_unsuffixed]}
 
   depends_on_librmm:
     common:

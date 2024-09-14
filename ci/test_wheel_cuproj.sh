@@ -6,20 +6,16 @@ set -eou pipefail
 mkdir -p ./dist
 RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen ${RAPIDS_CUDA_VERSION})"
 
-# install build dependencies for fiona
-apt update
-DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends libgdal-dev
-
 # Download the cuproj and cuspatial built in the previous step
 RAPIDS_PY_WHEEL_NAME="cuproj_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-from-s3 python ./dist
 RAPIDS_PY_WHEEL_NAME="cuspatial_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-from-s3 python ./dist
+RAPIDS_PY_WHEEL_NAME="libcuspatial_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-from-s3 cpp ./dist
 
 # echo to expand wildcard before adding `[extra]` requires for pip
 python -m pip install \
-  --no-binary 'fiona' \
   "$(echo ./dist/cuspatial*.whl)" \
   "$(echo ./dist/cuproj*.whl)[test]" \
-  'fiona>=1.8.19,<1.9'
+  "$(echo ./dist/libcuspatial*.whl)"
 
 rapids-logger "pytest cuproj"
 pushd python/cuproj/cuproj
