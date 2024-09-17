@@ -93,8 +93,7 @@ def assert_eq_multipolygon(p1, p2):
 
 
 def assert_eq_geo_df(geo1, geo2):
-    if type(geo1) is not type(geo2):
-        raise TypeError
+    assert type(geo1) is type(geo2)
     assert geo1.columns.equals(geo2.columns)
     for col in geo1.columns:
         if geo1[col].dtype == "geometry":
