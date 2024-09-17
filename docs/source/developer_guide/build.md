@@ -4,7 +4,7 @@
 
 - gcc >= 7.5
 - cmake >= 3.26.4
-- miniconda
+- miniforge
 
 ## Fetch cuSpatial repository
 
