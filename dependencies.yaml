@@ -180,7 +180,7 @@ dependencies:
         packages:
           - c-compiler
           - cxx-compiler
-          - proj >=9.3.0,<9.3.1.0a0  # TODO: proj is being held back due to needing spdlog/fmt upgrades to support recent conda-forge builds of tiledb
+          - proj
           - sqlite
     specific:
       - output_types: conda

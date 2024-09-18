@@ -35,7 +35,7 @@ dependencies:
 - numpydoc
 - osmnx>=1.9.3
 - pre-commit
-- proj >=9.3.0,<9.3.1.0a0
+- proj
 - pydata-sphinx-theme!=0.14.2
 - pydeck
 - pylibcudf==24.10.*,>=0.0.0a0

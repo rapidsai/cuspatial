@@ -49,7 +49,7 @@ requirements:
     - libcudf ={{ minor_version }}
     - librmm ={{ minor_version }}
     - sqlite
-    - proj >=9.3.0,<9.3.1.0a0  # TODO: proj is being held back due to needing spdlog/fmt upgrades to support recent conda-forge builds of tiledb
+    - proj
 
 outputs:
   - name: libcuspatial
@@ -85,7 +85,7 @@ outputs:
         - libcudf ={{ minor_version }}
         - librmm ={{ minor_version }}
         - sqlite
-        - proj >=9.3.0,<9.3.1.0a0  # TODO: proj is being held back due to needing spdlog/fmt upgrades to support recent conda-forge builds of tiledb
+        - proj
     test:
       commands:
         - test -f $PREFIX/lib/libcuspatial.so
