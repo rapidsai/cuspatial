@@ -400,7 +400,7 @@ dependencies:
       - output_types: [conda, requirements, pyproject]
         packages:
           - &geopandas geopandas>=1.0.0
-          - &numpy numpy>=2.0.0,<3.0a0
+          - &numpy numpy>=1.23,<3.0a0
   test_python_cuspatial:
     common:
       - output_types: [conda, requirements, pyproject]
