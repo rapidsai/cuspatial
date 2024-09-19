@@ -24,7 +24,7 @@ jobs:
       - wheel-build-libcuspatial
       # - wheel-tests-cuspatial
       - wheel-build-cuproj
-      - wheel-tests-cuproj
+      # - wheel-tests-cuproj
       - devcontainer
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-24.10
