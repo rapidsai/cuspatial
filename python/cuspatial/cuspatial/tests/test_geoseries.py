@@ -87,7 +87,7 @@ def generator(size: Integral, obj_type: Example_Feature_Enum = None):
 
 
 def assert_eq_point(p1, p2):
-    assert type(p1) == type(p2)
+    assert type(p1) is type(p2)
     assert p1.x == p2.x
     assert p1.y == p2.y
     assert p1.has_z == p2.has_z
@@ -97,14 +97,14 @@ def assert_eq_point(p1, p2):
 
 
 def assert_eq_multipoint(p1, p2):
-    assert type(p1) == type(p2)
+    assert type(p1) is type(p2)
     assert len(p1) == len(p2)
     for i in range(len(p1)):
         assert_eq_point(p1[i], p2[i])
 
 
 def assert_eq_linestring(p1, p2):
-    assert type(p1) == type(p2)
+    assert type(p1) is type(p2)
     assert p1 == p2
 
 
@@ -124,8 +124,8 @@ def assert_eq_multipolygon(p1, p2):
 
 
 def assert_eq_geo(geo1, geo2):
-    if type(geo1) != type(geo2):
-        assert TypeError
+    if type(geo1) is not type(geo2):
+        raise TypeError
     result = geo1.equals(geo2)
     if isinstance(result, bool):
         assert result
