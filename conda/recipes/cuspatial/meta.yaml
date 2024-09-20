@@ -77,7 +77,7 @@ requirements:
     - cudf ={{ minor_version }}
     - pylibcudf ={{ minor_version }}
     - geopandas >=1.0.0
-    - numpy  >=1.23,<3.0a0
+    - numpy >=1.23,<3.0a0
     - python
     - rmm ={{ minor_version }}
 
