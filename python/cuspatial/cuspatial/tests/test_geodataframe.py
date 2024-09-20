@@ -66,7 +66,7 @@ def generator(size, has_z=False):
 
 
 def assert_eq_point(p1, p2):
-    assert type(p1) == type(p2)
+    assert type(p1) is type(p2)
     assert p1.x == p2.x
     assert p1.y == p2.y
     assert p1.has_z == p2.has_z
@@ -76,7 +76,7 @@ def assert_eq_point(p1, p2):
 
 
 def assert_eq_multipoint(p1, p2):
-    assert type(p1) == type(p2)
+    assert type(p1) is type(p2)
     assert len(p1) == len(p2)
     for i in range(len(p1)):
         assert_eq_point(p1[i], p2[i])
@@ -93,8 +93,7 @@ def assert_eq_multipolygon(p1, p2):
 
 
 def assert_eq_geo_df(geo1, geo2):
-    if type(geo1) != type(geo2):
-        assert TypeError
+    assert type(geo1) is type(geo2)
     assert geo1.columns.equals(geo2.columns)
     for col in geo1.columns:
         if geo1[col].dtype == "geometry":
@@ -112,7 +111,7 @@ def test_select_multiple_columns(gpdf):
 
 def test_type_persistence(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
-    assert type(cugpdf["geometry"]) == cuspatial.GeoSeries
+    assert type(cugpdf["geometry"]) is cuspatial.GeoSeries
 
 
 def test_interleaved_point(gpdf, polys):
@@ -462,7 +461,7 @@ def test_reset_index(level, drop, inplace, col_level, col_fill):
 def test_cudf_dataframe_init():
     df = cudf.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
     gdf = cuspatial.GeoDataFrame(df)
-    assert_eq_geo_df(gdf.to_pandas(), df.to_pandas())
+    assert_eq_geo_df(gdf.to_pandas(), gpd.GeoDataFrame(df.to_pandas()))
 
 
 def test_apply_boolean_mask(gpdf, mask_factory):
