@@ -461,7 +461,7 @@ def test_reset_index(level, drop, inplace, col_level, col_fill):
 def test_cudf_dataframe_init():
     df = cudf.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
     gdf = cuspatial.GeoDataFrame(df)
-    assert_eq_geo_df(gdf.to_pandas(), df.to_pandas())
+    assert_eq_geo_df(gdf.to_pandas(), gpd.GeoDataFrame(df.to_pandas()))
 
 
 def test_apply_boolean_mask(gpdf, mask_factory):
