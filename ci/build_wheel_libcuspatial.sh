@@ -3,6 +3,4 @@
 
 set -euo pipefail
 
-source ./ci/use_wheels_from_prs.sh
-
 ci/build_wheel.sh libcuspatial python/libcuspatial cpp
