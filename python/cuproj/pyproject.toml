@@ -45,7 +45,7 @@ classifiers = [
 test = [
     "cuspatial==24.10.*,>=0.0.0a0",
     "geopandas>=1.0.0",
-    "numpy>=1.23,<2.0a0",
+    "numpy>=1.23,<3.0a0",
     "pyproj>=3.6.0,<3.7a0",
     "pytest",
     "pytest-cov",
