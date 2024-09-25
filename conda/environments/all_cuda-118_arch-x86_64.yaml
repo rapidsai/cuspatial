@@ -28,12 +28,12 @@ dependencies:
 - nbsphinx
 - ninja
 - notebook
-- numpy>=1.23,<2.0a0
+- numpy>=1.23,<3.0a0
 - numpydoc
 - nvcc_linux-64=11.8
 - osmnx>=1.9.3
 - pre-commit
-- proj >=9.3.0,<9.3.1.0a0
+- proj
 - pydata-sphinx-theme!=0.14.2
 - pydeck
 - pylibcudf==24.12.*,>=0.0.0a0
