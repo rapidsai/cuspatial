@@ -29,6 +29,8 @@ def gs():
     g8 = Polygon(
         ((35, 36), (37, 38), (39, 40), (41, 42)),
     )
+    # TODO: g9, g10, g11 are invalid
+    # https://github.com/libgeos/geos/issues/1177
     g9 = MultiPolygon(
         [
             (
