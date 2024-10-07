@@ -464,7 +464,13 @@ def test_cudf_dataframe_init():
     assert_eq_geo_df(gdf.to_pandas(), gpd.GeoDataFrame(df.to_pandas()))
 
 
-def test_apply_boolean_mask(gpdf, mask_factory):
+def test_apply_boolean_mask(gpdf, mask_factory, request):
+    if "MaskNone" not in request.node.callspec.id:
+        reason = (
+            "gs fixture contains invalid Polygons/MultiPolygons: "
+            "https://github.com/libgeos/geos/issues/1177"
+        )
+        request.applymarker(pytest.mark.xfail(reason=reason))
     mask = mask_factory(len(gpdf))
 
     expected = gpdf[mask]
