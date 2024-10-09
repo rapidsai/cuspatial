@@ -394,17 +394,18 @@ template <typename MultiLinestringRange1,
           typename IdRanges,
           typename OutputIt1,
           typename OutputIt2>
-void __global__ pairwise_linestring_intersection_simple(MultiLinestringRange1 multilinestrings1,
-                                                        MultiLinestringRange2 multilinestrings2,
-                                                        TempIt1 n_points_stored,
-                                                        TempIt2 n_segments_stored,
-                                                        Offsets1 num_points_offsets_first,
-                                                        Offsets2 num_segments_offsets_first,
-                                                        Offsets3 num_points_per_pair_first,
-                                                        IdRanges point_ids_range,
-                                                        IdRanges segment_ids_range,
-                                                        OutputIt1 points_first,
-                                                        OutputIt2 segments_first)
+CUSPATIAL_KERNEL void pairwise_linestring_intersection_simple(
+  MultiLinestringRange1 multilinestrings1,
+  MultiLinestringRange2 multilinestrings2,
+  TempIt1 n_points_stored,
+  TempIt2 n_segments_stored,
+  Offsets1 num_points_offsets_first,
+  Offsets2 num_segments_offsets_first,
+  Offsets3 num_points_per_pair_first,
+  IdRanges point_ids_range,
+  IdRanges segment_ids_range,
+  OutputIt1 points_first,
+  OutputIt2 segments_first)
 {
   using T       = typename MultiLinestringRange1::element_t;
   using types_t = uint8_t;

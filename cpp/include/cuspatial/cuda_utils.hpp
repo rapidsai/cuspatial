@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,10 @@
 
 #ifdef __CUDACC__
 #define CUSPATIAL_HOST_DEVICE __host__ __device__
+#define CUSPATIAL_KERNEL      __global__ static
 #else
 #define CUSPATIAL_HOST_DEVICE
+#define CUSPATIAL_KERNEL
 #endif
 
 /**

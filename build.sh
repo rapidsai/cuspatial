@@ -124,11 +124,6 @@ if hasArg benchmarks; then
     BUILD_BENCHMARKS=ON
 fi
 
-# Append `-DFIND_CUSPATIAL_CPP=ON` to EXTRA_CMAKE_ARGS unless a user specified the option.
-if [[ "${EXTRA_CMAKE_ARGS}" != *"DFIND_CUSPATIAL_CPP"* ]]; then
-    EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DFIND_CUSPATIAL_CPP=ON"
-fi
-
 # Append `-DFIND_CUPROJ_CPP=ON` to EXTRA_CMAKE_ARGS unless a user specified the option.
 if [[ "${EXTRA_CMAKE_ARGS}" != *"DFIND_CUPROJ_CPP"* ]]; then
     EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DFIND_CUPROJ_CPP=ON"

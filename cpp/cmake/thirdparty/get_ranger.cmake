@@ -1,5 +1,5 @@
 #=============================================================================
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,8 +26,6 @@ function(find_and_configure_ranger)
     rapids_cpm_find(
       ranger 00.01.00
       GLOBAL_TARGETS "${global_targets}"
-      BUILD_EXPORT_SET cuspatial-exports
-      INSTALL_EXPORT_SET cuspatial-exports
       CPM_ARGS
       GIT_REPOSITORY https://github.com/harrism/ranger.git
       GIT_TAG main

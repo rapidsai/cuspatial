@@ -1,8 +1,9 @@
-# Copyright (c) 2021-2023 NVIDIA CORPORATION
+# Copyright (c) 2021-2024, NVIDIA CORPORATION
+from __future__ import annotations
 
 from enum import Enum
 from functools import cached_property
-from typing import Tuple, TypeVar
+from typing import TypeVar
 
 import cupy as cp
 import pyarrow as pa
@@ -41,9 +42,8 @@ class GeoColumn(ColumnBase):
 
     def __init__(
         self,
-        data: Tuple,
+        data: tuple[cudf.Series, cudf.Series, cudf.Series, cudf.Series],
         meta: GeoMeta = None,
-        shuffle_order: cudf.Index = None,
     ):
         if (
             isinstance(data[0], cudf.Series)
@@ -61,7 +61,7 @@ class GeoColumn(ColumnBase):
             self.polygons = data[3]
             self.polygons.name = "polygons"
         else:
-            raise TypeError("All four Tuple arguments must be cudf.ListSeries")
+            raise TypeError("All four Tuple arguments must be cudf.Series")
         super().__init__(None, size=len(self), dtype="geometry")
 
     def to_arrow(self):
@@ -153,14 +153,14 @@ class GeoColumn(ColumnBase):
         coord_dtype = points_xy.dtype
         return cls(
             (
-                cudf.Series(point_col),
-                cudf.Series(
+                cudf.Series._from_column(point_col),
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.MULTIPOINT, coord_dtype)
                 ),
-                cudf.Series(
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.LINESTRING, coord_dtype)
                 ),
-                cudf.Series(
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.POLYGON, coord_dtype)
                 ),
             ),
@@ -180,6 +180,7 @@ class GeoColumn(ColumnBase):
 
         multi_elements = _xy_as_variable_sized_list(multipoints_xy)
         multipoint_col = ListColumn(
+            data=None,
             dtype=cudf.ListDtype(multi_elements.dtype),
             size=len(geometry_offsets) - 1,
             children=(geometry_offsets, multi_elements),
@@ -205,14 +206,14 @@ class GeoColumn(ColumnBase):
 
         return cls(
             (
-                cudf.Series(
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.POINT, coord_dtype)
                 ),
-                cudf.Series(multipoint_col),
-                cudf.Series(
+                cudf.Series._from_column(multipoint_col),
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.LINESTRING, coord_dtype)
                 ),
-                cudf.Series(
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.POLYGON, coord_dtype)
                 ),
             ),
@@ -235,11 +236,13 @@ class GeoColumn(ColumnBase):
 
         parts_elements = _xy_as_variable_sized_list(linestrings_xy)
         parts_col = ListColumn(
+            data=None,
             dtype=cudf.ListDtype(parts_elements.dtype),
             size=len(part_offsets) - 1,
             children=(part_offsets, parts_elements),
         )
         linestrings_col = ListColumn(
+            data=None,
             dtype=cudf.ListDtype(parts_col.dtype),
             size=len(geometry_offsets) - 1,
             children=(geometry_offsets, parts_col),
@@ -265,14 +268,14 @@ class GeoColumn(ColumnBase):
 
         return cls(
             (
-                cudf.Series(
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.POINT, coord_dtype)
                 ),
-                cudf.Series(
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.MULTIPOINT, coord_dtype)
                 ),
-                cudf.Series(linestrings_col),
-                cudf.Series(
+                cudf.Series._from_column(linestrings_col),
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.POLYGON, coord_dtype)
                 ),
             ),
@@ -296,16 +299,19 @@ class GeoColumn(ColumnBase):
 
         ring_elements = _xy_as_variable_sized_list(polygons_xy)
         rings_col = ListColumn(
+            data=None,
             dtype=cudf.ListDtype(ring_elements.dtype),
             size=len(ring_offsets) - 1,
             children=(ring_offsets, ring_elements),
         )
         parts_col = ListColumn(
+            data=None,
             dtype=cudf.ListDtype(rings_col.dtype),
             size=len(part_offsets) - 1,
             children=(part_offsets, rings_col),
         )
         polygons_col = ListColumn(
+            data=None,
             dtype=cudf.ListDtype(parts_col.dtype),
             size=len(geometry_offsets) - 1,
             children=(geometry_offsets, parts_col),
@@ -331,16 +337,16 @@ class GeoColumn(ColumnBase):
 
         return cls(
             (
-                cudf.Series(
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.POINT, coord_dtype)
                 ),
-                cudf.Series(
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.MULTIPOINT, coord_dtype)
                 ),
-                cudf.Series(
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.LINESTRING, coord_dtype)
                 ),
-                cudf.Series(polygons_col),
+                cudf.Series._from_column(polygons_col),
             ),
             meta,
         )
@@ -369,5 +375,8 @@ def _xy_as_variable_sized_list(xy: ColumnBase):
     num_points = len(xy) // 2
     indices = as_column(range(0, num_points * 2 + 1, 2), dtype="int32")
     return ListColumn(
-        dtype=cudf.ListDtype(xy.dtype), size=num_points, children=(indices, xy)
+        data=None,
+        dtype=cudf.ListDtype(xy.dtype),
+        size=num_points,
+        children=(indices, xy),
     )

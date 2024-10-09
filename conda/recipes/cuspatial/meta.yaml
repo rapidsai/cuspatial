@@ -60,12 +60,13 @@ requirements:
     {% endif %}
     - cuda-version ={{ cuda_version }}
     - cudf ={{ minor_version }}
+    - pylibcudf ={{ minor_version }}
     - cython >=3.0.0
     - libcuspatial ={{ version }}
     - python
     - rapids-build-backend >=0.3.0,<0.4.0.dev0
     - rmm ={{ minor_version }}
-    - scikit-build-core >=0.7.0
+    - scikit-build-core >=0.10.0
   run:
     {% if cuda_major == "11" %}
     - cudatoolkit
@@ -74,8 +75,9 @@ requirements:
     {% endif %}
     - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
     - cudf ={{ minor_version }}
-    - geopandas >=0.11.0
-    - numpy >=1.23,<2.0a0
+    - pylibcudf ={{ minor_version }}
+    - geopandas >=1.0.0
+    - numpy >=1.23,<3.0a0
     - python
     - rmm ={{ minor_version }}
 

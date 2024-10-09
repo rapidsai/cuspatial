@@ -34,8 +34,8 @@ namespace detail {
  * @brief Kernel to compute duplicate points in each multipoint. Naive N^2 algorithm.
  */
 template <typename MultiPointRange, typename OutputIt>
-void __global__ find_duplicate_points_kernel_simple(MultiPointRange multipoints,
-                                                    OutputIt duplicate_flags)
+CUSPATIAL_KERNEL void find_duplicate_points_kernel_simple(MultiPointRange multipoints,
+                                                          OutputIt duplicate_flags)
 {
   for (auto idx : ranger::grid_stride_range(multipoints.size())) {
     auto multipoint    = multipoints[idx];

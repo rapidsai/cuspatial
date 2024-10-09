@@ -1,4 +1,4 @@
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 
 from typing import TYPE_CHECKING
 
@@ -86,6 +86,7 @@ def pairwise_linestring_intersection(
     # Organize the look back ids into list column
     (lhs_linestring_id, lhs_segment_id, rhs_linestring_id, rhs_segment_id,) = [
         ListColumn(
+            data=None,
             dtype=cudf.ListDtype(id_.dtype),
             size=len(geometry_collection_offset) - 1,
             children=(geometry_collection_offset, id_),
@@ -94,6 +95,7 @@ def pairwise_linestring_intersection(
     ]
 
     linestring_column = ListColumn(
+        data=None,
         dtype=cudf.ListDtype(segments.dtype),
         size=segments.size,
         children=(
@@ -109,15 +111,15 @@ def pairwise_linestring_intersection(
     )
     from cuspatial.core.geoseries import GeoSeries
 
-    geometries = GeoSeries(
+    geometries = GeoSeries._from_column(
         GeoColumn(
             (
-                cudf.Series(points),
-                cudf.Series(
+                cudf.Series._from_column(points),
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.MULTIPOINT, coord_dtype)
                 ),
-                cudf.Series(linestring_column),
-                cudf.Series(
+                cudf.Series._from_column(linestring_column),
+                cudf.Series._from_column(
                     empty_geometry_column(Feature_Enum.POLYGON, coord_dtype)
                 ),
             ),

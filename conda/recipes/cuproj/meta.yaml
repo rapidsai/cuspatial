@@ -62,8 +62,8 @@ requirements:
     - cython >=3.0.0
     - python
     - rapids-build-backend >=0.3.0,<0.4.0.dev0
-    - rmm ={{ minor_version }}
-    - scikit-build-core >=0.7.0
+    - librmm ={{ minor_version }}
+    - scikit-build-core >=0.10.0
     - proj
     - sqlite
   run:
@@ -74,17 +74,11 @@ requirements:
     {% endif %}
     - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
     - python
-    - rmm ={{ minor_version }}
     - cupy>=12.0.0
 
 test:            # [linux64]
   imports:       # [linux64]
     - cuproj     # [linux64]
-  requires:
-    - cupy>=12.0.0
-    - cuspatial ={{ minor_version }}
-    - rmm ={{ minor_version }}
-
 
 about:
   home: https://rapids.ai/

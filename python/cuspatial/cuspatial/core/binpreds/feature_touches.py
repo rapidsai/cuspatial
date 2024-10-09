@@ -1,4 +1,4 @@
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 
 import cupy as cp
 
@@ -66,7 +66,7 @@ class LineStringLineStringTouches(BinPred):
         # First compute pli which will contain points for line crossings and
         # linestrings for overlapping segments.
         pli = _basic_intersects_pli(lhs, rhs)
-        offsets = cudf.Series(pli[0])
+        offsets = cudf.Series._from_column(pli[0])
         pli_geometry_count = offsets[1:].reset_index(drop=True) - offsets[
             :-1
         ].reset_index(drop=True)

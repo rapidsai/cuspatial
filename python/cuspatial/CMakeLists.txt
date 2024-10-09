@@ -23,42 +23,9 @@ project(
   VERSION "${RAPIDS_VERSION}"
   LANGUAGES CXX CUDA)
 
-option(FIND_CUSPATIAL_CPP "Search for existing cuspatial C++ installations before defaulting to local files"
-       OFF)
-
-# If the user requested it we attempt to find cuspatial.
-if(FIND_CUSPATIAL_CPP)
-  find_package(cuspatial "${RAPIDS_VERSION}")
-else()
-  set(cuspatial_FOUND OFF)
-endif()
-
-if(NOT cuspatial_FOUND)
-  set(BUILD_TESTS OFF)
-  set(BUILD_BENCHMARKS OFF)
-  set(CUDA_STATIC_RUNTIME ON)
-  set(CUSPATIAL_USE_CUDF_STATIC ON)
-  set(CUSPATIAL_EXCLUDE_CUDF_FROM_ALL ON)
-
-  add_subdirectory(../../cpp cuspatial-cpp EXCLUDE_FROM_ALL)
-
-  set(cython_lib_dir cuspatial)
-  include(cmake/Modules/WheelHelpers.cmake)
-  # TODO: This install is currently overzealous. We should only install the libraries that are
-  # downloaded by CPM during the build, not libraries that were found on the system.  However, in
-  # practice this would only be a problem if libcudf was not found but some of the
-  # dependencies were, and we have no real use cases where that happens.
-  install_aliased_imported_targets(
-    TARGETS cuspatial arrow_shared nvcomp::nvcomp nvcomp::nvcomp_gdeflate nvcomp::nvcomp_bitcomp
-    DESTINATION ${cython_lib_dir}
-  )
-endif()
+find_package(cuspatial "${RAPIDS_VERSION}" REQUIRED)
 
 include(rapids-cython-core)
 rapids_cython_init()
 
 add_subdirectory(cuspatial/_lib)
-
-if(DEFINED cython_lib_dir)
-  rapids_cython_add_rpath_entries(TARGET cuspatial PATHS "${cython_lib_dir}")
-endif()

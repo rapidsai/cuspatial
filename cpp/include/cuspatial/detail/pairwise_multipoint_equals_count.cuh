@@ -43,9 +43,9 @@ namespace cuspatial {
 namespace detail {
 
 template <class MultiPointRangeA, class MultiPointRangeB, class OutputIt>
-void __global__ pairwise_multipoint_equals_count_kernel(MultiPointRangeA lhs,
-                                                        MultiPointRangeB rhs,
-                                                        OutputIt output)
+CUSPATIAL_KERNEL void pairwise_multipoint_equals_count_kernel(MultiPointRangeA lhs,
+                                                              MultiPointRangeB rhs,
+                                                              OutputIt output)
 {
   using T = typename MultiPointRangeA::point_t::value_type;
 

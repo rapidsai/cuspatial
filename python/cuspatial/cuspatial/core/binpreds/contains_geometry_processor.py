@@ -62,7 +62,9 @@ class ContainsGeometryProcessor(BinPred):
         point_indices = geom.point_indices()
         from cuspatial.core.geoseries import GeoSeries
 
-        final_rhs = GeoSeries(GeoColumn._from_points_xy(xy_points._column))
+        final_rhs = GeoSeries._from_column(
+            GeoColumn._from_points_xy(xy_points._column)
+        )
         preprocess_result = PreprocessorResult(
             lhs, rhs, final_rhs, point_indices
         )

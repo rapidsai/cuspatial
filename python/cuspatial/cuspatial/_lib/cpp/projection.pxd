@@ -3,8 +3,8 @@
 from libcpp.memory cimport unique_ptr
 from libcpp.pair cimport pair
 
-from cudf._lib.pylibcudf.libcudf.column.column cimport column
-from cudf._lib.pylibcudf.libcudf.column.column_view cimport column_view
+from pylibcudf.libcudf.column.column cimport column
+from pylibcudf.libcudf.column.column_view cimport column_view
 
 
 cdef extern from "cuspatial/projection.hpp" namespace "cuspatial" \

@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2022, NVIDIA CORPORATION.
+# Copyright (c) 2019-2024, NVIDIA CORPORATION.
 
 import numpy as np
 
@@ -71,7 +71,7 @@ def derive_trajectories(object_ids, points: GeoSeries, timestamps):
     objects, traj_offsets = cpp_derive_trajectories(
         object_ids, xs, ys, timestamps
     )
-    return DataFrame._from_data(*objects), Series(data=traj_offsets)
+    return DataFrame._from_data(*objects), Series._from_column(traj_offsets)
 
 
 def trajectory_bounding_boxes(num_trajectories, object_ids, points: GeoSeries):
