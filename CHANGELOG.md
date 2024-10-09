@@ -1,3 +1,48 @@
+# cuspatial 24.10.00 (9 Oct 2024)
+
+## 🚨 Breaking Changes
+
+- Disallow GeoSeries from accepting a column in favor of `_from_column` ([#1434](https://github.com/rapidsai/cuspatial/pull/1434)) [@mroeschke](https://github.com/mroeschke)
+
+## 🐛 Bug Fixes
+
+- re-enable mixing libcuspatial wheels with libcudf conda packages ([#1456](https://github.com/rapidsai/cuspatial/pull/1456)) [@jameslamb](https://github.com/jameslamb)
+- fix wheel tests on Rocky Linux ([#1452](https://github.com/rapidsai/cuspatial/pull/1452)) [@jameslamb](https://github.com/jameslamb)
+- Add data=None to ListColumn constructor ([#1442](https://github.com/rapidsai/cuspatial/pull/1442)) [@mroeschke](https://github.com/mroeschke)
+- Remove unused shuffle_order in GeoColumn ([#1439](https://github.com/rapidsai/cuspatial/pull/1439)) [@mroeschke](https://github.com/mroeschke)
+- Fix _recombine_columns when either geocolumn or non-geocolumn was empty ([#1438](https://github.com/rapidsai/cuspatial/pull/1438)) [@mroeschke](https://github.com/mroeschke)
+- Internal linkage kernels ([#1436](https://github.com/rapidsai/cuspatial/pull/1436)) [@robertmaynard](https://github.com/robertmaynard)
+- Disallow GeoSeries from accepting a column in favor of `_from_column` ([#1434](https://github.com/rapidsai/cuspatial/pull/1434)) [@mroeschke](https://github.com/mroeschke)
+
+## 📖 Documentation
+
+- Recommending `miniforge` for conda install ([#1457](https://github.com/rapidsai/cuspatial/pull/1457)) [@mmccarty](https://github.com/mmccarty)
+
+## 🛠️ Improvements
+
+- xfail Python tests dependent on invalid Polygons ([#1467](https://github.com/rapidsai/cuspatial/pull/1467)) [@mroeschke](https://github.com/mroeschke)
+- Switch `traceback` to `native` in pytests ([#1464](https://github.com/rapidsai/cuspatial/pull/1464)) [@galipremsagar](https://github.com/galipremsagar)
+- Update update-version.sh to use packaging lib ([#1462](https://github.com/rapidsai/cuspatial/pull/1462)) [@AyodeAwe](https://github.com/AyodeAwe)
+- Use CI workflow branch &#39;branch-24.10&#39; again ([#1459](https://github.com/rapidsai/cuspatial/pull/1459)) [@jameslamb](https://github.com/jameslamb)
+- Update flake8 to 7.1.1. ([#1458](https://github.com/rapidsai/cuspatial/pull/1458)) [@bdice](https://github.com/bdice)
+- Add support for Python 3.12, pin proj back to 9.3.x, require geopandas&gt;=1.0 ([#1453](https://github.com/rapidsai/cuspatial/pull/1453)) [@jameslamb](https://github.com/jameslamb)
+- rearrange dependencies.yaml, fix development instructions ([#1451](https://github.com/rapidsai/cuspatial/pull/1451)) [@jameslamb](https://github.com/jameslamb)
+- Distribute libcuspatial wheels ([#1450](https://github.com/rapidsai/cuspatial/pull/1450)) [@jameslamb](https://github.com/jameslamb)
+- cuproj: remove pin on &#39;proj&#39; in conda packages ([#1449](https://github.com/rapidsai/cuspatial/pull/1449)) [@jameslamb](https://github.com/jameslamb)
+- cuproj: depend on librmm, not rmm ([#1448](https://github.com/rapidsai/cuspatial/pull/1448)) [@jameslamb](https://github.com/jameslamb)
+- wheels: dynamically load `libcudf.so` from `libcudf` wheel ([#1447](https://github.com/rapidsai/cuspatial/pull/1447)) [@jameslamb](https://github.com/jameslamb)
+- Update rapidsai/pre-commit-hooks ([#1445](https://github.com/rapidsai/cuspatial/pull/1445)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- Drop Python 3.9 support ([#1443](https://github.com/rapidsai/cuspatial/pull/1443)) [@jameslamb](https://github.com/jameslamb)
+- Remove NumPy &lt;2 pin, remove proj pin ([#1441](https://github.com/rapidsai/cuspatial/pull/1441)) [@seberg](https://github.com/seberg)
+- Update cuspatial to use pylibcudf ([#1440](https://github.com/rapidsai/cuspatial/pull/1440)) [@vyasr](https://github.com/vyasr)
+- Update pre-commit hooks ([#1435](https://github.com/rapidsai/cuspatial/pull/1435)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- Improve update-version.sh ([#1432](https://github.com/rapidsai/cuspatial/pull/1432)) [@bdice](https://github.com/bdice)
+- Use tool.scikit-build.cmake.version, set scikit-build-core minimum-version ([#1430](https://github.com/rapidsai/cuspatial/pull/1430)) [@jameslamb](https://github.com/jameslamb)
+- Pass columns instead of Series to `cudf.DataFrame` in split-combine workflow ([#1429](https://github.com/rapidsai/cuspatial/pull/1429)) [@mroeschke](https://github.com/mroeschke)
+- Address cudf.DataFrame.insert API change ([#1428](https://github.com/rapidsai/cuspatial/pull/1428)) [@mroeschke](https://github.com/mroeschke)
+- ensure notebook-testing script fails when notebooks fail ([#1424](https://github.com/rapidsai/cuspatial/pull/1424)) [@jameslamb](https://github.com/jameslamb)
+- Forward-merge branch-24.08 into branch-24.10 ([#1410](https://github.com/rapidsai/cuspatial/pull/1410)) [@jakirkham](https://github.com/jakirkham)
+
 # cuspatial 24.08.00 (7 Aug 2024)
 
 ## 🐛 Bug Fixes
