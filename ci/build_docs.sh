@@ -21,7 +21,6 @@ conda activate docs
 
 rapids-print-env
 
-export RAPIDS_VERSION_NUMBER="24.12"
 export RAPIDS_DOCS_DIR="$(mktemp -d)"
 
 rapids-logger "Build cuSpatial CPP docs"
@@ -52,4 +51,4 @@ mkdir -p "${RAPIDS_DOCS_DIR}/cuproj/html"
 mv _html/* "${RAPIDS_DOCS_DIR}/cuproj/html"
 popd
 
-rapids-upload-docs
+RAPIDS_VERSION_NUMBER="$(rapids-version-major-minor)" rapids-upload-docs
