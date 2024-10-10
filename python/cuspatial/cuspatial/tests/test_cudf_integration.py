@@ -6,13 +6,7 @@ import pytest
 
 import cuspatial
 
-reason = (
-    "gs fixture contains invalid Polygons/MultiPolygons: "
-    "https://github.com/libgeos/geos/issues/1177"
-)
 
-
-@pytest.mark.xfail(reason=reason)
 def test_sort_index_series(gs):
     gs.index = np.random.permutation(len(gs))
     cugs = cuspatial.from_geopandas(gs)
@@ -21,7 +15,6 @@ def test_sort_index_series(gs):
     gpd.testing.assert_geoseries_equal(got, expected)
 
 
-@pytest.mark.xfail(reason=reason)
 def test_sort_index_dataframe(gpdf):
     gpdf.index = np.random.permutation(len(gpdf))
     cugpdf = cuspatial.from_geopandas(gpdf)
@@ -30,7 +23,6 @@ def test_sort_index_dataframe(gpdf):
     gpd.testing.assert_geodataframe_equal(got, expected)
 
 
-@pytest.mark.xfail(reason=reason)
 def test_sort_values(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
     expected = gpdf.sort_values("random")
