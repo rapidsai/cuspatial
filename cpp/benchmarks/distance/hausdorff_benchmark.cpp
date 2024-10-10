@@ -53,7 +53,7 @@ class HausdorffBenchmark : public cuspatial::benchmark {
   virtual void SetUp(const ::benchmark::State& state) override
   {
     mr = std::make_shared<rmm::mr::cuda_memory_resource>();
-    rmm::mr::set_current_device_resource(mr.get());  // set default resource to cuda
+    rmm::mr::set_current_device_resource_ref(mr.get());  // set default resource to cuda
   }
 };
 

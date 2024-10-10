@@ -70,6 +70,6 @@ namespace cuspatial {
 std::unique_ptr<cudf::column> pairwise_multipoint_equals_count(
   geometry_column_view const& lhs,
   geometry_column_view const& rhs,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 }  // namespace cuspatial

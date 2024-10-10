@@ -57,7 +57,7 @@ inline auto generate_points(
   cuspatial::vec_2d<T> v_max,
   std::size_t seed,
   rmm::cuda_stream_view stream,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource())
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref())
 {
   auto engine_x  = cuspatial::test::deterministic_engine(42);
   auto engine_y  = cuspatial::test::deterministic_engine(137);

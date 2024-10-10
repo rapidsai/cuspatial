@@ -36,7 +36,7 @@ using namespace cuspatial::test;
 template <typename T>
 struct PairwiseLinestringPolygonDistanceTest : public BaseFixture {
   rmm::cuda_stream_view stream() { return rmm::cuda_stream_default; }
-  rmm::device_async_resource_ref mr() { return rmm::mr::get_current_device_resource(); }
+  rmm::device_async_resource_ref mr() { return rmm::mr::get_current_device_resource_ref(); }
 
   void run_single(std::initializer_list<std::size_t> multilinestring_geometry_offsets,
                   std::initializer_list<std::size_t> multilinestring_part_offsets,

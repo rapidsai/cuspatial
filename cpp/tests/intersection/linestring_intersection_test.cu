@@ -44,7 +44,7 @@ using namespace cuspatial::test;
 template <typename T>
 struct LinestringIntersectionTest : public ::testing::Test {
   rmm::cuda_stream_view stream() { return rmm::cuda_stream_default; }
-  rmm::device_async_resource_ref mr() { return rmm::mr::get_current_device_resource(); }
+  rmm::device_async_resource_ref mr() { return rmm::mr::get_current_device_resource_ref(); }
 
   template <typename IndexType, typename MultiLinestringRange, typename IntersectionResult>
   void run_single_test(MultiLinestringRange lhs,
