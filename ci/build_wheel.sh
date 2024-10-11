@@ -46,5 +46,7 @@ python -m auditwheel repair \
 RAPIDS_PY_WHEEL_NAME="${package_name}_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 "${package_type}" final_dist
 
 sccache \
-  --show-stats \
+  --show-stats
+
+sccache \
   --show-adv-stats
