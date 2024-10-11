@@ -35,7 +35,37 @@ RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen ${RAPIDS_CUDA_VERSION})"
 
 cd "${package_dir}"
 
-python -m pip wheel . -w dist -vvv --no-deps --disable-pip-version-check
+rapids-logger "Generating build requirements"
+declare -r matrix_selectors="cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION};cuda_suffixed=true"
+
+rapids-dependency-file-generator \
+  --output requirements \
+  --file-key "py_build_${package_name}" \
+  --matrix "${matrix_selectors}" \
+| tee /tmp/requirements-build.txt
+
+rapids-dependency-file-generator \
+  --output requirements \
+  --file-key "py_rapids_build_${package_name}" \
+  --matrix "${matrix_selectors}" \
+| tee -a /tmp/requirements-build.txt
+
+rapids-logger "Installing build requirements"
+python -m pip install \
+    -v \
+    --prefer-binary \
+    -r /tmp/requirements-build.txt
+
+rapids-logger "Building '${package_name}' wheel"
+python -m pip wheel \
+    -w dist \
+    -v \
+    --no-build-isolation \
+    --no-deps \
+    --disable-pip-version-check \
+    .
+
+sccache --show-adv-stats
 
 mkdir -p final_dist
 python -m auditwheel repair \
@@ -44,9 +74,3 @@ python -m auditwheel repair \
     dist/*
 
 RAPIDS_PY_WHEEL_NAME="${package_name}_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 "${package_type}" final_dist
-
-sccache \
-  --show-stats
-
-sccache \
-  --show-adv-stats
