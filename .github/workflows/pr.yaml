@@ -21,10 +21,10 @@ jobs:
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-24.12
     with:
-      # build for every combination of arch and CUDA version, but only for the latest Python
-      matrix_filter: group_by([.ARCH, (.CUDA_VER|split(".")|map(tonumber)|.[0])]) | map(max_by(.PY_VER|split(".")|map(tonumber)))
       build_type: pull-request
       script: ci/build_wheel_libcuspatial.sh
+      # This selects the latest supported Python + CUDA
+      matrix_filter: max_by([(.PY_VER|split(".")|map(tonumber)), (.CUDA_VER|split(".")|map(tonumber))]) | [.]
   wheel-build-cuspatial:
     needs: [wheel-build-libcuspatial]
     secrets: inherit
@@ -32,9 +32,13 @@ jobs:
     with:
       build_type: pull-request
       script: ci/build_wheel_cuspatial.sh
+      # This selects the latest supported Python + CUDA
+      matrix_filter: max_by([(.PY_VER|split(".")|map(tonumber)), (.CUDA_VER|split(".")|map(tonumber))]) | [.]
   wheel-build-cuproj:
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-24.12
     with:
       build_type: pull-request
       script: ci/build_wheel_cuproj.sh
+      # This selects the latest supported Python + CUDA
+      matrix_filter: max_by([(.PY_VER|split(".")|map(tonumber)), (.CUDA_VER|split(".")|map(tonumber))]) | [.]
