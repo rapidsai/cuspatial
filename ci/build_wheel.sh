@@ -33,7 +33,7 @@ rapids-generate-version > ./VERSION
 
 RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen ${RAPIDS_CUDA_VERSION})"
 
-touch /tmp/build-constraints.txt
+touch /tmp/constraints-build.txt
 
 if [[ "${package_name}" == "cuspatial" ]]; then
   # Downloads libcuspatial wheel from this current build,
