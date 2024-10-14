@@ -38,7 +38,8 @@ target_link_libraries(cuspatial_benchmark_common
     PUBLIC benchmark::benchmark
            cudf::cudftestutil
            ranger::ranger
-           cuspatial)
+           cuspatial GTest::gtest GTest::gmock 
+           PRIVATE cudf::cudftestutil_impl)
 
 target_compile_options(cuspatial_benchmark_common
              PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${CUSPATIAL_CXX_FLAGS}>"

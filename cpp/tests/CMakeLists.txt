@@ -17,6 +17,25 @@
 ###################################################################################################
 # - compiler function -----------------------------------------------------------------------------
 
+add_library(cuspatial_test_common OBJECT)
+
+target_compile_features(cuspatial_test_common PUBLIC cxx_std_17 cuda_std_17)
+
+set_target_properties(cuspatial_test_common
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUSPATIAL_BINARY_DIR}/tests>"
+               INSTALL_RPATH "\$ORIGIN/../../../lib"
+               CXX_STANDARD                        17
+               CXX_STANDARD_REQUIRED               ON
+               CUDA_STANDARD                       17
+               CUDA_STANDARD_REQUIRED              ON
+               POSITION_INDEPENDENT_CODE           ON
+               INTERFACE_POSITION_INDEPENDENT_CODE ON
+)
+
+target_link_libraries(cuspatial_test_common
+    PUBLIC cudf::cudftestutil GTest::gtest GTest::gmock 
+    PRIVATE cudf::cudftestutil_impl)
+
 function(ConfigureTest CMAKE_TEST_NAME)
     add_executable(${CMAKE_TEST_NAME} ${ARGN})
     target_compile_options(${CMAKE_TEST_NAME}
@@ -34,7 +53,7 @@ function(ConfigureTest CMAKE_TEST_NAME)
                    CUDA_STANDARD 17
                    CUDA_STANDARD_REQUIRED ON
     )
-    target_link_libraries(${CMAKE_TEST_NAME} GTest::gtest_main GTest::gmock_main ranger::ranger cudf::cudftestutil cuspatial)
+    target_link_libraries(${CMAKE_TEST_NAME} GTest::gtest_main GTest::gmock_main ranger::ranger cudf::cudftestutil cuspatial cuspatial_test_common)
     add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
     install(
         TARGETS ${CMAKE_TEST_NAME}
