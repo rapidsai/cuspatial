@@ -17,7 +17,7 @@
 ###################################################################################################
 # - compiler function -----------------------------------------------------------------------------
 
-add_library(cuspatial_test_common OBJECT)
+add_library(cuspatial_test_common OBJECT test_common.cpp)
 
 target_compile_features(cuspatial_test_common PUBLIC cxx_std_17 cuda_std_17)
 
