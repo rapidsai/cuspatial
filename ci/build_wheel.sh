@@ -33,17 +33,8 @@ rapids-generate-version > ./VERSION
 
 RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen ${RAPIDS_CUDA_VERSION})"
 
-touch /tmp/constraints-build.txt
-
-if [[ "${package_name}" == "cuspatial" ]]; then
-  # Downloads libcuspatial wheel from this current build,
-  # then ensures 'cuspatial' wheel builds always use the 'libcuspatial' just built in the same CI run.
-  RAPIDS_PY_WHEEL_NAME="libcuspatial_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-from-s3 cpp /tmp/libcuspatial_dist
-  echo "libcuspatial-${RAPIDS_PY_CUDA_SUFFIX} @ file://$(echo /tmp/libcuspatial_dist/libcuspatial_*.whl)" > /tmp/constraints-build.txt
-fi
-
 rapids-logger "Generating build requirements"
-declare -r matrix_selectors="cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION};cuda_suffixed=true"
+matrix_selectors="cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION};cuda_suffixed=true"
 
 rapids-dependency-file-generator \
   --output requirements \
@@ -61,7 +52,6 @@ rapids-logger "Installing build requirements"
 python -m pip install \
     -v \
     --prefer-binary \
-    --constraint /tmp/constraints-build.txt \
     -r /tmp/requirements-build.txt
 
 cd "${package_dir}"
