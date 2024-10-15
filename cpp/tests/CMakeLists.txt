@@ -36,6 +36,9 @@ target_link_libraries(cuspatial_test_common
     PUBLIC cudf::cudftestutil GTest::gtest GTest::gmock 
     PRIVATE cudf::cudftestutil_impl)
 
+target_compile_options(cuspatial_test_common PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${CUSPATIAL_CXX_FLAGS}>"
+"$<$<COMPILE_LANGUAGE:CUDA>:${CUSPATIAL_CUDA_FLAGS}>")
+
 function(ConfigureTest CMAKE_TEST_NAME)
     add_executable(${CMAKE_TEST_NAME} ${ARGN})
     target_compile_options(${CMAKE_TEST_NAME}

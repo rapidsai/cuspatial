@@ -23,6 +23,9 @@ add_library(cuspatial_benchmark_common OBJECT
 
 target_compile_features(cuspatial_benchmark_common PUBLIC cxx_std_17 cuda_std_17)
 
+target_compile_options(cuspatial_benchmark_common PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${CUSPATIAL_CXX_FLAGS}>"
+                        "$<$<COMPILE_LANGUAGE:CUDA>:${CUSPATIAL_CUDA_FLAGS}>")
+
 set_target_properties(cuspatial_benchmark_common
     PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUSPATIAL_BINARY_DIR}/benchmarks>"
                INSTALL_RPATH "\$ORIGIN/../../../lib"
