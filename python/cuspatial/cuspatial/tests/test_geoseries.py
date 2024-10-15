@@ -401,104 +401,27 @@ def test_geometry_linestring_slicing(gs):
 
 
 def test_geometry_polygon_slicing(gs):
+    from itertools import chain
+
+    from shapely import get_coordinates
+
+    geom = gs
+    polys_list = geom[
+        geom.apply(lambda x: isinstance(x, (MultiPolygon, Polygon)))
+    ]
+    polys = list(
+        chain(polys_list.apply(get_coordinates))
+    )  # flatten multipolygons
+    coords_list = list(chain(*polys))  # flatten shells and holes
+    xy_interleaved = list(chain(*coords_list))  # flatten coordinates
+    x = xy_interleaved[::2]
+    y = xy_interleaved[1::2]
+
     cugs = cuspatial.from_geopandas(gs)
-    assert (cugs[:9].polygons.x == cudf.Series([35, 37, 39, 41, 35])).all()
-    assert (cugs[:9].polygons.y == cudf.Series([36, 38, 40, 42, 36])).all()
-    assert (
-        cugs[:9].polygons.xy
-        == cudf.Series([35, 36, 37, 38, 39, 40, 41, 42, 35, 36])
-    ).all()
-    assert (
-        cugs[:10].polygons.x
-        == cudf.Series(
-            [
-                35,
-                37,
-                39,
-                41,
-                35,
-                43,
-                45,
-                47,
-                43,
-                49,
-                51,
-                53,
-                49,
-                55,
-                57,
-                59,
-                55,
-                61,
-                63,
-                65,
-                61,
-            ]
-        )
-    ).all()
-    assert (
-        cugs[:10].polygons.y
-        == cudf.Series(
-            [
-                36,
-                38,
-                40,
-                42,
-                36,
-                44,
-                46,
-                48,
-                44,
-                50,
-                52,
-                54,
-                50,
-                56,
-                58,
-                60,
-                56,
-                62,
-                64,
-                66,
-                62,
-            ]
-        )
-    ).all()
-    assert (
-        cugs[11:].polygons.x
-        == cudf.Series([97, 99, 102, 101, 97, 106, 108, 110, 113, 106])
-    ).all()
-    assert (
-        cugs[11:].polygons.y
-        == cudf.Series([98, 101, 103, 108, 98, 107, 109, 111, 108, 107])
-    ).all()
-    assert (
-        cugs[11:].polygons.xy
-        == cudf.Series(
-            [
-                97,
-                98,
-                99,
-                101,
-                102,
-                103,
-                101,
-                108,
-                97,
-                98,
-                106,
-                107,
-                108,
-                109,
-                110,
-                111,
-                113,
-                108,
-                106,
-                107,
-            ]
-        )
-    ).all()
+
+    assert (cugs.polygons.x == cudf.Series(x)).all()
+    assert (cugs.polygons.y == cudf.Series(y)).all()
+    assert (cugs.polygons.xy == cudf.Series(xy_interleaved)).all()
 
 
 def test_loc(gs):
