@@ -19,9 +19,9 @@ from shapely.geometry import (
 @pytest.fixture
 def gs():
     g0 = Point(-1, 0)
-    g1 = MultiPoint(((1, 2), (3, 4)))
-    g2 = MultiPoint(((5, 6), (7, 8)))
-    g3 = Point(9, 10)
+    g1 = Point(9, 10)
+    g2 = MultiPoint(((1, 2), (3, 4)))
+    g3 = MultiPoint(((5, 6), (7, 8)))
     g4 = LineString(((11, 12), (13, 14)))
     g5 = MultiLineString((((15, 16), (17, 18)), ((19, 20), (21, 22))))
     g6 = MultiLineString((((23, 24), (25, 26)), ((27, 28), (29, 30))))
@@ -29,8 +29,6 @@ def gs():
     g8 = Polygon(
         ((35, 36), (38, 36), (41, 39), (41, 42)),
     )
-    # TODO: g9, g10, g11 are invalid
-    # https://github.com/libgeos/geos/issues/1177
     g9 = MultiPolygon(
         [
             (
