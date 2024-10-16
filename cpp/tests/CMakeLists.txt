@@ -17,6 +17,10 @@
 ###################################################################################################
 # - compiler function -----------------------------------------------------------------------------
 
+# cudftestutil_impl is an interface source library, this empty object 
+# library is used to speed-up compilation and linking against it, 
+# otherwise we pay the non-trivial compilation cost repeatedly for each
+# test executable
 add_library(cuspatial_test_common OBJECT test_common.cpp)
 
 target_compile_features(cuspatial_test_common PUBLIC cxx_std_17 cuda_std_17)
