@@ -1,11 +1,13 @@
 # Copyright (c) 2020-2024, NVIDIA CORPORATION.
 import sys
+from itertools import chain
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pytest
 from geopandas.testing import assert_geodataframe_equal
+from shapely import get_coordinates
 from shapely.affinity import rotate
 from shapely.geometry import (
     LineString,
@@ -114,7 +116,7 @@ def test_type_persistence(gpdf):
     assert type(cugpdf["geometry"]) is cuspatial.GeoSeries
 
 
-def test_interleaved_point(gpdf, polys):
+def test_interleaved_point(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
     cugs = cugpdf["geometry"]
     gs = gpdf["geometry"]
@@ -128,7 +130,7 @@ def test_interleaved_point(gpdf, polys):
     )
 
 
-def test_interleaved_multipoint(gpdf, polys):
+def test_interleaved_multipoint(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
     cugs = cugpdf["geometry"]
     gs = gpdf["geometry"]
@@ -156,7 +158,7 @@ def test_interleaved_multipoint(gpdf, polys):
     )
 
 
-def test_interleaved_lines(gpdf, polys):
+def test_interleaved_lines(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
     cugs = cugpdf["geometry"]
     cudf.testing.assert_series_equal(
@@ -175,16 +177,25 @@ def test_interleaved_lines(gpdf, polys):
     )
 
 
-def test_interleaved_polygons(gpdf, polys):
+def test_interleaved_polygons(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
     cugs = cugpdf["geometry"]
+    gs = gpdf["geometry"]
+    polys_list = gs[gs.apply(lambda x: isinstance(x, (MultiPolygon, Polygon)))]
+    # flatten multigeometries
+    polys = list(chain(polys_list.apply(get_coordinates)))
+    coords_list = list(chain(*polys))  # flatten geometries
+    xy_interleaved = list(chain(*coords_list))  # flatten coordinates
+    x = xy_interleaved[::2]
+    y = xy_interleaved[1::2]
+
     cudf.testing.assert_series_equal(
         cudf.Series.from_arrow(cugs.polygons.x.to_arrow()),
-        cudf.Series(polys[:, 0], dtype="float64"),
+        cudf.Series(x, dtype="float64"),
     )
     cudf.testing.assert_series_equal(
         cudf.Series.from_arrow(cugs.polygons.y.to_arrow()),
-        cudf.Series(polys[:, 1], dtype="float64"),
+        cudf.Series(y, dtype="float64"),
     )
 
 

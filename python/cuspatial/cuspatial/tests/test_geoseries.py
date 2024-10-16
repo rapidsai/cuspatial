@@ -135,7 +135,7 @@ def assert_eq_geo(geo1, geo2):
         assert result.all()
 
 
-def test_interleaved_point(gs, polys):
+def test_interleaved_point(gs):
     cugs = cuspatial.from_geopandas(gs)
     pd.testing.assert_series_equal(
         cugs.points.x.to_pandas(),
@@ -183,13 +183,23 @@ def test_interleaved_point(gs, polys):
             dtype="float64",
         ).reset_index(drop=True),
     )
+
+    polys_list = gs[gs.apply(lambda x: isinstance(x, (MultiPolygon, Polygon)))]
+    polys = list(
+        chain(polys_list.apply(get_coordinates))
+    )  # flatten multigeometries
+    coords_list = list(chain(*polys))  # flatten geometries
+    xy_interleaved = list(chain(*coords_list))  # flatten coordinates
+    x = xy_interleaved[::2]
+    y = xy_interleaved[1::2]
+
     cudf.testing.assert_series_equal(
         cugs.polygons.x.reset_index(drop=True),
-        cudf.Series(polys[:, 0], dtype="float64").reset_index(drop=True),
+        cudf.Series(x, dtype="float64").reset_index(drop=True),
     )
     cudf.testing.assert_series_equal(
         cugs.polygons.y.reset_index(drop=True),
-        cudf.Series(polys[:, 1], dtype="float64").reset_index(drop=True),
+        cudf.Series(y, dtype="float64").reset_index(drop=True),
     )
 
 
@@ -379,7 +389,8 @@ def test_geometry_multipoint_slicing(gs):
     x = xy_interleaved[::2]
     y = xy_interleaved[1::2]
 
-    # slice a superset of multipoint geometries and then extract the multipoints
+    # slice a superset of multipoint geometries and then
+    # extract the multipoints
     cugs = cuspatial.from_geopandas(gs)[2:8]
     assert (cugs.multipoints.x == cudf.Series(x)).all()
     assert (cugs.multipoints.y == cudf.Series(y)).all()
