@@ -352,20 +352,38 @@ def test_size(gs, series_slice):
     assert len(gi) == len(cugs)
 
 
-def test_geometry_multipoint_slicing(gs):
-    points_list = gs[gs.apply(lambda x: isinstance(x, (MultiPoint, Point)))]
+def test_geometry_point_slicing(gs):
+    points_list = gs[gs.apply(lambda x: isinstance(x, Point))]
     points = list(
         chain(points_list.apply(get_coordinates))
-    )  # flatten multilinestrings/linestrings
-    coords_list = list(chain(*points))  # flatten linestrings
+    )  # flatten multigeometries
+    coords_list = list(chain(*points))  # flatten geometries
     xy_interleaved = list(chain(*coords_list))  # flatten coordinates
     x = xy_interleaved[::2]
     y = xy_interleaved[1::2]
 
-    cugs = cuspatial.from_geopandas(gs)
+    # slice a superset of point geometries and then extract the points
+    cugs = cuspatial.from_geopandas(gs)[0:6]
     assert (cugs.points.x == cudf.Series(x)).all()
     assert (cugs.points.y == cudf.Series(y)).all()
     assert (cugs.points.xy == cudf.Series(xy_interleaved)).all()
+
+
+def test_geometry_multipoint_slicing(gs):
+    points_list = gs[gs.apply(lambda x: isinstance(x, MultiPoint))]
+    points = list(
+        chain(points_list.apply(get_coordinates))
+    )  # flatten multigeometries
+    coords_list = list(chain(*points))  # flatten geometries
+    xy_interleaved = list(chain(*coords_list))  # flatten coordinates
+    x = xy_interleaved[::2]
+    y = xy_interleaved[1::2]
+
+    # slice a superset of multipoint geometries and then extract the multipoints
+    cugs = cuspatial.from_geopandas(gs)[2:8]
+    assert (cugs.multipoints.x == cudf.Series(x)).all()
+    assert (cugs.multipoints.y == cudf.Series(y)).all()
+    assert (cugs.multipoints.xy == cudf.Series(xy_interleaved)).all()
 
 
 def test_geometry_linestring_slicing(gs):
@@ -374,13 +392,14 @@ def test_geometry_linestring_slicing(gs):
     ]
     lines = list(
         chain(lines_list.apply(get_coordinates))
-    )  # flatten multilinestrings/linestrings
-    coords_list = list(chain(*lines))  # flatten linestrings
+    )  # flatten multigeometries
+    coords_list = list(chain(*lines))  # flatten geometries
     xy_interleaved = list(chain(*coords_list))  # flatten coordinates
     x = xy_interleaved[::2]
     y = xy_interleaved[1::2]
 
-    cugs = cuspatial.from_geopandas(gs)
+    # slice a superset of line geometries and then extract the lines
+    cugs = cuspatial.from_geopandas(gs)[2:10]
     assert (cugs.lines.x == cudf.Series(x)).all()
     assert (cugs.lines.y == cudf.Series(y)).all()
     assert (cugs.lines.xy == cudf.Series(xy_interleaved)).all()
@@ -390,14 +409,14 @@ def test_geometry_polygon_slicing(gs):
     polys_list = gs[gs.apply(lambda x: isinstance(x, (MultiPolygon, Polygon)))]
     polys = list(
         chain(polys_list.apply(get_coordinates))
-    )  # flatten multipolygons
-    coords_list = list(chain(*polys))  # flatten shells and holes
+    )  # flatten multigeometries
+    coords_list = list(chain(*polys))  # flatten geometries
     xy_interleaved = list(chain(*coords_list))  # flatten coordinates
     x = xy_interleaved[::2]
     y = xy_interleaved[1::2]
 
-    cugs = cuspatial.from_geopandas(gs)
-
+    # slice a superset of polygon geometries and then extract the polygons
+    cugs = cuspatial.from_geopandas(gs)[6:12]
     assert (cugs.polygons.x == cudf.Series(x)).all()
     assert (cugs.polygons.y == cudf.Series(y)).all()
     assert (cugs.polygons.xy == cudf.Series(xy_interleaved)).all()
