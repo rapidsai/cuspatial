@@ -30,6 +30,7 @@ python -m pip install \
     -r /tmp/requirements-build.txt
 
 # build with '--no-build-isolation', for better sccache hit rate
-export PIP_NO_BUILD_ISOLATION=true
+# 0 really means "add --no-build-isolation" (ref: https://github.com/pypa/pip/issues/5735)
+export PIP_NO_BUILD_ISOLATION=0
 
 ci/build_wheel.sh "${package_name}" python/libcuspatial cpp
