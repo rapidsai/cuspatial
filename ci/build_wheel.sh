@@ -35,7 +35,15 @@ RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen ${RAPIDS_CUDA_VERSION})"
 
 cd "${package_dir}"
 
-python -m pip wheel . -w dist -vvv --no-deps --disable-pip-version-check
+rapids-logger "Building '${package_name}' wheel"
+python -m pip wheel \
+    -w dist \
+    -v \
+    --no-deps \
+    --disable-pip-version-check \
+    .
+
+sccache --show-adv-stats
 
 mkdir -p final_dist
 python -m auditwheel repair \
