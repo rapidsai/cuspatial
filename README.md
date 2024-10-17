@@ -102,8 +102,7 @@ gitGraph
 ## Using cuSpatial
 **CUDA/GPU requirements**
 - CUDA 11.2+ with a [compatible, supported driver](https://docs.nvidia.com/datacenter/tesla/drivers/#cuda-drivers)
-- Linux native: Pascal architecture or newer ([Compute Capability >=6.0](https://developer.nvidia.com/cuda-gpus))
-- WSL2: Volta architecture or newer ([Compute Capability >=7.0](https://developer.nvidia.com/cuda-gpus))
+- Volta architecture or newer ([Compute Capability >=7.0](https://developer.nvidia.com/cuda-gpus))
 
 ### Quick start: Docker
 Use the [RAPIDS Release Selector](https://docs.rapids.ai/install#selector), selecting `Docker` as the installation method. All RAPIDS Docker images contain cuSpatial.
@@ -113,7 +112,7 @@ An example command from the Release Selector:
 docker run --gpus all --pull always --rm -it \
     --shm-size=1g --ulimit memlock=-1 --ulimit stack=67108864 \
     -p 8888:8888 -p 8787:8787 -p 8786:8786 \
-    nvcr.io/nvidia/rapidsai/notebooks:24.12-cuda11.8-py3.10
+    nvcr.io/nvidia/rapidsai/notebooks:24.12-cuda11.8-py3.12
 ```
 
 ### Install with Conda
@@ -121,7 +120,7 @@ docker run --gpus all --pull always --rm -it \
 To install via conda:
 > **Note** cuSpatial is supported only on Linux or [through WSL](https://rapids.ai/wsl2.html), and with Python versions 3.10, 3.11, and 3.12.
 
-cuSpatial can be installed with conda (miniconda, or the full Anaconda distribution) from the rapidsai channel:
+cuSpatial can be installed with conda from the rapidsai channel:
 
 ```shell
 conda install -c rapidsai -c conda-forge -c nvidia \
