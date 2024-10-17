@@ -3,6 +3,8 @@
 
 set -euo pipefail
 
+package_name="libcuspatial"
+
 git clone \
   --branch multiple-file-keys \
   https://github.com/jameslamb/dependency-file-generator.git \
@@ -30,4 +32,4 @@ python -m pip install \
 # build with '--no-build-isolation', for better sccache hit rate
 export PIP_NO_BUILD_ISOLATION=true
 
-ci/build_wheel.sh libcuspatial python/libcuspatial cpp
+ci/build_wheel.sh "${package_name}" python/libcuspatial cpp
