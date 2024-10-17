@@ -1,7 +1,6 @@
 # Copyright (c) 2020-2024, NVIDIA CORPORATION.
 
 from enum import Enum
-from itertools import chain
 from numbers import Integral
 
 import cupy as cp
@@ -10,7 +9,6 @@ import numpy as np
 import pandas as pd
 import pytest
 from geopandas.testing import assert_geoseries_equal
-from shapely import get_coordinates
 from shapely.affinity import rotate
 from shapely.geometry import (
     LineString,
@@ -185,14 +183,7 @@ def test_interleaved_point(gs):
         ).reset_index(drop=True),
     )
 
-    polys_list = gs[gs.apply(lambda x: isinstance(x, (MultiPolygon, Polygon)))]
-    polys = list(
-        chain(polys_list.apply(get_coordinates))
-    )  # flatten multigeometries
-    coords_list = list(chain(*polys))  # flatten geometries
-    xy_interleaved = list(chain(*coords_list))  # flatten coordinates
-    x = xy_interleaved[::2]
-    y = xy_interleaved[1::2]
+    xy, x, y = geometry_to_coords(gs, (MultiPolygon, Polygon))
 
     cudf.testing.assert_series_equal(
         cugs.polygons.x.reset_index(drop=True),
