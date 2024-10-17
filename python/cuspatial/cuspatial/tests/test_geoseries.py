@@ -25,6 +25,7 @@ import cudf
 from cudf.testing import assert_series_equal
 
 import cuspatial
+from cuspatial.testing.helpers import geometry_to_coords
 
 np.random.seed(0)
 
@@ -362,75 +363,29 @@ def test_size(gs, series_slice):
     assert len(gi) == len(cugs)
 
 
-def test_geometry_point_slicing(gs):
-    points_list = gs[gs.apply(lambda x: isinstance(x, Point))]
-    points = list(
-        chain(points_list.apply(get_coordinates))
-    )  # flatten multigeometries
-    coords_list = list(chain(*points))  # flatten geometries
-    xy_interleaved = list(chain(*coords_list))  # flatten coordinates
-    x = xy_interleaved[::2]
-    y = xy_interleaved[1::2]
+@pytest.mark.parametrize(
+    "geom_access",
+    [
+        # Tuples: accessor, types, slice
+        # slices here are meant to be supersets of the range in the gs fixture
+        # that contains the types of geometries being accessed
+        # Note that cuspatial.GeoSeries provides accessors for "multipoints",
+        # but not for "multilinestrings" or "multipolygons"
+        # (inconsistent interface)
+        ("points", Point, slice(0, 6)),
+        ("multipoints", MultiPoint, slice(2, 8)),
+        ("lines", (LineString, MultiLineString), slice(2, 10)),
+        ("polygons", (Polygon, MultiPolygon), slice(6, 12)),
+    ],
+)
+def test_geometry_access_slicing(gs, geom_access):
+    accessor, types, slice = geom_access
+    xy, x, y = geometry_to_coords(gs, types)
 
-    # slice a superset of point geometries and then extract the points
-    cugs = cuspatial.from_geopandas(gs)[0:6]
-    assert (cugs.points.x == cudf.Series(x)).all()
-    assert (cugs.points.y == cudf.Series(y)).all()
-    assert (cugs.points.xy == cudf.Series(xy_interleaved)).all()
-
-
-def test_geometry_multipoint_slicing(gs):
-    points_list = gs[gs.apply(lambda x: isinstance(x, MultiPoint))]
-    points = list(
-        chain(points_list.apply(get_coordinates))
-    )  # flatten multigeometries
-    coords_list = list(chain(*points))  # flatten geometries
-    xy_interleaved = list(chain(*coords_list))  # flatten coordinates
-    x = xy_interleaved[::2]
-    y = xy_interleaved[1::2]
-
-    # slice a superset of multipoint geometries and then
-    # extract the multipoints
-    cugs = cuspatial.from_geopandas(gs)[2:8]
-    assert (cugs.multipoints.x == cudf.Series(x)).all()
-    assert (cugs.multipoints.y == cudf.Series(y)).all()
-    assert (cugs.multipoints.xy == cudf.Series(xy_interleaved)).all()
-
-
-def test_geometry_linestring_slicing(gs):
-    lines_list = gs[
-        gs.apply(lambda x: isinstance(x, (MultiLineString, LineString)))
-    ]
-    lines = list(
-        chain(lines_list.apply(get_coordinates))
-    )  # flatten multigeometries
-    coords_list = list(chain(*lines))  # flatten geometries
-    xy_interleaved = list(chain(*coords_list))  # flatten coordinates
-    x = xy_interleaved[::2]
-    y = xy_interleaved[1::2]
-
-    # slice a superset of line geometries and then extract the lines
-    cugs = cuspatial.from_geopandas(gs)[2:10]
-    assert (cugs.lines.x == cudf.Series(x)).all()
-    assert (cugs.lines.y == cudf.Series(y)).all()
-    assert (cugs.lines.xy == cudf.Series(xy_interleaved)).all()
-
-
-def test_geometry_polygon_slicing(gs):
-    polys_list = gs[gs.apply(lambda x: isinstance(x, (MultiPolygon, Polygon)))]
-    polys = list(
-        chain(polys_list.apply(get_coordinates))
-    )  # flatten multigeometries
-    coords_list = list(chain(*polys))  # flatten geometries
-    xy_interleaved = list(chain(*coords_list))  # flatten coordinates
-    x = xy_interleaved[::2]
-    y = xy_interleaved[1::2]
-
-    # slice a superset of polygon geometries and then extract the polygons
-    cugs = cuspatial.from_geopandas(gs)[6:12]
-    assert (cugs.polygons.x == cudf.Series(x)).all()
-    assert (cugs.polygons.y == cudf.Series(y)).all()
-    assert (cugs.polygons.xy == cudf.Series(xy_interleaved)).all()
+    cugs = cuspatial.from_geopandas(gs)[slice]
+    assert (getattr(cugs, accessor).x == cudf.Series(x)).all()
+    assert (getattr(cugs, accessor).y == cudf.Series(y)).all()
+    assert (getattr(cugs, accessor).xy == cudf.Series(xy)).all()
 
 
 def test_loc(gs):

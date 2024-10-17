@@ -1,13 +1,11 @@
 # Copyright (c) 2020-2024, NVIDIA CORPORATION.
 import sys
-from itertools import chain
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pytest
 from geopandas.testing import assert_geodataframe_equal
-from shapely import get_coordinates
 from shapely.affinity import rotate
 from shapely.geometry import (
     LineString,
@@ -21,6 +19,7 @@ from shapely.geometry import (
 import cudf
 
 import cuspatial
+from cuspatial.testing.helpers import geometry_to_coords
 
 np.random.seed(0)
 
@@ -181,13 +180,7 @@ def test_interleaved_polygons(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
     cugs = cugpdf["geometry"]
     gs = gpdf["geometry"]
-    polys_list = gs[gs.apply(lambda x: isinstance(x, (MultiPolygon, Polygon)))]
-    # flatten multigeometries
-    polys = list(chain(polys_list.apply(get_coordinates)))
-    coords_list = list(chain(*polys))  # flatten geometries
-    xy_interleaved = list(chain(*coords_list))  # flatten coordinates
-    x = xy_interleaved[::2]
-    y = xy_interleaved[1::2]
+    xy, x, y = geometry_to_coords(gs, (Polygon, MultiPolygon))
 
     cudf.testing.assert_series_equal(
         cudf.Series.from_arrow(cugs.polygons.x.to_arrow()),
