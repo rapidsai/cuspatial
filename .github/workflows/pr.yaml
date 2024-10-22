@@ -46,8 +46,6 @@ jobs:
           - '!java/**'
           - '!notebooks/**'
           - '!python/**'
-          # TODO: Remove this before merging
-          - '!.github/workflows/**'
         test_notebooks:
           - '**'
           - '!.pre-commit-config.yaml'
