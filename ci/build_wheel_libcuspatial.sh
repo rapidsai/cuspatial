@@ -5,14 +5,6 @@ set -euo pipefail
 
 package_name="libcuspatial"
 
-git clone \
-  --branch multiple-file-keys \
-  https://github.com/jameslamb/dependency-file-generator.git \
-  /tmp/rapids-dependency-file-generator
-
-pip uninstall --yes rapids-dependency-file-generator
-pip install /tmp/rapids-dependency-file-generator
-
 rapids-logger "Generating build requirements"
 matrix_selectors="cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION};cuda_suffixed=true"
 
