@@ -39,6 +39,7 @@ jobs:
       files_yaml: |
         test_cpp:
           - '**'
+          - '!.devcontainer/**'
           - '!.pre-commit-config.yaml'
           - '!CONTRIBUTING.md'
           - '!README.md'
@@ -48,11 +49,13 @@ jobs:
           - '!python/**'
         test_notebooks:
           - '**'
+          - '!.devcontainer/**'
           - '!.pre-commit-config.yaml'
           - '!CONTRIBUTING.md'
           - '!README.md'
         test_python:
           - '**'
+          - '!.devcontainer/**'
           - '!.pre-commit-config.yaml'
           - '!CONTRIBUTING.md'
           - '!README.md'
