@@ -15,7 +15,11 @@ rapids-print-env
 
 rapids-logger "Begin cpp build"
 
+sccache --zero-stats
+
 RAPIDS_PACKAGE_VERSION=$(rapids-generate-version) rapids-conda-retry mambabuild \
     conda/recipes/libcuspatial
+
+sccache --show-adv-stats
 
 rapids-upload-conda-to-s3 cpp
