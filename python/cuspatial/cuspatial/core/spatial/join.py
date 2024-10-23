@@ -214,14 +214,15 @@ def quadtree_point_in_polygon(
         raise ValueError(
             "`polygons` Geoseries must contains only polygons geometries."
         )
+    points_data = points.points
+    points_x = as_column(points_data.x)
+    points_y = as_column(points_data.y)
 
-    points_x = as_column(points.points.x)
-    points_y = as_column(points.points.y)
-
-    poly_offsets = as_column(polygons.polygons.part_offset)
-    ring_offsets = as_column(polygons.polygons.ring_offset)
-    poly_points_x = as_column(polygons.polygons.x)
-    poly_points_y = as_column(polygons.polygons.y)
+    polygon_data = polygons.polygons
+    poly_offsets = as_column(polygon_data.part_offset)
+    ring_offsets = as_column(polygon_data.ring_offset)
+    poly_points_x = as_column(polygon_data.x)
+    poly_points_y = as_column(polygon_data.y)
 
     return DataFrame._from_data(
         *spatial_join.quadtree_point_in_polygon(
