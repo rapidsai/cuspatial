@@ -16,10 +16,12 @@
 import ctypes
 import os
 
-# RTLD_LOCAL is here for safety... using it loads symbols into the
-# library-specific table maintained by the loader, but not into the
-# global namespace where they may conflict with symbols from other
-# loaded DSOs.
+# Loading with RTLD_LOCAL adds the library itself to the loader's
+# loaded library cache without loading any symbols into the global
+# namespace. This allows libraries that express a dependency on
+# this library to be loaded later and successfully satisfy this dependency
+# without polluting the global symbol table with symbols from
+# libcuspatial that could conflict with symbols from other DSOs.
 PREFERRED_LOAD_FLAG = ctypes.RTLD_LOCAL
 
 
