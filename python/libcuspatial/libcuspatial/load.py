@@ -38,14 +38,11 @@ def _load_wheel_installation(soname: str):
 
     Returns ``None`` if the library cannot be loaded.
     """
-    out = None
-    for lib_dir in ("lib", "lib64"):
-        if os.path.isfile(
-            lib := os.path.join(os.path.dirname(__file__), lib_dir, soname)
-        ):
-            out = ctypes.CDLL(lib, PREFERRED_LOAD_FLAG)
-            break
-    return out
+    if os.path.isfile(
+        lib := os.path.join(os.path.dirname(__file__), "lib64", soname)
+    ):
+        return ctypes.CDLL(lib, PREFERRED_LOAD_FLAG)
+    return None
 
 
 def load_library():
