@@ -81,11 +81,17 @@ def load_library():
         # Prefer the libraries bundled in this package. If they aren't found
         # (which might be the case in builds where the library was prebuilt
         # before packaging the wheel), look for a system installation.
-        libcuspatial_lib = _load_wheel_installation(soname)
-        if libcuspatial_lib is None:
-            libcuspatial_lib = _load_system_installation(soname)
+        try:
+            libcuspatial_lib = _load_wheel_installation(soname)
+            if libcuspatial_lib is None:
+                libcuspatial_lib = _load_system_installation(soname)
+        except OSError:
+            # If none of the searches above succeed, just silently return None
+            # and rely on other mechanisms (like RPATHs on other DSOs) to
+            # help the loader find the library.
+            pass
 
     # The caller almost never needs to do anything with this library, but no
     # harm in offering the option since this object at least provides a handle
-    # to inspect where the libcuspatial was loaded from.
+    # to inspect where libcuspatial was loaded from.
     return libcuspatial_lib
