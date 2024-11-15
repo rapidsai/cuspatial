@@ -169,4 +169,5 @@ jobs:
       build_command: |
         sccache -z;
         build-all -DBUILD_TESTS=ON -DBUILD_BENCHMARKS=ON --verbose;
+        python -c "import cuspatial; print(cuspatial.__version__)";
         sccache -s;
