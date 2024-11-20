@@ -76,8 +76,8 @@ requirements:
     - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
     - cudf ={{ minor_version }}
     - pylibcudf ={{ minor_version }}
-    - geopandas >=0.11.0
-    - numpy >=1.23,<2.0a0
+    - geopandas >=1.0.0
+    - numpy >=1.23,<3.0a0
     - python
     - rmm ={{ minor_version }}
 

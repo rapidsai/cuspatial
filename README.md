@@ -102,8 +102,7 @@ gitGraph
 ## Using cuSpatial
 **CUDA/GPU requirements**
 - CUDA 11.2+ with a [compatible, supported driver](https://docs.nvidia.com/datacenter/tesla/drivers/#cuda-drivers)
-- Linux native: Pascal architecture or newer ([Compute Capability >=6.0](https://developer.nvidia.com/cuda-gpus))
-- WSL2: Volta architecture or newer ([Compute Capability >=7.0](https://developer.nvidia.com/cuda-gpus))
+- Volta architecture or newer ([Compute Capability >=7.0](https://developer.nvidia.com/cuda-gpus))
 
 ### Quick start: Docker
 Use the [RAPIDS Release Selector](https://docs.rapids.ai/install#selector), selecting `Docker` as the installation method. All RAPIDS Docker images contain cuSpatial.
@@ -113,19 +112,19 @@ An example command from the Release Selector:
 docker run --gpus all --pull always --rm -it \
     --shm-size=1g --ulimit memlock=-1 --ulimit stack=67108864 \
     -p 8888:8888 -p 8787:8787 -p 8786:8786 \
-    nvcr.io/nvidia/rapidsai/notebooks:24.10-cuda11.8-py3.10
+    nvcr.io/nvidia/rapidsai/notebooks:24.12-cuda11.8-py3.12
 ```
 
 ### Install with Conda
 
 To install via conda:
-> **Note** cuSpatial is supported only on Linux or [through WSL](https://rapids.ai/wsl2.html), and with Python versions 3.10 and 3.11.
+> **Note** cuSpatial is supported only on Linux or [through WSL](https://rapids.ai/wsl2.html), and with Python versions 3.10, 3.11, and 3.12.
 
-cuSpatial can be installed with conda (miniconda, or the full Anaconda distribution) from the rapidsai channel:
+cuSpatial can be installed with conda from the rapidsai channel:
 
 ```shell
 conda install -c rapidsai -c conda-forge -c nvidia \
-    cuspatial=24.10 python=3.11 cudatoolkit=11.8
+    cuspatial=24.12 python=3.12 cudatoolkit=11.8
 ```
 We also provide nightly Conda packages built from the HEAD of our latest development branch.
 
@@ -134,7 +133,7 @@ See the [RAPIDS installation documentation](https://docs.rapids.ai/install) for 
 ### Install with pip
 
 To install via pip:
-> **Note** cuSpatial is supported only on Linux or [through WSL](https://rapids.ai/wsl2.html), and with Python versions 3.10 and 3.11.
+> **Note** cuSpatial is supported only on Linux or [through WSL](https://rapids.ai/wsl2.html), and with Python versions 3.10, 3.11, and 3.12.
 
 The cuSpatial pip packages can be installed from NVIDIA's PyPI index. pip installations require using the matching wheel to the system's installed CUDA toolkit.
 - For CUDA 11 toolkits, install the `-cu11` wheels
@@ -144,35 +143,6 @@ The cuSpatial pip packages can be installed from NVIDIA's PyPI index. pip instal
 pip install cuspatial-cu12 --extra-index-url=https://pypi.nvidia.com
 pip install cuspatial-cu11 --extra-index-url=https://pypi.nvidia.com
 ```
-
-#### Troubleshooting Fiona/GDAL versions
-
-cuSpatial depends on [`geopandas`](https://github.com/geopandas/geopandas), which uses [`fiona >= 1.8.19`](https://pypi.org/project/Fiona/), to read common GIS formats with GDAL.
-
-Fiona requires GDAL is already present on your system, but its minimum required version may be newer than the version of GDAL in your OS's package manager.
-
-Fiona checks the GDAL version at install time and fails with an error like this if a compatible version of GDAL isn't installed:
-```
-ERROR: GDAL >= 3.2 is required for fiona. Please upgrade GDAL.
-```
-
-There are two ways to fix this:
-
-1. Install a version of GDAL that meets fiona's minimum required version
-  * Ubuntu users can install a newer GDAL with the [UbuntuGIS PPA](https://wiki.ubuntu.com/UbuntuGIS):
-    ```shell
-    sudo -y add-apt-repository ppa:ubuntugis/ppa
-    sudo apt install libgdal-dev
-    ```
-2. Pin fiona's version to a range that's compatible with your version of `libgdal-dev`
-  * For Ubuntu20.04 ([GDAL v3.0.4](https://packages.ubuntu.com/focal/libgdal-dev)):
-    ```shell
-    pip install --no-binary fiona --extra-index-url=https://pypi.nvidia.com cuspatial-cu12 'fiona>=1.8.19,<1.9'
-    ```
-  * For Ubuntu22.04 ([GDAL v3.4.1](https://packages.ubuntu.com/jammy/libgdal-dev)):
-    ```shell
-    pip install --no-binary fiona --extra-index-url=https://pypi.nvidia.com cuspatial-cu12 'fiona>=1.9'
-    ```
 
 ### Build/Install from source
 
@@ -184,7 +154,7 @@ To build and install cuSpatial from source please see the [build documentation](
 If you find cuSpatial useful in your published work, please consider citing the repository.
 
 ```bibtex
-@misc{cuspatial:24.10,
+@misc{cuspatial:24.12,
     author = {{NVIDIA Corporation}},
     title = {cuSpatial: GPU-Accelerated Geospatial and Spatiotemporal Algorithms},
     year = {2023},

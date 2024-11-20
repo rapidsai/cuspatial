@@ -19,6 +19,7 @@ from shapely.geometry import (
 import cudf
 
 import cuspatial
+from cuspatial.testing.helpers import geometry_to_coords
 
 np.random.seed(0)
 
@@ -66,7 +67,7 @@ def generator(size, has_z=False):
 
 
 def assert_eq_point(p1, p2):
-    assert type(p1) == type(p2)
+    assert type(p1) is type(p2)
     assert p1.x == p2.x
     assert p1.y == p2.y
     assert p1.has_z == p2.has_z
@@ -76,7 +77,7 @@ def assert_eq_point(p1, p2):
 
 
 def assert_eq_multipoint(p1, p2):
-    assert type(p1) == type(p2)
+    assert type(p1) is type(p2)
     assert len(p1) == len(p2)
     for i in range(len(p1)):
         assert_eq_point(p1[i], p2[i])
@@ -93,8 +94,7 @@ def assert_eq_multipolygon(p1, p2):
 
 
 def assert_eq_geo_df(geo1, geo2):
-    if type(geo1) != type(geo2):
-        assert TypeError
+    assert type(geo1) is type(geo2)
     assert geo1.columns.equals(geo2.columns)
     for col in geo1.columns:
         if geo1[col].dtype == "geometry":
@@ -112,10 +112,10 @@ def test_select_multiple_columns(gpdf):
 
 def test_type_persistence(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
-    assert type(cugpdf["geometry"]) == cuspatial.GeoSeries
+    assert type(cugpdf["geometry"]) is cuspatial.GeoSeries
 
 
-def test_interleaved_point(gpdf, polys):
+def test_interleaved_point(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
     cugs = cugpdf["geometry"]
     gs = gpdf["geometry"]
@@ -129,7 +129,7 @@ def test_interleaved_point(gpdf, polys):
     )
 
 
-def test_interleaved_multipoint(gpdf, polys):
+def test_interleaved_multipoint(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
     cugs = cugpdf["geometry"]
     gs = gpdf["geometry"]
@@ -157,7 +157,7 @@ def test_interleaved_multipoint(gpdf, polys):
     )
 
 
-def test_interleaved_lines(gpdf, polys):
+def test_interleaved_lines(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
     cugs = cugpdf["geometry"]
     cudf.testing.assert_series_equal(
@@ -176,16 +176,19 @@ def test_interleaved_lines(gpdf, polys):
     )
 
 
-def test_interleaved_polygons(gpdf, polys):
+def test_interleaved_polygons(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
     cugs = cugpdf["geometry"]
+    gs = gpdf["geometry"]
+    xy, x, y = geometry_to_coords(gs, (Polygon, MultiPolygon))
+
     cudf.testing.assert_series_equal(
         cudf.Series.from_arrow(cugs.polygons.x.to_arrow()),
-        cudf.Series(polys[:, 0], dtype="float64"),
+        cudf.Series(x, dtype="float64"),
     )
     cudf.testing.assert_series_equal(
         cudf.Series.from_arrow(cugs.polygons.y.to_arrow()),
-        cudf.Series(polys[:, 1], dtype="float64"),
+        cudf.Series(y, dtype="float64"),
     )
 
 
@@ -462,10 +465,16 @@ def test_reset_index(level, drop, inplace, col_level, col_fill):
 def test_cudf_dataframe_init():
     df = cudf.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
     gdf = cuspatial.GeoDataFrame(df)
-    assert_eq_geo_df(gdf.to_pandas(), df.to_pandas())
+    assert_eq_geo_df(gdf.to_pandas(), gpd.GeoDataFrame(df.to_pandas()))
 
 
-def test_apply_boolean_mask(gpdf, mask_factory):
+def test_apply_boolean_mask(gpdf, mask_factory, request):
+    if "MaskNone" not in request.node.callspec.id:
+        reason = (
+            "gs fixture contains invalid Polygons/MultiPolygons: "
+            "https://github.com/libgeos/geos/issues/1177"
+        )
+        request.applymarker(pytest.mark.xfail(reason=reason))
     mask = mask_factory(len(gpdf))
 
     expected = gpdf[mask]
