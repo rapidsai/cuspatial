@@ -46,18 +46,18 @@ template <typename T>
 using coordinate = typename cuspatial::vec_2d<T>;
 
 template <typename T>
-using pipeline = cuproj::detail::pipeline<coordinate<T>>;
+using device_projection = cuproj::device_projection<coordinate<T>>;
 
 enum class transform_call_type { HOST, DEVICE };
 
-template <typename T>
-__global__ void transform_kernel(pipeline<T> const projection,
-                                 coordinate<T> const* in,
-                                 coordinate<T>* out,
+template <typename Coordinate, typename T = typename Coordinate::value_type>
+__global__ void transform_kernel(device_projection<T> const d_proj,
+                                 Coordinate const* in,
+                                 Coordinate* out,
                                  size_t n)
 {
   for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += gridDim.x * blockDim.x) {
-    out[i] = projection.transform(in[i]);
+    out[i] = d_proj.transform(in[i]);
   }
 }
 
@@ -78,10 +78,10 @@ void run_cuproj_test(thrust::host_vector<coordinate<T>> const& input,
     // Note that this ultimately executes the same code as projection::transform(),
     // but in a device kernel. Both methods transform one coordinate per CUDA thread.
     // This gives more flexibility to write custom CUDA kernels that use the projection.
-    auto d_proj    = proj.get_device_projection(dir);
-    int block_size = 256;
-    int grid_size  = (d_in.size() + block_size - 1) / block_size;
-    transform_kernel<T>
+    auto d_proj            = proj.get_device_projection(dir);
+    std::size_t block_size = 256;
+    std::size_t grid_size  = (d_in.size() + block_size - 1) / block_size;
+    transform_kernel<coordinate<T>>
       <<<grid_size, block_size>>>(d_proj, d_in.data().get(), d_out.data().get(), d_in.size());
     cudaDeviceSynchronize();
   } else {
@@ -144,6 +144,8 @@ void run_forward_and_inverse(DeviceVector const& input,
       h_input, h_expected, *proj, cuproj::direction::FORWARD, tolerance, call_type);
     run_cuproj_test<T>(
       h_expected, h_input, *proj, cuproj::direction::INVERSE, tolerance, call_type);
+
+    delete proj;
   };
 
   // forward construction
@@ -323,4 +325,35 @@ TYPED_TEST(ProjectionTest, readme_example)
 
   // Convert the coordinates. Works the same with a vector of many coordinates.
   proj->transform(d_in.begin(), d_in.end(), d_out.begin(), cuproj::direction::FORWARD);
+}
+
+__global__ void example_kernel(cuproj::device_projection<cuproj::vec_2d<float>> const d_proj,
+                               cuproj::vec_2d<float> const* in,
+                               cuproj::vec_2d<float>* out,
+                               size_t n)
+{
+  for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += gridDim.x * blockDim.x) {
+    out[i] = d_proj.transform(in[i]);
+  }
+}
+
+TEST(ProjectionTest, device_readme_example)
+{
+  using coordinate = cuproj::vec_2d<float>;
+
+  // Make a projection to convert WGS84 (lat, lon) coordinates to
+  // UTM zone 56S (x, y) coordinates
+  auto proj = cuproj::make_projection<coordinate>("EPSG:4326", "EPSG:32756");
+
+  // Sydney, NSW, Australia
+  coordinate sydney{-33.858700, 151.214000};
+  thrust::device_vector<coordinate> d_in{1, sydney};
+  thrust::device_vector<coordinate> d_out(d_in.size());
+
+  auto d_proj            = proj->get_device_projection(cuproj::direction::FORWARD);
+  std::size_t block_size = 256;
+  std::size_t grid_size  = (d_in.size() + block_size - 1) / block_size;
+  example_kernel<<<grid_size, block_size>>>(
+    d_proj, d_in.data().get(), d_out.data().get(), d_in.size());
+  cudaDeviceSynchronize();
 }
