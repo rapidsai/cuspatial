@@ -78,11 +78,11 @@ void run_cuproj_test(thrust::host_vector<coordinate<T>> const& input,
     // Note that this ultimately executes the same code as projection::transform(),
     // but in a device kernel. Both methods transform one coordinate per CUDA thread.
     // This gives more flexibility to write custom CUDA kernels that use the projection.
-    auto projection = proj.get_pipeline(dir);
-    int block_size  = 256;
-    int grid_size   = (d_in.size() + block_size - 1) / block_size;
+    auto d_proj    = proj.get_device_projection(dir);
+    int block_size = 256;
+    int grid_size  = (d_in.size() + block_size - 1) / block_size;
     transform_kernel<T>
-      <<<grid_size, block_size>>>(projection, d_in.data().get(), d_out.data().get(), d_in.size());
+      <<<grid_size, block_size>>>(d_proj, d_in.data().get(), d_out.data().get(), d_in.size());
     cudaDeviceSynchronize();
   } else {
     proj.transform(d_in.begin(), d_in.end(), d_out.begin(), dir);
