@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ class pipeline {
   }
 
   /**
-   * @brief Apply the pipeline to the given coordinate
+   * @brief Transform a coordinate using the pipeline
    *
    * @param c The coordinate to transform
    * @return The transformed coordinate
@@ -78,6 +78,16 @@ class pipeline {
     }
     return c_out;
   }
+
+  /**
+   * @brief Transform a coordinate using the pipeline
+   *
+   * @note this is an alias for operator() to allow for a more natural syntax
+   *
+   * @param c The coordinate to transform
+   * @return The transformed coordinate
+   */
+  inline __device__ Coordinate transform(Coordinate const& c) const { return operator()(c); }
 
  private:
   projection_parameters<T> params_;
