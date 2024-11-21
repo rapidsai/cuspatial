@@ -49,6 +49,8 @@ namespace cuproj {
  */
 template <typename Coordinate, typename T = typename Coordinate::value_type>
 class projection {
+  using pipeline = detail::pipeline<Coordinate>;
+
  public:
   /**
    * @brief Construct a new projection object
@@ -85,15 +87,8 @@ class projection {
   {
     dir = (constructed_direction_ == direction::FORWARD) ? dir : reverse(dir);
 
-    if (dir == direction::FORWARD) {
-      auto pipe = detail::pipeline<Coordinate, direction::FORWARD>{
-        params_, operations_.data().get(), operations_.size()};
-      thrust::transform(rmm::exec_policy(stream), first, last, result, pipe);
-    } else {
-      auto pipe = detail::pipeline<Coordinate, direction::INVERSE>{
-        params_, operations_.data().get(), operations_.size()};
-      thrust::transform(rmm::exec_policy(stream), first, last, result, pipe);
-    }
+    auto pipe = pipeline{params_, operations_.data().get(), operations_.size(), dir};
+    thrust::transform(rmm::exec_policy(stream), first, last, result, pipe);
   }
 
  private:
