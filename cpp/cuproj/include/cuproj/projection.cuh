@@ -38,6 +38,9 @@ namespace cuproj {
  * @file
  */
 
+template <typename Coordinate>
+using device_projection = detail::pipeline<Coordinate>;
+
 /**
  * @brief A projection transforms coordinates between coordinate reference systems
  *
@@ -49,9 +52,9 @@ namespace cuproj {
  */
 template <typename Coordinate, typename T = typename Coordinate::value_type>
 class projection {
- public:
-  using pipeline = detail::pipeline<Coordinate>;
+  using device_projection = device_projection<Coordinate>;
 
+ public:
   /**
    * @brief Construct a new projection object
    *
@@ -67,10 +70,20 @@ class projection {
     setup(operations);
   }
 
-  pipeline get_pipeline(direction dir) const
+  /**
+   * @brief Get a device_projection object that can be passed to device code.
+   *
+   * This object can be used to transform coordinates on the device.
+   *
+   * @note The implementation is in detail::pipeline.
+   *
+   * @param dir the direction of the transform, FORWARD or INVERSE.
+   * @return the device projection
+   */
+  device_projection get_device_projection(direction dir) const
   {
     dir = (constructed_direction_ == direction::FORWARD) ? dir : reverse(dir);
-    return pipeline{params_, operations_.data().get(), operations_.size(), dir};
+    return device_projection{params_, operations_.data().get(), operations_.size(), dir};
   }
 
   /**
@@ -91,7 +104,7 @@ class projection {
                  direction dir,
                  rmm::cuda_stream_view stream = rmm::cuda_stream_default) const
   {
-    thrust::transform(rmm::exec_policy(stream), first, last, result, get_pipeline(dir));
+    thrust::transform(rmm::exec_policy(stream), first, last, result, get_device_projection(dir));
   }
 
  private:
