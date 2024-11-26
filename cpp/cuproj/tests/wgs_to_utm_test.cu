@@ -45,13 +45,10 @@ TYPED_TEST_CASE(ProjectionTest, TestTypes);
 template <typename T>
 using coordinate = typename cuspatial::vec_2d<T>;
 
-template <typename T>
-using device_projection = cuproj::device_projection<coordinate<T>>;
-
 enum class transform_call_type { HOST, DEVICE };
 
 template <typename Coordinate, typename T = typename Coordinate::value_type>
-__global__ void transform_kernel(device_projection<T> const d_proj,
+__global__ void transform_kernel(cuproj::device_projection<Coordinate> const d_proj,
                                  Coordinate const* in,
                                  Coordinate* out,
                                  size_t n)

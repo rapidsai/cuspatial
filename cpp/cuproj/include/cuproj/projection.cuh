@@ -38,8 +38,13 @@ namespace cuproj {
  * @file
  */
 
+/**
+ * @brief A projection object that can be invoked from `__device__` code to transform coordinates.
+ *
+ * @tparam Coordinate the coordinate type. This type is expected to have a `value_type` member type.
+ */
 template <typename Coordinate>
-using device_projection = detail::pipeline<Coordinate>;
+using device_projection = typename detail::pipeline<Coordinate>;
 
 /**
  * @brief A projection transforms coordinates between coordinate reference systems
@@ -48,12 +53,10 @@ using device_projection = detail::pipeline<Coordinate>;
  * The operations are applied in order, either forward or inverse.
  *
  * @tparam Coordinate the coordinate type
- * @tparam T the coordinate value type
+ * @tparam T the coordinate value type. Specify this if `Coordinate` does not have a `value_type`
  */
 template <typename Coordinate, typename T = typename Coordinate::value_type>
 class projection {
-  using device_projection = device_projection<Coordinate>;
-
  public:
   /**
    * @brief Construct a new projection object
@@ -80,10 +83,11 @@ class projection {
    * @param dir the direction of the transform, FORWARD or INVERSE.
    * @return the device projection
    */
-  device_projection get_device_projection(direction dir) const
+  device_projection<Coordinate> get_device_projection(direction dir) const
   {
     dir = (constructed_direction_ == direction::FORWARD) ? dir : reverse(dir);
-    return device_projection{params_, operations_.data().get(), operations_.size(), dir};
+    return device_projection<Coordinate>{
+      params_, operations_.data().get(), operations_.size(), dir};
   }
 
   /**
