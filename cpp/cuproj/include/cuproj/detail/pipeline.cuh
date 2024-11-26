@@ -24,10 +24,9 @@
 #include <cuproj/operation/operation.cuh>
 #include <cuproj/operation/transverse_mercator.cuh>
 
+#include <cuda/std/__iterator/reverse_iterator.h>
 #include <thrust/execution_policy.h>
 #include <thrust/for_each.h>
-
-#include <iterator>
 
 namespace cuproj {
 namespace detail {
@@ -73,7 +72,7 @@ class pipeline {
       thrust::for_each_n(
         thrust::seq, first, num_stages, [&](auto const& op) { c_out = dispatch_op(c_out, op); });
     } else {
-      auto first = std::reverse_iterator(d_ops + num_stages);
+      auto first = cuda::std::reverse_iterator(d_ops + num_stages);
       thrust::for_each_n(
         thrust::seq, first, num_stages, [&](auto const& op) { c_out = dispatch_op(c_out, op); });
     }
