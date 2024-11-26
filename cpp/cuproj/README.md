@@ -84,6 +84,6 @@ auto d_proj            = proj->get_device_projection(cuproj::direction::FORWARD)
 std::size_t block_size = 256;
 std::size_t grid_size  = (d_in.size() + block_size - 1) / block_size;
 example_kernel<<<grid_size, block_size>>>(
-d_proj, d_in.data().get(), d_out.data().get(), d_in.size());
+  d_proj, d_in.data().get(), d_out.data().get(), d_in.size());
 cudaDeviceSynchronize();
 ```
