@@ -3,6 +3,7 @@
 
 set -euo pipefail
 
+package_dir="python/libcuspatial"
 package_name="libcuspatial"
 
 rapids-logger "Generating build requirements"
@@ -25,4 +26,5 @@ python -m pip install \
 # 0 really means "add --no-build-isolation" (ref: https://github.com/pypa/pip/issues/5735)
 export PIP_NO_BUILD_ISOLATION=0
 
-ci/build_wheel.sh "${package_name}" python/libcuspatial cpp
+ci/build_wheel.sh "${package_name}" ${package_dir} cpp
+ci/validate_wheel.sh ${package_dir} final_dist
