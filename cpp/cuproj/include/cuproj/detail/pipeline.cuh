@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cuproj/assert.cuh>
 #include <cuproj/operation/axis_swap.cuh>
 #include <cuproj/operation/clamp_angular_coordinates.cuh>
 #include <cuproj/operation/degrees_to_radians.cuh>
@@ -117,6 +118,10 @@ class pipeline {
       case operation_type::TRANSVERSE_MERCATOR: {
         auto op = transverse_mercator<Coordinate>{params_};
         return op(c, dir_);
+      }
+      default: {
+        cuproj_assert("Invalid operation type");
+        return c;
       }
     }
   }
