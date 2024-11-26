@@ -22,9 +22,8 @@
 #include <cuproj/operation/operation.cuh>
 #include <cuproj/projection_parameters.hpp>
 
+#include <cuda/std/__algorithm/clamp.h>
 #include <thrust/iterator/transform_iterator.h>
-
-#include <algorithm>
 
 namespace cuproj {
 
@@ -92,7 +91,7 @@ class clamp_angular_coordinates : operation<Coordinate> {
 
     /* Clamp latitude to -pi/2..pi/2 degree range */
     auto half_pi = static_cast<T>(M_PI_2);
-    xy.y         = std::clamp(xy.y, -half_pi, half_pi);
+    xy.y         = cuda::std::clamp(xy.y, -half_pi, half_pi);
 
     // Distance from central meridian, taking system zero meridian into account
     xy.x = (xy.x - prime_meridian_offset_) - lam0_;
