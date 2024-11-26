@@ -24,7 +24,7 @@
 #include <cuproj/operation/operation.cuh>
 #include <cuproj/operation/transverse_mercator.cuh>
 
-#include <cuda/std/__iterator/reverse_iterator.h>
+#include <cuda/std/iterator>
 #include <thrust/execution_policy.h>
 #include <thrust/for_each.h>
 
