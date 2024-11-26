@@ -22,7 +22,6 @@
 #include <cuproj/operation/operation.cuh>
 #include <cuproj/projection_parameters.hpp>
 
-#include <cuda/std/__algorithm/clamp.h>
 #include <thrust/iterator/transform_iterator.h>
 
 namespace cuproj {
@@ -61,7 +60,8 @@ class clamp_angular_coordinates : operation<Coordinate> {
    * @param dir The direction of the operation
    * @return The clamped coordinate
    */
-  CUPROJ_HOST_DEVICE Coordinate operator()(Coordinate const& coord, direction dir) const
+  [[nodiscard]] CUPROJ_HOST_DEVICE Coordinate operator()(Coordinate const& coord,
+                                                         direction dir) const
   {
     if (dir == direction::FORWARD)
       return forward(coord);
@@ -80,7 +80,7 @@ class clamp_angular_coordinates : operation<Coordinate> {
    * @param coord The coordinate to clamp
    * @return The clamped coordinate
    */
-  CUPROJ_HOST_DEVICE Coordinate forward(Coordinate const& coord) const
+  [[nodiscard]] CUPROJ_HOST_DEVICE Coordinate forward(Coordinate const& coord) const
   {
     // check for latitude or longitude over-range
     T t = (coord.y < 0 ? -coord.y : coord.y) - M_PI_2;
@@ -91,7 +91,7 @@ class clamp_angular_coordinates : operation<Coordinate> {
 
     /* Clamp latitude to -pi/2..pi/2 degree range */
     auto half_pi = static_cast<T>(M_PI_2);
-    xy.y         = cuda::std::clamp(xy.y, -half_pi, half_pi);
+    xy.y         = clamp(xy.y, -half_pi, half_pi);
 
     // Distance from central meridian, taking system zero meridian into account
     xy.x = (xy.x - prime_meridian_offset_) - lam0_;
@@ -111,7 +111,7 @@ class clamp_angular_coordinates : operation<Coordinate> {
    * @param coord The coordinate to clamp
    * @return The clamped coordinate
    */
-  CUPROJ_HOST_DEVICE Coordinate inverse(Coordinate const& coord) const
+  [[nodiscard]] inline CUPROJ_HOST_DEVICE Coordinate inverse(Coordinate const& coord) const
   {
     Coordinate xy = coord;
 
@@ -122,6 +122,14 @@ class clamp_angular_coordinates : operation<Coordinate> {
     xy.x = detail::wrap_to_pi(xy.x);
 
     return xy;
+  }
+
+  [[nodiscard]] inline CUPROJ_HOST_DEVICE const T& clamp(const T& val,
+                                                         const T& low,
+                                                         const T& high) const
+  {
+    CUPROJ_HOST_DEVICE_EXPECTS(!(low < high), "Invalid clamp range");
+    return val < low ? low : (high < val) ? high : val;
   }
 
   T lam0_{};  // central meridian
