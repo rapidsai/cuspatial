@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 
 from typing import TypeVar
 
@@ -136,10 +136,10 @@ def has_multipolygons(gs: GeoSeries):
 def empty_geometry_column(feature: Feature_Enum, base_type):
     """Return a geometry column of type `feature`. Length is 0."""
     if feature == Feature_Enum.POINT:
-        return column_empty(0, point_dtype(base_type), masked=False)
+        return column_empty(0, point_dtype(base_type))
     elif feature == Feature_Enum.MULTIPOINT:
-        return column_empty(0, multipoint_dtype(base_type), masked=False)
+        return column_empty(0, multipoint_dtype(base_type))
     elif feature == Feature_Enum.LINESTRING:
-        return column_empty(0, linestring_dtype(base_type), masked=False)
+        return column_empty(0, linestring_dtype(base_type))
     elif feature == Feature_Enum.POLYGON:
-        return column_empty(0, polygon_dtype(base_type), masked=False)
+        return column_empty(0, polygon_dtype(base_type))
