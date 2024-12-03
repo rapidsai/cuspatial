@@ -1,5 +1,5 @@
 #=============================================================================
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     endif()
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
-list(APPEND CUPROJ_CUDA_FLAGS --expt-extended-lambda --expt-relaxed-constexpr)
+list(APPEND CUPROJ_CUDA_FLAGS --expt-extended-lambda)
 
 # set warnings as errors
 if(CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 11.2.0)

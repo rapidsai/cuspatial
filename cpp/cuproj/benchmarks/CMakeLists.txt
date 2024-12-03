@@ -1,5 +1,5 @@
 #=============================================================================
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,7 +24,8 @@ add_library(cuproj_benchmark_common OBJECT
 target_compile_features(cuproj_benchmark_common PUBLIC cxx_std_17 cuda_std_17)
 
 target_link_libraries(cuproj_benchmark_common
-  PUBLIC benchmark::benchmark cudf::cudftestutil cuproj)
+  PUBLIC benchmark::benchmark rmm::rmm cuproj
+  PRIVATE rmm::rmm_logger_impl)
 
 target_compile_options(cuproj_benchmark_common
   PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${CUPROJ_CXX_FLAGS}>"
