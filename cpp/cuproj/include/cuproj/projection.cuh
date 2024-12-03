@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,13 +39,21 @@ namespace cuproj {
  */
 
 /**
+ * @brief A projection object that can be invoked from `__device__` code to transform coordinates.
+ *
+ * @tparam Coordinate the coordinate type. This type is expected to have a `value_type` member type.
+ */
+template <typename Coordinate>
+using device_projection = typename detail::pipeline<Coordinate>;
+
+/**
  * @brief A projection transforms coordinates between coordinate reference systems
  *
  * Projections are constructed from a list of operations to be applied to coordinates.
  * The operations are applied in order, either forward or inverse.
  *
  * @tparam Coordinate the coordinate type
- * @tparam T the coordinate value type
+ * @tparam T the coordinate value type. Specify this if `Coordinate` does not have a `value_type`
  */
 template <typename Coordinate, typename T = typename Coordinate::value_type>
 class projection {
@@ -66,6 +74,23 @@ class projection {
   }
 
   /**
+   * @brief Get a device_projection object that can be passed to device code.
+   *
+   * This object can be used to transform coordinates on the device.
+   *
+   * @note The implementation is in detail::pipeline.
+   *
+   * @param dir the direction of the transform, FORWARD or INVERSE.
+   * @return the device projection
+   */
+  device_projection<Coordinate> get_device_projection(direction dir) const
+  {
+    dir = (constructed_direction_ == direction::FORWARD) ? dir : reverse(dir);
+    return device_projection<Coordinate>{
+      params_, operations_.data().get(), operations_.size(), dir};
+  }
+
+  /**
    * @brief Transform a range of coordinates
    *
    * @tparam CoordIter the coordinate iterator type
@@ -83,17 +108,7 @@ class projection {
                  direction dir,
                  rmm::cuda_stream_view stream = rmm::cuda_stream_default) const
   {
-    dir = (constructed_direction_ == direction::FORWARD) ? dir : reverse(dir);
-
-    if (dir == direction::FORWARD) {
-      auto pipe = detail::pipeline<Coordinate, direction::FORWARD>{
-        params_, operations_.data().get(), operations_.size()};
-      thrust::transform(rmm::exec_policy(stream), first, last, result, pipe);
-    } else {
-      auto pipe = detail::pipeline<Coordinate, direction::INVERSE>{
-        params_, operations_.data().get(), operations_.size()};
-      thrust::transform(rmm::exec_policy(stream), first, last, result, pipe);
-    }
+    thrust::transform(rmm::exec_policy(stream), first, last, result, get_device_projection(dir));
   }
 
  private:
