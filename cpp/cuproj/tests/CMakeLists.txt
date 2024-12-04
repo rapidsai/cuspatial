@@ -1,5 +1,5 @@
 ﻿#=============================================================================
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ function(ConfigureTest CMAKE_TEST_NAME)
                    CUDA_STANDARD 17
                    CUDA_STANDARD_REQUIRED ON
     )
-    target_link_libraries(${CMAKE_TEST_NAME} GTest::gtest_main GTest::gmock_main PROJ::proj cuproj)
+    target_link_libraries(${CMAKE_TEST_NAME} GTest::gtest_main GTest::gmock_main PROJ::proj rmm::rmm cuproj)
     add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
     install(
         TARGETS ${CMAKE_TEST_NAME}
