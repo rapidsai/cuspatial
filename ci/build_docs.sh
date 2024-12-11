@@ -23,7 +23,6 @@ rapids-print-env
 
 export RAPIDS_VERSION="$(rapids-version)"
 export RAPIDS_VERSION_MAJOR_MINOR="$(rapids-version-major-minor)"
-export RAPIDS_VERSION_NUMBER="24.10"
 export RAPIDS_DOCS_DIR="$(mktemp -d)"
 
 rapids-logger "Build cuSpatial CPP docs"
@@ -54,4 +53,4 @@ mkdir -p "${RAPIDS_DOCS_DIR}/cuproj/html"
 mv _html/* "${RAPIDS_DOCS_DIR}/cuproj/html"
 popd
 
-rapids-upload-docs
+RAPIDS_VERSION_NUMBER="${RAPIDS_VERSION_MAJOR_MINOR}" rapids-upload-docs

@@ -36,15 +36,8 @@ def test_dataframe_column_access(gs):
 
 def test_from_geoseries_complex(gs):
     cugs = cuspatial.from_geopandas(gs)
-    assert cugs.points.xy.sum() == 18
-    assert cugs.lines.xy.sum() == 540
-    assert cugs.multipoints.xy.sum() == 36
-    assert cugs.polygons.xy.sum() == 7436
-    assert cugs._column.polygons._column.base_children[0].sum() == 15
-    assert (
-        cugs._column.polygons._column.base_children[1].base_children[0].sum()
-        == 38
-    )
+    gs_roundtrip = cugs.to_geopandas()
+    gpd.testing.assert_geoseries_equal(gs_roundtrip, gs)
 
 
 def test_from_geopandas_point():

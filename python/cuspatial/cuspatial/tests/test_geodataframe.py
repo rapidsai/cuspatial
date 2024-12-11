@@ -19,6 +19,7 @@ from shapely.geometry import (
 import cudf
 
 import cuspatial
+from cuspatial.testing.helpers import geometry_to_coords
 
 np.random.seed(0)
 
@@ -114,7 +115,7 @@ def test_type_persistence(gpdf):
     assert type(cugpdf["geometry"]) is cuspatial.GeoSeries
 
 
-def test_interleaved_point(gpdf, polys):
+def test_interleaved_point(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
     cugs = cugpdf["geometry"]
     gs = gpdf["geometry"]
@@ -128,7 +129,7 @@ def test_interleaved_point(gpdf, polys):
     )
 
 
-def test_interleaved_multipoint(gpdf, polys):
+def test_interleaved_multipoint(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
     cugs = cugpdf["geometry"]
     gs = gpdf["geometry"]
@@ -156,7 +157,7 @@ def test_interleaved_multipoint(gpdf, polys):
     )
 
 
-def test_interleaved_lines(gpdf, polys):
+def test_interleaved_lines(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
     cugs = cugpdf["geometry"]
     cudf.testing.assert_series_equal(
@@ -175,16 +176,19 @@ def test_interleaved_lines(gpdf, polys):
     )
 
 
-def test_interleaved_polygons(gpdf, polys):
+def test_interleaved_polygons(gpdf):
     cugpdf = cuspatial.from_geopandas(gpdf)
     cugs = cugpdf["geometry"]
+    gs = gpdf["geometry"]
+    xy, x, y = geometry_to_coords(gs, (Polygon, MultiPolygon))
+
     cudf.testing.assert_series_equal(
         cudf.Series.from_arrow(cugs.polygons.x.to_arrow()),
-        cudf.Series(polys[:, 0], dtype="float64"),
+        cudf.Series(x, dtype="float64"),
     )
     cudf.testing.assert_series_equal(
         cudf.Series.from_arrow(cugs.polygons.y.to_arrow()),
-        cudf.Series(polys[:, 1], dtype="float64"),
+        cudf.Series(y, dtype="float64"),
     )
 
 

@@ -21,6 +21,8 @@ CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
 
 rapids-logger "Begin py build cuSpatial"
 
+sccache --zero-stats
+
 # TODO: Remove `--no-test` flag once importing on a CPU
 # node works correctly
 RAPIDS_PACKAGE_VERSION=$(head -1 ./VERSION) rapids-conda-retry mambabuild \
@@ -28,7 +30,11 @@ RAPIDS_PACKAGE_VERSION=$(head -1 ./VERSION) rapids-conda-retry mambabuild \
   --channel "${CPP_CHANNEL}" \
   conda/recipes/cuspatial
 
+sccache --show-adv-stats
+
 rapids-logger "Begin py build cuProj"
+
+sccache --zero-stats
 
 # TODO: Remove `--no-test` flag once importing on a CPU
 # node works correctly
@@ -36,5 +42,7 @@ RAPIDS_PACKAGE_VERSION=$(head -1 ./VERSION) rapids-conda-retry mambabuild \
   --no-test \
   --channel "${CPP_CHANNEL}" \
   conda/recipes/cuproj
+
+sccache --show-adv-stats
 
 rapids-upload-conda-to-s3 python

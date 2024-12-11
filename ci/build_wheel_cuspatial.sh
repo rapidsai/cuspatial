@@ -3,6 +3,8 @@
 
 set -euo pipefail
 
+package_dir="python/cuspatial"
+
 RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen ${RAPIDS_CUDA_VERSION})"
 
 # Downloads libcuspatial wheel from this current build,
@@ -14,4 +16,5 @@ RAPIDS_PY_WHEEL_NAME="libcuspatial_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-whe
 echo "libcuspatial-${RAPIDS_PY_CUDA_SUFFIX} @ file://$(echo /tmp/libcuspatial_dist/libcuspatial_*.whl)" > /tmp/constraints.txt
 export PIP_CONSTRAINT="/tmp/constraints.txt"
 
-ci/build_wheel.sh cuspatial python/cuspatial python
+ci/build_wheel.sh cuspatial ${package_dir} python
+ci/validate_wheel.sh ${package_dir} final_dist
