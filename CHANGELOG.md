@@ -1,3 +1,30 @@
+# cuspatial 24.12.00 (11 Dec 2024)
+
+## 🚨 Breaking Changes
+
+- prefer wheel-provided libcuspatial.so in load_library(), use RTLD_LOCAL ([#1483](https://github.com/rapidsai/cuspatial/pull/1483)) [@jameslamb](https://github.com/jameslamb)
+
+## 🐛 Bug Fixes
+
+- fix library-loading issues in editable installs ([#1484](https://github.com/rapidsai/cuspatial/pull/1484)) [@jameslamb](https://github.com/jameslamb)
+- Make polygon fixture data valid ([#1472](https://github.com/rapidsai/cuspatial/pull/1472)) [@harrism](https://github.com/harrism)
+
+## 📖 Documentation
+
+- Update README architecture and platform support ([#1476](https://github.com/rapidsai/cuspatial/pull/1476)) [@bdice](https://github.com/bdice)
+
+## 🛠️ Improvements
+
+- prefer wheel-provided libcuspatial.so in load_library(), use RTLD_LOCAL ([#1483](https://github.com/rapidsai/cuspatial/pull/1483)) [@jameslamb](https://github.com/jameslamb)
+- enforce wheel size limits, README formatting in CI ([#1482](https://github.com/rapidsai/cuspatial/pull/1482)) [@jameslamb](https://github.com/jameslamb)
+- Prune workflows based on changed files ([#1479](https://github.com/rapidsai/cuspatial/pull/1479)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- devcontainer: replace `VAULT_HOST` with `AWS_ROLE_ARN` ([#1478](https://github.com/rapidsai/cuspatial/pull/1478)) [@jjacobelli](https://github.com/jjacobelli)
+- Updated libcudftestutil CMake linking logic for 24.12 ([#1475](https://github.com/rapidsai/cuspatial/pull/1475)) [@lamarrr](https://github.com/lamarrr)
+- build wheels without build isolation ([#1473](https://github.com/rapidsai/cuspatial/pull/1473)) [@jameslamb](https://github.com/jameslamb)
+- remove unused variables in build_docs script ([#1469](https://github.com/rapidsai/cuspatial/pull/1469)) [@jameslamb](https://github.com/jameslamb)
+- Merge branch-24.10 into branch-24.12 ([#1463](https://github.com/rapidsai/cuspatial/pull/1463)) [@jameslamb](https://github.com/jameslamb)
+- Fix performance regression in quadtree_point_in_polygon by 5x ([#1446](https://github.com/rapidsai/cuspatial/pull/1446)) [@mroeschke](https://github.com/mroeschke)
+
 # cuspatial 24.10.00 (9 Oct 2024)
 
 ## 🚨 Breaking Changes
