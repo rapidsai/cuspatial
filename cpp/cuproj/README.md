@@ -46,20 +46,15 @@ The C++ API also supports transforming coordinate in CUDA device code. Create a
 be passed to a kernel launch. Here's an example kernel.
 
 ```cpp
-template <typename T>
-using coordinate = typename cuproj::vec_2d<T>;
+using device_projection = cuproj::device_projection<cuproj::vec_2d<float>>;
 
-template <typename T>
-using device_projection = cuproj::device_projection<coordinate<T>>;
-
-__global__ 
-void example_kernel(device_projection const d_proj,
-                    cuproj::vec_2d<float> const* in,
-                    cuproj::vec_2d<float>* out,
-                    size_t n)
+__global__ void example_kernel(device_projection const d_proj,
+                               cuproj::vec_2d<float> const* in,
+                               cuproj::vec_2d<float>* out,
+                               size_t n)
 {
   for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; 
-       i < n; 
+       i < n;
        i += gridDim.x * blockDim.x) {
     out[i] = d_proj.transform(in[i]);
   }
