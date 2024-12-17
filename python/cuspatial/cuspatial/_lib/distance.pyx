@@ -4,7 +4,7 @@ from libcpp.memory cimport make_shared, shared_ptr, unique_ptr
 from libcpp.utility cimport move, pair
 
 from cudf._lib.column cimport Column
-from cudf._lib.utils cimport columns_from_table_view
+from pylibcudf cimport Table as plc_Table
 from pylibcudf.libcudf.column.column cimport column
 from pylibcudf.libcudf.column.column_view cimport column_view
 from pylibcudf.libcudf.table.table_view cimport table_view
@@ -60,12 +60,16 @@ def directed_hausdorff_distance(
             )
         )
 
-    owner = Column.from_unique_ptr(move(result.first), data_ptr_exposed=True)
-
-    return columns_from_table_view(
-        result.second,
-        owners=[owner] * result.second.num_columns()
+    owner_col = Column.from_unique_ptr(
+        move(result.first), data_ptr_exposed=True
     )
+    cdef plc_Table plc_owner_table = plc_Table(
+        [owner_col.to_pylibcudf(mode="read")] * result.second.num_columns()
+    )
+    cdef plc_Table plc_result_table = plc_Table.from_table_view(
+        result.second, plc_owner_table
+    )
+    return [Column.from_pylibcudf(col) for col in plc_result_table.columns()]
 
 
 def pairwise_point_distance(

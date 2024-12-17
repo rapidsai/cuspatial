@@ -4,7 +4,7 @@ from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
 
 from cudf._lib.column cimport Column
-from cudf._lib.utils cimport columns_from_unique_ptr
+from pylibcudf cimport Table as plc_Table
 from pylibcudf.libcudf.column.column_view cimport column_view
 from pylibcudf.libcudf.table.table cimport table
 
@@ -24,4 +24,8 @@ cpdef linestring_bounding_boxes(Column poly_offsets,
         result = move(cpp_linestring_bounding_boxes(
             c_poly_offsets, c_x, c_y, R
         ))
-    return columns_from_unique_ptr(move(result))
+    cdef plc_Table plc_table = plc_Table.from_libcudf(move(result))
+    return [
+        Column.from_pylibcudf(col)
+        for col in plc_table.columns()
+    ]
