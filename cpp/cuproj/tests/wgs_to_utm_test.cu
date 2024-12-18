@@ -324,7 +324,9 @@ TYPED_TEST(ProjectionTest, readme_example)
   proj->transform(d_in.begin(), d_in.end(), d_out.begin(), cuproj::direction::FORWARD);
 }
 
-__global__ void example_kernel(cuproj::device_projection<cuproj::vec_2d<float>> const d_proj,
+using device_projection = cuproj::device_projection<cuproj::vec_2d<float>>;
+
+__global__ void example_kernel(device_projection const d_proj,
                                cuproj::vec_2d<float> const* in,
                                cuproj::vec_2d<float>* out,
                                size_t n)
