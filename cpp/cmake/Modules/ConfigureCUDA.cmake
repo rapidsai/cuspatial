@@ -22,7 +22,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     endif()
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
-list(APPEND CUSPATIAL_CUDA_FLAGS --expt-extended-lambda)
+list(APPEND CUSPATIAL_CUDA_FLAGS --expt-extended-lambda --expt-relaxed-constexpr)
 
 # set warnings as errors
 if(CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 11.2.0)
