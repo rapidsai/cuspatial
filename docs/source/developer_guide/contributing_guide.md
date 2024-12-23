@@ -72,15 +72,11 @@ Specifically, cuSpatial uses the following tools:
 - [`isort`](https://pycqa.github.io/isort/) ensures imports are sorted consistently.
 
 Linter config data is stored in a number of files. cuSpatial generally uses `pyproject.toml` over
-`setup.cfg` and avoids project-specific files (e.g. `setup.cfg` > `python/cudf/setup.cfg`). However,
-differences between tools and the different packages in the repo result in the following caveats:
+`setup.cfg` and prefers root-level files to project-specific files.
+However, differences between tools and the different packages in the repo result in the following caveats:
 
-- `flake8` has no plans to support `pyproject.toml`, so it must live in `setup.cfg`.
+- `flake8` has no plans to support `pyproject.toml`, so it must live in `.flake8`.
 - `isort` must be configured per project to set which project is the "first party" project.
-
-Additionally, cuSpatial's use of `versioneer` means that each project must have a `setup.cfg`.
-As a result, cuSpatial currently maintains both root and project-level `pyproject.toml` and
-`setup.cfg` files.
 
 ## Writing tests
 
