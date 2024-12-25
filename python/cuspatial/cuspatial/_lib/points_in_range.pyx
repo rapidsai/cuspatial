@@ -4,7 +4,7 @@ from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
 
 from cudf._lib.column cimport Column
-from cudf._lib.utils cimport data_from_unique_ptr
+from pylibcudf cimport Table as plc_Table
 from pylibcudf.libcudf.column.column_view cimport column_view
 from pylibcudf.libcudf.table.table cimport table
 
@@ -38,4 +38,11 @@ cpdef points_in_range(
             )
         )
 
-    return data_from_unique_ptr(move(c_result), column_names=["x", "y"])
+    cdef plc_Table plc_table = plc_Table.from_libcudf(move(c_result))
+    return (
+        {
+            name: Column.from_pylibcudf(col)
+            for name, col in zip(["x", "y"], plc_table.columns())
+        },
+        None
+    )

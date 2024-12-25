@@ -5,7 +5,7 @@ from libcpp.pair cimport pair
 from libcpp.utility cimport move
 
 from cudf._lib.column cimport Column
-from cudf._lib.utils cimport data_from_unique_ptr
+from pylibcudf cimport Table as plc_Table
 from pylibcudf.libcudf.column.column cimport column
 from pylibcudf.libcudf.column.column_view cimport column_view
 from pylibcudf.libcudf.table.table cimport table
@@ -27,10 +27,17 @@ cpdef derive_trajectories(Column object_id, Column x,
     cdef pair[unique_ptr[table], unique_ptr[column]] result
     with nogil:
         result = move(cpp_derive_trajectories(c_id, c_x, c_y, c_ts))
-    return data_from_unique_ptr(
-        move(result.first),
-        column_names=["object_id", "x", "y", "timestamp"]
-    ), Column.from_unique_ptr(move(result.second))
+    cdef plc_Table plc_table = plc_Table.from_libcudf(move(result.first))
+    first_result = (
+        {
+            name: Column.from_pylibcudf(col)
+            for name, col in zip(
+                ["object_id", "x", "y", "timestamp"], plc_table.columns()
+            )
+        },
+        None
+    )
+    return first_result, Column.from_unique_ptr(move(result.second))
 
 
 cpdef trajectory_bounding_boxes(size_type num_trajectories,
@@ -43,9 +50,15 @@ cpdef trajectory_bounding_boxes(size_type num_trajectories,
         result = move(cpp_trajectory_bounding_boxes(
             num_trajectories, c_id, c_x, c_y
         ))
-    return data_from_unique_ptr(
-        move(result),
-        column_names=["x_min", "y_min", "x_max", "y_max"]
+    cdef plc_Table plc_table = plc_Table.from_libcudf(move(result))
+    return (
+        {
+            name: Column.from_pylibcudf(col)
+            for name, col in zip(
+                ["x_min", "y_min", "x_max", "y_max"], plc_table.columns()
+            )
+        },
+        None
     )
 
 
@@ -61,7 +74,11 @@ cpdef trajectory_distances_and_speeds(size_type num_trajectories,
         result = move(cpp_trajectory_distances_and_speeds(
             num_trajectories, c_id, c_x, c_y, c_ts
         ))
-    return data_from_unique_ptr(
-        move(result),
-        column_names=["distance", "speed"]
+    cdef plc_Table plc_table = plc_Table.from_libcudf(move(result))
+    return (
+        {
+            name: Column.from_pylibcudf(col)
+            for name, col in zip(["distance", "speed"], plc_table.columns())
+        },
+        None
     )
