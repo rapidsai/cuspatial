@@ -13,18 +13,18 @@ files:
       - develop
       - docs
       - py_version
-      - depends_on_rmm
       - depends_on_cudf
       - depends_on_cuml
       - depends_on_cupy
       - depends_on_libcudf
       - depends_on_librmm
+      - depends_on_rmm
+      - notebooks
       - rapids_build_skbuild
       - run_python_cuspatial
       - test_notebooks
-      - test_python_cuspatial
       - test_python_cuproj
-      - notebooks
+      - test_python_cuspatial
   test_cpp:
     output: none
     includes:
@@ -38,8 +38,8 @@ files:
       - depends_on_cuproj
       - depends_on_cuspatial
       - py_version
-      - test_python_cuspatial
       - test_python_cuproj
+      - test_python_cuspatial
   test_notebooks:
     output: none
     includes:
@@ -47,9 +47,9 @@ files:
       - depends_on_cuml
       - depends_on_cuproj
       - depends_on_cuspatial
-      - test_notebooks
       - notebooks
       - py_version
+      - test_notebooks
   checks:
     output: none
     includes:
@@ -59,8 +59,8 @@ files:
     output: none
     includes:
       - cuda_version
-      - depends_on_cuspatial
       - depends_on_cuproj
+      - depends_on_cuspatial
       - docs
       - py_version
   py_build_libcuspatial:
@@ -102,11 +102,11 @@ files:
       table: tool.rapids-build-backend
       key: requires
     includes:
-      - depends_on_rmm
-      - depends_on_cudf
       - build_cpp
       - build_python
       - build_wheels
+      - depends_on_rmm
+      - depends_on_cudf
       - depends_on_libcudf
       - depends_on_libcuspatial
       - depends_on_librmm
@@ -161,8 +161,8 @@ files:
       table: project.optional-dependencies
       key: test
     includes:
-      - test_python_cuproj
       - depends_on_cuspatial
+      - test_python_cuproj
 
 channels:
   - rapidsai
@@ -279,7 +279,7 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - &rapids_build_backend rapids-build-backend>=0.3.0,<0.4.0.dev0
+          - rapids-build-backend>=0.3.0,<0.4.0.dev0
       - output_types: conda
         packages:
           - scikit-build-core>=0.10.0
