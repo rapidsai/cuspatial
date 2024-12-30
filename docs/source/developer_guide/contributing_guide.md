@@ -71,8 +71,8 @@ Specifically, cuSpatial uses the following tools:
 - [`black`](https://github.com/psf/black) is an automatic code formatter.
 - [`isort`](https://pycqa.github.io/isort/) ensures imports are sorted consistently.
 
-Linter config data is stored in a number of files. cuSpatial generally uses `pyproject.toml` over
-`setup.cfg` and prefers root-level files to project-specific files.
+Linter config data is stored in a number of files. cuSpatial generally uses `pyproject.toml` and
+prefers root-level files to project-specific files.
 However, differences between tools and the different packages in the repo result in the following caveats:
 
 - `flake8` has no plans to support `pyproject.toml`, so it must live in `.flake8`.
