@@ -13,26 +13,10 @@ transformations are supported:
 
 - WGS84 to/from UTM
 
-## Example
-
-The C++ API is designed to be easy to use. The following example shows how to transform a point in
-Sydney, Australia from WGS84 (lat, lon) coordinates to UTM zone 56S (x, y) coordinates.
-
-```cpp
-#include <cuproj/projection_factories.cuh>
-#include <cuproj/vec_2d.hpp>
-
-// Make a projection to convert WGS84 (lat, lon) coordinates to UTM zone 56S (x, y) coordinates
-auto proj = cuproj::make_projection<cuproj::vec_2d<T>>("EPSG:4326", "EPSG:32756");
-
-cuproj::vec_2d<T> sydney{-33.858700, 151.214000};  // Sydney, NSW, Australia
-thrust::device_vector<cuproj::vec_2d<T>> d_in{1, sydney};
-thrust::device_vector<cuproj::vec_2d<T>> d_out(d_in.size());
-
-// Convert the coordinates. Works the same with a vector of many coordinates.
-proj.transform(d_in.begin(), d_in.end(), d_out.begin(), cuproj::direction::FORWARD);
-```
+There are some basic examples of using the libcuproj C++ API in the 
+[cuProj README](https://github.com/rapidsai/cuspatial/cpp/cuproj/README.md).
 
 ## Useful Links
 
  - [RAPIDS Home Page](https://rapids.ai)
+ - [cuSpatial Github](https://github.com/rapidsai/cuspatial)
