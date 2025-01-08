@@ -370,6 +370,16 @@ dependencies:
       - output_types: [conda]
         packages:
           - curl
+    specific:
+      - output_types: [conda, requirements, pyproject]
+        matrices:
+          - matrix:
+              cuda: "12.*"
+            packages:
+              - cuda-python>=12.6.2,<13.0a0
+          - matrix: # All CUDA 11 versions
+            packages:
+              - cuda-python>=11.8.5,<12.0a0
   # TODO: Remove geopandas.dataset usage in cuspatial_api_examples.ipynb
   test_notebooks:
     common:

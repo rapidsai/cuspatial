@@ -13,6 +13,7 @@ dependencies:
 - cuda-cupti-dev
 - cuda-nvcc
 - cuda-nvrtc-dev
+- cuda-python>=12.6.2,<13.0a0
 - cuda-version=12.5
 - cudf==25.2.*,>=0.0.0a0
 - cuml==25.2.*,>=0.0.0a0
