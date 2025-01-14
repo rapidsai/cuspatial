@@ -1,10 +1,10 @@
-# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+# Copyright (c) 2020-2025, NVIDIA CORPORATION.
 
 from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
 
-from cudf._lib.column cimport Column
-from pylibcudf cimport Table as plc_Table
+from cudf.core.column.column import Column
+from pylibcudf cimport Column as plc_Column, Table as plc_Table
 from pylibcudf.libcudf.column.column_view cimport column_view
 from pylibcudf.libcudf.table.table cimport table
 
@@ -18,8 +18,8 @@ cpdef points_in_range(
     double range_max_x,
     double range_min_y,
     double range_max_y,
-    Column x,
-    Column y
+    plc_Column x,
+    plc_Column y
 ):
     cdef column_view x_v = x.view()
     cdef column_view y_v = y.view()

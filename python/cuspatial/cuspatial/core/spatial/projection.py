@@ -1,4 +1,4 @@
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2022-2025, NVIDIA CORPORATION.
 
 from cudf import DataFrame
 
@@ -51,8 +51,8 @@ def sinusoidal_projection(origin_lon, origin_lat, lonlat: GeoSeries):
     result = cpp_sinusoidal_projection(
         origin_lon,
         origin_lat,
-        lonlat.points.x._column,
-        lonlat.points.y._column,
+        lonlat.points.x._column.to_pylibcudf(mode="read"),
+        lonlat.points.y._column.to_pylibcudf(mode="read"),
     )
     lonlat_transformed = DataFrame(
         {"x": result[0], "y": result[1]}

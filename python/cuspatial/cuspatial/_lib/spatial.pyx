@@ -1,10 +1,11 @@
-# Copyright (c) 2019-2024, NVIDIA CORPORATION.
+# Copyright (c) 2019-2025, NVIDIA CORPORATION.
 
 from libcpp.memory cimport unique_ptr
 from libcpp.pair cimport pair
 from libcpp.utility cimport move
 
-from cudf._lib.column cimport Column
+from cudf.core.column.column import Column
+from pylibcudf cimport Column as plc_Column
 from pylibcudf.libcudf.column.column cimport column
 from pylibcudf.libcudf.column.column_view cimport column_view
 
@@ -16,8 +17,8 @@ from cuspatial._lib.cpp.projection cimport (
 def sinusoidal_projection(
     double origin_lon,
     double origin_lat,
-    Column input_lon,
-    Column input_lat
+    plc_Column input_lon,
+    plc_Column input_lat
 ):
     cdef column_view c_input_lon = input_lon.view()
     cdef column_view c_input_lat = input_lat.view()
@@ -34,5 +35,7 @@ def sinusoidal_projection(
             )
         )
 
-    return (Column.from_unique_ptr(move(result.first)),
-            Column.from_unique_ptr(move(result.second)))
+    return (
+        Column.from_pylibcudf(plc_Column.from_libcudf(move(result.first))),
+        Column.from_pylibcudf(plc_Column.from_libcudf(move(result.second)))
+    )

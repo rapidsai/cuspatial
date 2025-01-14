@@ -1,4 +1,4 @@
-# Copyright (c) 2022-2024, NVIDIA CORPORATION.
+# Copyright (c) 2022-2025, NVIDIA CORPORATION.
 
 import cudf
 from cudf import DataFrame, Series
@@ -86,9 +86,11 @@ def directed_hausdorff_distance(multipoints: GeoSeries):
         raise ValueError("Input must be a series of multipoints.")
 
     result = cpp_directed_hausdorff_distance(
-        multipoints.multipoints.x._column,
-        multipoints.multipoints.y._column,
-        as_column(multipoints.multipoints.geometry_offset[:-1]),
+        multipoints.multipoints.x._column.to_pylibcudf(mode="read"),
+        multipoints.multipoints.y._column.to_pylibcudf(mode="read"),
+        as_column(multipoints.multipoints.geometry_offset[:-1]).to_pylibcudf(
+            mode="read"
+        ),
     )
 
     # the column label of each column in result should be its int position
@@ -151,7 +153,14 @@ def haversine_distance(p1: GeoSeries, p2: GeoSeries):
     p2_lat = p2.points.y._column
 
     return cudf.Series._from_data(
-        {"None": cpp_haversine_distance(p1_lon, p1_lat, p2_lon, p2_lat)}
+        {
+            "None": cpp_haversine_distance(
+                p1_lon.to_pylibcudf(mode="read"),
+                p1_lat.to_pylibcudf(mode="read"),
+                p2_lon.to_pylibcudf(mode="read"),
+                p2_lat.to_pylibcudf(mode="read"),
+            )
+        }
     )
 
 
@@ -221,8 +230,8 @@ def pairwise_point_distance(points1: GeoSeries, points2: GeoSeries):
         cpp_pairwise_point_distance(
             lhs_point_collection_type,
             rhs_point_collection_type,
-            lhs_column,
-            rhs_column,
+            lhs_column.to_pylibcudf(mode="read"),
+            rhs_column.to_pylibcudf(mode="read"),
         )
     )
 
@@ -293,8 +302,8 @@ def pairwise_linestring_distance(
 
     return Series._from_column(
         cpp_pairwise_linestring_distance(
-            multilinestrings1.lines.column(),
-            multilinestrings2.lines.column(),
+            multilinestrings1.lines.column().to_pylibcudf(mode="read"),
+            multilinestrings2.lines.column().to_pylibcudf(mode="read"),
         )
     )
 
@@ -413,8 +422,8 @@ def pairwise_point_linestring_distance(
         {
             None: c_pairwise_point_linestring_distance(
                 point_collection_type,
-                point_column,
-                linestrings.lines.column(),
+                point_column.to_pylibcudf(mode="read"),
+                linestrings.lines.column().to_pylibcudf(mode="read"),
             )
         }
     )
@@ -497,7 +506,9 @@ def pairwise_point_polygon_distance(points: GeoSeries, polygons: GeoSeries):
     return Series._from_data(
         {
             None: c_pairwise_point_polygon_distance(
-                point_collection_type, points_column, polygon_column
+                point_collection_type,
+                points_column.to_pylibcudf(mode="read"),
+                polygon_column.to_pylibcudf(mode="read"),
             )
         }
     )
@@ -576,8 +587,8 @@ def pairwise_linestring_polygon_distance(
     if not contains_only_polygons(polygons):
         raise ValueError("`polygon` array must contain only polygons")
 
-    linestrings_column = linestrings.lines.column()
-    polygon_column = polygons.polygons.column()
+    linestrings_column = linestrings.lines.column().to_pylibcudf(mode="read")
+    polygon_column = polygons.polygons.column().to_pylibcudf(mode="read")
 
     return Series._from_column(
         c_pairwise_line_poly_dist(linestrings_column, polygon_column)
@@ -649,8 +660,8 @@ def pairwise_polygon_distance(polygons1: GeoSeries, polygons2: GeoSeries):
     if not contains_only_polygons(polygons2):
         raise ValueError("`polygons2` array must contain only polygons")
 
-    polygon1_column = polygons1.polygons.column()
-    polygon2_column = polygons2.polygons.column()
+    polygon1_column = polygons1.polygons.column().to_pylibcudf(mode="read")
+    polygon2_column = polygons2.polygons.column().to_pylibcudf(mode="read")
 
     return Series._from_data(
         {None: c_pairwise_polygon_distance(polygon1_column, polygon2_column)}

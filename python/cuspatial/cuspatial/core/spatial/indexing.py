@@ -1,4 +1,4 @@
-# Copyright (c) 2022-2024, NVIDIA CORPORATION.
+# Copyright (c) 2022-2025, NVIDIA CORPORATION.
 
 import warnings
 
@@ -159,8 +159,8 @@ def quadtree_on_points(
     if not len(points) == 0 and not contains_only_points(points):
         raise ValueError("GeoSeries must contain only points.")
 
-    xs = as_column(points.points.x)
-    ys = as_column(points.points.y)
+    xs = as_column(points.points.x).to_pylibcudf(mode="read")
+    ys = as_column(points.points.y).to_pylibcudf(mode="read")
 
     x_min, x_max, y_min, y_max = (
         min(x_min, x_max),

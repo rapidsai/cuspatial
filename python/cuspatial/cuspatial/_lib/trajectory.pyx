@@ -1,11 +1,11 @@
-# Copyright (c) 2019-2024, NVIDIA CORPORATION.
+# Copyright (c) 2019-2025, NVIDIA CORPORATION.
 
 from libcpp.memory cimport unique_ptr
 from libcpp.pair cimport pair
 from libcpp.utility cimport move
 
-from cudf._lib.column cimport Column
-from pylibcudf cimport Table as plc_Table
+from cudf.core.column.column import Column
+from pylibcudf cimport Column as plc_Column, Table as plc_Table
 from pylibcudf.libcudf.column.column cimport column
 from pylibcudf.libcudf.column.column_view cimport column_view
 from pylibcudf.libcudf.table.table cimport table
@@ -18,8 +18,8 @@ from cuspatial._lib.cpp.trajectory cimport (
 )
 
 
-cpdef derive_trajectories(Column object_id, Column x,
-                          Column y, Column timestamp):
+cpdef derive_trajectories(plc_Column object_id, plc_Column x,
+                          plc_Column y, plc_Column timestamp):
     cdef column_view c_id = object_id.view()
     cdef column_view c_x = x.view()
     cdef column_view c_y = y.view()
@@ -37,11 +37,18 @@ cpdef derive_trajectories(Column object_id, Column x,
         },
         None
     )
-    return first_result, Column.from_unique_ptr(move(result.second))
+    return (
+        first_result,
+        Column.from_pylibcudf(plc_Column.from_libcudf(move(result.second)))
+    )
 
 
-cpdef trajectory_bounding_boxes(size_type num_trajectories,
-                                Column object_id, Column x, Column y):
+cpdef trajectory_bounding_boxes(
+    size_type num_trajectories,
+    plc_Column object_id,
+    plc_Column x,
+    plc_Column y,
+):
     cdef column_view c_id = object_id.view()
     cdef column_view c_x = x.view()
     cdef column_view c_y = y.view()
@@ -63,8 +70,8 @@ cpdef trajectory_bounding_boxes(size_type num_trajectories,
 
 
 cpdef trajectory_distances_and_speeds(size_type num_trajectories,
-                                      Column object_id, Column x,
-                                      Column y, Column timestamp):
+                                      plc_Column object_id, plc_Column x,
+                                      plc_Column y, plc_Column timestamp):
     cdef column_view c_id = object_id.view()
     cdef column_view c_x = x.view()
     cdef column_view c_y = y.view()

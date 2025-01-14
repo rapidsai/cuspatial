@@ -1,4 +1,4 @@
-# Copyright (c) 2022-2023, NVIDIA CORPORATION.
+# Copyright (c) 2022-2025, NVIDIA CORPORATION.
 
 from cudf import DataFrame
 from cudf.core.column import as_column
@@ -48,8 +48,8 @@ def points_in_spatial_window(points: GeoSeries, min_x, max_x, min_y, max_y):
     if not contains_only_points(points):
         raise ValueError("GeoSeries must contain only points.")
 
-    xs = as_column(points.points.x)
-    ys = as_column(points.points.y)
+    xs = as_column(points.points.x).to_pylibcudf(mode="read")
+    ys = as_column(points.points.y).to_pylibcudf(mode="read")
 
     res_xy = DataFrame._from_data(
         *points_in_range.points_in_range(min_x, max_x, min_y, max_y, xs, ys)
