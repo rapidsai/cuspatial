@@ -187,14 +187,28 @@ dependencies:
         matrices:
           - matrix:
               arch: x86_64
+              cuda: "11.8"
             packages:
-              - &gcc_amd64 gcc_linux-64=11.*
-              - &sysroot_amd64 sysroot_linux-64==2.17
+              - &gcc_amd64_cuda11 gcc_linux-64=11.*
+              - &sysroot_amd64 sysroot_linux-64==2.28
           - matrix:
               arch: aarch64
+              cuda: "11.8"
             packages:
-              - &gcc_aarch64 gcc_linux-aarch64=11.*
-              - &sysroot_aarch64 sysroot_linux-aarch64==2.17
+              - &gcc_aarch64_cuda11 gcc_linux-aarch64=11.*
+              - &sysroot_aarch64 sysroot_linux-aarch64==2.28
+          - matrix:
+              arch: x86_64
+              cuda: "12.*"
+            packages:
+              - &gcc_amd64 gcc_linux-64=13.*
+              - *sysroot_amd64
+          - matrix:
+              arch: aarch64
+              cuda: "12.*"
+            packages:
+              - &gcc_aarch64 gcc_linux-aarch64=13.*
+              - *sysroot_aarch64
       - output_types: conda
         matrices:
           - matrix:
@@ -228,11 +242,25 @@ dependencies:
         matrices:
           - matrix:
               arch: x86_64
+              cuda: "11.8"
+            packages:
+              - *gcc_amd64_cuda11
+              - *sysroot_amd64
+          - matrix:
+              arch: aarch64
+              cuda: "11.8"
+            packages:
+              - *gcc_aarch64_cuda11
+              - *sysroot_aarch64
+          - matrix:
+              arch: x86_64
+              cuda: "12.*"
             packages:
               - *gcc_amd64
               - *sysroot_amd64
           - matrix:
               arch: aarch64
+              cuda: "12.*"
             packages:
               - *gcc_aarch64
               - *sysroot_aarch64
@@ -262,11 +290,25 @@ dependencies:
         matrices:
           - matrix:
               arch: x86_64
+              cuda: "11.8"
+            packages:
+              - *gcc_amd64_cuda11
+              - *sysroot_amd64
+          - matrix:
+              arch: aarch64
+              cuda: "11.8"
+            packages:
+              - *gcc_aarch64_cuda11
+              - *sysroot_aarch64
+          - matrix:
+              arch: x86_64
+              cuda: "12.*"
             packages:
               - *gcc_amd64
               - *sysroot_amd64
           - matrix:
               arch: aarch64
+              cuda: "12.*"
             packages:
               - *gcc_aarch64
               - *sysroot_aarch64
