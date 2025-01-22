@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2022-2024, NVIDIA CORPORATION.
+# Copyright (c) 2022-2025, NVIDIA CORPORATION.
 
 set -euo pipefail
 
@@ -41,9 +41,9 @@ set +e
 # Run libcuspatial gtests from libcuspatial-tests package
 rapids-logger "Run gtests"
 for gt in "$CONDA_PREFIX"/bin/gtests/libcuspatial/* ; do
-    test_name=$(basename ${gt})
+    test_name=$(basename "${gt}")
     echo "Running gtest $test_name"
-    ${gt} --gtest_output=xml:${RAPIDS_TESTS_DIR}
+    ${gt} --gtest_output=xml:"{RAPIDS_TESTS_DIR}"
 done
 
 rapids-logger "Test script exiting with value: $EXITCODE"

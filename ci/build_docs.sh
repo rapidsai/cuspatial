@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2023-2024, NVIDIA CORPORATION.
+# Copyright (c) 2023-2025, NVIDIA CORPORATION.
 
 set -euo pipefail
 
@@ -21,9 +21,12 @@ conda activate docs
 
 rapids-print-env
 
-export RAPIDS_VERSION="$(rapids-version)"
-export RAPIDS_VERSION_MAJOR_MINOR="$(rapids-version-major-minor)"
-export RAPIDS_DOCS_DIR="$(mktemp -d)"
+RAPIDS_VERSION="$(rapids-version)"
+RAPIDS_VERSION_MAJOR_MINOR="$(rapids-version-major-minor)"
+RAPIDS_DOCS_DIR="$(mktemp -d)"
+export RAPIDS_VERSION
+export RAPIDS_VERSION_MAJOR_MINOR
+export RAPIDS_DOCS_DIR
 
 rapids-logger "Build cuSpatial CPP docs"
 pushd cpp/doxygen
