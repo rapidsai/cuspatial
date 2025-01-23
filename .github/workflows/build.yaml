@@ -88,8 +88,10 @@ jobs:
       date: ${{ inputs.date }}
       package-name: libcuspatial
       package-type: cpp
+      # build for every combination of arch and CUDA version, but only for the latest Python
+      matrix_filter: group_by([.ARCH, (.CUDA_VER|split(".")|map(tonumber)|.[0])]) | map(max_by(.PY_VER|split(".")|map(tonumber)))
   wheel-build-cuspatial:
-    needs: wheel-publish-libcuspatial
+    needs: wheel-build-libcuspatial
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-25.02
     with:

@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2022-2023, NVIDIA CORPORATION.
+# Copyright (c) 2022-2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -27,13 +27,11 @@ set(cython_sources
     spatial_join.pyx
     trajectory.pyx
     types.pyx
-    utils.pyx
-    )
+    utils.pyx)
 set(linked_libraries cuspatial::cuspatial)
 
 rapids_cython_create_modules(
   CXX
   ASSOCIATED_TARGETS cuspatial
   SOURCE_FILES "${cython_sources}"
-  LINKED_LIBRARIES "${linked_libraries}"
-)
+  LINKED_LIBRARIES "${linked_libraries}")

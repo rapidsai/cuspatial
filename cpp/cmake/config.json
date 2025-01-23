@@ -12,6 +12,14 @@
           "FIND_PACKAGE_ARGUMENTS": "*" 
         }
       },
+      "rapids_cython_create_modules": {
+        "kwargs": {
+          "SOURCE_FILES": "?",
+          "LINKED_LIBRARIES": "?",
+          "MODULE_PREFIX": "?",
+          "ASSOCIATED_TARGETS": "?"
+        }
+      },
       "ConfigureTest": {
         "flags": ["TEST_NAME", "TEST_SRC"]
       },
@@ -28,7 +36,7 @@
     "max_pargs_hwrap": 999
   },
   "lint": {
-    "disabled_codes": ["C0301"],
+    "disabled_codes": ["C0111", "C0301"],
     "function_pattern": "[0-9A-z_]+",
     "macro_pattern": "[0-9A-z_]+",
     "global_var_pattern": "[A-z][0-9A-z_]+",
@@ -38,5 +46,8 @@
     "public_var_pattern": "[A-z][0-9A-z_]+",
     "argument_var_pattern": "[A-z][A-z0-9_]+",
     "keyword_pattern": "[A-z][0-9A-z_]+"
+  },
+  "markup": {
+    "enable_markup": false
   }
 }

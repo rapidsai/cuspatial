@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -12,8 +12,7 @@
 # the License.
 # =============================================================================
 
-set(cython_sources
-    transform.pyx)
+set(cython_sources transform.pyx)
 
 set(linked_libraries cuprojshim)
 
@@ -21,5 +20,4 @@ rapids_cython_create_modules(
   CXX
   ASSOCIATED_TARGETS cuproj
   SOURCE_FILES "${cython_sources}"
-  LINKED_LIBRARIES "${linked_libraries}"
-)
+  LINKED_LIBRARIES "${linked_libraries}")

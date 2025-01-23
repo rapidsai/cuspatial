@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2024, NVIDIA CORPORATION.
+# Copyright (c) 2024-2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -19,8 +19,7 @@ include(../../rapids_config.cmake)
 project(
   libcuspatial-python
   VERSION "${RAPIDS_VERSION}"
-  LANGUAGES CXX
-)
+  LANGUAGES CXX)
 
 # Check if cuspatial is already available. If so, it is the user's responsibility to ensure that the
 # CMake package is also available at build time of the Python cuspatial package.
