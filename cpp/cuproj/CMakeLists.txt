@@ -215,14 +215,22 @@ targets:
  cuproj::cuproj             - The main cuproj library.
     ]=])
 
-rapids_export(INSTALL cuproj EXPORT_SET cuproj-exports GLOBAL_TARGETS cuproj NAMESPACE cuproj::
-              DOCUMENTATION doc_string)
+rapids_export(
+  INSTALL cuproj
+  EXPORT_SET cuproj-exports
+  GLOBAL_TARGETS cuproj
+  NAMESPACE cuproj::
+  DOCUMENTATION doc_string)
 
 ################################################################################################
 # - build export -------------------------------------------------------------------------------
 
-rapids_export(BUILD cuproj EXPORT_SET cuproj-exports GLOBAL_TARGETS cuproj NAMESPACE cuproj::
-              DOCUMENTATION doc_string)
+rapids_export(
+  BUILD cuproj
+  EXPORT_SET cuproj-exports
+  GLOBAL_TARGETS cuproj
+  NAMESPACE cuproj::
+  DOCUMENTATION doc_string)
 
 # ##################################################################################################
 # * build documentation ----------------------------------------------------------------------------

@@ -102,8 +102,10 @@ rapids_cmake_support_conda_env(conda_env MODIFY_PREFIX_PATH)
 
 rapids_cuda_init_runtime(USE_STATIC ${CUDA_STATIC_RUNTIME})
 
-rapids_find_package(CUDAToolkit REQUIRED BUILD_EXPORT_SET cuspatial-exports INSTALL_EXPORT_SET
-                    cuspatial-exports)
+rapids_find_package(
+  CUDAToolkit REQUIRED
+  BUILD_EXPORT_SET cuspatial-exports
+  INSTALL_EXPORT_SET cuspatial-exports)
 # * find CUDAToolkit package
 # * determine GPU architectures
 # * enable the CMake CUDA language
@@ -274,14 +276,22 @@ targets:
  cuspatial::cuspatial             - The main cuspatial library.
     ]=])
 
-rapids_export(INSTALL cuspatial EXPORT_SET cuspatial-exports GLOBAL_TARGETS cuspatial NAMESPACE
-              cuspatial:: DOCUMENTATION doc_string)
+rapids_export(
+  INSTALL cuspatial
+  EXPORT_SET cuspatial-exports
+  GLOBAL_TARGETS cuspatial
+  NAMESPACE cuspatial::
+  DOCUMENTATION doc_string)
 
 ################################################################################################
 # - build export -------------------------------------------------------------------------------
 
-rapids_export(BUILD cuspatial EXPORT_SET cuspatial-exports GLOBAL_TARGETS cuspatial NAMESPACE
-              cuspatial:: DOCUMENTATION doc_string)
+rapids_export(
+  BUILD cuspatial
+  EXPORT_SET cuspatial-exports
+  GLOBAL_TARGETS cuspatial
+  NAMESPACE cuspatial::
+  DOCUMENTATION doc_string)
 
 # ##################################################################################################
 # * build documentation ----------------------------------------------------------------------------

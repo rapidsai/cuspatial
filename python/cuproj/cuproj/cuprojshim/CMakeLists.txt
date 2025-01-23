@@ -78,8 +78,10 @@ rapids_cmake_support_conda_env(conda_env MODIFY_PREFIX_PATH)
 
 rapids_cuda_init_runtime(USE_STATIC ${CUDA_STATIC_RUNTIME})
 
-rapids_find_package(CUDAToolkit REQUIRED BUILD_EXPORT_SET cuprojshim-exports INSTALL_EXPORT_SET
-                    cuprojshim-exports)
+rapids_find_package(
+  CUDAToolkit REQUIRED
+  BUILD_EXPORT_SET cuprojshim-exports
+  INSTALL_EXPORT_SET cuprojshim-exports)
 
 # * find CUDAToolkit package
 # * determine GPU architectures
