@@ -1,10 +1,10 @@
-# Copyright (c) 2022-2024, NVIDIA CORPORATION.
+# Copyright (c) 2022-2025, NVIDIA CORPORATION.
 
 from libcpp.memory cimport make_shared, shared_ptr, unique_ptr
 from libcpp.utility cimport move, pair
 
-from cudf._lib.column cimport Column
-from pylibcudf cimport Table as plc_Table
+from cudf.core.column.column import Column
+from pylibcudf cimport Column as plc_Column, Table as plc_Table
 from pylibcudf.libcudf.column.column cimport column
 from pylibcudf.libcudf.column.column_view cimport column_view
 from pylibcudf.libcudf.table.table_view cimport table_view
@@ -26,7 +26,12 @@ from cuspatial._lib.cpp.types cimport collection_type_id, geometry_type_id
 from cuspatial._lib.types cimport collection_type_py_to_c
 
 
-cpdef haversine_distance(Column x1, Column y1, Column x2, Column y2):
+cpdef haversine_distance(
+    plc_Column x1,
+    plc_Column y1,
+    plc_Column x2,
+    plc_Column y2,
+):
     cdef column_view c_x1 = x1.view()
     cdef column_view c_y1 = y1.view()
     cdef column_view c_x2 = x2.view()
@@ -37,13 +42,13 @@ cpdef haversine_distance(Column x1, Column y1, Column x2, Column y2):
     with nogil:
         c_result = move(cpp_haversine_distance(c_x1, c_y1, c_x2, c_y2))
 
-    return Column.from_unique_ptr(move(c_result))
+    return Column.from_pylibcudf(plc_Column.from_libcudf(move(c_result)))
 
 
 def directed_hausdorff_distance(
-    Column xs,
-    Column ys,
-    Column space_offsets,
+    plc_Column xs,
+    plc_Column ys,
+    plc_Column space_offsets,
 ):
     cdef column_view c_xs = xs.view()
     cdef column_view c_ys = ys.view()
@@ -60,8 +65,9 @@ def directed_hausdorff_distance(
             )
         )
 
-    owner_col = Column.from_unique_ptr(
-        move(result.first), data_ptr_exposed=True
+    owner_col = Column.from_pylibcudf(
+        plc_Column.from_libcudf(move(result.first)),
+        data_ptr_exposed=True
     )
     cdef plc_Table plc_owner_table = plc_Table(
         [owner_col.to_pylibcudf(mode="read")] * result.second.num_columns()
@@ -75,8 +81,8 @@ def directed_hausdorff_distance(
 def pairwise_point_distance(
     lhs_point_collection_type,
     rhs_point_collection_type,
-    Column points1,
-    Column points2,
+    plc_Column points1,
+    plc_Column points2,
 ):
     cdef collection_type_id lhs_point_multi_type = collection_type_py_to_c(
         lhs_point_collection_type
@@ -102,12 +108,12 @@ def pairwise_point_distance(
             c_multipoints_lhs.get()[0],
             c_multipoints_rhs.get()[0],
         ))
-    return Column.from_unique_ptr(move(c_result))
+    return Column.from_pylibcudf(plc_Column.from_libcudf(move(c_result)))
 
 
 def pairwise_linestring_distance(
-    Column multilinestrings1,
-    Column multilinestrings2
+    plc_Column multilinestrings1,
+    plc_Column multilinestrings2
 ):
     cdef shared_ptr[geometry_column_view] c_multilinestring_lhs = \
         make_shared[geometry_column_view](
@@ -128,13 +134,13 @@ def pairwise_linestring_distance(
             c_multilinestring_rhs.get()[0],
         ))
 
-    return Column.from_unique_ptr(move(c_result))
+    return Column.from_pylibcudf(plc_Column.from_libcudf(move(c_result)))
 
 
 def pairwise_point_linestring_distance(
     point_collection_type,
-    Column points,
-    Column linestrings,
+    plc_Column points,
+    plc_Column linestrings,
 ):
     cdef collection_type_id points_multi_type = collection_type_py_to_c(
         point_collection_type
@@ -158,13 +164,13 @@ def pairwise_point_linestring_distance(
             c_multilinestrings.get()[0],
         ))
 
-    return Column.from_unique_ptr(move(c_result))
+    return Column.from_pylibcudf(plc_Column.from_libcudf(move(c_result)))
 
 
 def pairwise_point_polygon_distance(
     point_collection_type,
-    Column multipoints,
-    Column multipolygons
+    plc_Column multipoints,
+    plc_Column multipolygons
 ):
     cdef collection_type_id points_multi_type = collection_type_py_to_c(
         point_collection_type
@@ -189,12 +195,12 @@ def pairwise_point_polygon_distance(
             c_multipoints.get()[0], c_multipolygons.get()[0]
         ))
 
-    return Column.from_unique_ptr(move(c_result))
+    return Column.from_pylibcudf(plc_Column.from_libcudf(move(c_result)))
 
 
 def pairwise_linestring_polygon_distance(
-    Column multilinestrings,
-    Column multipolygons
+    plc_Column multilinestrings,
+    plc_Column multipolygons
 ):
     cdef shared_ptr[geometry_column_view] c_multilinestrings = \
         make_shared[geometry_column_view](
@@ -215,10 +221,10 @@ def pairwise_linestring_polygon_distance(
             c_multilinestrings.get()[0], c_multipolygons.get()[0]
         ))
 
-    return Column.from_unique_ptr(move(c_result))
+    return Column.from_pylibcudf(plc_Column.from_libcudf(move(c_result)))
 
 
-def pairwise_polygon_distance(Column lhs, Column rhs):
+def pairwise_polygon_distance(plc_Column lhs, plc_Column rhs):
     cdef shared_ptr[geometry_column_view] c_lhs = \
         make_shared[geometry_column_view](
             lhs.view(),
@@ -238,4 +244,4 @@ def pairwise_polygon_distance(Column lhs, Column rhs):
             c_lhs.get()[0], c_rhs.get()[0]
         ))
 
-    return Column.from_unique_ptr(move(c_result))
+    return Column.from_pylibcudf(plc_Column.from_libcudf(move(c_result)))

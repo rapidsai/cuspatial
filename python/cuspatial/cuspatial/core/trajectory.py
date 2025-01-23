@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2024, NVIDIA CORPORATION.
+# Copyright (c) 2019-2025, NVIDIA CORPORATION.
 
 import numpy as np
 
@@ -64,10 +64,14 @@ def derive_trajectories(object_ids, points: GeoSeries, timestamps):
     if len(points) > 0 and not contains_only_points(points):
         raise ValueError("`points` must only contain point geometries.")
 
-    object_ids = as_column(object_ids, dtype=np.int32)
-    xs = as_column(points.points.x)
-    ys = as_column(points.points.y)
-    timestamps = normalize_timestamp_column(as_column(timestamps))
+    object_ids = as_column(object_ids, dtype=np.int32).to_pylibcudf(
+        mode="read"
+    )
+    xs = as_column(points.points.x).to_pylibcudf(mode="read")
+    ys = as_column(points.points.y).to_pylibcudf(mode="read")
+    timestamps = normalize_timestamp_column(
+        as_column(timestamps)
+    ).to_pylibcudf(mode="read")
     objects, traj_offsets = cpp_derive_trajectories(
         object_ids, xs, ys, timestamps
     )
@@ -135,9 +139,11 @@ def trajectory_bounding_boxes(num_trajectories, object_ids, points: GeoSeries):
     if len(points) > 0 and not contains_only_points(points):
         raise ValueError("`points` must only contain point geometries.")
 
-    object_ids = as_column(object_ids, dtype=np.int32)
-    xs = as_column(points.points.x)
-    ys = as_column(points.points.y)
+    object_ids = as_column(object_ids, dtype=np.int32).to_pylibcudf(
+        mode="read"
+    )
+    xs = as_column(points.points.x).to_pylibcudf(mode="read")
+    ys = as_column(points.points.y).to_pylibcudf(mode="read")
     return DataFrame._from_data(
         *cpp_trajectory_bounding_boxes(num_trajectories, object_ids, xs, ys)
     )
@@ -190,10 +196,14 @@ def trajectory_distances_and_speeds(
     if len(points) > 0 and not contains_only_points(points):
         raise ValueError("`points` must only contain point geometries.")
 
-    object_ids = as_column(object_ids, dtype=np.int32)
-    xs = as_column(points.points.x)
-    ys = as_column(points.points.y)
-    timestamps = normalize_timestamp_column(as_column(timestamps))
+    object_ids = as_column(object_ids, dtype=np.int32).to_pylibcudf(
+        mode="read"
+    )
+    xs = as_column(points.points.x).to_pylibcudf(mode="read")
+    ys = as_column(points.points.y).to_pylibcudf(mode="read")
+    timestamps = normalize_timestamp_column(
+        as_column(timestamps)
+    ).to_pylibcudf(mode="read")
     df = DataFrame._from_data(
         *cpp_trajectory_distances_and_speeds(
             num_trajectories, object_ids, xs, ys, timestamps

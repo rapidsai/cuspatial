@@ -1,9 +1,10 @@
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2025, NVIDIA CORPORATION.
 
 from libcpp.memory cimport make_shared, shared_ptr
 from libcpp.utility cimport move
 
-from cudf._lib.column cimport Column
+from cudf.core.column.column import Column
+from pylibcudf cimport Column as plc_Column
 
 from cuspatial._lib.types import CollectionType, GeometryType
 
@@ -21,7 +22,7 @@ from cuspatial._lib.types cimport (
 )
 
 
-def pairwise_linestring_intersection(Column lhs, Column rhs):
+def pairwise_linestring_intersection(plc_Column lhs, plc_Column rhs):
     """
     Compute the intersection of two (multi)linestrings.
     """
@@ -51,22 +52,34 @@ def pairwise_linestring_intersection(Column lhs, Column rhs):
             c_lhs.get()[0], c_rhs.get()[0]
         ))
 
-    geometry_collection_offset = Column.from_unique_ptr(
-        move(c_result.geometry_collection_offset)
+    geometry_collection_offset = Column.from_pylibcudf(
+        plc_Column.from_libcudf(move(c_result.geometry_collection_offset))
     )
 
-    types_buffer = Column.from_unique_ptr(move(c_result.types_buffer))
-    offset_buffer = Column.from_unique_ptr(move(c_result.offset_buffer))
-    points = Column.from_unique_ptr(move(c_result.points))
-    segments = Column.from_unique_ptr(move(c_result.segments))
-    lhs_linestring_id = Column.from_unique_ptr(
-        move(c_result.lhs_linestring_id)
+    types_buffer = Column.from_pylibcudf(
+        plc_Column.from_libcudf(move(c_result.types_buffer))
     )
-    lhs_segment_id = Column.from_unique_ptr(move(c_result.lhs_segment_id))
-    rhs_linestring_id = Column.from_unique_ptr(
-        move(c_result.rhs_linestring_id)
+    offset_buffer = Column.from_pylibcudf(
+        plc_Column.from_libcudf(move(c_result.offset_buffer))
     )
-    rhs_segment_id = Column.from_unique_ptr(move(c_result.rhs_segment_id))
+    points = Column.from_pylibcudf(
+        plc_Column.from_libcudf(move(c_result.points))
+    )
+    segments = Column.from_pylibcudf(
+        plc_Column.from_libcudf(move(c_result.segments))
+    )
+    lhs_linestring_id = Column.from_pylibcudf(
+        plc_Column.from_libcudf(move(c_result.lhs_linestring_id))
+    )
+    lhs_segment_id = Column.from_pylibcudf(
+        plc_Column.from_libcudf(move(c_result.lhs_segment_id))
+    )
+    rhs_linestring_id = Column.from_pylibcudf(
+        plc_Column.from_libcudf(move(c_result.rhs_linestring_id))
+    )
+    rhs_segment_id = Column.from_pylibcudf(
+        plc_Column.from_libcudf(move(c_result.rhs_segment_id))
+    )
 
     # Map linestring type codes from libcuspatial to cuspatial
     types_buffer[types_buffer == GeometryType.LINESTRING.value] = (
