@@ -1,5 +1,5 @@
-#=============================================================================
-# Copyright (c) 2023-2025, NVIDIA CORPORATION.
+﻿#=============================================================================
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,29 +18,31 @@
 # - compiler function -----------------------------------------------------------------------------
 
 function(ConfigureTest CMAKE_TEST_NAME)
-  add_executable(${CMAKE_TEST_NAME} ${ARGN})
-  target_compile_options(
-    ${CMAKE_TEST_NAME} PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:${CUPROJ_CXX_FLAGS}>"
-                               "$<$<COMPILE_LANGUAGE:CUDA>:${CUPROJ_CUDA_FLAGS}>")
-  target_include_directories(
-    ${CMAKE_TEST_NAME} PRIVATE "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}>"
-                               "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}/src>" ../../../cpp/include)
-  set_target_properties(
-    ${CMAKE_TEST_NAME}
-    PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUPROJ_BINARY_DIR}/gtests>"
-               INSTALL_RPATH "\$ORIGIN/../../../lib"
-               CXX_STANDARD 17
-               CXX_STANDARD_REQUIRED ON
-               CUDA_STANDARD 17
-               CUDA_STANDARD_REQUIRED ON)
-  target_link_libraries(${CMAKE_TEST_NAME} GTest::gtest_main GTest::gmock_main PROJ::proj rmm::rmm
-                        cuproj)
-  add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
-  install(
-    TARGETS ${CMAKE_TEST_NAME}
-    COMPONENT testing
-    DESTINATION bin/gtests/libcuspatial # add to libcuspatial CI testing
-    EXCLUDE_FROM_ALL)
+    add_executable(${CMAKE_TEST_NAME} ${ARGN})
+    target_compile_options(${CMAKE_TEST_NAME}
+                PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:${CUPROJ_CXX_FLAGS}>"
+                        "$<$<COMPILE_LANGUAGE:CUDA>:${CUPROJ_CUDA_FLAGS}>")
+    target_include_directories(${CMAKE_TEST_NAME}
+                PRIVATE "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}>"
+                        "$<BUILD_INTERFACE:${CUPROJ_SOURCE_DIR}/src>"
+                        ../../../cpp/include)
+    set_target_properties(
+        ${CMAKE_TEST_NAME}
+        PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUPROJ_BINARY_DIR}/gtests>"
+                   INSTALL_RPATH "\$ORIGIN/../../../lib"
+                   CXX_STANDARD 17
+                   CXX_STANDARD_REQUIRED ON
+                   CUDA_STANDARD 17
+                   CUDA_STANDARD_REQUIRED ON
+    )
+    target_link_libraries(${CMAKE_TEST_NAME} GTest::gtest_main GTest::gmock_main PROJ::proj rmm::rmm cuproj)
+    add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
+    install(
+        TARGETS ${CMAKE_TEST_NAME}
+        COMPONENT testing
+        DESTINATION bin/gtests/libcuspatial # add to libcuspatial CI testing
+        EXCLUDE_FROM_ALL
+    )
 endfunction(ConfigureTest)
 
 ###################################################################################################
@@ -48,4 +50,5 @@ endfunction(ConfigureTest)
 ###################################################################################################
 
 # index
-ConfigureTest(WGS_TO_UTM_TEST wgs_to_utm_test.cu)
+ConfigureTest(WGS_TO_UTM_TEST
+    wgs_to_utm_test.cu)

@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2023-2025, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -23,8 +23,8 @@ project(
   VERSION "${RAPIDS_VERSION}"
   LANGUAGES CXX CUDA)
 
-option(FIND_CUPROJ_CPP
-       "Search for existing cuproj C++ installations before defaulting to local files" OFF)
+option(FIND_CUPROJ_CPP "Search for existing cuproj C++ installations before defaulting to local files"
+       OFF)
 
 # If the user requested it we attempt to find cuproj.
 if(FIND_CUPROJ_CPP)
