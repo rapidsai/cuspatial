@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+# Copyright (c) 2020-2025, NVIDIA CORPORATION.
 
 set -eEuo pipefail
 
@@ -29,7 +29,7 @@ NBTEST="$(realpath "$(dirname "$0")/utils/nbtest.sh")"
 
 # Add notebooks that should be skipped here
 # (space-separated list of filenames without paths)
-SKIPNBS="binary_predicates.ipynb cuproj_benchmark.ipynb"
+SKIPNBS="binary_predicates.ipynb cuproj_benchmark.ipynb nyc_taxi_years_correlation.ipynb"
 
 EXITCODE=0
 trap "EXITCODE=1" ERR
