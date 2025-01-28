@@ -1,4 +1,4 @@
-# Copyright (c) 2024, NVIDIA CORPORATION
+# Copyright (c) 2024-2025, NVIDIA CORPORATION
 
 import cudf
 from cudf.core.column import as_column
@@ -181,9 +181,17 @@ class DistanceDispatch:
             (self._lhs_type, self._rhs_type)
         ]
         if reverse:
-            dist = func(*collection_types, self._rhs_column, self._lhs_column)
+            dist = func(
+                *collection_types,
+                self._rhs_column.to_pylibcudf(mode="read"),
+                self._lhs_column.to_pylibcudf(mode="read"),
+            )
         else:
-            dist = func(*collection_types, self._lhs_column, self._rhs_column)
+            dist = func(
+                *collection_types,
+                self._lhs_column.to_pylibcudf(mode="read"),
+                self._rhs_column.to_pylibcudf(mode="read"),
+            )
 
         # Rows with misaligned indices contains nan. Here we scatter the
         # distance values to the correct indices.

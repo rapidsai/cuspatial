@@ -1,4 +1,4 @@
-# Copyright (c) 2024, NVIDIA CORPORATION.
+# Copyright (c) 2024-2025, NVIDIA CORPORATION.
 
 import cudf
 from cudf.core.column import as_column
@@ -81,7 +81,9 @@ def pairwise_point_linestring_nearest_points(
     points_geometry_offset = (
         None
         if len(points.points.xy) > 0
-        else as_column(points.multipoints.geometry_offset)
+        else as_column(points.multipoints.geometry_offset).to_pylibcudf(
+            mode="read"
+        )
     )
 
     (
@@ -90,11 +92,11 @@ def pairwise_point_linestring_nearest_points(
         segment_id,
         point_on_linestring_xy,
     ) = nearest_points.pairwise_point_linestring_nearest_points(
-        points_xy._column,
-        as_column(linestrings.lines.part_offset),
-        linestrings.lines.xy._column,
+        points_xy._column.to_pylibcudf(mode="read"),
+        as_column(linestrings.lines.part_offset).to_pylibcudf(mode="read"),
+        linestrings.lines.xy._column.to_pylibcudf(mode="read"),
         points_geometry_offset,
-        as_column(linestrings.lines.geometry_offset),
+        as_column(linestrings.lines.geometry_offset).to_pylibcudf(mode="read"),
     )
 
     nearest_points_on_linestring = GeoColumn._from_points_xy(

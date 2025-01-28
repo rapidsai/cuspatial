@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2024, NVIDIA CORPORATION.
+# Copyright (c) 2023-2025, NVIDIA CORPORATION.
 
 import cudf
 
@@ -72,8 +72,8 @@ def pairwise_multipoint_equals_count(lhs, rhs):
     if any(not contains_only_multipoints(s) for s in [lhs, rhs]):
         raise ValueError("Input GeoSeries must contain only multipoints.")
 
-    lhs_column = lhs._column.mpoints._column
-    rhs_column = rhs._column.mpoints._column
+    lhs_column = lhs._column.mpoints._column.to_pylibcudf(mode="read")
+    rhs_column = rhs._column.mpoints._column.to_pylibcudf(mode="read")
     result = c_pairwise_multipoint_equals_count(lhs_column, rhs_column)
 
     return cudf.Series._from_column(result)

@@ -1,11 +1,11 @@
-# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+# Copyright (c) 2020-2025, NVIDIA CORPORATION.
 
 from libc.stdint cimport int8_t
 from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
 
-from cudf._lib.column cimport Column
-from pylibcudf cimport Table as plc_Table
+from cudf.core.column.column import Column
+from pylibcudf cimport Column as plc_Column, Table as plc_Table
 from pylibcudf.libcudf.column.column_view cimport column_view
 from pylibcudf.libcudf.table.table cimport table, table_view
 
@@ -53,13 +53,13 @@ cpdef join_quadtree_and_bounding_boxes(object quadtree,
 
 cpdef quadtree_point_in_polygon(object poly_quad_pairs,
                                 object quadtree,
-                                Column point_indices,
-                                Column points_x,
-                                Column points_y,
-                                Column poly_offsets,
-                                Column ring_offsets,
-                                Column poly_points_x,
-                                Column poly_points_y):
+                                plc_Column point_indices,
+                                plc_Column points_x,
+                                plc_Column points_y,
+                                plc_Column poly_offsets,
+                                plc_Column ring_offsets,
+                                plc_Column poly_points_x,
+                                plc_Column poly_points_y):
     cdef plc_Table plc_poly_quad_pairs = plc_Table(
         [col.to_pylibcudf(mode="read") for col in poly_quad_pairs._columns]
     )
@@ -102,12 +102,12 @@ cpdef quadtree_point_in_polygon(object poly_quad_pairs,
 
 cpdef quadtree_point_to_nearest_linestring(object linestring_quad_pairs,
                                            object quadtree,
-                                           Column point_indices,
-                                           Column points_x,
-                                           Column points_y,
-                                           Column linestring_offsets,
-                                           Column linestring_points_x,
-                                           Column linestring_points_y):
+                                           plc_Column point_indices,
+                                           plc_Column points_x,
+                                           plc_Column points_y,
+                                           plc_Column linestring_offsets,
+                                           plc_Column linestring_points_x,
+                                           plc_Column linestring_points_y):
     cdef plc_Table plc_quad_pairs = plc_Table(
         [
             col.to_pylibcudf(mode="read")

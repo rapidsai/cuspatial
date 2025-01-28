@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2024, NVIDIA CORPORATION.
+# Copyright (c) 2023-2025, NVIDIA CORPORATION.
 
 from typing import TYPE_CHECKING
 
@@ -72,7 +72,8 @@ def pairwise_linestring_intersection(
         raise ValueError("Input GeoSeries must contain only linestrings.")
 
     geoms, look_back_ids = c_pairwise_linestring_intersection(
-        linestrings1.lines.column(), linestrings2.lines.column()
+        linestrings1.lines.column().to_pylibcudf(mode="read"),
+        linestrings2.lines.column().to_pylibcudf(mode="read"),
     )
 
     (

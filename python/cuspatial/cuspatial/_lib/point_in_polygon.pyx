@@ -1,9 +1,10 @@
-# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+# Copyright (c) 2020-2025, NVIDIA CORPORATION.
 
 from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
 
-from cudf._lib.column cimport Column
+from cudf.core.column.column import Column
+from pylibcudf cimport Column as plc_Column
 from pylibcudf.libcudf.column.column cimport column
 from pylibcudf.libcudf.column.column_view cimport column_view
 
@@ -13,12 +14,12 @@ from cuspatial._lib.cpp.point_in_polygon cimport (
 
 
 def point_in_polygon(
-    Column test_points_x,
-    Column test_points_y,
-    Column poly_offsets,
-    Column poly_ring_offsets,
-    Column poly_points_x,
-    Column poly_points_y
+    plc_Column test_points_x,
+    plc_Column test_points_y,
+    plc_Column poly_offsets,
+    plc_Column poly_ring_offsets,
+    plc_Column poly_points_x,
+    plc_Column poly_points_y
 ):
     cdef column_view c_test_points_x = test_points_x.view()
     cdef column_view c_test_points_y = test_points_y.view()
@@ -41,4 +42,4 @@ def point_in_polygon(
             )
         )
 
-    return Column.from_unique_ptr(move(result))
+    return Column.from_pylibcudf(plc_Column.from_libcudf(move(result)))
