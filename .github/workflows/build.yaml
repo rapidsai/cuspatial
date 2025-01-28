@@ -89,7 +89,7 @@ jobs:
       package-name: libcuspatial
       package-type: cpp
   wheel-build-cuspatial:
-    needs: wheel-publish-libcuspatial
+    needs: wheel-build-libcuspatial
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@cuda-12.8.0
     with:
