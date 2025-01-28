@@ -22,10 +22,12 @@ conda activate docs
 rapids-print-env
 
 RAPIDS_VERSION="$(rapids-version)"
-RAPIDS_VERSION_MAJOR_MINOR="$(rapids-version-major-minor)"
-RAPIDS_DOCS_DIR="$(mktemp -d)"
 export RAPIDS_VERSION
+
+RAPIDS_VERSION_MAJOR_MINOR="$(rapids-version-major-minor)"
 export RAPIDS_VERSION_MAJOR_MINOR
+
+RAPIDS_DOCS_DIR="$(mktemp -d)"
 export RAPIDS_DOCS_DIR
 
 rapids-logger "Build cuSpatial CPP docs"
