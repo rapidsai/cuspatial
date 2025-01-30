@@ -4,7 +4,6 @@ from libc.stdint cimport int8_t
 from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
 
-from cudf.core.column.column import Column
 from pylibcudf cimport Column as plc_Column, Table as plc_Table
 from pylibcudf.libcudf.column.column_view cimport column_view
 from pylibcudf.libcudf.table.table cimport table, table_view
@@ -16,14 +15,16 @@ from cuspatial._lib.cpp.spatial_join cimport (
 )
 
 
-cpdef join_quadtree_and_bounding_boxes(object quadtree,
-                                       object bounding_boxes,
-                                       double x_min,
-                                       double x_max,
-                                       double y_min,
-                                       double y_max,
-                                       double scale,
-                                       int8_t max_depth):
+cpdef plc_Table join_quadtree_and_bounding_boxes(
+    object quadtree,
+    object bounding_boxes,
+    double x_min,
+    double x_max,
+    double y_min,
+    double y_max,
+    double scale,
+    int8_t max_depth
+):
     cdef plc_Table plc_quadtree = plc_Table(
         [col.to_pylibcudf(mode="read") for col in quadtree._columns]
     )
@@ -39,27 +40,20 @@ cpdef join_quadtree_and_bounding_boxes(object quadtree,
             c_bounding_boxes,
             x_min, x_max, y_min, y_max, scale, max_depth
         ))
-    cdef plc_Table plc_table = plc_Table.from_libcudf(move(result))
-    return (
-        {
-            name: Column.from_pylibcudf(col)
-            for name, col in zip(
-                ["bbox_offset", "quad_offset"], plc_table.columns()
-            )
-        },
-        None
-    )
+    return plc_Table.from_libcudf(move(result))
 
 
-cpdef quadtree_point_in_polygon(object poly_quad_pairs,
-                                object quadtree,
-                                plc_Column point_indices,
-                                plc_Column points_x,
-                                plc_Column points_y,
-                                plc_Column poly_offsets,
-                                plc_Column ring_offsets,
-                                plc_Column poly_points_x,
-                                plc_Column poly_points_y):
+cpdef plc_Table quadtree_point_in_polygon(
+    object poly_quad_pairs,
+    object quadtree,
+    plc_Column point_indices,
+    plc_Column points_x,
+    plc_Column points_y,
+    plc_Column poly_offsets,
+    plc_Column ring_offsets,
+    plc_Column poly_points_x,
+    plc_Column poly_points_y
+):
     cdef plc_Table plc_poly_quad_pairs = plc_Table(
         [col.to_pylibcudf(mode="read") for col in poly_quad_pairs._columns]
     )
@@ -88,26 +82,19 @@ cpdef quadtree_point_in_polygon(object poly_quad_pairs,
             c_poly_points_x,
             c_poly_points_y
         ))
-    cdef plc_Table plc_table = plc_Table.from_libcudf(move(result))
-    return (
-        {
-            name: Column.from_pylibcudf(col)
-            for name, col in zip(
-                ["polygon_index", "point_index"], plc_table.columns()
-            )
-        },
-        None
-    )
+    return plc_Table.from_libcudf(move(result))
 
 
-cpdef quadtree_point_to_nearest_linestring(object linestring_quad_pairs,
-                                           object quadtree,
-                                           plc_Column point_indices,
-                                           plc_Column points_x,
-                                           plc_Column points_y,
-                                           plc_Column linestring_offsets,
-                                           plc_Column linestring_points_x,
-                                           plc_Column linestring_points_y):
+cpdef plc_Table quadtree_point_to_nearest_linestring(
+    object linestring_quad_pairs,
+    object quadtree,
+    plc_Column point_indices,
+    plc_Column points_x,
+    plc_Column points_y,
+    plc_Column linestring_offsets,
+    plc_Column linestring_points_x,
+    plc_Column linestring_points_y
+):
     cdef plc_Table plc_quad_pairs = plc_Table(
         [
             col.to_pylibcudf(mode="read")
@@ -137,14 +124,4 @@ cpdef quadtree_point_to_nearest_linestring(object linestring_quad_pairs,
             c_linestring_points_x,
             c_linestring_points_y
         ))
-    cdef plc_Table plc_table = plc_Table.from_libcudf(move(result))
-    return (
-        {
-            name: Column.from_pylibcudf(col)
-            for name, col in zip(
-                ["point_index", "linestring_index", "distance"],
-                plc_table.columns()
-            )
-        },
-        None
-    )
+    return plc_Table.from_libcudf(move(result))

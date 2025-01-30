@@ -1,6 +1,7 @@
 # Copyright (c) 2022-2025, NVIDIA CORPORATION.
 
 from cudf import DataFrame
+from cudf.core.column import ColumnBase
 
 from cuspatial._lib.spatial import (
     sinusoidal_projection as cpp_sinusoidal_projection,
@@ -55,6 +56,9 @@ def sinusoidal_projection(origin_lon, origin_lat, lonlat: GeoSeries):
         lonlat.points.y._column.to_pylibcudf(mode="read"),
     )
     lonlat_transformed = DataFrame(
-        {"x": result[0], "y": result[1]}
+        {
+            "x": ColumnBase.from_pylibcudf(result[0]),
+            "y": ColumnBase.from_pylibcudf(result[1]),
+        }
     ).interleave_columns()
     return GeoSeries.from_points_xy(lonlat_transformed)
