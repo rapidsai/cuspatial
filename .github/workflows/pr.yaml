@@ -177,8 +177,9 @@ jobs:
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@branch-25.04
     with:
+      node_type: "cpu32"
       arch: '["amd64"]'
-      cuda: '["12.5"]'
+      cuda: '["12.8"]'
       build_command: |
         sccache -z;
         build-all -DBUILD_TESTS=ON -DBUILD_BENCHMARKS=ON --verbose;
