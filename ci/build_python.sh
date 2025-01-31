@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2022-2024, NVIDIA CORPORATION.
+# Copyright (c) 2022-2025, NVIDIA CORPORATION.
 
 set -euo pipefail
 
@@ -12,8 +12,6 @@ source rapids-date-string
 export CMAKE_GENERATOR=Ninja
 
 rapids-print-env
-
-package_dir="python"
 
 rapids-generate-version > ./VERSION
 
