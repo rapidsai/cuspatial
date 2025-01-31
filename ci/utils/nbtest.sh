@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2023-2024, NVIDIA CORPORATION.
+# Copyright (c) 2023-2025, NVIDIA CORPORATION.
 
 set -e -u -o pipefail
 
@@ -29,20 +29,20 @@ NBTMPDIR="$(mktemp -d)"
 EXITCODE=0
 trap "EXITCODE=1" ERR
 
-for nb in $*; do
-    NBFILENAME=$1
+for nb in "$@"; do
+    NBFILENAME=$nb
     NBNAME=${NBFILENAME%.*}
     NBNAME=${NBNAME##*/}
     NBTESTSCRIPT=${NBTMPDIR}/${NBNAME}-test.py
     shift
 
     echo --------------------------------------------------------------------------------
-    echo STARTING: ${NBNAME}
+    echo STARTING: "${NBNAME}"
     echo --------------------------------------------------------------------------------
-    jupyter nbconvert --to script ${NBFILENAME} --output ${NBTMPDIR}/${NBNAME}-test
-    echo "${MAGIC_OVERRIDE_CODE}" > ${NBTMPDIR}/tmpfile
-    cat ${NBTESTSCRIPT} >> ${NBTMPDIR}/tmpfile
-    mv ${NBTMPDIR}/tmpfile ${NBTESTSCRIPT}
+    jupyter nbconvert --to script "${NBFILENAME}" --output "${NBTMPDIR}"/"${NBNAME}"-test
+    echo "${MAGIC_OVERRIDE_CODE}" > "${NBTMPDIR}"/tmpfile
+    cat "${NBTESTSCRIPT}" >> "${NBTMPDIR}"/tmpfile
+    mv "${NBTMPDIR}"/tmpfile "${NBTESTSCRIPT}"
 
     echo "Running \"ipython ${NO_COLORS} ${NBTESTSCRIPT}\" on $(date)"
     echo
