@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+# Copyright (c) 2020-2025, NVIDIA CORPORATION.
 
 set -eEuo pipefail
 
@@ -37,8 +37,9 @@ trap "EXITCODE=1" ERR
 set +e
 
 test_notebooks() {
+    # shellcheck disable=SC2044
     for nb in $(find . -name "*.ipynb"); do
-        nbBasename=$(basename ${nb})
+        nbBasename=$(basename "${nb}")
         if (echo " ${SKIPNBS} " | grep -q " ${nbBasename} "); then
             echo "--------------------------------------------------------------------------------"
             echo "SKIPPING: ${nb} (listed in skip list)"
