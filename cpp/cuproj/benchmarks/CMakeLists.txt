@@ -24,8 +24,7 @@ add_library(cuproj_benchmark_common OBJECT
 target_compile_features(cuproj_benchmark_common PUBLIC cxx_std_17 cuda_std_17)
 
 target_link_libraries(cuproj_benchmark_common
-  PUBLIC benchmark::benchmark rmm::rmm cuproj
-  PRIVATE rmm::rmm_logger_impl)
+  PUBLIC benchmark::benchmark rmm::rmm cuproj)
 
 target_compile_options(cuproj_benchmark_common
   PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${CUPROJ_CXX_FLAGS}>"
