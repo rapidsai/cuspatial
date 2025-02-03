@@ -46,7 +46,7 @@ def pairwise_point_linestring_nearest_points(
 
     multilinestring_geometry_id = None
     if multilinestring_geometry_offset is not None:
-        multilinestring_geometry_id =plc_Column.from_libcudf(
+        multilinestring_geometry_id = plc_Column.from_libcudf(
             move(c_result.nearest_linestring_geometry_id.value())
         )
 
