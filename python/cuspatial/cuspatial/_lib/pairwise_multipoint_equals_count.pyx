@@ -3,7 +3,6 @@
 from libcpp.memory cimport make_shared, shared_ptr, unique_ptr
 from libcpp.utility cimport move
 
-from cudf.core.column.column import Column
 from pylibcudf cimport Column as plc_Column
 from pylibcudf.libcudf.column.column cimport column
 
@@ -42,4 +41,4 @@ def pairwise_multipoint_equals_count(
             )
         )
 
-    return Column.from_pylibcudf(plc_Column.from_libcudf(move(result)))
+    return plc_Column.from_libcudf(move(result))
