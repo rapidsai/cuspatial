@@ -4,7 +4,6 @@ from libcpp.memory cimport unique_ptr
 from libcpp.pair cimport pair
 from libcpp.utility cimport move
 
-from cudf.core.column.column import Column
 from pylibcudf cimport Column as plc_Column
 from pylibcudf.libcudf.column.column cimport column
 from pylibcudf.libcudf.column.column_view cimport column_view
@@ -36,6 +35,6 @@ def sinusoidal_projection(
         )
 
     return (
-        Column.from_pylibcudf(plc_Column.from_libcudf(move(result.first))),
-        Column.from_pylibcudf(plc_Column.from_libcudf(move(result.second)))
+        plc_Column.from_libcudf(move(result.first)),
+        plc_Column.from_libcudf(move(result.second))
     )

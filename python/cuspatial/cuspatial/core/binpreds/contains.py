@@ -4,7 +4,7 @@ from math import ceil, sqrt
 
 import cudf
 from cudf import DataFrame, Series
-from cudf.core.column import as_column
+from cudf.core.column import ColumnBase, as_column
 
 import cuspatial
 from cuspatial._lib.pairwise_point_in_polygon import (
@@ -106,7 +106,7 @@ def _brute_force_contains_properly(points, polygons):
     )
     result = DataFrame(
         pip_bitmap_column_to_binary_array(
-            polygon_bitmap_column=pip_result,
+            polygon_bitmap_column=ColumnBase.from_pylibcudf(pip_result),
             width=len(polygons.polygons.part_offset) - 1,
         )
     )
@@ -155,7 +155,9 @@ def _pairwise_contains_properly(points, polygons):
     # point) pair where the point is contained properly by the polygon. We can
     # use this to create a dataframe with only (polygon, point) pairs that
     # satisfy the relationship.
-    pip_result = cudf.Series._from_column(result_column).astype("bool")
+    pip_result = cudf.Series._from_column(
+        ColumnBase.from_pylibcudf(result_column)
+    ).astype("bool")
     trues = pip_result[pip_result].index
     true_pairs = cudf.DataFrame(
         {

@@ -1,7 +1,7 @@
 # Copyright (c) 2024-2025, NVIDIA CORPORATION
 
 import cudf
-from cudf.core.column import as_column
+from cudf.core.column import ColumnBase, as_column
 
 from cuspatial._lib.distance import (
     pairwise_linestring_distance,
@@ -205,7 +205,7 @@ class DistanceDispatch:
             range(len(self._res_index)), dtype="int32"
         ).apply_boolean_mask(self._non_null_mask)
 
-        result[scatter_map] = dist
+        result[scatter_map] = ColumnBase.from_pylibcudf(dist)
 
         # If `align==False`, geopandas preserves lhs index.
         index = None if self._align else self._res_index

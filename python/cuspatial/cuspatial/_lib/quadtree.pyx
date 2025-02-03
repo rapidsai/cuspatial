@@ -5,7 +5,6 @@ from libcpp.memory cimport unique_ptr
 from libcpp.pair cimport pair
 from libcpp.utility cimport move
 
-from cudf.core.column.column import Column
 from pylibcudf cimport Column as plc_Column, Table as plc_Table
 from pylibcudf.libcudf.column.column cimport column
 from pylibcudf.libcudf.column.column_view cimport column_view
@@ -17,12 +16,17 @@ from cuspatial._lib.cpp.quadtree cimport (
 )
 
 
-cpdef quadtree_on_points(plc_Column x, plc_Column y,
-                         double x_min, double x_max,
-                         double y_min, double y_max,
-                         double scale,
-                         int8_t max_depth,
-                         size_type min_size):
+cpdef tuple quadtree_on_points(
+    plc_Column x,
+    plc_Column y,
+    double x_min,
+    double x_max,
+    double y_min,
+    double y_max,
+    double scale,
+    int8_t max_depth,
+    size_type min_size,
+):
     cdef column_view c_x = x.view()
     cdef column_view c_y = y.view()
     cdef pair[unique_ptr[column], unique_ptr[table]] result
@@ -30,21 +34,7 @@ cpdef quadtree_on_points(plc_Column x, plc_Column y,
         result = move(cpp_quadtree_on_points(
             c_x, c_y, x_min, x_max, y_min, y_max, scale, max_depth, min_size
         ))
-    cdef plc_Table plc_table = plc_Table.from_libcudf(move(result.second))
-    result_names = [
-        "key",
-        "level",
-        "is_internal_node",
-        "length",
-        "offset"
-    ]
     return (
-        Column.from_pylibcudf(plc_Column.from_libcudf(move(result.first))),
-        (
-            {
-                name: Column.from_pylibcudf(col)
-                for name, col in zip(result_names, plc_table.columns())
-            },
-            None
-        )
+        plc_Column.from_libcudf(move(result.first)),
+        plc_Table.from_libcudf(move(result.second))
     )
