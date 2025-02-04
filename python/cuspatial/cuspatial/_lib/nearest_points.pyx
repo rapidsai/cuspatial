@@ -2,7 +2,6 @@
 
 from libcpp.utility cimport move
 
-from cudf.core.column.column import Column
 from pylibcudf cimport Column as plc_Column
 from pylibcudf.libcudf.column.column_view cimport column_view
 
@@ -42,22 +41,18 @@ def pairwise_point_linestring_nearest_points(
 
     multipoint_geometry_id = None
     if multipoint_geometry_offset is not None:
-        multipoint_geometry_id = Column.from_pylibcudf(plc_Column.from_libcudf(
-            move(c_result.nearest_point_geometry_id.value())))
+        multipoint_geometry_id = plc_Column.from_libcudf(
+            move(c_result.nearest_point_geometry_id.value()))
 
     multilinestring_geometry_id = None
     if multilinestring_geometry_offset is not None:
-        multilinestring_geometry_id = Column.from_pylibcudf(
-            plc_Column.from_libcudf(
-                move(c_result.nearest_linestring_geometry_id.value())
-            )
+        multilinestring_geometry_id = plc_Column.from_libcudf(
+            move(c_result.nearest_linestring_geometry_id.value())
         )
 
-    segment_id = Column.from_pylibcudf(
-        plc_Column.from_libcudf(move(c_result.nearest_segment_id))
-    )
-    point_on_linestring_xy = Column.from_pylibcudf(plc_Column.from_libcudf(
-        move(c_result.nearest_point_on_linestring_xy)))
+    segment_id = plc_Column.from_libcudf(move(c_result.nearest_segment_id))
+    point_on_linestring_xy = plc_Column.from_libcudf(
+        move(c_result.nearest_point_on_linestring_xy))
 
     return (
         multipoint_geometry_id,
