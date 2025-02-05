@@ -12,7 +12,7 @@ RAPIDS_PY_WHEEL_NAME="cuspatial_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels
 RAPIDS_PY_WHEEL_NAME="libcuspatial_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-from-s3 cpp ./dist
 
 # echo to expand wildcard before adding `[extra]` requires for pip
-python -m pip install \
+rapids-pip-retry install \
   "$(echo ./dist/cuspatial*.whl)" \
   "$(echo ./dist/cuproj*.whl)[test]" \
   "$(echo ./dist/libcuspatial*.whl)"
