@@ -1,6 +1,7 @@
 # Copyright (c) 2023-2025, NVIDIA CORPORATION.
 
 import cudf
+from cudf.core.column import ColumnBase
 
 from cuspatial._lib.pairwise_multipoint_equals_count import (
     pairwise_multipoint_equals_count as c_pairwise_multipoint_equals_count,
@@ -76,4 +77,4 @@ def pairwise_multipoint_equals_count(lhs, rhs):
     rhs_column = rhs._column.mpoints._column.to_pylibcudf(mode="read")
     result = c_pairwise_multipoint_equals_count(lhs_column, rhs_column)
 
-    return cudf.Series._from_column(result)
+    return cudf.Series._from_column(ColumnBase.from_pylibcudf(result))

@@ -29,7 +29,7 @@ jobs:
       - wheel-tests-cuproj
       - devcontainer
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-25.04
+    uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@nvks-runners
     if: always()
     with:
       needs: ${{ toJSON(needs) }}
@@ -47,7 +47,7 @@ jobs:
           repo: cuspatial
   changed-files:
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/changed-files.yaml@branch-25.04
+    uses: rapidsai/shared-workflows/.github/workflows/changed-files.yaml@nvks-runners
     with:
       files_yaml: |
         test_cpp:
@@ -77,67 +77,67 @@ jobs:
           - '!notebooks/**'
   checks:
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@branch-25.04
+    uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@nvks-runners
     with:
       enable_check_generated_files: false
   conda-cpp-build:
     needs: checks
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@branch-25.04
+    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@nvks-runners
     with:
       build_type: pull-request
   conda-cpp-checks:
     needs: conda-cpp-build
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-post-build-checks.yaml@branch-25.04
+    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-post-build-checks.yaml@nvks-runners
     with:
       build_type: pull-request
       enable_check_symbols: true
   conda-cpp-tests:
     needs: [conda-cpp-build, changed-files]
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-tests.yaml@branch-25.04
+    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-tests.yaml@nvks-runners
     if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_cpp
     with:
       build_type: pull-request
   conda-python-build:
     needs: conda-cpp-build
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@branch-25.04
+    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@nvks-runners
     with:
       build_type: pull-request
   conda-python-tests:
     needs: [conda-python-build, changed-files]
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@branch-25.04
-    if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_cpp
+    uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@nvks-runners
+    if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python
     with:
       build_type: pull-request
   conda-notebook-tests:
     needs: [conda-python-build, changed-files]
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@branch-25.04
+    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@nvks-runners
     if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_notebooks
     with:
       build_type: pull-request
-      node_type: "gpu-v100-latest-1"
+      node_type: "gpu-l4-latest-1"
       arch: "amd64"
       container_image: "rapidsai/ci-conda:latest"
       run_script: "ci/test_notebooks.sh"
   docs-build:
     needs: conda-python-build
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@branch-25.04
+    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@nvks-runners
     with:
       build_type: pull-request
-      node_type: "gpu-v100-latest-1"
+      node_type: "gpu-l4-latest-1"
       arch: "amd64"
       container_image: "rapidsai/ci-conda:latest"
       run_script: "ci/build_docs.sh"
   wheel-build-libcuspatial:
     needs: checks
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-25.04
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@nvks-runners
     with:
       # build for every combination of arch and CUDA version, but only for the latest Python
       matrix_filter: group_by([.ARCH, (.CUDA_VER|split(".")|map(tonumber)|.[0])]) | map(max_by(.PY_VER|split(".")|map(tonumber)))
@@ -146,14 +146,14 @@ jobs:
   wheel-build-cuspatial:
     needs: [checks, wheel-build-libcuspatial]
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-25.04
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@nvks-runners
     with:
       build_type: pull-request
       script: ci/build_wheel_cuspatial.sh
   wheel-tests-cuspatial:
     needs: [wheel-build-cuspatial, changed-files]
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@branch-25.04
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@nvks-runners
     if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python
     with:
       build_type: pull-request
@@ -161,21 +161,21 @@ jobs:
   wheel-build-cuproj:
     needs: checks
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-25.04
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@nvks-runners
     with:
       build_type: pull-request
       script: ci/build_wheel_cuproj.sh
   wheel-tests-cuproj:
     needs: [wheel-build-cuspatial, wheel-build-cuproj, changed-files]
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@branch-25.04
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@nvks-runners
     if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python
     with:
       build_type: pull-request
       script: ci/test_wheel_cuproj.sh
   devcontainer:
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@branch-25.04
+    uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@nvks-runners
     with:
       node_type: "cpu32"
       arch: '["amd64"]'

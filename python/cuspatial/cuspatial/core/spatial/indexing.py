@@ -3,7 +3,7 @@
 import warnings
 
 from cudf import DataFrame, Series
-from cudf.core.column import as_column
+from cudf.core.column import ColumnBase, as_column
 
 from cuspatial import GeoSeries
 from cuspatial._lib.quadtree import (
@@ -187,4 +187,13 @@ def quadtree_on_points(
         max_depth,
         max_size,
     )
-    return Series._from_column(key_to_point), DataFrame._from_data(*quadtree)
+    result_names = ["key", "level", "is_internal_node", "length", "offset"]
+    return (
+        Series._from_column(ColumnBase.from_pylibcudf(key_to_point)),
+        DataFrame._from_data(
+            {
+                name: ColumnBase.from_pylibcudf(col)
+                for name, col in zip(result_names, quadtree.columns())
+            }
+        ),
+    )
