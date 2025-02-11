@@ -2,7 +2,7 @@
 
 import cudf
 from cudf import DataFrame, Series
-from cudf.core.column import as_column
+from cudf.core.column import ColumnBase, as_column
 
 from cuspatial._lib.distance import (
     directed_hausdorff_distance as cpp_directed_hausdorff_distance,
@@ -95,7 +95,9 @@ def directed_hausdorff_distance(multipoints: GeoSeries):
 
     # the column label of each column in result should be its int position
     # e.g. a dict of {0: result[0], 1, result[1], ...}
-    return DataFrame._from_data(dict(enumerate(result)))
+    return DataFrame._from_data(
+        dict(enumerate(ColumnBase.from_pylibcudf(col) for col in result))
+    )
 
 
 def haversine_distance(p1: GeoSeries, p2: GeoSeries):
@@ -152,15 +154,15 @@ def haversine_distance(p1: GeoSeries, p2: GeoSeries):
     p2_lon = p2.points.x._column
     p2_lat = p2.points.y._column
 
-    return cudf.Series._from_data(
-        {
-            "None": cpp_haversine_distance(
+    return cudf.Series._from_column(
+        ColumnBase.from_pylibcudf(
+            cpp_haversine_distance(
                 p1_lon.to_pylibcudf(mode="read"),
                 p1_lat.to_pylibcudf(mode="read"),
                 p2_lon.to_pylibcudf(mode="read"),
                 p2_lat.to_pylibcudf(mode="read"),
             )
-        }
+        )
     )
 
 
@@ -227,11 +229,13 @@ def pairwise_point_distance(points1: GeoSeries, points2: GeoSeries):
     ) = _extract_point_column_and_collection_type(points2)
 
     return Series._from_column(
-        cpp_pairwise_point_distance(
-            lhs_point_collection_type,
-            rhs_point_collection_type,
-            lhs_column.to_pylibcudf(mode="read"),
-            rhs_column.to_pylibcudf(mode="read"),
+        ColumnBase.from_pylibcudf(
+            cpp_pairwise_point_distance(
+                lhs_point_collection_type,
+                rhs_point_collection_type,
+                lhs_column.to_pylibcudf(mode="read"),
+                rhs_column.to_pylibcudf(mode="read"),
+            )
         )
     )
 
@@ -301,9 +305,11 @@ def pairwise_linestring_distance(
         return cudf.Series(dtype="float64")
 
     return Series._from_column(
-        cpp_pairwise_linestring_distance(
-            multilinestrings1.lines.column().to_pylibcudf(mode="read"),
-            multilinestrings2.lines.column().to_pylibcudf(mode="read"),
+        ColumnBase.from_pylibcudf(
+            cpp_pairwise_linestring_distance(
+                multilinestrings1.lines.column().to_pylibcudf(mode="read"),
+                multilinestrings2.lines.column().to_pylibcudf(mode="read"),
+            )
         )
     )
 
@@ -418,14 +424,14 @@ def pairwise_point_linestring_distance(
         point_collection_type,
     ) = _extract_point_column_and_collection_type(points)
 
-    return Series._from_data(
-        {
-            None: c_pairwise_point_linestring_distance(
+    return Series._from_column(
+        ColumnBase.from_pylibcudf(
+            c_pairwise_point_linestring_distance(
                 point_collection_type,
                 point_column.to_pylibcudf(mode="read"),
                 linestrings.lines.column().to_pylibcudf(mode="read"),
             )
-        }
+        )
     )
 
 
@@ -503,14 +509,14 @@ def pairwise_point_polygon_distance(points: GeoSeries, polygons: GeoSeries):
     ) = _extract_point_column_and_collection_type(points)
     polygon_column = polygons.polygons.column()
 
-    return Series._from_data(
-        {
-            None: c_pairwise_point_polygon_distance(
+    return Series._from_column(
+        ColumnBase.from_pylibcudf(
+            c_pairwise_point_polygon_distance(
                 point_collection_type,
                 points_column.to_pylibcudf(mode="read"),
                 polygon_column.to_pylibcudf(mode="read"),
             )
-        }
+        )
     )
 
 
@@ -591,7 +597,9 @@ def pairwise_linestring_polygon_distance(
     polygon_column = polygons.polygons.column().to_pylibcudf(mode="read")
 
     return Series._from_column(
-        c_pairwise_line_poly_dist(linestrings_column, polygon_column)
+        ColumnBase.from_pylibcudf(
+            c_pairwise_line_poly_dist(linestrings_column, polygon_column)
+        )
     )
 
 
@@ -663,8 +671,10 @@ def pairwise_polygon_distance(polygons1: GeoSeries, polygons2: GeoSeries):
     polygon1_column = polygons1.polygons.column().to_pylibcudf(mode="read")
     polygon2_column = polygons2.polygons.column().to_pylibcudf(mode="read")
 
-    return Series._from_data(
-        {None: c_pairwise_polygon_distance(polygon1_column, polygon2_column)}
+    return Series._from_column(
+        ColumnBase.from_pylibcudf(
+            c_pairwise_polygon_distance(polygon1_column, polygon2_column)
+        )
     )
 
 
