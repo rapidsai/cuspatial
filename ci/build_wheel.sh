@@ -22,6 +22,7 @@ case "${package_dir}" in
     EXCLUDE_ARGS=(
       --exclude "libcudf.so"
       --exclude "libcuspatial.so"
+      --exclude "librapids_logger.so"
     )
   ;;
 esac
