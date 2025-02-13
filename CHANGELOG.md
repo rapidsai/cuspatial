@@ -1,3 +1,39 @@
+# cuspatial 25.02.00 (13 Feb 2025)
+
+## 🐛 Bug Fixes
+
+- Use test_python changed files list for Python tests. ([#1527](https://github.com/rapidsai/cuspatial/pull/1527)) [@bdice](https://github.com/bdice)
+
+## 📖 Documentation
+
+- remove versioneer and setup.cfg references in docs, update rapids-dependency-file-generator ([#1509](https://github.com/rapidsai/cuspatial/pull/1509)) [@jameslamb](https://github.com/jameslamb)
+- Fix libcuproj doc example and make tests consistent. ([#1503](https://github.com/rapidsai/cuspatial/pull/1503)) [@harrism](https://github.com/harrism)
+
+## 🚀 New Features
+
+- Add CUDA device-callable projection API ([#1490](https://github.com/rapidsai/cuspatial/pull/1490)) [@harrism](https://github.com/harrism)
+
+## 🛠️ Improvements
+
+- Use `rapids-pip-retry` in CI jobs that might need retries ([#1533](https://github.com/rapidsai/cuspatial/pull/1533)) [@gforsyth](https://github.com/gforsyth)
+- Revert CUDA 12.8 shared workflow branch changes ([#1524](https://github.com/rapidsai/cuspatial/pull/1524)) [@vyasr](https://github.com/vyasr)
+- Ensure Cython bindings only interact with pylibcudf objects ([#1523](https://github.com/rapidsai/cuspatial/pull/1523)) [@mroeschke](https://github.com/mroeschke)
+- Build and test with CUDA 12.8.0 ([#1518](https://github.com/rapidsai/cuspatial/pull/1518)) [@bdice](https://github.com/bdice)
+- Remove nyc_taxi_years_correlation.ipynb due to missing taxi geo dataset ([#1517](https://github.com/rapidsai/cuspatial/pull/1517)) [@mroeschke](https://github.com/mroeschke)
+- improve parallelism of nightly wheel builds ([#1516](https://github.com/rapidsai/cuspatial/pull/1516)) [@jameslamb](https://github.com/jameslamb)
+- Add shellcheck to pre-commit and fix warnings ([#1515](https://github.com/rapidsai/cuspatial/pull/1515)) [@gforsyth](https://github.com/gforsyth)
+- Have Cython methods accept pylibcudf.Column instead of cudf._lib.column.Column ([#1514](https://github.com/rapidsai/cuspatial/pull/1514)) [@mroeschke](https://github.com/mroeschke)
+- Use GCC 13 in CUDA 12 conda builds. ([#1513](https://github.com/rapidsai/cuspatial/pull/1513)) [@bdice](https://github.com/bdice)
+- Use cuda.bindings ([#1511](https://github.com/rapidsai/cuspatial/pull/1511)) [@bdice](https://github.com/bdice)
+- Check if nightlies have succeeded recently enough ([#1508](https://github.com/rapidsai/cuspatial/pull/1508)) [@vyasr](https://github.com/vyasr)
+- Remove sphinx pinning ([#1507](https://github.com/rapidsai/cuspatial/pull/1507)) [@vyasr](https://github.com/vyasr)
+- Replace removed cudf._lib.utils method with pylibcudf APIs ([#1505](https://github.com/rapidsai/cuspatial/pull/1505)) [@mroeschke](https://github.com/mroeschke)
+- Update version references in workflow ([#1498](https://github.com/rapidsai/cuspatial/pull/1498)) [@AyodeAwe](https://github.com/AyodeAwe)
+- Remove unused masked keyword in column_empty ([#1496](https://github.com/rapidsai/cuspatial/pull/1496)) [@mroeschke](https://github.com/mroeschke)
+- Remove --expt-relaxed-constexpr NVCC flag ([#1495](https://github.com/rapidsai/cuspatial/pull/1495)) [@harrism](https://github.com/harrism)
+- Require approval to run CI on draft PRs ([#1491](https://github.com/rapidsai/cuspatial/pull/1491)) [@bdice](https://github.com/bdice)
+- Add breaking change workflow trigger ([#1481](https://github.com/rapidsai/cuspatial/pull/1481)) [@AyodeAwe](https://github.com/AyodeAwe)
+
 # cuspatial 24.12.00 (11 Dec 2024)
 
 ## 🚨 Breaking Changes
