@@ -175,7 +175,7 @@ dependencies:
       - output_types: [conda, requirements, pyproject]
         packages:
           - &ninja ninja
-          - &cmake cmake>=3.26.4,!=3.30.0
+          - &cmake cmake>=3.30.4
       - output_types: conda
         packages:
           - c-compiler
