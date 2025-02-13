@@ -1,7 +1,7 @@
-# Copyright (c) 2022-2023, NVIDIA CORPORATION.
+# Copyright (c) 2022-2025, NVIDIA CORPORATION.
 
 from cudf import DataFrame
-from cudf.core.column import as_column
+from cudf.core.column import ColumnBase, as_column
 
 from cuspatial._lib import points_in_range
 from cuspatial.core.geoseries import GeoSeries
@@ -48,10 +48,16 @@ def points_in_spatial_window(points: GeoSeries, min_x, max_x, min_y, max_y):
     if not contains_only_points(points):
         raise ValueError("GeoSeries must contain only points.")
 
-    xs = as_column(points.points.x)
-    ys = as_column(points.points.y)
+    xs = as_column(points.points.x).to_pylibcudf(mode="read")
+    ys = as_column(points.points.y).to_pylibcudf(mode="read")
 
+    plc_table = points_in_range.points_in_range(
+        min_x, max_x, min_y, max_y, xs, ys
+    )
     res_xy = DataFrame._from_data(
-        *points_in_range.points_in_range(min_x, max_x, min_y, max_y, xs, ys)
+        {
+            name: ColumnBase.from_pylibcudf(col)
+            for name, col in zip(["x", "y"], plc_table.columns())
+        }
     ).interleave_columns()
     return GeoSeries.from_points_xy(res_xy)

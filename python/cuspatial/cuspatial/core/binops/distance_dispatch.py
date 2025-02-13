@@ -1,7 +1,7 @@
-# Copyright (c) 2024, NVIDIA CORPORATION
+# Copyright (c) 2024-2025, NVIDIA CORPORATION
 
 import cudf
-from cudf.core.column import as_column
+from cudf.core.column import ColumnBase, as_column
 
 from cuspatial._lib.distance import (
     pairwise_linestring_distance,
@@ -181,9 +181,17 @@ class DistanceDispatch:
             (self._lhs_type, self._rhs_type)
         ]
         if reverse:
-            dist = func(*collection_types, self._rhs_column, self._lhs_column)
+            dist = func(
+                *collection_types,
+                self._rhs_column.to_pylibcudf(mode="read"),
+                self._lhs_column.to_pylibcudf(mode="read"),
+            )
         else:
-            dist = func(*collection_types, self._lhs_column, self._rhs_column)
+            dist = func(
+                *collection_types,
+                self._lhs_column.to_pylibcudf(mode="read"),
+                self._rhs_column.to_pylibcudf(mode="read"),
+            )
 
         # Rows with misaligned indices contains nan. Here we scatter the
         # distance values to the correct indices.
@@ -197,7 +205,7 @@ class DistanceDispatch:
             range(len(self._res_index)), dtype="int32"
         ).apply_boolean_mask(self._non_null_mask)
 
-        result[scatter_map] = dist
+        result[scatter_map] = ColumnBase.from_pylibcudf(dist)
 
         # If `align==False`, geopandas preserves lhs index.
         index = None if self._align else self._res_index

@@ -1,9 +1,9 @@
-# Copyright (c) 2022-2024, NVIDIA CORPORATION.
+# Copyright (c) 2022-2025, NVIDIA CORPORATION.
 
 import warnings
 
 from cudf import DataFrame
-from cudf.core.column import as_column
+from cudf.core.column import ColumnBase, as_column
 
 from cuspatial import GeoSeries
 from cuspatial._lib import spatial_join
@@ -71,18 +71,23 @@ def point_in_polygon(points: GeoSeries, polygons: GeoSeries):
     ):
         raise ValueError("GeoSeries cannot contain multipolygon.")
 
-    x = as_column(points.points.x)
-    y = as_column(points.points.y)
+    x = as_column(points.points.x).to_pylibcudf(mode="read")
+    y = as_column(points.points.y).to_pylibcudf(mode="read")
 
     poly_offsets = as_column(polygons.polygons.part_offset)
-    ring_offsets = as_column(polygons.polygons.ring_offset)
-    px = as_column(polygons.polygons.x)
-    py = as_column(polygons.polygons.y)
+    ring_offsets = as_column(polygons.polygons.ring_offset).to_pylibcudf(
+        mode="read"
+    )
+    px = as_column(polygons.polygons.x).to_pylibcudf(mode="read")
+    py = as_column(polygons.polygons.y).to_pylibcudf(mode="read")
 
-    result = cpp_point_in_polygon(x, y, poly_offsets, ring_offsets, px, py)
+    result = cpp_point_in_polygon(
+        x, y, poly_offsets.to_pylibcudf(mode="read"), ring_offsets, px, py
+    )
     result = DataFrame(
         pip_bitmap_column_to_binary_array(
-            polygon_bitmap_column=result, width=len(poly_offsets) - 1
+            polygon_bitmap_column=ColumnBase.from_pylibcudf(result),
+            width=len(poly_offsets) - 1,
         )
     )
 
@@ -148,17 +153,23 @@ def join_quadtree_and_bounding_boxes(
             + "scale {}. Clamping to minimum scale".format(min_scale)
         )
 
+    plc_result = spatial_join.join_quadtree_and_bounding_boxes(
+        quadtree,
+        bounding_boxes,
+        x_min,
+        x_max,
+        y_min,
+        y_max,
+        max(scale, min_scale),
+        max_depth,
+    )
     return DataFrame._from_data(
-        *spatial_join.join_quadtree_and_bounding_boxes(
-            quadtree,
-            bounding_boxes,
-            x_min,
-            x_max,
-            y_min,
-            y_max,
-            max(scale, min_scale),
-            max_depth,
-        )
+        {
+            name: ColumnBase.from_pylibcudf(col)
+            for name, col in zip(
+                ["bbox_offset", "quad_offset"], plc_result.columns()
+            )
+        }
     )
 
 
@@ -215,27 +226,37 @@ def quadtree_point_in_polygon(
             "`polygons` Geoseries must contains only polygons geometries."
         )
     points_data = points.points
-    points_x = as_column(points_data.x)
-    points_y = as_column(points_data.y)
+    points_x = as_column(points_data.x).to_pylibcudf(mode="read")
+    points_y = as_column(points_data.y).to_pylibcudf(mode="read")
 
     polygon_data = polygons.polygons
-    poly_offsets = as_column(polygon_data.part_offset)
-    ring_offsets = as_column(polygon_data.ring_offset)
-    poly_points_x = as_column(polygon_data.x)
-    poly_points_y = as_column(polygon_data.y)
+    poly_offsets = as_column(polygon_data.part_offset).to_pylibcudf(
+        mode="read"
+    )
+    ring_offsets = as_column(polygon_data.ring_offset).to_pylibcudf(
+        mode="read"
+    )
+    poly_points_x = as_column(polygon_data.x).to_pylibcudf(mode="read")
+    poly_points_y = as_column(polygon_data.y).to_pylibcudf(mode="read")
 
+    plc_result = spatial_join.quadtree_point_in_polygon(
+        poly_quad_pairs,
+        quadtree,
+        point_indices._column.to_pylibcudf(mode="read"),
+        points_x,
+        points_y,
+        poly_offsets,
+        ring_offsets,
+        poly_points_x,
+        poly_points_y,
+    )
     return DataFrame._from_data(
-        *spatial_join.quadtree_point_in_polygon(
-            poly_quad_pairs,
-            quadtree,
-            point_indices._column,
-            points_x,
-            points_y,
-            poly_offsets,
-            ring_offsets,
-            poly_points_x,
-            poly_points_y,
-        )
+        {
+            name: ColumnBase.from_pylibcudf(col)
+            for name, col in zip(
+                ["polygon_index", "point_index"], plc_result.columns()
+            )
+        }
     )
 
 
@@ -296,22 +317,35 @@ def quadtree_point_to_nearest_linestring(
     ):
         raise ValueError("GeoSeries cannot contain multilinestrings.")
 
-    points_x = as_column(points.points.x)
-    points_y = as_column(points.points.y)
+    points_x = as_column(points.points.x).to_pylibcudf(mode="read")
+    points_y = as_column(points.points.y).to_pylibcudf(mode="read")
 
-    linestring_points_x = as_column(linestrings.lines.x)
-    linestring_points_y = as_column(linestrings.lines.y)
+    linestring_points_x = as_column(linestrings.lines.x).to_pylibcudf(
+        mode="read"
+    )
+    linestring_points_y = as_column(linestrings.lines.y).to_pylibcudf(
+        mode="read"
+    )
     linestring_offsets = as_column(linestrings.lines.part_offset)
 
+    plc_result = spatial_join.quadtree_point_to_nearest_linestring(
+        linestring_quad_pairs,
+        quadtree,
+        as_column(point_indices, dtype="uint32").to_pylibcudf(mode="read"),
+        points_x,
+        points_y,
+        as_column(linestring_offsets, dtype="uint32").to_pylibcudf(
+            mode="read"
+        ),
+        linestring_points_x,
+        linestring_points_y,
+    )
     return DataFrame._from_data(
-        *spatial_join.quadtree_point_to_nearest_linestring(
-            linestring_quad_pairs,
-            quadtree,
-            as_column(point_indices, dtype="uint32"),
-            points_x,
-            points_y,
-            as_column(linestring_offsets, dtype="uint32"),
-            linestring_points_x,
-            linestring_points_y,
-        )
+        {
+            name: ColumnBase.from_pylibcudf(col)
+            for name, col in zip(
+                ["point_index", "linestring_index", "distance"],
+                plc_result.columns(),
+            )
+        }
     )

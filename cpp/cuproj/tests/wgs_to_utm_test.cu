@@ -45,18 +45,45 @@ TYPED_TEST_CASE(ProjectionTest, TestTypes);
 template <typename T>
 using coordinate = typename cuspatial::vec_2d<T>;
 
+enum class transform_call_type { HOST, DEVICE };
+
+template <typename Coordinate, typename T = typename Coordinate::value_type>
+__global__ void transform_kernel(cuproj::device_projection<Coordinate> const d_proj,
+                                 Coordinate const* in,
+                                 Coordinate* out,
+                                 size_t n)
+{
+  for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += gridDim.x * blockDim.x) {
+    out[i] = d_proj.transform(in[i]);
+  }
+}
+
 // run a test using the cuproj library
 template <typename T>
 void run_cuproj_test(thrust::host_vector<coordinate<T>> const& input,
                      thrust::host_vector<coordinate<T>> const& expected,
                      cuproj::projection<coordinate<T>> const& proj,
                      cuproj::direction dir,
-                     T tolerance = T{0})  // 0 for 1-ulp comparison
+                     T tolerance                   = T{0},  // 0 for 1-ulp comparison
+                     transform_call_type call_type = transform_call_type::HOST)
 {
   thrust::device_vector<coordinate<T>> d_in = input;
   thrust::device_vector<coordinate<T>> d_out(d_in.size());
 
-  proj.transform(d_in.begin(), d_in.end(), d_out.begin(), dir);
+  if (call_type == transform_call_type::DEVICE) {
+    // Demonstrates how to call transform coordinates in device code
+    // Note that this ultimately executes the same code as projection::transform(),
+    // but in a device kernel. Both methods transform one coordinate per CUDA thread.
+    // This gives more flexibility to write custom CUDA kernels that use the projection.
+    auto d_proj            = proj.get_device_projection(dir);
+    std::size_t block_size = 256;
+    std::size_t grid_size  = (d_in.size() + block_size - 1) / block_size;
+    transform_kernel<coordinate<T>>
+      <<<grid_size, block_size>>>(d_proj, d_in.data().get(), d_out.data().get(), d_in.size());
+    cudaDeviceSynchronize();
+  } else {
+    proj.transform(d_in.begin(), d_in.end(), d_out.begin(), dir);
+  }
 
 #ifndef NDEBUG
   std::cout << "expected " << std::setprecision(20) << expected[0].x << " " << expected[0].y
@@ -84,8 +111,9 @@ void run_proj_test(thrust::host_vector<PJ_COORD>& coords,
 // Run a test using the cuproj library in both directions, comparing to the proj library
 template <typename T, typename DeviceVector>
 void run_forward_and_inverse(DeviceVector const& input,
-                             T tolerance                 = T{0},
-                             std::string const& utm_epsg = "EPSG:32756")
+                             T tolerance                   = T{0},
+                             std::string const& utm_epsg   = "EPSG:32756",
+                             transform_call_type call_type = transform_call_type::HOST)
 {
   // note there are two notions of direction here. The direction of the construction of the
   // projection is determined by the order of the epsg strings. The direction of the transform is
@@ -109,8 +137,12 @@ void run_forward_and_inverse(DeviceVector const& input,
 
     auto proj = cuproj::make_projection<coordinate<T>>(epsg_src, epsg_dst);
 
-    run_cuproj_test(h_input, h_expected, *proj, cuproj::direction::FORWARD, tolerance);
-    run_cuproj_test(h_expected, h_input, *proj, cuproj::direction::INVERSE, tolerance);
+    run_cuproj_test<T>(
+      h_input, h_expected, *proj, cuproj::direction::FORWARD, tolerance, call_type);
+    run_cuproj_test<T>(
+      h_expected, h_input, *proj, cuproj::direction::INVERSE, tolerance, call_type);
+
+    delete proj;
   };
 
   // forward construction
@@ -159,18 +191,32 @@ TYPED_TEST(ProjectionTest, invalid_epsg)
   }
 }
 
-// Test on a single coordinate
-TYPED_TEST(ProjectionTest, one)
+template <typename T>
+void test_one(transform_call_type call_type = transform_call_type::HOST)
 {
-  using T = TypeParam;
-
   coordinate<T> sydney{-33.858700, 151.214000};  // Sydney, NSW, Australia
   std::vector<coordinate<T>> input{sydney};
   // We can expect nanometer accuracy with double precision. The precision ratio of
   // double to single precision is 2^53 / 2^24 == 2^29 ~= 10^9, then we should
   // expect meter (10^9 nanometer) accuracy with single precision.
   T tolerance = std::is_same_v<T, double> ? T{1e-9} : T{1.0};
-  run_forward_and_inverse<T>(input, tolerance, "EPSG:32756");
+  run_forward_and_inverse<T>(input, tolerance, "EPSG:32756", call_type);
+}
+
+// Test on a single coordinate
+TYPED_TEST(ProjectionTest, host_one)
+{
+  using T = TypeParam;
+
+  test_one<T>(transform_call_type::HOST);
+}
+
+// Test on a single coordinate
+TYPED_TEST(ProjectionTest, device_one)
+{
+  using T = TypeParam;
+
+  test_one<T>(transform_call_type::DEVICE);
 }
 
 // Test on a grid of coordinates
@@ -195,58 +241,71 @@ void test_grid(coordinate<T> const& min_corner,
   run_forward_and_inverse<T>(h_input, tolerance);
 }
 
-TYPED_TEST(ProjectionTest, many)
+template <typename T>
+void test_grids(int num_points_xy, transform_call_type call_type = transform_call_type::HOST)
 {
-  int num_points_xy = 100;
-
   // Test with grids of coordinates covering various locations on the globe
   // Sydney Harbour
   {
-    coordinate<TypeParam> min_corner{-33.9, 151.2};
-    coordinate<TypeParam> max_corner{-33.7, 151.3};
+    coordinate<T> min_corner{-33.9, 151.2};
+    coordinate<T> max_corner{-33.7, 151.3};
     std::string epsg = "EPSG:32756";
-    test_grid<TypeParam>(min_corner, max_corner, num_points_xy, epsg);
+    test_grid<T>(min_corner, max_corner, num_points_xy, epsg);
   }
 
   // London, UK
   {
-    coordinate<TypeParam> min_corner{51.0, -1.0};
-    coordinate<TypeParam> max_corner{52.0, 1.0};
+    coordinate<T> min_corner{51.0, -1.0};
+    coordinate<T> max_corner{52.0, 1.0};
     std::string epsg = "EPSG:32630";
-    test_grid<TypeParam>(min_corner, max_corner, num_points_xy, epsg);
+    test_grid<T>(min_corner, max_corner, num_points_xy, epsg);
   }
 
   // Svalbard
   {
-    coordinate<TypeParam> min_corner{77.0, 15.0};
-    coordinate<TypeParam> max_corner{79.0, 20.0};
+    coordinate<T> min_corner{77.0, 15.0};
+    coordinate<T> max_corner{79.0, 20.0};
     std::string epsg = "EPSG:32633";
-    test_grid<TypeParam>(min_corner, max_corner, num_points_xy, epsg);
+    test_grid<T>(min_corner, max_corner, num_points_xy, epsg);
   }
 
   // Ushuaia, Argentina
   {
-    coordinate<TypeParam> min_corner{-55.0, -70.0};
-    coordinate<TypeParam> max_corner{-53.0, -65.0};
+    coordinate<T> min_corner{-55.0, -70.0};
+    coordinate<T> max_corner{-53.0, -65.0};
     std::string epsg = "EPSG:32719";
-    test_grid<TypeParam>(min_corner, max_corner, num_points_xy, epsg);
+    test_grid<T>(min_corner, max_corner, num_points_xy, epsg);
   }
 
   // McMurdo Station, Antarctica
   {
-    coordinate<TypeParam> min_corner{-78.0, 165.0};
-    coordinate<TypeParam> max_corner{-77.0, 170.0};
+    coordinate<T> min_corner{-78.0, 165.0};
+    coordinate<T> max_corner{-77.0, 170.0};
     std::string epsg = "EPSG:32706";
-    test_grid<TypeParam>(min_corner, max_corner, num_points_xy, epsg);
+    test_grid<T>(min_corner, max_corner, num_points_xy, epsg);
   }
 
   // Singapore
   {
-    coordinate<TypeParam> min_corner{1.0, 103.0};
-    coordinate<TypeParam> max_corner{2.0, 104.0};
+    coordinate<T> min_corner{1.0, 103.0};
+    coordinate<T> max_corner{2.0, 104.0};
     std::string epsg = "EPSG:32648";
-    test_grid<TypeParam>(min_corner, max_corner, num_points_xy, epsg);
+    test_grid<T>(min_corner, max_corner, num_points_xy, epsg);
   }
+}
+
+TYPED_TEST(ProjectionTest, host_many)
+{
+  int num_points_xy = 100;
+
+  test_grids<TypeParam>(num_points_xy, transform_call_type::HOST);
+}
+
+TYPED_TEST(ProjectionTest, device_many)
+{
+  int num_points_xy = 100;
+
+  test_grids<TypeParam>(num_points_xy, transform_call_type::DEVICE);
 }
 
 // Test the code in the readme
@@ -263,4 +322,37 @@ TYPED_TEST(ProjectionTest, readme_example)
 
   // Convert the coordinates. Works the same with a vector of many coordinates.
   proj->transform(d_in.begin(), d_in.end(), d_out.begin(), cuproj::direction::FORWARD);
+}
+
+using device_projection = cuproj::device_projection<cuproj::vec_2d<float>>;
+
+__global__ void example_kernel(device_projection const d_proj,
+                               cuproj::vec_2d<float> const* in,
+                               cuproj::vec_2d<float>* out,
+                               size_t n)
+{
+  for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += gridDim.x * blockDim.x) {
+    out[i] = d_proj.transform(in[i]);
+  }
+}
+
+TEST(ProjectionTest, device_readme_example)
+{
+  using coordinate = cuproj::vec_2d<float>;
+
+  // Make a projection to convert WGS84 (lat, lon) coordinates to
+  // UTM zone 56S (x, y) coordinates
+  auto proj = cuproj::make_projection<coordinate>("EPSG:4326", "EPSG:32756");
+
+  // Sydney, NSW, Australia
+  coordinate sydney{-33.858700, 151.214000};
+  thrust::device_vector<coordinate> d_in{1, sydney};
+  thrust::device_vector<coordinate> d_out(d_in.size());
+
+  auto d_proj            = proj->get_device_projection(cuproj::direction::FORWARD);
+  std::size_t block_size = 256;
+  std::size_t grid_size  = (d_in.size() + block_size - 1) / block_size;
+  example_kernel<<<grid_size, block_size>>>(
+    d_proj, d_in.data().get(), d_out.data().get(), d_in.size());
+  cudaDeviceSynchronize();
 }

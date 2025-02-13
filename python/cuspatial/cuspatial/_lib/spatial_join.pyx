@@ -1,11 +1,10 @@
-# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+# Copyright (c) 2020-2025, NVIDIA CORPORATION.
 
 from libc.stdint cimport int8_t
 from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
 
-from cudf._lib.column cimport Column
-from cudf._lib.utils cimport data_from_unique_ptr, table_view_from_table
+from pylibcudf cimport Column as plc_Column, Table as plc_Table
 from pylibcudf.libcudf.column.column_view cimport column_view
 from pylibcudf.libcudf.table.table cimport table, table_view
 
@@ -16,18 +15,24 @@ from cuspatial._lib.cpp.spatial_join cimport (
 )
 
 
-cpdef join_quadtree_and_bounding_boxes(object quadtree,
-                                       object bounding_boxes,
-                                       double x_min,
-                                       double x_max,
-                                       double y_min,
-                                       double y_max,
-                                       double scale,
-                                       int8_t max_depth):
-    cdef table_view c_quadtree = table_view_from_table(
-        quadtree, ignore_index=True)
-    cdef table_view c_bounding_boxes = table_view_from_table(
-        bounding_boxes, ignore_index=True)
+cpdef plc_Table join_quadtree_and_bounding_boxes(
+    object quadtree,
+    object bounding_boxes,
+    double x_min,
+    double x_max,
+    double y_min,
+    double y_max,
+    double scale,
+    int8_t max_depth
+):
+    cdef plc_Table plc_quadtree = plc_Table(
+        [col.to_pylibcudf(mode="read") for col in quadtree._columns]
+    )
+    cdef table_view c_quadtree = plc_quadtree.view()
+    cdef plc_Table plc_bounding_boxes = plc_Table(
+        [col.to_pylibcudf(mode="read") for col in bounding_boxes._columns]
+    )
+    cdef table_view c_bounding_boxes = plc_bounding_boxes.view()
     cdef unique_ptr[table] result
     with nogil:
         result = move(cpp_join_quadtree_and_bounding_boxes(
@@ -35,25 +40,28 @@ cpdef join_quadtree_and_bounding_boxes(object quadtree,
             c_bounding_boxes,
             x_min, x_max, y_min, y_max, scale, max_depth
         ))
-    return data_from_unique_ptr(
-        move(result),
-        column_names=["bbox_offset", "quad_offset"]
+    return plc_Table.from_libcudf(move(result))
+
+
+cpdef plc_Table quadtree_point_in_polygon(
+    object poly_quad_pairs,
+    object quadtree,
+    plc_Column point_indices,
+    plc_Column points_x,
+    plc_Column points_y,
+    plc_Column poly_offsets,
+    plc_Column ring_offsets,
+    plc_Column poly_points_x,
+    plc_Column poly_points_y
+):
+    cdef plc_Table plc_poly_quad_pairs = plc_Table(
+        [col.to_pylibcudf(mode="read") for col in poly_quad_pairs._columns]
     )
-
-
-cpdef quadtree_point_in_polygon(object poly_quad_pairs,
-                                object quadtree,
-                                Column point_indices,
-                                Column points_x,
-                                Column points_y,
-                                Column poly_offsets,
-                                Column ring_offsets,
-                                Column poly_points_x,
-                                Column poly_points_y):
-    cdef table_view c_poly_quad_pairs = table_view_from_table(
-        poly_quad_pairs, ignore_index=True)
-    cdef table_view c_quadtree = table_view_from_table(
-        quadtree, ignore_index=True)
+    cdef table_view c_poly_quad_pairs = plc_poly_quad_pairs.view()
+    cdef plc_Table plc_quadtree = plc_Table(
+        [col.to_pylibcudf(mode="read") for col in quadtree._columns]
+    )
+    cdef table_view c_quadtree = plc_quadtree.view()
     cdef column_view c_point_indices = point_indices.view()
     cdef column_view c_points_x = points_x.view()
     cdef column_view c_points_y = points_y.view()
@@ -74,24 +82,30 @@ cpdef quadtree_point_in_polygon(object poly_quad_pairs,
             c_poly_points_x,
             c_poly_points_y
         ))
-    return data_from_unique_ptr(
-        move(result),
-        column_names=["polygon_index", "point_index"]
+    return plc_Table.from_libcudf(move(result))
+
+
+cpdef plc_Table quadtree_point_to_nearest_linestring(
+    object linestring_quad_pairs,
+    object quadtree,
+    plc_Column point_indices,
+    plc_Column points_x,
+    plc_Column points_y,
+    plc_Column linestring_offsets,
+    plc_Column linestring_points_x,
+    plc_Column linestring_points_y
+):
+    cdef plc_Table plc_quad_pairs = plc_Table(
+        [
+            col.to_pylibcudf(mode="read")
+            for col in linestring_quad_pairs._columns
+        ]
     )
-
-
-cpdef quadtree_point_to_nearest_linestring(object linestring_quad_pairs,
-                                           object quadtree,
-                                           Column point_indices,
-                                           Column points_x,
-                                           Column points_y,
-                                           Column linestring_offsets,
-                                           Column linestring_points_x,
-                                           Column linestring_points_y):
-    cdef table_view c_linestring_quad_pairs = table_view_from_table(
-        linestring_quad_pairs, ignore_index=True)
-    cdef table_view c_quadtree = table_view_from_table(
-        quadtree, ignore_index=True)
+    cdef table_view c_linestring_quad_pairs = plc_quad_pairs.view()
+    cdef plc_Table plc_quadtree = plc_Table(
+        [col.to_pylibcudf(mode="read") for col in quadtree._columns]
+    )
+    cdef table_view c_quadtree = plc_quadtree.view()
     cdef column_view c_point_indices = point_indices.view()
     cdef column_view c_points_x = points_x.view()
     cdef column_view c_points_y = points_y.view()
@@ -110,7 +124,4 @@ cpdef quadtree_point_to_nearest_linestring(object linestring_quad_pairs,
             c_linestring_points_x,
             c_linestring_points_y
         ))
-    return data_from_unique_ptr(
-        move(result),
-        column_names=["point_index", "linestring_index", "distance"]
-    )
+    return plc_Table.from_libcudf(move(result))

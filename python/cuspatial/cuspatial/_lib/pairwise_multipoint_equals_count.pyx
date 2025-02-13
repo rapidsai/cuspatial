@@ -1,9 +1,9 @@
-# Copyright (c) 2023-2024, NVIDIA CORPORATION.
+# Copyright (c) 2023-2025, NVIDIA CORPORATION.
 
 from libcpp.memory cimport make_shared, shared_ptr, unique_ptr
 from libcpp.utility cimport move
 
-from cudf._lib.column cimport Column
+from pylibcudf cimport Column as plc_Column
 from pylibcudf.libcudf.column.column cimport column
 
 from cuspatial._lib.cpp.column.geometry_column_view cimport (
@@ -16,8 +16,8 @@ from cuspatial._lib.cpp.types cimport collection_type_id, geometry_type_id
 
 
 def pairwise_multipoint_equals_count(
-    Column _lhs,
-    Column _rhs,
+    plc_Column _lhs,
+    plc_Column _rhs,
 ):
     cdef shared_ptr[geometry_column_view] lhs = \
         make_shared[geometry_column_view](
@@ -41,4 +41,4 @@ def pairwise_multipoint_equals_count(
             )
         )
 
-    return Column.from_unique_ptr(move(result))
+    return plc_Column.from_libcudf(move(result))

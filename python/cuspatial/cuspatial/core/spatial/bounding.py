@@ -1,7 +1,7 @@
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2022-2025, NVIDIA CORPORATION.
 
 from cudf import DataFrame
-from cudf.core.column import as_column
+from cudf.core.column import ColumnBase, as_column
 
 from cuspatial._lib.linestring_bounding_boxes import (
     linestring_bounding_boxes as cpp_linestring_bounding_boxes,
@@ -66,11 +66,14 @@ def polygon_bounding_boxes(polygons: GeoSeries):
         dict(
             zip(
                 column_names,
-                cpp_polygon_bounding_boxes(
-                    as_column(poly_offsets),
-                    as_column(ring_offsets),
-                    as_column(x),
-                    as_column(y),
+                (
+                    ColumnBase.from_pylibcudf(col)
+                    for col in cpp_polygon_bounding_boxes(
+                        as_column(poly_offsets).to_pylibcudf(mode="read"),
+                        as_column(ring_offsets).to_pylibcudf(mode="read"),
+                        as_column(x).to_pylibcudf(mode="read"),
+                        as_column(y).to_pylibcudf(mode="read"),
+                    )
                 ),
             )
         )
@@ -121,7 +124,17 @@ def linestring_bounding_boxes(linestrings: GeoSeries, expansion_radius: float):
     y = linestrings.lines.y
 
     results = cpp_linestring_bounding_boxes(
-        as_column(line_offsets), as_column(x), as_column(y), expansion_radius
+        as_column(line_offsets).to_pylibcudf(mode="read"),
+        as_column(x).to_pylibcudf(mode="read"),
+        as_column(y).to_pylibcudf(mode="read"),
+        expansion_radius,
     )
 
-    return DataFrame._from_data(dict(zip(column_names, results)))
+    return DataFrame._from_data(
+        dict(
+            zip(
+                column_names,
+                (ColumnBase.from_pylibcudf(col) for col in results),
+            )
+        )
+    )

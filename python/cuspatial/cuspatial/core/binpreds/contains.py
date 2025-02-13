@@ -1,10 +1,10 @@
-# Copyright (c) 2022-2024, NVIDIA CORPORATION.
+# Copyright (c) 2022-2025, NVIDIA CORPORATION.
 
 from math import ceil, sqrt
 
 import cudf
 from cudf import DataFrame, Series
-from cudf.core.column import as_column
+from cudf.core.column import ColumnBase, as_column
 
 import cuspatial
 from cuspatial._lib.pairwise_point_in_polygon import (
@@ -97,16 +97,16 @@ def _brute_force_contains_properly(points, polygons):
         within its corresponding polygon.
     """
     pip_result = cpp_byte_point_in_polygon(
-        as_column(points.points.x),
-        as_column(points.points.y),
-        as_column(polygons.polygons.part_offset),
-        as_column(polygons.polygons.ring_offset),
-        as_column(polygons.polygons.x),
-        as_column(polygons.polygons.y),
+        as_column(points.points.x).to_pylibcudf(mode="read"),
+        as_column(points.points.y).to_pylibcudf(mode="read"),
+        as_column(polygons.polygons.part_offset).to_pylibcudf(mode="read"),
+        as_column(polygons.polygons.ring_offset).to_pylibcudf(mode="read"),
+        as_column(polygons.polygons.x).to_pylibcudf(mode="read"),
+        as_column(polygons.polygons.y).to_pylibcudf(mode="read"),
     )
     result = DataFrame(
         pip_bitmap_column_to_binary_array(
-            polygon_bitmap_column=pip_result,
+            polygon_bitmap_column=ColumnBase.from_pylibcudf(pip_result),
             width=len(polygons.polygons.part_offset) - 1,
         )
     )
@@ -144,18 +144,20 @@ def _pairwise_contains_properly(points, polygons):
         within its corresponding polygon.
     """
     result_column = cpp_pairwise_point_in_polygon(
-        as_column(points.points.x),
-        as_column(points.points.y),
-        as_column(polygons.polygons.part_offset),
-        as_column(polygons.polygons.ring_offset),
-        as_column(polygons.polygons.x),
-        as_column(polygons.polygons.y),
+        as_column(points.points.x).to_pylibcudf(mode="read"),
+        as_column(points.points.y).to_pylibcudf(mode="read"),
+        as_column(polygons.polygons.part_offset).to_pylibcudf(mode="read"),
+        as_column(polygons.polygons.ring_offset).to_pylibcudf(mode="read"),
+        as_column(polygons.polygons.x).to_pylibcudf(mode="read"),
+        as_column(polygons.polygons.y).to_pylibcudf(mode="read"),
     )
     # Pairwise returns a boolean column with a True value for each (polygon,
     # point) pair where the point is contained properly by the polygon. We can
     # use this to create a dataframe with only (polygon, point) pairs that
     # satisfy the relationship.
-    pip_result = cudf.Series._from_column(result_column).astype("bool")
+    pip_result = cudf.Series._from_column(
+        ColumnBase.from_pylibcudf(result_column)
+    ).astype("bool")
     trues = pip_result[pip_result].index
     true_pairs = cudf.DataFrame(
         {

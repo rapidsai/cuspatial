@@ -1,8 +1,8 @@
-# Copyright (c) 2022-2024, NVIDIA CORPORATION.
+# Copyright (c) 2022-2025, NVIDIA CORPORATION.
 
 from libcpp.utility cimport move
 
-from cudf._lib.column cimport Column
+from pylibcudf cimport Column as plc_Column
 from pylibcudf.libcudf.column.column_view cimport column_view
 
 from cuspatial._lib.cpp.nearest_points cimport (
@@ -14,9 +14,9 @@ from cuspatial._lib.utils cimport unwrap_pyoptcol
 
 
 def pairwise_point_linestring_nearest_points(
-    Column points_xy,
-    Column linestring_part_offsets,
-    Column linestring_points_xy,
+    plc_Column points_xy,
+    plc_Column linestring_part_offsets,
+    plc_Column linestring_points_xy,
     multipoint_geometry_offset=None,
     multilinestring_geometry_offset=None,
 ):
@@ -41,16 +41,17 @@ def pairwise_point_linestring_nearest_points(
 
     multipoint_geometry_id = None
     if multipoint_geometry_offset is not None:
-        multipoint_geometry_id = Column.from_unique_ptr(
+        multipoint_geometry_id = plc_Column.from_libcudf(
             move(c_result.nearest_point_geometry_id.value()))
 
     multilinestring_geometry_id = None
     if multilinestring_geometry_offset is not None:
-        multilinestring_geometry_id = Column.from_unique_ptr(
-            move(c_result.nearest_linestring_geometry_id.value()))
+        multilinestring_geometry_id = plc_Column.from_libcudf(
+            move(c_result.nearest_linestring_geometry_id.value())
+        )
 
-    segment_id = Column.from_unique_ptr(move(c_result.nearest_segment_id))
-    point_on_linestring_xy = Column.from_unique_ptr(
+    segment_id = plc_Column.from_libcudf(move(c_result.nearest_segment_id))
+    point_on_linestring_xy = plc_Column.from_libcudf(
         move(c_result.nearest_point_on_linestring_xy))
 
     return (

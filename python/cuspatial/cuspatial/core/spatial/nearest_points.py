@@ -1,7 +1,7 @@
-# Copyright (c) 2024, NVIDIA CORPORATION.
+# Copyright (c) 2024-2025, NVIDIA CORPORATION.
 
 import cudf
-from cudf.core.column import as_column
+from cudf.core.column import ColumnBase, as_column
 
 import cuspatial._lib.nearest_points as nearest_points
 from cuspatial.core._column.geocolumn import GeoColumn
@@ -81,7 +81,9 @@ def pairwise_point_linestring_nearest_points(
     points_geometry_offset = (
         None
         if len(points.points.xy) > 0
-        else as_column(points.multipoints.geometry_offset)
+        else as_column(points.multipoints.geometry_offset).to_pylibcudf(
+            mode="read"
+        )
     )
 
     (
@@ -90,24 +92,28 @@ def pairwise_point_linestring_nearest_points(
         segment_id,
         point_on_linestring_xy,
     ) = nearest_points.pairwise_point_linestring_nearest_points(
-        points_xy._column,
-        as_column(linestrings.lines.part_offset),
-        linestrings.lines.xy._column,
+        points_xy._column.to_pylibcudf(mode="read"),
+        as_column(linestrings.lines.part_offset).to_pylibcudf(mode="read"),
+        linestrings.lines.xy._column.to_pylibcudf(mode="read"),
         points_geometry_offset,
-        as_column(linestrings.lines.geometry_offset),
+        as_column(linestrings.lines.geometry_offset).to_pylibcudf(mode="read"),
     )
 
     nearest_points_on_linestring = GeoColumn._from_points_xy(
-        point_on_linestring_xy
+        ColumnBase.from_pylibcudf(point_on_linestring_xy)
     )
 
     if not point_geometry_id:
         point_geometry_id = as_column(0, length=len(points), dtype="int32")
+    else:
+        point_geometry_id = ColumnBase.from_pylibcudf(point_geometry_id)
 
     data = {
         "point_geometry_id": point_geometry_id,
-        "linestring_geometry_id": linestring_geometry_id,
-        "segment_id": segment_id,
+        "linestring_geometry_id": ColumnBase.from_pylibcudf(
+            linestring_geometry_id
+        ),
+        "segment_id": ColumnBase.from_pylibcudf(segment_id),
         "geometry": nearest_points_on_linestring,
     }
 

@@ -1,13 +1,14 @@
-# Copyright (c) 2023-2024, NVIDIA CORPORATION.
+# Copyright (c) 2023-2025, NVIDIA CORPORATION.
 
 from typing import TYPE_CHECKING
 
 import cudf
-from cudf.core.column import ListColumn, as_column
+from cudf.core.column import ColumnBase, ListColumn, as_column
 
 from cuspatial._lib.intersection import (
     pairwise_linestring_intersection as c_pairwise_linestring_intersection,
 )
+from cuspatial._lib.types import GeometryType
 from cuspatial.core._column.geocolumn import GeoColumn
 from cuspatial.core._column.geometa import Feature_Enum, GeoMeta
 from cuspatial.utils.column_utils import (
@@ -72,7 +73,8 @@ def pairwise_linestring_intersection(
         raise ValueError("Input GeoSeries must contain only linestrings.")
 
     geoms, look_back_ids = c_pairwise_linestring_intersection(
-        linestrings1.lines.column(), linestrings2.lines.column()
+        linestrings1.lines.column().to_pylibcudf(mode="read"),
+        linestrings2.lines.column().to_pylibcudf(mode="read"),
     )
 
     (
@@ -82,15 +84,30 @@ def pairwise_linestring_intersection(
         points,
         segments,
     ) = geoms
+    geometry_collection_offset = ColumnBase.from_pylibcudf(
+        geometry_collection_offset
+    )
+    types_buffer = ColumnBase.from_pylibcudf(types_buffer)
+    # Map linestring type codes from libcuspatial to cuspatial
+    types_buffer[
+        types_buffer == GeometryType.LINESTRING.value
+    ] = Feature_Enum.LINESTRING.value
+    offset_buffer = ColumnBase.from_pylibcudf(offset_buffer)
+    points = ColumnBase.from_pylibcudf(points)
+    segments = ColumnBase.from_pylibcudf(segments)
 
     # Organize the look back ids into list column
-    (lhs_linestring_id, lhs_segment_id, rhs_linestring_id, rhs_segment_id,) = [
-        ListColumn(
+    def id_from_pylibcudf(id_, offset_col):
+        col = ColumnBase.from_pylibcudf(id_)
+        return ListColumn(
             data=None,
-            dtype=cudf.ListDtype(id_.dtype),
-            size=len(geometry_collection_offset) - 1,
-            children=(geometry_collection_offset, id_),
+            dtype=cudf.ListDtype(col.dtype),
+            size=len(offset_col) - 1,
+            children=(offset_col, col),
         )
+
+    lhs_linestring_id, lhs_segment_id, rhs_linestring_id, rhs_segment_id = [
+        id_from_pylibcudf(id_, geometry_collection_offset)
         for id_ in look_back_ids
     ]
 

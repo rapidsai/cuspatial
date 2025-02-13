@@ -1,9 +1,9 @@
-# Copyright (c) 2022-2024, NVIDIA CORPORATION.
+# Copyright (c) 2022-2025, NVIDIA CORPORATION.
 
 import warnings
 
 from cudf import DataFrame, Series
-from cudf.core.column import as_column
+from cudf.core.column import ColumnBase, as_column
 
 from cuspatial import GeoSeries
 from cuspatial._lib.quadtree import (
@@ -159,8 +159,8 @@ def quadtree_on_points(
     if not len(points) == 0 and not contains_only_points(points):
         raise ValueError("GeoSeries must contain only points.")
 
-    xs = as_column(points.points.x)
-    ys = as_column(points.points.y)
+    xs = as_column(points.points.x).to_pylibcudf(mode="read")
+    ys = as_column(points.points.y).to_pylibcudf(mode="read")
 
     x_min, x_max, y_min, y_max = (
         min(x_min, x_max),
@@ -187,4 +187,13 @@ def quadtree_on_points(
         max_depth,
         max_size,
     )
-    return Series._from_column(key_to_point), DataFrame._from_data(*quadtree)
+    result_names = ["key", "level", "is_internal_node", "length", "offset"]
+    return (
+        Series._from_column(ColumnBase.from_pylibcudf(key_to_point)),
+        DataFrame._from_data(
+            {
+                name: ColumnBase.from_pylibcudf(col)
+                for name, col in zip(result_names, quadtree.columns())
+            }
+        ),
+    )
