@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <cuda/std/optional>
 #include <thrust/fill.h>
-#include <thrust/optional.h>
 
 #include <limits>
 #include <type_traits>
@@ -63,7 +63,7 @@ OutputIt pairwise_linestring_distance(MultiLinestringRange1 multilinestrings1,
     (multilinestrings1.num_points() + threads_per_block - 1) / threads_per_block;
 
   detail::linestring_distance<<<num_blocks, threads_per_block, 0, stream.value()>>>(
-    multilinestrings1, multilinestrings2, thrust::nullopt, distances_first);
+    multilinestrings1, multilinestrings2, cuda::std::nullopt, distances_first);
 
   CUSPATIAL_CUDA_TRY(cudaGetLastError());
   return distances_first + multilinestrings1.size();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
 
 #include <rmm/device_uvector.hpp>
 
-#include <thrust/optional.h>
+#include <cuda/std/optional>
 
 #include <ranger/ranger.hpp>
 
@@ -50,7 +50,7 @@ namespace detail {
 template <class MultiLinestringRange1, class MultiLinestringRange2, class OutputIt>
 CUSPATIAL_KERNEL void linestring_distance(MultiLinestringRange1 multilinestrings1,
                                           MultiLinestringRange2 multilinestrings2,
-                                          thrust::optional<uint8_t*> intersects,
+                                          cuda::std::optional<uint8_t*> intersects,
                                           OutputIt distances_first)
 {
   using T = typename MultiLinestringRange1::element_t;
@@ -93,7 +93,7 @@ CUSPATIAL_KERNEL void linestring_distance(MultiLinestringRange1 multilinestrings
 template <class MultiPointRange, class MultiLinestringRange, class OutputIterator>
 CUSPATIAL_KERNEL void point_linestring_distance(MultiPointRange multipoints,
                                                 MultiLinestringRange multilinestrings,
-                                                thrust::optional<uint8_t*> intersects,
+                                                cuda::std::optional<uint8_t*> intersects,
                                                 OutputIterator distances)
 {
   using T = typename MultiPointRange::element_t;

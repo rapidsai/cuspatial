@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
 #include <cuspatial/geometry/segment.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 
-#include <thrust/optional.h>
+#include <cuda/std/optional>
 #include <thrust/pair.h>
 #include <thrust/swap.h>
 #include <thrust/tuple.h>
@@ -148,7 +148,7 @@ __forceinline__ T __device__ squared_segment_distance(vec_2d<T> const& a,
 template <typename T>
 __forceinline__
 
-  thrust::pair<thrust::optional<vec_2d<T>>, thrust::optional<segment<T>>>
+  thrust::pair<cuda::std::optional<vec_2d<T>>, cuda::std::optional<segment<T>>>
     __device__ collinear_or_parallel_overlapping_segments(
       vec_2d<T> a, vec_2d<T> b, vec_2d<T> c, vec_2d<T> d, vec_2d<T> center = vec_2d<T>{})
 {
@@ -156,21 +156,21 @@ __forceinline__
   auto ac = c - a;
 
   // Parallel
-  if (not float_equal(det(ab, ac), T{0})) return {thrust::nullopt, thrust::nullopt};
+  if (not float_equal(det(ab, ac), T{0})) return {cuda::std::nullopt, cuda::std::nullopt};
 
   // Must be on the same line, sort the endpoints
   if (b < a) thrust::swap(a, b);
   if (d < c) thrust::swap(c, d);
 
   // Test if not overlap
-  if (b < c || d < a) return {thrust::nullopt, thrust::nullopt};
+  if (b < c || d < a) return {cuda::std::nullopt, cuda::std::nullopt};
 
   // Compute smallest interval between the segments
   auto e0 = a > c ? a : c;
   auto e1 = b < d ? b : d;
 
-  if (e0 == e1) { return {e0 + center, thrust::nullopt}; }
-  return {thrust::nullopt, segment<T>{e0 + center, e1 + center}};
+  if (e0 == e1) { return {e0 + center, cuda::std::nullopt}; }
+  return {cuda::std::nullopt, segment<T>{e0 + center, e1 + center}};
 }
 
 /**
@@ -181,8 +181,8 @@ __forceinline__
  * @return A pair of optional intersecting point and optional overlapping segment
  */
 template <typename T>
-__forceinline__ thrust::pair<thrust::optional<vec_2d<T>>, thrust::optional<segment<T>>> __device__
-segment_intersection(segment<T> const& segment1, segment<T> const& segment2)
+__forceinline__ thrust::pair<cuda::std::optional<vec_2d<T>>, cuda::std::optional<segment<T>>>
+  __device__ segment_intersection(segment<T> const& segment1, segment<T> const& segment2)
 {
   // Condition the coordinates to avoid large floating point error
   auto center = midpoint(segment1.center(), segment2.center());
@@ -207,9 +207,9 @@ segment_intersection(segment<T> const& segment1, segment<T> const& segment2)
   if (r >= 0 and r <= 1 and s >= 0 and s <= 1) {
     auto p = a + r * ab;
     // Decondition the coordinates
-    return {p + center, thrust::nullopt};
+    return {p + center, cuda::std::nullopt};
   }
-  return {thrust::nullopt, thrust::nullopt};
+  return {cuda::std::nullopt, cuda::std::nullopt};
 }
 
 /**
@@ -233,8 +233,8 @@ bool __device__ is_point_on_segment(segment<T> const& segment, vec_2d<T> const& 
  * nullopt.
  */
 template <typename T>
-thrust::optional<segment<T>> __device__ maybe_merge_segments(segment<T> const& segment1,
-                                                             segment<T> const& segment2)
+cuda::std::optional<segment<T>> __device__ maybe_merge_segments(segment<T> const& segment1,
+                                                                segment<T> const& segment2)
 {
   // Condition the coordinates to avoid large floating point error
   auto center = midpoint(segment1.center(), segment2.center());
@@ -244,16 +244,16 @@ thrust::optional<segment<T>> __device__ maybe_merge_segments(segment<T> const& s
   auto ab = b - a;
   auto cd = d - c;
 
-  if (not float_equal(det(ab, cd), T{0})) return thrust::nullopt;
+  if (not float_equal(det(ab, cd), T{0})) return cuda::std::nullopt;
   auto ac = c - a;
-  if (not float_equal(det(ab, ac), T{0})) return thrust::nullopt;
+  if (not float_equal(det(ab, ac), T{0})) return cuda::std::nullopt;
 
   // Must be on the same line, sort the endpoints
   if (b < a) thrust::swap(a, b);
   if (d < c) thrust::swap(c, d);
 
   // Test if not overlap
-  if (b < c || d < a) return thrust::nullopt;
+  if (b < c || d < a) return cuda::std::nullopt;
 
   // Compute largest interval between the segments
   auto e0 = a < c ? a : c;

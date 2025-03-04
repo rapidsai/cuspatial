@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 
+#include <cuda/std/optional>
 #include <thrust/pair.h>
 
 namespace cuspatial {
@@ -121,7 +122,7 @@ class multilinestring_range {
   /// If the segment id is invalid, returns nullopt.
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE
-    thrust::optional<typename thrust::iterator_traits<PartIterator>::difference_type>
+    cuda::std::optional<typename thrust::iterator_traits<PartIterator>::difference_type>
     part_idx_from_segment_idx(IndexType point_idx);
 
   /// Given the index of a part (linestring), return the geometry (multilinestring) index
