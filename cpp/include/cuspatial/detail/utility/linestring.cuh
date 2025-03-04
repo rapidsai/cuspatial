@@ -21,7 +21,7 @@
 #include <cuspatial/geometry/vec_2d.hpp>
 
 #include <cuda/std/optional>
-#include <thrust/pair.h>
+#include <cuda/std/utility>
 #include <thrust/swap.h>
 #include <thrust/tuple.h>
 
@@ -148,7 +148,7 @@ __forceinline__ T __device__ squared_segment_distance(vec_2d<T> const& a,
 template <typename T>
 __forceinline__
 
-  thrust::pair<cuda::std::optional<vec_2d<T>>, cuda::std::optional<segment<T>>>
+  cuda::std::pair<cuda::std::optional<vec_2d<T>>, cuda::std::optional<segment<T>>>
     __device__ collinear_or_parallel_overlapping_segments(
       vec_2d<T> a, vec_2d<T> b, vec_2d<T> c, vec_2d<T> d, vec_2d<T> center = vec_2d<T>{})
 {
@@ -181,7 +181,7 @@ __forceinline__
  * @return A pair of optional intersecting point and optional overlapping segment
  */
 template <typename T>
-__forceinline__ thrust::pair<cuda::std::optional<vec_2d<T>>, cuda::std::optional<segment<T>>>
+__forceinline__ cuda::std::pair<cuda::std::optional<vec_2d<T>>, cuda::std::optional<segment<T>>>
   __device__ segment_intersection(segment<T> const& segment1, segment<T> const& segment2)
 {
   // Condition the coordinates to avoid large floating point error
