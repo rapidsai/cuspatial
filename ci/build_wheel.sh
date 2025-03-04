@@ -16,12 +16,14 @@ case "${package_dir}" in
   python/libcuspatial)
     EXCLUDE_ARGS=(
       --exclude "libcudf.so"
+      --exclude "librapids_logger.so"
     )
   ;;
   *)
     EXCLUDE_ARGS=(
       --exclude "libcudf.so"
       --exclude "libcuspatial.so"
+      --exclude "librapids_logger.so"
     )
   ;;
 esac
