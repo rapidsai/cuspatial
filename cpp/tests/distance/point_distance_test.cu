@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@
 #include <rmm/device_vector.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <cuda/std/tuple>
 #include <thrust/generate.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
@@ -36,7 +37,6 @@
 #include <thrust/random/linear_congruential_engine.h>
 #include <thrust/random/normal_distribution.h>
 #include <thrust/transform.h>
-#include <thrust/tuple.h>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -99,11 +99,10 @@ auto compute_point_distance_host(Cart2DVec const& point1, Cart2DVec const& point
   using T      = typename Cart2D::value_type;
   thrust::host_vector<Cart2D> h_point1(point1);
   thrust::host_vector<Cart2D> h_point2(point2);
-  auto pair_iter =
-    thrust::make_zip_iterator(thrust::make_tuple(h_point1.begin(), h_point2.begin()));
+  auto pair_iter   = thrust::make_zip_iterator(h_point1.begin(), h_point2.begin());
   auto result_iter = thrust::make_transform_iterator(pair_iter, [](auto p) {
-    auto p0 = thrust::get<0>(p);
-    auto p1 = thrust::get<1>(p);
+    auto p0 = cuda::std::get<0>(p);
+    auto p1 = cuda::std::get<1>(p);
     return std::sqrt(dot(p0 - p1, p0 - p1));
   });
 

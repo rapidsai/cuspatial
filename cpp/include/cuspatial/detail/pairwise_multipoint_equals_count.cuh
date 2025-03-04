@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,8 +88,7 @@ OutputIt pairwise_multipoint_equals_count(MultiPointRangeA lhs,
   thrust::copy(
     rmm::exec_policy(stream), rhs.point_begin(), rhs.point_end(), rhs_point_sorted.begin());
 
-  auto rhs_with_keys =
-    thrust::make_zip_iterator(thrust::make_tuple(rhs_keys.begin(), rhs_point_sorted.begin()));
+  auto rhs_with_keys = thrust::make_zip_iterator(rhs_keys.begin(), rhs_point_sorted.begin());
 
   thrust::sort(rmm::exec_policy(stream), rhs_with_keys, rhs_with_keys + rhs.num_points());
 

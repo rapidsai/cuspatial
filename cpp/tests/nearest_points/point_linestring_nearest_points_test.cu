@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,11 +58,10 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, Empty)
   auto nearest_linestring_segment_id = rmm::device_vector<int32_t>(0);
   auto neartest_point_coordinate     = rmm::device_vector<vec_2d<T>>(0);
 
-  auto output_it =
-    thrust::make_zip_iterator(thrust::make_tuple(nearest_point_id.begin(),
-                                                 nearest_linestring_parts_id.begin(),
-                                                 nearest_linestring_segment_id.begin(),
-                                                 neartest_point_coordinate.begin()));
+  auto output_it = thrust::make_zip_iterator(nearest_point_id.begin(),
+                                             nearest_linestring_parts_id.begin(),
+                                             nearest_linestring_segment_id.begin(),
+                                             neartest_point_coordinate.begin());
 
   auto ret = pairwise_point_linestring_nearest_points(points_geometry_it,
                                                       points_geometry_it + num_pairs + 1,
@@ -98,11 +97,10 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, OnePairSingleComponent)
   auto nearest_linestring_segment_id = rmm::device_vector<int32_t>(num_pairs);
   auto neartest_point_coordinate     = rmm::device_vector<vec_2d<T>>(num_pairs);
 
-  auto output_it =
-    thrust::make_zip_iterator(thrust::make_tuple(thrust::make_discard_iterator(),
-                                                 thrust::make_discard_iterator(),
-                                                 nearest_linestring_segment_id.begin(),
-                                                 neartest_point_coordinate.begin()));
+  auto output_it = thrust::make_zip_iterator(thrust::make_discard_iterator(),
+                                             thrust::make_discard_iterator(),
+                                             nearest_linestring_segment_id.begin(),
+                                             neartest_point_coordinate.begin());
 
   auto ret = pairwise_point_linestring_nearest_points(points_geometry_it,
                                                       points_geometry_it + num_pairs + 1,
@@ -137,11 +135,10 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, NearestAtLeftEndPoint)
   auto nearest_linestring_segment_id = rmm::device_vector<int32_t>(num_pairs);
   auto neartest_point_coordinate     = rmm::device_vector<vec_2d<T>>(num_pairs);
 
-  auto output_it =
-    thrust::make_zip_iterator(thrust::make_tuple(thrust::make_discard_iterator(),
-                                                 thrust::make_discard_iterator(),
-                                                 nearest_linestring_segment_id.begin(),
-                                                 neartest_point_coordinate.begin()));
+  auto output_it = thrust::make_zip_iterator(thrust::make_discard_iterator(),
+                                             thrust::make_discard_iterator(),
+                                             nearest_linestring_segment_id.begin(),
+                                             neartest_point_coordinate.begin());
 
   auto ret = pairwise_point_linestring_nearest_points(points_geometry_it,
                                                       points_geometry_it + num_pairs + 1,
@@ -176,11 +173,10 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, NearestAtRightEndPoint)
   auto nearest_linestring_segment_id = rmm::device_vector<int32_t>(num_pairs);
   auto neartest_point_coordinate     = rmm::device_vector<vec_2d<T>>(num_pairs);
 
-  auto output_it =
-    thrust::make_zip_iterator(thrust::make_tuple(thrust::make_discard_iterator(),
-                                                 thrust::make_discard_iterator(),
-                                                 nearest_linestring_segment_id.begin(),
-                                                 neartest_point_coordinate.begin()));
+  auto output_it = thrust::make_zip_iterator(thrust::make_discard_iterator(),
+                                             thrust::make_discard_iterator(),
+                                             nearest_linestring_segment_id.begin(),
+                                             neartest_point_coordinate.begin());
 
   auto ret = pairwise_point_linestring_nearest_points(points_geometry_it,
                                                       points_geometry_it + num_pairs + 1,
@@ -216,11 +212,10 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, PointAtEndPoints)
   auto nearest_linestring_segment_id = rmm::device_vector<int32_t>(num_pairs);
   auto neartest_point_coordinate     = rmm::device_vector<vec_2d<T>>(num_pairs);
 
-  auto output_it =
-    thrust::make_zip_iterator(thrust::make_tuple(thrust::make_discard_iterator(),
-                                                 thrust::make_discard_iterator(),
-                                                 nearest_linestring_segment_id.begin(),
-                                                 neartest_point_coordinate.begin()));
+  auto output_it = thrust::make_zip_iterator(thrust::make_discard_iterator(),
+                                             thrust::make_discard_iterator(),
+                                             nearest_linestring_segment_id.begin(),
+                                             neartest_point_coordinate.begin());
 
   auto ret = pairwise_point_linestring_nearest_points(points_geometry_it,
                                                       points_geometry_it + num_pairs + 1,
@@ -256,11 +251,10 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, PointOnLineString)
   auto nearest_linestring_segment_id = rmm::device_vector<int32_t>(num_pairs);
   auto neartest_point_coordinate     = rmm::device_vector<vec_2d<T>>(num_pairs);
 
-  auto output_it =
-    thrust::make_zip_iterator(thrust::make_tuple(thrust::make_discard_iterator(),
-                                                 thrust::make_discard_iterator(),
-                                                 nearest_linestring_segment_id.begin(),
-                                                 neartest_point_coordinate.begin()));
+  auto output_it = thrust::make_zip_iterator(thrust::make_discard_iterator(),
+                                             thrust::make_discard_iterator(),
+                                             nearest_linestring_segment_id.begin(),
+                                             neartest_point_coordinate.begin());
 
   auto ret = pairwise_point_linestring_nearest_points(points_geometry_it,
                                                       points_geometry_it + num_pairs + 1,
@@ -296,11 +290,10 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, TwoPairsSingleComponent)
   auto nearest_linestring_segment_id = rmm::device_vector<int32_t>(num_pairs);
   auto neartest_point_coordinate     = rmm::device_vector<vec_2d<T>>(num_pairs);
 
-  auto output_it =
-    thrust::make_zip_iterator(thrust::make_tuple(thrust::make_discard_iterator(),
-                                                 thrust::make_discard_iterator(),
-                                                 nearest_linestring_segment_id.begin(),
-                                                 neartest_point_coordinate.begin()));
+  auto output_it = thrust::make_zip_iterator(thrust::make_discard_iterator(),
+                                             thrust::make_discard_iterator(),
+                                             nearest_linestring_segment_id.begin(),
+                                             neartest_point_coordinate.begin());
 
   auto ret = pairwise_point_linestring_nearest_points(points_geometry_it,
                                                       points_geometry_it + num_pairs + 1,
@@ -338,11 +331,10 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, OnePairMultiComponent)
   auto nearest_linestring_segment_id    = rmm::device_vector<int32_t>(num_pairs);
   auto neartest_point_coordinate        = rmm::device_vector<vec_2d<T>>(num_pairs);
 
-  auto output_it =
-    thrust::make_zip_iterator(thrust::make_tuple(nearest_point_id.begin(),
-                                                 nearest_linestring_linestring_id.begin(),
-                                                 nearest_linestring_segment_id.begin(),
-                                                 neartest_point_coordinate.begin()));
+  auto output_it = thrust::make_zip_iterator(nearest_point_id.begin(),
+                                             nearest_linestring_linestring_id.begin(),
+                                             nearest_linestring_segment_id.begin(),
+                                             neartest_point_coordinate.begin());
 
   auto ret = pairwise_point_linestring_nearest_points(points_geometry_offsets.begin(),
                                                       points_geometry_offsets.end(),
@@ -395,10 +387,10 @@ TYPED_TEST(PairwisePointLinestringNearestPointsTest, ThreePairMultiComponent)
   auto nearest_segment_id        = rmm::device_vector<int32_t>(num_pairs);
   auto neartest_point_coordinate = rmm::device_vector<vec_2d<T>>(num_pairs);
 
-  auto output_it = thrust::make_zip_iterator(thrust::make_tuple(nearest_point_id.begin(),
-                                                                nearest_linestring_id.begin(),
-                                                                nearest_segment_id.begin(),
-                                                                neartest_point_coordinate.begin()));
+  auto output_it = thrust::make_zip_iterator(nearest_point_id.begin(),
+                                             nearest_linestring_id.begin(),
+                                             nearest_segment_id.begin(),
+                                             neartest_point_coordinate.begin());
 
   auto ret = pairwise_point_linestring_nearest_points(points_geometry_offsets.begin(),
                                                       points_geometry_offsets.end(),

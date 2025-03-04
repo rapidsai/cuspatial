@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@
 #include <cuspatial/geometry/segment.cuh>
 #include <cuspatial/geometry/vec_2d.hpp>
 
+#include <cuda/std/tuple>
 #include <thrust/optional.h>
 #include <thrust/pair.h>
 #include <thrust/swap.h>
-#include <thrust/tuple.h>
 
 namespace cuspatial {
 namespace detail {
@@ -52,7 +52,7 @@ endpoint_index_of_linestring(SizeType const& linestring_idx,
  * ab
  */
 template <typename T>
-__forceinline__ thrust::tuple<T, vec_2d<T>> __device__
+__forceinline__ cuda::std::tuple<T, vec_2d<T>> __device__
 point_to_segment_distance_squared_nearest_point(vec_2d<T> const& c,
                                                 vec_2d<T> const& a,
                                                 vec_2d<T> const& b)
@@ -60,18 +60,18 @@ point_to_segment_distance_squared_nearest_point(vec_2d<T> const& c,
   auto ab        = b - a;
   auto ac        = c - a;
   auto l_squared = dot(ab, ab);
-  if (float_equal(l_squared, T{0})) { return thrust::make_tuple(dot(ac, ac), a); }
+  if (float_equal(l_squared, T{0})) { return cuda::std::make_tuple(dot(ac, ac), a); }
   auto r  = dot(ac, ab);
   auto bc = c - b;
   // If the projection of `c` is outside of segment `ab`, compute point-point distance.
   if (r <= 0 or r >= l_squared) {
     auto dac = dot(ac, ac);
     auto dbc = dot(bc, bc);
-    return dac < dbc ? thrust::make_tuple(dac, a) : thrust::make_tuple(dbc, b);
+    return dac < dbc ? cuda::std::make_tuple(dac, a) : cuda::std::make_tuple(dbc, b);
   }
   auto p  = a + (r / l_squared) * ab;
   auto pc = c - p;
-  return thrust::make_tuple(dot(pc, pc), p);
+  return cuda::std::make_tuple(dot(pc, pc), p);
 }
 
 /**

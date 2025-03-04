@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 #include <rmm/exec_policy.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/std/tuple>
 #include <thrust/copy.h>
 #include <thrust/count.h>
 #include <thrust/distance.h>
@@ -38,7 +39,6 @@
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
 #include <thrust/transform.h>
-#include <thrust/tuple.h>
 #include <thrust/uninitialized_fill.h>
 
 #include <memory>
@@ -85,9 +85,9 @@ inline rmm::device_uvector<uint32_t> flatten_point_keys(
                     keys_and_levels + num_valid_nodes,
                     flattened_keys.begin(),
                     [last_level = max_depth - 1] __device__(auto const& val) {
-                      auto& key       = thrust::get<0>(val);
-                      auto& level     = thrust::get<1>(val);
-                      auto& is_parent = thrust::get<2>(val);
+                      auto& key       = cuda::std::get<0>(val);
+                      auto& level     = cuda::std::get<1>(val);
+                      auto& is_parent = cuda::std::get<2>(val);
                       // if this is a parent node, return max_key. otherwise
                       // compute the key for one level up the tree. Leaf nodes
                       // whose keys are zero will be removed in a subsequent

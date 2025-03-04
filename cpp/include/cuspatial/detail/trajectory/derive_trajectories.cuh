@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,10 +42,10 @@ template <typename Tuple>
 struct trajectory_comparator {
   __device__ bool operator()(Tuple const& lhs, Tuple const& rhs)
   {
-    auto lhs_id = thrust::get<0>(lhs);
-    auto rhs_id = thrust::get<0>(rhs);
-    auto lhs_ts = thrust::get<1>(lhs);
-    auto rhs_ts = thrust::get<1>(rhs);
+    auto lhs_id = cuda::std::get<0>(lhs);
+    auto rhs_id = cuda::std::get<0>(rhs);
+    auto lhs_ts = cuda::std::get<1>(lhs);
+    auto rhs_ts = cuda::std::get<1>(rhs);
     return (lhs_id < rhs_id) || ((lhs_id == rhs_id) && (lhs_ts < rhs_ts));
   };
 };
@@ -68,7 +68,7 @@ void order_trajectories(IdInputIt ids_first,
 {
   using id_type        = iterator_value_type<IdInputIt>;
   using timestamp_type = iterator_value_type<TimestampInputIt>;
-  using tuple_type     = thrust::tuple<id_type, timestamp_type>;
+  using tuple_type     = cuda::std::tuple<id_type, timestamp_type>;
 
   auto keys_first     = thrust::make_zip_iterator(ids_first, timestamps_first);
   auto keys_out_first = thrust::make_zip_iterator(ids_out_first, timestamps_out_first);

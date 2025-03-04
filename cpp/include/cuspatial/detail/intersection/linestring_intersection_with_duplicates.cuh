@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/std/tuple>
 #include <thrust/binary_search.h>
 #include <thrust/distance.h>
 #include <thrust/iterator/counting_iterator.h>
@@ -38,7 +39,6 @@
 #include <thrust/reduce.h>
 #include <thrust/remove.h>
 #include <thrust/scan.h>
-#include <thrust/tuple.h>
 #include <thrust/uninitialized_fill.h>
 
 #include <ranger/ranger.hpp>
@@ -162,9 +162,9 @@ struct id_ranges {
 
   /// Row-wise getter to the id arrays
   template <typename IndexType>
-  thrust::tuple<index_t, index_t, index_t, index_t> __device__ operator[](IndexType i)
+  cuda::std::tuple<index_t, index_t, index_t, index_t> __device__ operator[](IndexType i)
   {
-    return thrust::make_tuple(
+    return cuda::std::make_tuple(
       lhs_linestring_ids[i], lhs_segment_ids[i], rhs_linestring_ids[i], rhs_segment_ids[i]);
   }
 

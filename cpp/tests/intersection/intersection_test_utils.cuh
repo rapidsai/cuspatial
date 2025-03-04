@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,11 @@
 
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/std/tuple>
 #include <thrust/copy.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/scatter.h>
 #include <thrust/sort.h>
-#include <thrust/tuple.h>
 
 namespace cuspatial {
 namespace test {
@@ -55,13 +55,13 @@ bool CUSPATIAL_HOST_DEVICE operator<(segment<T> lhs, segment<T> rhs)
  */
 template <typename KeyType, typename GeomType>
 struct order_key_value_pairs {
-  using key_value_t = thrust::tuple<KeyType, GeomType>;
+  using key_value_t = cuda::std::tuple<KeyType, GeomType>;
 
   bool CUSPATIAL_HOST_DEVICE operator()(key_value_t lhs, key_value_t rhs)
   {
-    return thrust::get<0>(lhs) < thrust::get<0>(rhs) ||
-           (thrust::get<0>(lhs) == thrust::get<0>(rhs) &&
-            thrust::get<1>(lhs) < thrust::get<1>(rhs));
+    return cuda::std::get<0>(lhs) < cuda::std::get<0>(rhs) ||
+           (cuda::std::get<0>(lhs) == cuda::std::get<0>(rhs) &&
+            cuda::std::get<1>(lhs) < cuda::std::get<1>(rhs));
   }
 };
 
@@ -133,7 +133,7 @@ linestring_intersection_result<T, IndexType> segment_sort_intersection_result(
                       keys_points_begin,
                       keys_points_begin + num_points,
                       scatter_map.begin(),
-                      order_key_value_pairs<thrust::tuple<IndexType, IndexType>, vec_2d<T>>{});
+                      order_key_value_pairs<cuda::std::tuple<IndexType, IndexType>, vec_2d<T>>{});
 
   // Segment-sort the segment array
   auto keys_segment_begin =
@@ -143,7 +143,7 @@ linestring_intersection_result<T, IndexType> segment_sort_intersection_result(
                       keys_segment_begin,
                       keys_segment_begin + num_segments,
                       scatter_map.begin() + num_points,
-                      order_key_value_pairs<thrust::tuple<IndexType, IndexType>, segment<T>>{});
+                      order_key_value_pairs<cuda::std::tuple<IndexType, IndexType>, segment<T>>{});
 
   // Restore the order of indices
   auto lhs_linestring_id = std::make_unique<rmm::device_uvector<IndexType>>(num_geoms, stream, mr);

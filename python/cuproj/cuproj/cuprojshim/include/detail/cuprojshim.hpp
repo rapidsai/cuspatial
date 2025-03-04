@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@
 #include <cuproj/projection_factories.cuh>
 #include <cuproj/vec_2d.hpp>
 
+#include <cuda/std/tuple>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
-#include <thrust/tuple.h>
 
 #include <iterator>
 #include <type_traits>
@@ -37,9 +37,8 @@ namespace detail {
  */
 template <typename T, typename VectorType = cuproj::vec_2d<T>>
 struct tuple_to_vec_2d {
-  __device__ VectorType operator()(thrust::tuple<T, T> const& pos)
-  {
-    return VectorType{thrust::get<0>(pos), thrust::get<1>(pos)};
+  __device__ VectorType operator()(cuda::std::tuple<T, T> const &pos) {
+    return VectorType{cuda::std::get<0>(pos), cuda::std::get<1>(pos)};
   }
 };
 
@@ -49,9 +48,8 @@ struct tuple_to_vec_2d {
  */
 template <typename T, typename VectorType = cuproj::vec_2d<T>>
 struct vec_2d_to_tuple {
-  __device__ thrust::tuple<T, T> operator()(VectorType const& xy)
-  {
-    return thrust::make_tuple(xy.x, xy.y);
+  __device__ cuda::std::tuple<T, T> operator()(VectorType const &xy) {
+    return cuda::std::make_tuple(xy.x, xy.y);
   }
 };
 
@@ -78,11 +76,11 @@ struct vec_2d_to_tuple {
  * "LegacyRandomAccessIterator"
  */
 template <typename FirstIter, typename SecondIter>
-auto make_vec_2d_iterator(FirstIter first, SecondIter second)
-{
+auto make_vec_2d_iterator(FirstIter first, SecondIter second) {
   using T = typename std::iterator_traits<FirstIter>::value_type;
-  static_assert(std::is_same<T, typename std::iterator_traits<SecondIter>::value_type>(),
-                "Iterator value_type mismatch");
+  static_assert(
+      std::is_same<T, typename std::iterator_traits<SecondIter>::value_type>(),
+      "Iterator value_type mismatch");
 
   auto zipped = thrust::make_zip_iterator(first, second);
   return thrust::make_transform_iterator(zipped, tuple_to_vec_2d<T>());
@@ -112,43 +110,33 @@ auto make_vec_2d_iterator(FirstIter first, SecondIter second)
  * "LegacyRandomAccessIterator"
  */
 template <typename FirstIter, typename SecondIter>
-auto make_vec_2d_output_iterator(FirstIter first, SecondIter second)
-{
-  using T         = typename std::iterator_traits<FirstIter>::value_type;
-  auto zipped_out = thrust::make_zip_iterator(thrust::make_tuple(first, second));
+auto make_vec_2d_output_iterator(FirstIter first, SecondIter second) {
+  using T = typename std::iterator_traits<FirstIter>::value_type;
+  auto zipped_out = thrust::make_zip_iterator(first, second);
   return thrust::transform_output_iterator(zipped_out, vec_2d_to_tuple<T>());
 }
-}  // namespace detail
+} // namespace detail
 
 template <typename T>
-cuproj::projection<cuproj::vec_2d<T>>* make_projection(std::string const& src_epsg,
-                                                       std::string const& dst_epsg)
-{
+cuproj::projection<cuproj::vec_2d<T>> *
+make_projection(std::string const &src_epsg, std::string const &dst_epsg) {
   return cuproj::make_projection<cuproj::vec_2d<T>>(src_epsg, dst_epsg);
 }
 
 template <typename T>
-void transform(cuproj::projection<cuproj::vec_2d<T>> const& proj,
-               cuproj::vec_2d<T>* xy_in,
-               cuproj::vec_2d<T>* xy_out,
-               std::size_t n,
-               cuproj::direction dir)
-{
+void transform(cuproj::projection<cuproj::vec_2d<T>> const &proj,
+               cuproj::vec_2d<T> *xy_in, cuproj::vec_2d<T> *xy_out,
+               std::size_t n, cuproj::direction dir) {
   proj.transform(xy_in, xy_in + n, xy_out, dir);
 }
 
 template <typename T>
-void transform(cuproj::projection<cuproj::vec_2d<T>> const& proj,
-               T* x_in,
-               T* y_in,
-               T* x_out,
-               T* y_out,
-               std::size_t n,
-               cuproj::direction dir)
-{
-  auto xy_in  = detail::make_vec_2d_iterator(x_in, y_in);
+void transform(cuproj::projection<cuproj::vec_2d<T>> const &proj, T *x_in,
+               T *y_in, T *x_out, T *y_out, std::size_t n,
+               cuproj::direction dir) {
+  auto xy_in = detail::make_vec_2d_iterator(x_in, y_in);
   auto xy_out = detail::make_vec_2d_output_iterator(x_out, y_out);
   proj.transform(xy_in, xy_in + n, xy_out, dir);
 }
 
-}  // namespace cuprojshim
+} // namespace cuprojshim

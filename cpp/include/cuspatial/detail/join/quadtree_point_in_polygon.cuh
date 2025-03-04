@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,14 +58,14 @@ struct compute_poly_and_point_indices {
 
   using IndexType = iterator_value_type<QuadOffsetsIterator>;
 
-  inline thrust::tuple<IndexType, IndexType> __device__
+  inline cuda::std::tuple<IndexType, IndexType> __device__
   operator()(std::uint64_t const global_index) const
   {
     auto const [quad_poly_index, local_point_index] =
       get_quad_and_local_point_indices(global_index, point_offsets_begin, point_offsets_end);
     auto const point_idx = quad_point_offsets_begin[quad_poly_index] + local_point_index;
     auto const poly_idx  = poly_indices_begin[quad_poly_index];
-    return thrust::make_tuple(poly_idx, point_idx);
+    return cuda::std::make_tuple(poly_idx, point_idx);
   }
 };
 
@@ -82,10 +82,10 @@ struct test_poly_point_intersection {
   PointIterator points_first;
   MultiPolygonRange polygons;
 
-  inline bool __device__ operator()(thrust::tuple<IndexType, IndexType> const& poly_point_idxs)
+  inline bool __device__ operator()(cuda::std::tuple<IndexType, IndexType> const& poly_point_idxs)
   {
-    auto const poly_idx  = thrust::get<0>(poly_point_idxs);
-    auto const point_idx = thrust::get<1>(poly_point_idxs);
+    auto const poly_idx  = cuda::std::get<0>(poly_point_idxs);
+    auto const point_idx = cuda::std::get<1>(poly_point_idxs);
 
     vec_2d<T> const& point = points_first[point_idx];
 

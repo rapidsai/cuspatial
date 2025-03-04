@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -124,7 +124,7 @@ struct compute_point_linestring_indices_and_distances {
   {
   }
 
-  inline __device__ thrust::tuple<uint32_t, uint32_t, T> operator()(uint32_t const global_index)
+  inline __device__ cuda::std::tuple<uint32_t, uint32_t, T> operator()(uint32_t const global_index)
   {
     auto const [point_id, linestring_id] = get_transposed_point_and_pair_index(
       global_index, point_offsets, point_offsets_end, quad_offsets, quad_offsets_end, quad_lengths);
@@ -134,7 +134,7 @@ struct compute_point_linestring_indices_and_distances {
     auto const distance =
       point_linestring_distance(thrust::raw_reference_cast(points[point_id]), linestring);
 
-    return thrust::make_tuple(point_id, linestring_indices[linestring_id], distance);
+    return cuda::std::make_tuple(point_id, linestring_indices[linestring_id], distance);
   }
 };
 
@@ -247,10 +247,10 @@ quadtree_point_to_nearest_linestring(LinestringIndexIterator linestring_indices_
                                                    linestring_indices_first,
                                                    linestrings});
 
-  auto all_point_indices =
-    thrust::make_transform_iterator(all_point_linestring_indices_and_distances,
-                                    cuda::proclaim_return_type<uint32_t>(
-                                      [] __device__(auto const& x) { return thrust::get<0>(x); }));
+  auto all_point_indices = thrust::make_transform_iterator(
+    all_point_linestring_indices_and_distances,
+    cuda::proclaim_return_type<uint32_t>(
+      [] __device__(auto const& x) { return cuda::std::get<0>(x); }));
 
   // Allocate vectors for the distances min reduction
   auto num_points = std::distance(point_indices_first, point_indices_last);
@@ -275,18 +275,18 @@ quadtree_point_to_nearest_linestring(LinestringIndexIterator linestring_indices_
       thrust::make_discard_iterator(), output_linestring_idxs.begin(), output_distances.begin()),
     thrust::equal_to<uint32_t>(),  // comparator
     // binop to select the point/linestring pair with the smallest distance
-    cuda::proclaim_return_type<thrust::tuple<uint32_t, uint32_t, T>>(
+    cuda::proclaim_return_type<cuda::std::tuple<uint32_t, uint32_t, T>>(
       [] __device__(auto const& lhs, auto const& rhs) {
-        T const& d_lhs = thrust::get<2>(lhs);
-        T const& d_rhs = thrust::get<2>(rhs);
+        T const& d_lhs = cuda::std::get<2>(lhs);
+        T const& d_rhs = cuda::std::get<2>(rhs);
         // If lhs distance is 0, choose rhs
         if (d_lhs == T{0}) { return rhs; }
         // if rhs distance is 0, choose lhs
         if (d_rhs == T{0}) { return lhs; }
         // If distances to lhs/rhs are the same, choose linestring with smallest id
         if (d_lhs == d_rhs) {
-          auto const& i_lhs = thrust::get<1>(lhs);
-          auto const& i_rhs = thrust::get<1>(rhs);
+          auto const& i_lhs = cuda::std::get<1>(lhs);
+          auto const& i_rhs = cuda::std::get<1>(rhs);
           return i_lhs < i_rhs ? lhs : rhs;
         }
         // Otherwise choose linestring with smallest distance

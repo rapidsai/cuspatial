@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,18 +18,18 @@
 
 #include <rmm/cuda_stream_view.hpp>
 
-#include <thrust/tuple.h>
+#include <cuda/std/tuple>
 
 namespace cuspatial {
 namespace detail {
 
 template <typename T>
 struct tuple_sum {
-  inline __device__ thrust::tuple<T, T> operator()(thrust::tuple<T, T> const& a,
-                                                   thrust::tuple<T, T> const& b)
+  inline __device__ cuda::std::tuple<T, T> operator()(cuda::std::tuple<T, T> const& a,
+                                                      cuda::std::tuple<T, T> const& b)
   {
-    return thrust::make_tuple(thrust::get<0>(a) + thrust::get<0>(b),
-                              thrust::get<1>(a) + thrust::get<1>(b));
+    return cuda::std::make_tuple(cuda::std::get<0>(a) + cuda::std::get<0>(b),
+                                 cuda::std::get<1>(a) + cuda::std::get<1>(b));
   }
 };
 

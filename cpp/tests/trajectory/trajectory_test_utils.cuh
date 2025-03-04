@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -227,15 +227,15 @@ struct trajectory_test_data {
   }
 
   struct duration_functor {
-    using id_and_timestamp = thrust::tuple<std::int32_t, time_point>;
+    using id_and_timestamp = cuda::std::tuple<std::int32_t, time_point>;
 
     __host__ __device__ time_point::rep operator()(id_and_timestamp const& p0,
                                                    id_and_timestamp const& p1)
     {
-      auto const id0 = thrust::get<0>(p0);
-      auto const id1 = thrust::get<0>(p1);
-      auto const t0  = thrust::get<1>(p0);
-      auto const t1  = thrust::get<1>(p1);
+      auto const id0 = cuda::std::get<0>(p0);
+      auto const id1 = cuda::std::get<0>(p1);
+      auto const t0  = cuda::std::get<1>(p0);
+      auto const t1  = cuda::std::get<1>(p1);
 
       if (id0 == id1) { return (t1 - t0).count(); }
       return 0;
@@ -243,14 +243,14 @@ struct trajectory_test_data {
   };
 
   struct distance_functor {
-    using id_and_position = thrust::tuple<std::int32_t, cuspatial::vec_2d<T>>;
+    using id_and_position = cuda::std::tuple<std::int32_t, cuspatial::vec_2d<T>>;
     __host__ __device__ T operator()(id_and_position const& p0, id_and_position const& p1)
     {
-      auto const id0 = thrust::get<0>(p0);
-      auto const id1 = thrust::get<0>(p1);
+      auto const id0 = cuda::std::get<0>(p0);
+      auto const id1 = cuda::std::get<0>(p1);
       if (id0 == id1) {
-        auto const pos0 = thrust::get<1>(p0);
-        auto const pos1 = thrust::get<1>(p1);
+        auto const pos0 = cuda::std::get<1>(p0);
+        auto const pos1 = cuda::std::get<1>(p1);
         auto const vec  = pos1 - pos0;
         return sqrt(dot(vec, vec));
       }
@@ -259,7 +259,7 @@ struct trajectory_test_data {
   };
 
   struct average_distance_speed_functor {
-    using duration_distance = thrust::tuple<time_point::rep, T, T, T>;
+    using duration_distance = cuda::std::tuple<time_point::rep, T, T, T>;
     using Sec               = typename cuda::std::chrono::seconds;
     using Period =
       typename cuda::std::ratio_divide<typename time_point::period, typename Sec::period>::type;
@@ -268,10 +268,10 @@ struct trajectory_test_data {
                                                      duration_distance const& b)
     {
       auto time_d =
-        time_point::duration(thrust::get<0>(a)) + time_point::duration(thrust::get<0>(b));
+        time_point::duration(cuda::std::get<0>(a)) + time_point::duration(cuda::std::get<0>(b));
       auto time_s =
         static_cast<T>(time_d.count()) * static_cast<T>(Period::num) / static_cast<T>(Period::den);
-      T dist_km   = thrust::get<1>(a) + thrust::get<1>(b);
+      T dist_km   = cuda::std::get<1>(a) + cuda::std::get<1>(b);
       T dist_m    = dist_km * T{1000.0};  // km to m
       T speed_m_s = dist_m / time_s;      // m/ms to m/s
       return {time_d.count(), dist_km, dist_m, speed_m_s};

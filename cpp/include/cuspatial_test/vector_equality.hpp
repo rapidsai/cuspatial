@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -224,7 +224,7 @@ std::pair<rmm::device_vector<vec_2d<T>>, rmm::device_vector<vec_2d<T>>> unpack_v
 
   thrust::transform(pairs.begin(), pairs.end(), zipped_output, [] __device__(Pair const& pair) {
     auto [a, b] = pair;
-    return thrust::make_tuple(a, b);
+    return cuda::std::make_tuple(a, b);
   });
   return {std::move(first), std::move(second)};
 }

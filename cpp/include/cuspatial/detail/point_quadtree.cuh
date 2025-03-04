@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,10 +27,10 @@
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/functional>
+#include <cuda/std/tuple>
 #include <thrust/distance.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
-#include <thrust/tuple.h>
 
 #include <tuple>
 
@@ -111,7 +111,7 @@ inline point_quadtree make_quad_tree(rmm::device_uvector<uint32_t>& keys,
                       offsets.begin(),
                       // return is_internal_node ? lhs : rhs
                       cuda::proclaim_return_type<uint32_t>([] __device__(auto const& t) {
-                        return thrust::get<0>(t) ? thrust::get<1>(t) : thrust::get<2>(t);
+                        return cuda::std::get<0>(t) ? cuda::std::get<1>(t) : cuda::std::get<2>(t);
                       }));
 
     return std::move(offsets);
@@ -129,7 +129,7 @@ inline point_quadtree make_quad_tree(rmm::device_uvector<uint32_t>& keys,
                     lengths.begin(),
                     // return bool ? lhs : rhs
                     cuda::proclaim_return_type<uint32_t>([] __device__(auto const& t) {
-                      return thrust::get<0>(t) ? thrust::get<1>(t) : thrust::get<2>(t);
+                      return cuda::std::get<0>(t) ? cuda::std::get<1>(t) : cuda::std::get<2>(t);
                     }));
 
   // Shrink keys to the number of valid nodes

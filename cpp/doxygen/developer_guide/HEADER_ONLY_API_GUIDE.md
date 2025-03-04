@@ -229,7 +229,7 @@ provided in `type_utils.hpp`.
 So, to refactor the libcudf-based API, we remove the following code.
 
 ```c++
-auto input_tuple = thrust::make_tuple(thrust::make_constant_iterator(static_cast<T>(radius)),
+auto input_tuple = cuda::std::make_tuple(thrust::make_constant_iterator(static_cast<T>(radius)),
                                       a_lon.begin<T>(),
                                       a_lat.begin<T>(),
                                       b_lon.begin<T>(),
@@ -242,11 +242,11 @@ thrust::transform(rmm::exec_policy(stream),
                   input_iter + result->size(),
                   result->mutable_view().begin<T>(),
                   [] __device__(auto inputs) {
-                    return calculate_haversine_distance(thrust::get<0>(inputs),
-                                                        thrust::get<1>(inputs),
-                                                        thrust::get<2>(inputs),
-                                                        thrust::get<3>(inputs),
-                                                        thrust::get<4>(inputs));
+                    return calculate_haversine_distance(cuda::std::get<0>(inputs),
+                                                        cuda::std::get<1>(inputs),
+                                                        cuda::std::get<2>(inputs),
+                                                        cuda::std::get<3>(inputs),
+                                                        cuda::std::get<4>(inputs));
                   });
 ```
 

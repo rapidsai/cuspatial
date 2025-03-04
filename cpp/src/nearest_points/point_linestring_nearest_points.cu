@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,10 +87,10 @@ struct pairwise_point_linestring_nearest_points_impl {
 
     if constexpr (!is_multi_point && !is_multi_linestring) {
       auto output_its = thrust::make_zip_iterator(
-        thrust::make_tuple(thrust::make_discard_iterator(),
-                           thrust::make_discard_iterator(),
-                           segment_idx->mutable_view().begin<cudf::size_type>(),
-                           nearest_points_it));
+        cuda::std::make_tuple(thrust::make_discard_iterator(),
+                              thrust::make_discard_iterator(),
+                              segment_idx->mutable_view().begin<cudf::size_type>(),
+                              nearest_points_it));
 
       pairwise_point_linestring_nearest_points(point_geometry_it,
                                                point_geometry_it + num_pairs + 1,
@@ -114,10 +114,10 @@ struct pairwise_point_linestring_nearest_points_impl {
                                   stream,
                                   mr);
       auto output_its = thrust::make_zip_iterator(
-        thrust::make_tuple(nearest_point_idx->mutable_view().begin<cudf::size_type>(),
-                           thrust::make_discard_iterator(),
-                           segment_idx->mutable_view().begin<cudf::size_type>(),
-                           nearest_points_it));
+        cuda::std::make_tuple(nearest_point_idx->mutable_view().begin<cudf::size_type>(),
+                              thrust::make_discard_iterator(),
+                              segment_idx->mutable_view().begin<cudf::size_type>(),
+                              nearest_points_it));
 
       pairwise_point_linestring_nearest_points(point_geometry_it,
                                                point_geometry_it + num_pairs + 1,
@@ -143,10 +143,10 @@ struct pairwise_point_linestring_nearest_points_impl {
                                   stream,
                                   mr);
       auto output_its = thrust::make_zip_iterator(
-        thrust::make_tuple(thrust::make_discard_iterator(),
-                           nearest_linestring_idx->mutable_view().begin<cudf::size_type>(),
-                           segment_idx->mutable_view().begin<cudf::size_type>(),
-                           nearest_points_it));
+        cuda::std::make_tuple(thrust::make_discard_iterator(),
+                              nearest_linestring_idx->mutable_view().begin<cudf::size_type>(),
+                              segment_idx->mutable_view().begin<cudf::size_type>(),
+                              nearest_points_it));
 
       pairwise_point_linestring_nearest_points(point_geometry_it,
                                                point_geometry_it + num_pairs + 1,
@@ -178,10 +178,10 @@ struct pairwise_point_linestring_nearest_points_impl {
                                   stream,
                                   mr);
       auto output_its = thrust::make_zip_iterator(
-        thrust::make_tuple(nearest_point_idx->mutable_view().begin<cudf::size_type>(),
-                           nearest_linestring_idx->mutable_view().begin<cudf::size_type>(),
-                           segment_idx->mutable_view().begin<cudf::size_type>(),
-                           nearest_points_it));
+        cuda::std::make_tuple(nearest_point_idx->mutable_view().begin<cudf::size_type>(),
+                              nearest_linestring_idx->mutable_view().begin<cudf::size_type>(),
+                              segment_idx->mutable_view().begin<cudf::size_type>(),
+                              nearest_points_it));
 
       pairwise_point_linestring_nearest_points(point_geometry_it,
                                                point_geometry_it + num_pairs + 1,

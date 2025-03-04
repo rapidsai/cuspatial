@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,19 +99,19 @@ CUSPATIAL_KERNEL void pairwise_point_linestring_nearest_points_kernel(
 
           auto distance_nearest_point_pair =
             point_to_segment_distance_squared_nearest_point(c, a, b);
-          auto distance_squared = thrust::get<0>(distance_nearest_point_pair);
+          auto distance_squared = cuda::std::get<0>(distance_nearest_point_pair);
           if (distance_squared < min_distance_squared) {
             min_distance_squared = distance_squared;
             nearest_point_idx    = point_idx - point_start;
             nearest_part_idx     = part_idx - linestring_parts_start;
             nearest_segment_idx  = segment_idx - segment_start;
-            nearest_point        = thrust::get<1>(distance_nearest_point_pair);
+            nearest_point        = cuda::std::get<1>(distance_nearest_point_pair);
           }
         }
       }
     }
-    output_first[idx] =
-      thrust::make_tuple(nearest_point_idx, nearest_part_idx, nearest_segment_idx, nearest_point);
+    output_first[idx] = cuda::std::make_tuple(
+      nearest_point_idx, nearest_part_idx, nearest_segment_idx, nearest_point);
   }
 }
 

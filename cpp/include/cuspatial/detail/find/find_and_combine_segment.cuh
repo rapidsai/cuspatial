@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,13 +84,13 @@ CUSPATIAL_KERNEL void simple_find_and_combine_segments_kernel(OffsetRange offset
  */
 template <typename index_t, typename T>
 struct segment_comparator {
-  bool __device__ operator()(thrust::tuple<index_t, segment<T>> const& lhs,
-                             thrust::tuple<index_t, segment<T>> const& rhs) const
+  bool __device__ operator()(cuda::std::tuple<index_t, segment<T>> const& lhs,
+                             cuda::std::tuple<index_t, segment<T>> const& rhs) const
   {
-    auto lhs_index   = thrust::get<0>(lhs);
-    auto rhs_index   = thrust::get<0>(rhs);
-    auto lhs_segment = thrust::get<1>(lhs);
-    auto rhs_segment = thrust::get<1>(rhs);
+    auto lhs_index   = cuda::std::get<0>(lhs);
+    auto rhs_index   = cuda::std::get<0>(rhs);
+    auto lhs_segment = cuda::std::get<1>(lhs);
+    auto rhs_segment = cuda::std::get<1>(rhs);
 
     // Compare space id
     if (lhs_index == rhs_index) {

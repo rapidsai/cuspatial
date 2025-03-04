@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,16 +80,16 @@ OutputIt trajectory_distances_and_speeds(IndexT num_trajectories,
                     id_point_timestamp + 1,
                     duration_and_distance + 1,
                     [] __device__(auto const& p0, auto const& p1) {
-                      if (thrust::get<0>(p0) == thrust::get<0>(p1)) {  // ids are the same
-                        Point pos0   = thrust::get<1>(p0);
-                        Point pos1   = thrust::get<1>(p1);
-                        Timestamp t0 = thrust::get<2>(p0);
-                        Timestamp t1 = thrust::get<2>(p1);
+                      if (cuda::std::get<0>(p0) == cuda::std::get<0>(p1)) {  // ids are the same
+                        Point pos0   = cuda::std::get<1>(p0);
+                        Point pos1   = cuda::std::get<1>(p1);
+                        Timestamp t0 = cuda::std::get<2>(p0);
+                        Timestamp t1 = cuda::std::get<2>(p1);
                         Point vec    = pos1 - pos0;
                         // duration and distance
-                        return thrust::make_tuple((t1 - t0).count(), sqrt(dot(vec, vec)));
+                        return cuda::std::make_tuple((t1 - t0).count(), sqrt(dot(vec, vec)));
                       }
-                      return thrust::make_tuple(Rep{}, T{});
+                      return cuda::std::make_tuple(Rep{}, T{});
                     });
 
   auto duration_and_distance_tmp = thrust::make_zip_iterator(durations.begin(),
@@ -100,8 +100,8 @@ OutputIt trajectory_distances_and_speeds(IndexT num_trajectories,
   rmm::device_uvector<Rep> durations_tmp(num_trajectories, stream);
   rmm::device_uvector<T> distances_tmp(num_trajectories, stream);
 
-  auto distances_begin = thrust::get<0>(distances_and_speeds_first.get_iterator_tuple());
-  auto speeds_begin    = thrust::get<1>(distances_and_speeds_first.get_iterator_tuple());
+  auto distances_begin = cuda::std::get<0>(distances_and_speeds_first.get_iterator_tuple());
+  auto speeds_begin    = cuda::std::get<1>(distances_and_speeds_first.get_iterator_tuple());
 
   auto duration_distances_and_speed = thrust::make_zip_iterator(
     durations_tmp.begin(), distances_tmp.begin(), distances_begin, speeds_begin);
@@ -119,13 +119,13 @@ OutputIt trajectory_distances_and_speeds(IndexT num_trajectories,
                         duration_distances_and_speed,
                         thrust::equal_to<Id>(),
                         [] __device__(auto a, auto b) {
-                          auto time_d = Dur(thrust::get<0>(a)) + Dur(thrust::get<0>(b));
+                          auto time_d = Dur(cuda::std::get<0>(a)) + Dur(cuda::std::get<0>(b));
                           auto time_s = static_cast<T>(time_d.count()) *
                                         static_cast<T>(Period::num) / static_cast<T>(Period::den);
-                          T dist_km   = thrust::get<1>(a) + thrust::get<1>(b);
+                          T dist_km   = cuda::std::get<1>(a) + cuda::std::get<1>(b);
                           T dist_m    = dist_km * T{1000.0};  // km to m
                           T speed_m_s = dist_m / time_s;      // m/ms to m/s
-                          return thrust::make_tuple(time_d.count(), dist_km, dist_m, speed_m_s);
+                          return cuda::std::make_tuple(time_d.count(), dist_km, dist_m, speed_m_s);
                         });
 
   // check for errors

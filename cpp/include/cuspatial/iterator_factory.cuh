@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
 
+#include <cuda/std/tuple>
 #include <thrust/binary_search.h>
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/iterator/counting_iterator.h>
@@ -29,7 +30,6 @@
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
-#include <thrust/tuple.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <type_traits>
@@ -53,9 +53,9 @@ inline CUSPATIAL_HOST_DEVICE auto make_counting_transform_iterator(IndexType sta
  */
 template <typename T, typename VectorType = vec_2d<T>>
 struct tuple_to_vec_2d {
-  __device__ VectorType operator()(thrust::tuple<T, T> const& pos)
+  __device__ VectorType operator()(cuda::std::tuple<T, T> const& pos)
   {
-    return VectorType{thrust::get<0>(pos), thrust::get<1>(pos)};
+    return VectorType{cuda::std::get<0>(pos), cuda::std::get<1>(pos)};
   }
 };
 
@@ -65,9 +65,9 @@ struct tuple_to_vec_2d {
  */
 template <typename T, typename VectorType = vec_2d<T>>
 struct vec_2d_to_tuple {
-  __device__ thrust::tuple<T, T> operator()(VectorType const& xy)
+  __device__ cuda::std::tuple<T, T> operator()(VectorType const& xy)
   {
-    return thrust::make_tuple(xy.x, xy.y);
+    return cuda::std::make_tuple(xy.x, xy.y);
   }
 };
 
@@ -77,9 +77,9 @@ struct vec_2d_to_tuple {
  */
 template <typename T, typename Box = box<T>>
 struct box_to_tuple {
-  __device__ thrust::tuple<T, T, T, T> operator()(Box const& box)
+  __device__ cuda::std::tuple<T, T, T, T> operator()(Box const& box)
   {
-    return thrust::make_tuple(box.v1.x, box.v1.y, box.v2.x, box.v2.y);
+    return cuda::std::make_tuple(box.v1.x, box.v1.y, box.v2.x, box.v2.y);
   }
 };
 
@@ -89,10 +89,10 @@ struct box_to_tuple {
  */
 template <typename T, typename Vertex = vec_2d<T>>
 struct vec_2d_tuple_to_box {
-  __device__ box<T, Vertex> operator()(thrust::tuple<Vertex, Vertex> pair)
+  __device__ box<T, Vertex> operator()(cuda::std::tuple<Vertex, Vertex> pair)
   {
-    auto v1 = thrust::get<0>(pair);
-    auto v2 = thrust::get<1>(pair);
+    auto v1 = cuda::std::get<0>(pair);
+    auto v2 = cuda::std::get<1>(pair);
     return {v1, v2};
   }
 };
@@ -258,7 +258,7 @@ template <typename FirstIter, typename SecondIter>
 auto make_vec_2d_output_iterator(FirstIter first, SecondIter second)
 {
   using T         = typename std::iterator_traits<FirstIter>::value_type;
-  auto zipped_out = thrust::make_zip_iterator(thrust::make_tuple(first, second));
+  auto zipped_out = thrust::make_zip_iterator(first, second);
   return thrust::transform_output_iterator(zipped_out, detail::vec_2d_to_tuple<T>());
 }
 
@@ -280,8 +280,7 @@ auto make_vec_2d_output_iterator(Iter d_points_begin)
   auto odd_positions = thrust::make_permutation_iterator(
     thrust::next(d_points_begin),
     detail::make_counting_transform_iterator(0, fixed_stride_2_functor));
-  auto zipped_outputs =
-    thrust::make_zip_iterator(thrust::make_tuple(even_positions, odd_positions));
+  auto zipped_outputs = thrust::make_zip_iterator(even_positions, odd_positions);
   return thrust::make_transform_output_iterator(zipped_outputs, detail::vec_2d_to_tuple<T>());
 }
 

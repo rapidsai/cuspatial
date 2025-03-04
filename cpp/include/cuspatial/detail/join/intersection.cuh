@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <cuda/std/tuple>
 #include <thrust/copy.h>
 #include <thrust/distance.h>
 #include <thrust/iterator/permutation_iterator.h>
@@ -31,7 +32,6 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/remove.h>
 #include <thrust/transform.h>
-#include <thrust/tuple.h>
 
 #include <utility>
 
@@ -52,7 +52,7 @@ inline int32_t copy_leaf_intersections(InputIterator input_begin,
     output_begin,
     thrust::copy_if(
       rmm::exec_policy(stream), input_begin, input_end, output_begin, [] __device__(auto const& t) {
-        return thrust::get<0>(t) == leaf_indicator;
+        return cuda::std::get<0>(t) == leaf_indicator;
       }));
 }
 
@@ -66,7 +66,7 @@ inline int32_t remove_non_quad_intersections(InputIterator input_begin,
     output_begin,
     thrust::remove_if(
       rmm::exec_policy(stream), input_begin, input_end, output_begin, [] __device__(auto const& t) {
-        return thrust::get<0>(t) != quad_indicator;
+        return cuda::std::get<0>(t) != quad_indicator;
       }));
 }
 
@@ -98,13 +98,13 @@ inline std::pair<int32_t, int32_t> find_intersections(point_quadtree_ref quadtre
     node_pairs,
     [v_min, scale, max_depth, nodes = nodes_first, bboxes = bounding_box_first] __device__(
       auto const& node_and_bbox) {
-      auto const& node_idx = thrust::get<0>(node_and_bbox);
-      auto const& bbox_idx = thrust::get<1>(node_and_bbox);
+      auto const& node_idx = cuda::std::get<0>(node_and_bbox);
+      auto const& bbox_idx = cuda::std::get<1>(node_and_bbox);
 
       auto const& node                = nodes[node_idx];
-      uint32_t const& key             = thrust::get<0>(node);
-      uint8_t const& level            = thrust::get<1>(node);
-      uint8_t const& is_internal_node = thrust::get<2>(node);
+      uint32_t const& key             = cuda::std::get<0>(node);
+      uint8_t const& level            = cuda::std::get<1>(node);
+      uint8_t const& is_internal_node = cuda::std::get<2>(node);
 
       box<T> const bbox        = bboxes[bbox_idx];
       vec_2d<T> const bbox_min = bbox.v1;
@@ -121,10 +121,10 @@ inline std::pair<int32_t, int32_t> find_intersections(point_quadtree_ref quadtre
       if ((node_x_min > bbox_max.x) || (node_x_max < bbox_min.x) || (node_y_min > bbox_max.y) ||
           (node_y_max < bbox_min.y)) {
         // if no overlap, return type = none_indicator
-        return thrust::make_tuple(none_indicator, level, node_idx, bbox_idx);
+        return cuda::std::make_tuple(none_indicator, level, node_idx, bbox_idx);
       }
       // otherwise return type = leaf_indicator (0) or quad_indicator (1)
-      return thrust::make_tuple(is_internal_node, level, node_idx, bbox_idx);
+      return cuda::std::make_tuple(is_internal_node, level, node_idx, bbox_idx);
     });
 
   auto num_leaves = copy_leaf_intersections(node_pairs, node_pairs + num_pairs, leaf_pairs, stream);

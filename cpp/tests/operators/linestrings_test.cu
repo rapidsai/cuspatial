@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,13 +81,14 @@ CUSPATIAL_KERNEL void compute_intersection(segment<T> ab,
 
 template <typename T>
 struct unpack_optional_segment {
-  thrust::tuple<optional_vec2d<T>, optional_vec2d<T>> CUSPATIAL_HOST_DEVICE
+  cuda::std::tuple<optional_vec2d<T>, optional_vec2d<T>> CUSPATIAL_HOST_DEVICE
   operator()(thrust::optional<segment<T>> segment)
   {
     if (segment.has_value())
-      return thrust::make_tuple(segment.value().v1, segment.value().v2);
+      return cuda::std::make_tuple(segment.value().v1, segment.value().v2);
     else
-      return thrust::tuple<optional_vec2d<T>, optional_vec2d<T>>{thrust::nullopt, thrust::nullopt};
+      return cuda::std::tuple<optional_vec2d<T>, optional_vec2d<T>>{thrust::nullopt,
+                                                                    thrust::nullopt};
   }
 };
 
