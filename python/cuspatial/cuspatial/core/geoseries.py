@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024, NVIDIA CORPORATION
+# Copyright (c) 2020-2025, NVIDIA CORPORATION
 
 from functools import cached_property
 from numbers import Integral
@@ -721,7 +721,7 @@ class GeoSeries(cudf.Series):
         return cls._from_column(
             GeoColumn._from_multipoints_xy(
                 as_column(multipoints_xy, dtype=coords_dtype),
-                as_column(geometry_offset, dtype="int32"),
+                as_column(geometry_offset, dtype=np.dtype(np.int32)),
             )
         )
 
@@ -767,8 +767,8 @@ class GeoSeries(cudf.Series):
         return cls._from_column(
             GeoColumn._from_linestrings_xy(
                 as_column(linestrings_xy, dtype=coords_dtype),
-                as_column(part_offset, dtype="int32"),
-                as_column(geometry_offset, dtype="int32"),
+                as_column(part_offset, dtype=np.dtype(np.int32)),
+                as_column(geometry_offset, dtype=np.dtype(np.int32)),
             )
         )
 
@@ -817,9 +817,9 @@ class GeoSeries(cudf.Series):
         return cls._from_column(
             GeoColumn._from_polygons_xy(
                 as_column(polygons_xy, dtype=coords_dtype),
-                as_column(ring_offset, dtype="int32"),
-                as_column(part_offset, dtype="int32"),
-                as_column(geometry_offset, dtype="int32"),
+                as_column(ring_offset, dtype=np.dtype(np.int32)),
+                as_column(part_offset, dtype=np.dtype(np.int32)),
+                as_column(geometry_offset, dtype=np.dtype(np.int32)),
             )
         )
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+# Copyright (c) 2020-2025, NVIDIA CORPORATION.
 
 from typing import TypeVar
 
@@ -39,7 +39,7 @@ def normalize_point_columns(*cols):
     return (x.astype(dtype) for x in cols)
 
 
-def normalize_timestamp_column(ts, fallback_dtype="datetime64[ms]"):
+def normalize_timestamp_column(ts, fallback_dtype=np.dtype("datetime64[ms]")):
     """
     Normalize the input timestamp column to one of the cuDF timestamp dtypes.
 

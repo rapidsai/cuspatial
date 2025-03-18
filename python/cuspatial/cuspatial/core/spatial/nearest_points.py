@@ -1,5 +1,7 @@
 # Copyright (c) 2024-2025, NVIDIA CORPORATION.
 
+import numpy as np
+
 import cudf
 from cudf.core.column import ColumnBase, as_column
 
@@ -104,7 +106,9 @@ def pairwise_point_linestring_nearest_points(
     )
 
     if not point_geometry_id:
-        point_geometry_id = as_column(0, length=len(points), dtype="int32")
+        point_geometry_id = as_column(
+            0, length=len(points), dtype=np.dtype(np.int32)
+        )
     else:
         point_geometry_id = ColumnBase.from_pylibcudf(point_geometry_id)
 
