@@ -7,6 +7,7 @@ package_name=$1
 package_dir=$2
 package_type=$3
 
+wheel_dir=${RAPIDS_WHEEL_BLD_OUTPUT_DIR}
 # The 'libcuspatial' wheel should package 'libcuspatial.so', and all others
 # should exclude it (they dynamically load it if they need it).
 #
@@ -47,10 +48,9 @@ rapids-pip-retry wheel \
 
 sccache --show-adv-stats
 
-mkdir -p final_dist
 python -m auditwheel repair \
     "${EXCLUDE_ARGS[@]}" \
-    -w final_dist \
+    -w "${wheel_dir}" \
     dist/*
 
-RAPIDS_PY_WHEEL_NAME="${package_name}_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 "${package_type}" final_dist
+RAPIDS_PY_WHEEL_NAME="${package_name}_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 "${package_type}" "${wheel_dir}"

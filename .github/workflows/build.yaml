@@ -77,6 +77,8 @@ jobs:
       sha: ${{ inputs.sha }}
       date: ${{ inputs.date }}
       script: ci/build_wheel_libcuspatial.sh
+      package-type: cpp
+      wheel-name: libcuspatial
   wheel-publish-libcuspatial:
     needs: wheel-build-libcuspatial
     secrets: inherit
@@ -98,6 +100,8 @@ jobs:
       sha: ${{ inputs.sha }}
       date: ${{ inputs.date }}
       script: ci/build_wheel_cuspatial.sh
+      package-type: python
+      wheel-name: cuspatial
   wheel-publish-cuspatial:
     needs: wheel-build-cuspatial
     secrets: inherit
@@ -118,6 +122,8 @@ jobs:
       sha: ${{ inputs.sha }}
       date: ${{ inputs.date }}
       script: ci/build_wheel_cuproj.sh
+      package-type: python
+      wheel-name: cuproj
   wheel-publish-cuproj:
     needs: wheel-build-cuproj
     secrets: inherit
