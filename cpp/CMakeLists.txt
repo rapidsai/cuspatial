@@ -103,6 +103,12 @@ include(cmake/Modules/ConfigureCUDA.cmake)
 
 # add third party dependencies using CPM
 rapids_cpm_init()
+
+# Add cuProj before any dependencies, because it needs to define proj before cudf defines zstd.
+# This avoids a bug where both of those dependencies specify conflicting
+# `uninstall` targets.
+add_subdirectory(cuproj)
+
 # find or add cuDF
 include(cmake/thirdparty/get_cudf.cmake)
 # find or install GoogleTest
@@ -115,9 +121,6 @@ include (cmake/thirdparty/get_ranger.cmake)
 
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
-
-# cuProj
-add_subdirectory(cuproj)
 
 add_library(cuspatial
     src/bounding_boxes/linestring_bounding_boxes.cu
