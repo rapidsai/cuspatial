@@ -91,6 +91,7 @@ include(cmake/modules/ConfigureCUDA.cmake)
 # add third party dependencies using CPM
 rapids_cpm_init()
 
+include(cmake/thirdparty/get_nvtx.cmake)
 include(cmake/thirdparty/get_rmm.cmake)
 
 # find or install GoogleTest and Proj
