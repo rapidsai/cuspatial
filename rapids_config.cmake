@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2018-2024, NVIDIA CORPORATION.
+# Copyright (c) 2018-2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -33,4 +33,9 @@ if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/CUSPATIAL_RAPIDS-${RAPIDS_VERSION_MAJ
     "${CMAKE_CURRENT_BINARY_DIR}/CUSPATIAL_RAPIDS-${RAPIDS_VERSION_MAJOR_MINOR}.cmake"
   )
 endif()
+
+# TODO: Remove this temporary branch
+set(rapids-cmake-repo KyleFromNVIDIA/rapids-cmake)
+set(rapids-cmake-branch fix-nvtx3-export)
+
 include("${CMAKE_CURRENT_BINARY_DIR}/CUSPATIAL_RAPIDS-${RAPIDS_VERSION_MAJOR_MINOR}.cmake")
