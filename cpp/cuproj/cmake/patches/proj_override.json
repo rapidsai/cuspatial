@@ -1,0 +1,17 @@
+{
+  "packages": {
+    "PROJ": {
+      "version": "9.2.0",
+      "git_url": "https://github.com/osgeo/proj.git",
+      "git_tag": "${version}",
+      "patches": [
+        {
+          "file": "${current_json_dir}/proj.patch",
+          "issue": "Remove uninstall target",
+          "fixed_in": "",
+          "build": true
+        }
+      ]
+    }
+  }
+}
