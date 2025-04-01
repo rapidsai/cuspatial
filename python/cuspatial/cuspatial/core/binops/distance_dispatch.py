@@ -1,5 +1,7 @@
 # Copyright (c) 2024-2025, NVIDIA CORPORATION
 
+import numpy as np
+
 import cudf
 from cudf.core.column import ColumnBase, as_column
 
@@ -198,11 +200,11 @@ class DistanceDispatch:
         result = as_column(
             float("nan"),
             length=len(self._res_index),
-            dtype="float64",
+            dtype=np.dtype(np.float64),
             nan_as_null=False,
         )
         scatter_map = as_column(
-            range(len(self._res_index)), dtype="int32"
+            range(len(self._res_index)), dtype=np.dtype(np.int32)
         ).apply_boolean_mask(self._non_null_mask)
 
         result[scatter_map] = ColumnBase.from_pylibcudf(dist)
