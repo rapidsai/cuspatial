@@ -70,8 +70,8 @@ outputs:
       script:
         content: |
           cmake --install cpp/build
-      # dynamic_linking:
-      #   overlinking_behavior: "error"
+      dynamic_linking:
+        overlinking_behavior: "error"
       prefix_detection:
         ignore:
           # See https://github.com/rapidsai/build-planning/issues/160
@@ -83,6 +83,7 @@ outputs:
         - ${{ stdlib("c") }}
       host:
         - cuda-version =${{ cuda_version }}
+        - libcudf =${{ minor_version }}
         - if: cuda_major != "11"
           then: cuda-cudart-dev
       run:
@@ -100,6 +101,8 @@ outputs:
           - cuda-version
           - librmm
           - libcudf
+          - libsqlite
+          - proj
           - if: cuda_major == "11"
             then: cudatoolkit
     tests:
@@ -117,19 +120,17 @@ outputs:
       script:
         content: |
           cmake --install cpp/build --component testing
-      # dynamic_linking:
-      #   overlinking_behavior: "error"
-      # prefix_detection:
-      #   ignore:
-      #     # See https://github.com/rapidsai/build-planning/issues/160
-      #     - lib/libcuspatial.so
+      dynamic_linking:
+        overlinking_behavior: "error"
       string: cuda${{ cuda_major }}_${{ date_string }}_${{ head_rev }}
     requirements:
       build:
         - cmake ${{ cmake_version }}
         - ${{ stdlib("c") }}
       host:
+        - ${{ pin_subpackage("libcuspatial", exact=True) }}
         - cuda-version =${{ cuda_version }}
+        - libcudf =${{ minor_version }}
         - if: cuda_major == "11"
           then: cudatoolkit
           else: cuda-cudart-dev
@@ -141,6 +142,11 @@ outputs:
       ignore_run_exports:
         by_name:
           - cuda-cudart
+          - cuda-version
+          - libcudf
+          - librmm
+          - libsqlite
+          - proj
           - if: cuda_major == "11"
             then: cudatoolkit
     about:
