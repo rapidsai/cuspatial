@@ -54,7 +54,7 @@ rapids-logger "Building cuproj"
 rattler-build build --recipe conda/recipes/cuproj \
                     --experimental \
                     --no-build-id \
-                    -- test skip \
+                    --test skip \
                     --channel-priority disabled \
                     --output-dir "$RAPIDS_CONDA_BLD_OUTPUT_DIR" \
                     "${RATTLER_CHANNELS[@]}"
