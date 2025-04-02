@@ -29,12 +29,14 @@ sccache --zero-stats
 
 rapids-logger "Building cuspatial"
 
+# TODO: remove `--test skip` when importing on a CPU node works correctly
 # --no-build-id allows for caching with `sccache`
 # more info is available at
 # https://rattler.build/latest/tips_and_tricks/#using-sccache-or-ccache-with-rattler-build
 rattler-build build --recipe conda/recipes/cuspatial \
                     --experimental \
                     --no-build-id \
+                    --test skip \
                     --channel-priority disabled \
                     --output-dir "$RAPIDS_CONDA_BLD_OUTPUT_DIR" \
                     "${RATTLER_CHANNELS[@]}"
@@ -45,12 +47,14 @@ sccache --zero-stats
 
 rapids-logger "Building cuproj"
 
+# TODO: remove `--test skip` when importing on a CPU node works correctly
 # --no-build-id allows for caching with `sccache`
 # more info is available at
 # https://rattler.build/latest/tips_and_tricks/#using-sccache-or-ccache-with-rattler-build
 rattler-build build --recipe conda/recipes/cuproj \
                     --experimental \
                     --no-build-id \
+                    -- test skip \
                     --channel-priority disabled \
                     --output-dir "$RAPIDS_CONDA_BLD_OUTPUT_DIR" \
                     "${RATTLER_CHANNELS[@]}"
