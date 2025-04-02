@@ -80,6 +80,7 @@ requirements:
     - ${{ pin_compatible("cuda-version", upper_bound="x", lower_bound="x") }}
     - cudf =${{ minor_version }}
     - geopandas >=1.0.0
+    - libcuspatial =${{ minor_version }}
     - numpy >=1.23,<3.0a0
     - pylibcudf =${{ minor_version }}
     - python
