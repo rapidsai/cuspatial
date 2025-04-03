@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,8 @@
 #include <cuspatial/range/multipoint_range.cuh>
 #include <cuspatial/traits.hpp>
 
+#include <cuda/std/iterator>
 #include <thrust/binary_search.h>
-#include <thrust/distance.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -64,7 +64,7 @@ struct to_multilinestring_functor {
   CUSPATIAL_HOST_DEVICE auto operator()(difference_type i)
   {
     return multilinestring_ref{_part_begin + _geometry_begin[i],
-                               thrust::next(_part_begin + _geometry_begin[i + 1]),
+                               cuda::std::next(_part_begin + _geometry_begin[i + 1]),
                                _point_begin,
                                _point_end};
   }
@@ -100,21 +100,21 @@ template <typename GeometryIterator, typename PartIterator, typename VecIterator
 CUSPATIAL_HOST_DEVICE auto
 multilinestring_range<GeometryIterator, PartIterator, VecIterator>::num_multilinestrings()
 {
-  return thrust::distance(_geometry_begin, _geometry_end) - 1;
+  return cuda::std::distance(_geometry_begin, _geometry_end) - 1;
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto
 multilinestring_range<GeometryIterator, PartIterator, VecIterator>::num_linestrings()
 {
-  return thrust::distance(_part_begin, _part_end) - 1;
+  return cuda::std::distance(_part_begin, _part_end) - 1;
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto
 multilinestring_range<GeometryIterator, PartIterator, VecIterator>::num_points()
 {
-  return thrust::distance(_point_begin, _point_end);
+  return cuda::std::distance(_point_begin, _point_end);
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
@@ -138,7 +138,7 @@ CUSPATIAL_HOST_DEVICE auto
 multilinestring_range<GeometryIterator, PartIterator, VecIterator>::part_idx_from_point_idx(
   IndexType point_idx)
 {
-  return thrust::distance(_part_begin, _part_iter_from_point_idx(point_idx));
+  return cuda::std::distance(_part_begin, _part_iter_from_point_idx(point_idx));
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
@@ -148,7 +148,7 @@ CUSPATIAL_HOST_DEVICE
   multilinestring_range<GeometryIterator, PartIterator, VecIterator>::part_idx_from_segment_idx(
     IndexType segment_idx)
 {
-  auto part_idx = thrust::distance(_part_begin, _part_iter_from_point_idx(segment_idx));
+  auto part_idx = cuda::std::distance(_part_begin, _part_iter_from_point_idx(segment_idx));
   if (not is_valid_segment_id(segment_idx, part_idx)) return thrust::nullopt;
   return part_idx;
 }
@@ -159,7 +159,7 @@ CUSPATIAL_HOST_DEVICE auto
 multilinestring_range<GeometryIterator, PartIterator, VecIterator>::geometry_idx_from_part_idx(
   IndexType part_idx)
 {
-  return thrust::distance(_geometry_begin, _geometry_iter_from_part_idx(part_idx));
+  return cuda::std::distance(_geometry_begin, _geometry_iter_from_part_idx(part_idx));
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
@@ -213,8 +213,8 @@ CUSPATIAL_HOST_DEVICE auto multilinestring_range<GeometryIterator, PartIterator,
   multilinestring_point_count_begin()
 {
   auto multilinestring_offset_it = thrust::make_permutation_iterator(_part_begin, _geometry_begin);
-  auto paired_it =
-    thrust::make_zip_iterator(multilinestring_offset_it, thrust::next(multilinestring_offset_it));
+  auto paired_it                 = thrust::make_zip_iterator(multilinestring_offset_it,
+                                             cuda::std::next(multilinestring_offset_it));
   return thrust::make_transform_iterator(paired_it, detail::offset_pair_to_count_functor{});
 }
 
@@ -229,7 +229,7 @@ template <typename GeometryIterator, typename PartIterator, typename VecIterator
 CUSPATIAL_HOST_DEVICE auto multilinestring_range<GeometryIterator, PartIterator, VecIterator>::
   multilinestring_linestring_count_begin()
 {
-  auto paired_it = thrust::make_zip_iterator(_geometry_begin, thrust::next(_geometry_begin));
+  auto paired_it = thrust::make_zip_iterator(_geometry_begin, cuda::std::next(_geometry_begin));
   return thrust::make_transform_iterator(paired_it, detail::offset_pair_to_count_functor{});
 }
 
@@ -252,10 +252,11 @@ CUSPATIAL_HOST_DEVICE auto
 multilinestring_range<GeometryIterator, PartIterator, VecIterator>::as_multipoint_range()
 {
   auto multipoint_geometry_it = thrust::make_permutation_iterator(_part_begin, _geometry_begin);
-  return multipoint_range{multipoint_geometry_it,
-                          multipoint_geometry_it + thrust::distance(_geometry_begin, _geometry_end),
-                          _point_begin,
-                          _point_end};
+  return multipoint_range{
+    multipoint_geometry_it,
+    multipoint_geometry_it + cuda::std::distance(_geometry_begin, _geometry_end),
+    _point_begin,
+    _point_end};
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
@@ -273,7 +274,7 @@ CUSPATIAL_HOST_DEVICE auto
 multilinestring_range<GeometryIterator, PartIterator, VecIterator>::_part_iter_from_point_idx(
   IndexType point_idx)
 {
-  return thrust::prev(thrust::upper_bound(thrust::seq, _part_begin, _part_end, point_idx));
+  return cuda::std::prev(thrust::upper_bound(thrust::seq, _part_begin, _part_end, point_idx));
 }
 
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
@@ -282,7 +283,8 @@ CUSPATIAL_HOST_DEVICE auto
 multilinestring_range<GeometryIterator, PartIterator, VecIterator>::_geometry_iter_from_part_idx(
   IndexType part_idx)
 {
-  return thrust::prev(thrust::upper_bound(thrust::seq, _geometry_begin, _geometry_end, part_idx));
+  return cuda::std::prev(
+    thrust::upper_bound(thrust::seq, _geometry_begin, _geometry_end, part_idx));
 }
 
 }  // namespace cuspatial

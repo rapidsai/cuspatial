@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
 #include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/traits.hpp>
 
-#include <thrust/distance.h>
+#include <cuda/std/iterator>
 #include <thrust/iterator/counting_iterator.h>
 
 namespace cuspatial {
@@ -63,7 +63,7 @@ class enumerate_range {
   {
     return make_counting_transform_iterator(0, to_indexed_pair_functor{_begin});
   }
-  CUSPATIAL_HOST_DEVICE auto end() { return begin() + thrust::distance(_begin, _end); }
+  CUSPATIAL_HOST_DEVICE auto end() { return begin() + cuda::std::distance(_begin, _end); }
 
  protected:
   Iterator _begin;

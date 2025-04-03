@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,8 @@
 #include <rmm/exec_policy.hpp>
 
 #include <cuda/atomic>
-#include <thrust/advance.h>
+#include <cuda/std/iterator>
 #include <thrust/binary_search.h>
-#include <thrust/distance.h>
 #include <thrust/execution_policy.h>
 #include <thrust/fill.h>
 #include <thrust/memory.h>
@@ -92,7 +91,7 @@ CUSPATIAL_KERNEL void kernel_hausdorff(
     auto const lhs_space_iter =
       thrust::upper_bound(thrust::seq, space_offsets, space_offsets + num_spaces, lhs_p_idx);
     // determine the LHS space this point belongs to.
-    Index const lhs_space_idx = thrust::distance(space_offsets, thrust::prev(lhs_space_iter));
+    Index const lhs_space_idx = cuda::std::distance(space_offsets, cuda::std::prev(lhs_space_iter));
 
     // get the coordinates of this LHS point.
     Point const lhs_p = points[lhs_p_idx];

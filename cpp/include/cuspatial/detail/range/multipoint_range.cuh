@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,8 @@
 #include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/traits.hpp>
 
+#include <cuda/std/iterator>
 #include <thrust/binary_search.h>
-#include <thrust/distance.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/pair.h>
 
@@ -76,13 +76,13 @@ CUSPATIAL_HOST_DEVICE multipoint_range<GeometryIterator, VecIterator>::multipoin
 template <typename GeometryIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto multipoint_range<GeometryIterator, VecIterator>::num_multipoints()
 {
-  return thrust::distance(_geometry_begin, _geometry_end) - 1;
+  return cuda::std::distance(_geometry_begin, _geometry_end) - 1;
 }
 
 template <typename GeometryIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto multipoint_range<GeometryIterator, VecIterator>::num_points()
 {
-  return thrust::distance(_points_begin, _points_end);
+  return cuda::std::distance(_points_begin, _points_end);
 }
 
 template <typename GeometryIterator, typename VecIterator>
@@ -127,7 +127,7 @@ template <typename IndexType>
 CUSPATIAL_HOST_DEVICE auto multipoint_range<GeometryIterator, VecIterator>::operator[](
   IndexType idx)
 {
-  return *(thrust::next(begin(), idx));
+  return *(cuda::std::next(begin(), idx));
 }
 
 template <typename GeometryIterator, typename VecIterator>
@@ -135,9 +135,9 @@ template <typename IndexType>
 CUSPATIAL_HOST_DEVICE auto
 multipoint_range<GeometryIterator, VecIterator>::geometry_idx_from_point_idx(IndexType idx) const
 {
-  return thrust::distance(
+  return cuda::std::distance(
     _geometry_begin,
-    thrust::prev(thrust::upper_bound(thrust::seq, _geometry_begin, _geometry_end, idx)));
+    cuda::std::prev(thrust::upper_bound(thrust::seq, _geometry_begin, _geometry_end, idx)));
 }
 
 template <typename GeometryIterator, typename VecIterator>

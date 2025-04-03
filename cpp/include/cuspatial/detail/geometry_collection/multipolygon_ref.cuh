@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 #include <cuspatial/geometry/polygon_ref.cuh>
 #include <cuspatial/iterator_factory.cuh>
 
+#include <cuda/std/iterator>
 #include <thrust/iterator/transform_iterator.h>
 
 namespace cuspatial {
@@ -45,7 +46,7 @@ struct to_polygon_functor {
   CUSPATIAL_HOST_DEVICE auto operator()(difference_type i)
   {
     return polygon_ref{ring_begin + part_begin[i],
-                       thrust::next(ring_begin + part_begin[i + 1]),
+                       cuda::std::next(ring_begin + part_begin[i + 1]),
                        point_begin,
                        point_end};
   }
@@ -75,7 +76,7 @@ template <typename PartIterator, typename RingIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto multipolygon_ref<PartIterator, RingIterator, VecIterator>::num_polygons()
   const
 {
-  return thrust::distance(_part_begin, _part_end) - 1;
+  return cuda::std::distance(_part_begin, _part_end) - 1;
 }
 
 template <typename PartIterator, typename RingIterator, typename VecIterator>
@@ -112,14 +113,14 @@ template <typename PartIterator, typename RingIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto multipolygon_ref<PartIterator, RingIterator, VecIterator>::point_begin()
   const
 {
-  return thrust::next(_point_begin, *thrust::next(_ring_begin, *_part_begin));
+  return cuda::std::next(_point_begin, *cuda::std::next(_ring_begin, *_part_begin));
 }
 
 template <typename PartIterator, typename RingIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto multipolygon_ref<PartIterator, RingIterator, VecIterator>::point_end()
   const
 {
-  return thrust::next(_point_begin, *thrust::next(_ring_begin, *thrust::prev(_part_end)));
+  return cuda::std::next(_point_begin, *cuda::std::next(_ring_begin, *cuda::std::prev(_part_end)));
 }
 
 template <typename PartIterator, typename RingIterator, typename VecIterator>

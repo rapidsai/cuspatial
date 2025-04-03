@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@
 
 #include <rmm/cuda_stream_view.hpp>
 
+#include <cuda/std/iterator>
+
 namespace cuspatial {
 namespace detail {
 
@@ -37,7 +39,7 @@ void zero_data_async(Iterator begin, Iterator end, rmm::cuda_stream_view stream)
 {
   using value_type = iterator_value_type<Iterator>;
   auto dst         = thrust::raw_pointer_cast(&*begin);
-  auto size        = thrust::distance(begin, end) * sizeof(value_type);
+  auto size        = cuda::std::distance(begin, end) * sizeof(value_type);
 
   cudaMemsetAsync(dst, 0, size, stream.value());
 }

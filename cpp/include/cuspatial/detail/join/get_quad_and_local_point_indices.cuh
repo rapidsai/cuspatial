@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 #pragma once
 
+#include <cuda/std/iterator>
 #include <thrust/binary_search.h>
-#include <thrust/distance.h>
 #include <thrust/execution_policy.h>
 
 namespace cuspatial {
@@ -39,7 +39,7 @@ inline __device__ std::pair<IndexType, IndexType> get_quad_and_local_point_indic
     thrust::upper_bound(thrust::seq, point_offsets_begin, point_offsets_end, global_index) - 1;
   return std::make_pair(
     // quad_poly_index
-    thrust::distance(point_offsets_begin, local_point_offset),
+    cuda::std::distance(point_offsets_begin, local_point_offset),
     // local_point_index
     global_index - *local_point_offset);
 }

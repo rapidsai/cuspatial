@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,8 +30,8 @@
 
 #include <rmm/cuda_stream_view.hpp>
 
+#include <cuda/std/iterator>
 #include <thrust/binary_search.h>
-#include <thrust/distance.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -75,7 +75,7 @@ struct to_multipolygon_functor {
   CUSPATIAL_HOST_DEVICE auto operator()(difference_type i)
   {
     return multipolygon_ref{_part_begin + _geometry_begin[i],
-                            thrust::next(_part_begin, _geometry_begin[i + 1] + 1),
+                            cuda::std::next(_part_begin, _geometry_begin[i + 1] + 1),
                             _ring_begin,
                             _ring_end,
                             _point_begin,
@@ -126,7 +126,7 @@ template <typename GeometryIterator,
 CUSPATIAL_HOST_DEVICE auto
 multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::num_multipolygons()
 {
-  return thrust::distance(_geometry_begin, _geometry_end) - 1;
+  return cuda::std::distance(_geometry_begin, _geometry_end) - 1;
 }
 
 template <typename GeometryIterator,
@@ -136,7 +136,7 @@ template <typename GeometryIterator,
 CUSPATIAL_HOST_DEVICE auto
 multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::num_polygons()
 {
-  return thrust::distance(_part_begin, _part_end) - 1;
+  return cuda::std::distance(_part_begin, _part_end) - 1;
 }
 
 template <typename GeometryIterator,
@@ -146,7 +146,7 @@ template <typename GeometryIterator,
 CUSPATIAL_HOST_DEVICE auto
 multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::num_rings()
 {
-  return thrust::distance(_ring_begin, _ring_end) - 1;
+  return cuda::std::distance(_ring_begin, _ring_end) - 1;
 }
 
 template <typename GeometryIterator,
@@ -156,7 +156,7 @@ template <typename GeometryIterator,
 CUSPATIAL_HOST_DEVICE auto
 multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::num_points()
 {
-  return thrust::distance(_point_begin, _point_end);
+  return cuda::std::distance(_point_begin, _point_end);
 }
 
 template <typename GeometryIterator,
@@ -211,8 +211,9 @@ CUSPATIAL_HOST_DEVICE auto
 multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
   ring_idx_from_point_idx(IndexType point_idx)
 {
-  return thrust::distance(
-    _ring_begin, thrust::prev(thrust::upper_bound(thrust::seq, _ring_begin, _ring_end, point_idx)));
+  return cuda::std::distance(
+    _ring_begin,
+    cuda::std::prev(thrust::upper_bound(thrust::seq, _ring_begin, _ring_end, point_idx)));
 }
 
 template <typename GeometryIterator,
@@ -224,8 +225,9 @@ CUSPATIAL_HOST_DEVICE auto
 multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
   part_idx_from_ring_idx(IndexType ring_idx)
 {
-  return thrust::distance(
-    _part_begin, thrust::prev(thrust::upper_bound(thrust::seq, _part_begin, _part_end, ring_idx)));
+  return cuda::std::distance(
+    _part_begin,
+    cuda::std::prev(thrust::upper_bound(thrust::seq, _part_begin, _part_end, ring_idx)));
 }
 
 template <typename GeometryIterator,
@@ -237,9 +239,9 @@ CUSPATIAL_HOST_DEVICE auto
 multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
   geometry_idx_from_part_idx(IndexType part_idx)
 {
-  return thrust::distance(
+  return cuda::std::distance(
     _geometry_begin,
-    thrust::prev(thrust::upper_bound(thrust::seq, _geometry_begin, _geometry_end, part_idx)));
+    cuda::std::prev(thrust::upper_bound(thrust::seq, _geometry_begin, _geometry_end, part_idx)));
 }
 
 template <typename GeometryIterator,
@@ -253,8 +255,8 @@ multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
   auto multipolygon_point_offset_it = thrust::make_permutation_iterator(
     _ring_begin, thrust::make_permutation_iterator(_part_begin, _geometry_begin));
 
-  auto point_offset_pair_it = thrust::make_zip_iterator(multipolygon_point_offset_it,
-                                                        thrust::next(multipolygon_point_offset_it));
+  auto point_offset_pair_it = thrust::make_zip_iterator(
+    multipolygon_point_offset_it, cuda::std::next(multipolygon_point_offset_it));
 
   return thrust::make_transform_iterator(point_offset_pair_it,
                                          detail::offset_pair_to_count_functor{});
@@ -282,8 +284,8 @@ multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
   auto multipolygon_ring_offset_it =
     thrust::make_permutation_iterator(_part_begin, _geometry_begin);
 
-  auto ring_offset_pair_it = thrust::make_zip_iterator(multipolygon_ring_offset_it,
-                                                       thrust::next(multipolygon_ring_offset_it));
+  auto ring_offset_pair_it = thrust::make_zip_iterator(
+    multipolygon_ring_offset_it, cuda::std::next(multipolygon_ring_offset_it));
 
   return thrust::make_transform_iterator(ring_offset_pair_it,
                                          detail::offset_pair_to_count_functor{});
@@ -348,10 +350,11 @@ multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::a
   auto multipoint_geometry_it = thrust::make_permutation_iterator(
     _ring_begin, thrust::make_permutation_iterator(_part_begin, _geometry_begin));
 
-  return multipoint_range{multipoint_geometry_it,
-                          multipoint_geometry_it + thrust::distance(_geometry_begin, _geometry_end),
-                          _point_begin,
-                          _point_end};
+  return multipoint_range{
+    multipoint_geometry_it,
+    multipoint_geometry_it + cuda::std::distance(_geometry_begin, _geometry_end),
+    _point_begin,
+    _point_end};
 }
 
 template <typename GeometryIterator,
@@ -366,7 +369,7 @@ multipolygon_range<GeometryIterator, PartIterator, RingIterator, VecIterator>::
     thrust::make_permutation_iterator(_part_begin, _geometry_begin);
   return multilinestring_range{
     multilinestring_geometry_it,
-    multilinestring_geometry_it + thrust::distance(_geometry_begin, _geometry_end),
+    multilinestring_geometry_it + cuda::std::distance(_geometry_begin, _geometry_end),
     _ring_begin,
     _ring_end,
     _point_begin,

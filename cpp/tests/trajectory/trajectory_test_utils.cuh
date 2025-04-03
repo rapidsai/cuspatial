@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@
 #include <rmm/exec_policy.hpp>
 
 #include <cuda/std/chrono>
+#include <cuda/std/iterator>
 #include <thrust/binary_search.h>
 #include <thrust/gather.h>
 #include <thrust/iterator/constant_iterator.h>
@@ -139,9 +140,9 @@ struct trajectory_test_data {
     __device__ std::int32_t operator()(int i)
     {
       // Find the index within the current trajectory
-      return thrust::distance(
+      return cuda::std::distance(
         offsets_begin,
-        thrust::prev(thrust::upper_bound(thrust::seq, offsets_begin, offsets_end, i)));
+        cuda::std::prev(thrust::upper_bound(thrust::seq, offsets_begin, offsets_end, i)));
     }
   };
 
@@ -156,7 +157,8 @@ struct trajectory_test_data {
 
     __device__ time_point operator()(int i, int id)
     {
-      auto offset = thrust::prev(thrust::upper_bound(thrust::seq, offsets_begin, offsets_end, i));
+      auto offset =
+        cuda::std::prev(thrust::upper_bound(thrust::seq, offsets_begin, offsets_end, i));
       auto time_step = i - *offset;
       // The arithmetic here just adds some variance to the time step but keeps it monotonically
       // increasing with `i`

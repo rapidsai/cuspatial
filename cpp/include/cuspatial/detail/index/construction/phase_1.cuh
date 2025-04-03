@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,8 @@
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/functional>
+#include <cuda/std/iterator>
 #include <thrust/copy.h>
-#include <thrust/distance.h>
 #include <thrust/fill.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/constant_iterator.h>
@@ -68,7 +68,7 @@ compute_point_keys_and_sorted_indices(PointIt points_first,
                                       rmm::cuda_stream_view stream,
                                       rmm::device_async_resource_ref mr)
 {
-  auto num_points = thrust::distance(points_first, points_last);
+  auto num_points = cuda::std::distance(points_first, points_last);
   rmm::device_uvector<uint32_t> keys(num_points, stream);
   thrust::transform(
     rmm::exec_policy(stream),
@@ -121,7 +121,7 @@ inline IndexT build_tree_level(KeyInputIterator keys_begin,
                                       vals_out,
                                       thrust::equal_to<uint32_t>(),
                                       binary_op);
-  return thrust::distance(keys_out, result.first);
+  return cuda::std::distance(keys_out, result.first);
 }
 
 /**
@@ -262,7 +262,7 @@ inline auto make_full_levels(PointIt points_first,
                              rmm::cuda_stream_view stream,
                              rmm::device_async_resource_ref mr)
 {
-  auto num_points = thrust::distance(points_first, points_last);
+  auto num_points = cuda::std::distance(points_first, points_last);
   // Compute point keys and sort into bottom-level quadrants
   // (i.e. quads at level `max_depth - 1`)
 

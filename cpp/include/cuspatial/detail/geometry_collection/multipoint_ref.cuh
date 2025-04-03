@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/iterator_factory.cuh>
 
-#include <thrust/distance.h>
+#include <cuda/std/iterator>
 
 namespace cuspatial {
 
@@ -45,7 +45,7 @@ CUSPATIAL_HOST_DEVICE auto multipoint_ref<VecIterator>::point_end() const
 template <typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto multipoint_ref<VecIterator>::num_points() const
 {
-  return thrust::distance(_points_begin, _points_end);
+  return cuda::std::distance(_points_begin, _points_end);
 }
 
 template <typename VecIterator>
