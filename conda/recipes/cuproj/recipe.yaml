@@ -87,10 +87,7 @@ requirements:
 tests:
   - python:
       imports:
-        - if: linux and x86_64
-          then: cuproj
-          # dummy import b/c rattler requires _something_ under `imports`
-          else: abc
+        - cuproj
       pip_check: false
 
 about:
