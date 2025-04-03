@@ -56,7 +56,6 @@ cache:
       - ${{ stdlib("c") }}
     host:
       - cuda-version =${{ cuda_version }}
-      - doxygen
       - libcudf =${{ minor_version }}
       - librmm =${{ minor_version }}
       - sqlite
