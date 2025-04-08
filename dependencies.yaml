@@ -456,6 +456,8 @@ dependencies:
       - output_types: [conda, requirements, pyproject]
         packages:
           - &geopandas geopandas>=1.0.0
+          # TODO: remove this transitive dependency pin once the breakages are resolved
+          - &shapely shapely<2.1.0
           - &numpy numpy>=1.23,<3.0a0
   test_python_cuspatial:
     common:
@@ -473,6 +475,7 @@ dependencies:
           - pytest-cov
           - pytest-xdist
           - *geopandas
+          - *shapely
       - output_types: [requirements, pyproject]
         packages:
           - pyproj>=3.6.0,<3.7a0
