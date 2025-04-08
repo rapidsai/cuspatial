@@ -58,4 +58,4 @@ function(find_and_configure_proj)
 
 endfunction()
 
-find_and_configure_proj(9.2.0)
+find_and_configure_proj(9.6.0)
