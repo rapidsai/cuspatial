@@ -1,7 +1,7 @@
 From 4f83ac5a1abdd7833faaae0a8d36bafd3560b55e Mon Sep 17 00:00:00 2001
 From: Gil Forsyth <gforsyth@nvidia.com>
 Date: Tue, 8 Apr 2025 14:19:05 -0400
-Subject: [PATCH] [PATCH] remove uninstall target
+Subject: [PATCH] remove uninstall target
 
 ---
  CMakeLists.txt | 1 -
