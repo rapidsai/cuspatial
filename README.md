@@ -112,7 +112,7 @@ An example command from the Release Selector:
 docker run --gpus all --pull always --rm -it \
     --shm-size=1g --ulimit memlock=-1 --ulimit stack=67108864 \
     -p 8888:8888 -p 8787:8787 -p 8786:8786 \
-    nvcr.io/nvidia/rapidsai/notebooks:25.02-cuda11.8-py3.12
+    nvcr.io/nvidia/rapidsai/notebooks:25.04-cuda11.8-py3.12
 ```
 
 ### Install with Conda
@@ -124,7 +124,7 @@ cuSpatial can be installed with conda from the rapidsai channel:
 
 ```shell
 conda install -c rapidsai -c conda-forge -c nvidia \
-    cuspatial=25.02 python=3.12 cudatoolkit=11.8
+    cuspatial=25.04 python=3.12 cudatoolkit=11.8
 ```
 We also provide nightly Conda packages built from the HEAD of our latest development branch.
 
@@ -154,7 +154,7 @@ To build and install cuSpatial from source please see the [build documentation](
 If you find cuSpatial useful in your published work, please consider citing the repository.
 
 ```bibtex
-@misc{cuspatial:25.02,
+@misc{cuspatial:25.04,
     author = {{NVIDIA Corporation}},
     title = {cuSpatial: GPU-Accelerated Geospatial and Spatiotemporal Algorithms},
     year = {2023},

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@
 #include <cuspatial/range/multipoint_range.cuh>
 #include <cuspatial/traits.hpp>
 
+#include <cuda/std/optional>
 #include <thrust/binary_search.h>
 #include <thrust/distance.h>
 #include <thrust/iterator/counting_iterator.h>
@@ -144,12 +145,12 @@ multilinestring_range<GeometryIterator, PartIterator, VecIterator>::part_idx_fro
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 template <typename IndexType>
 CUSPATIAL_HOST_DEVICE
-  thrust::optional<typename thrust::iterator_traits<PartIterator>::difference_type>
+  cuda::std::optional<typename thrust::iterator_traits<PartIterator>::difference_type>
   multilinestring_range<GeometryIterator, PartIterator, VecIterator>::part_idx_from_segment_idx(
     IndexType segment_idx)
 {
   auto part_idx = thrust::distance(_part_begin, _part_iter_from_point_idx(segment_idx));
-  if (not is_valid_segment_id(segment_idx, part_idx)) return thrust::nullopt;
+  if (not is_valid_segment_id(segment_idx, part_idx)) return cuda::std::nullopt;
   return part_idx;
 }
 
