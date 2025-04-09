@@ -1,3 +1,27 @@
+# cuspatial 25.04.00 (9 Apr 2025)
+
+## 🐛 Bug Fixes
+
+- Patch PROJ to remove uninstall target ([#1552](https://github.com/rapidsai/cuspatial/pull/1552)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- Change download method for trajectory_clustering.ipynb&#39;s data for container testing ([#1539](https://github.com/rapidsai/cuspatial/pull/1539)) [@taureandyernv](https://github.com/taureandyernv)
+
+## 🛠️ Improvements
+
+- Pass dtype objects to cudf as_column calls ([#1549](https://github.com/rapidsai/cuspatial/pull/1549)) [@mroeschke](https://github.com/mroeschke)
+- Replace `thrust::optional` with `cuda::std::optional` ([#1545](https://github.com/rapidsai/cuspatial/pull/1545)) [@miscco](https://github.com/miscco)
+- Use conda-build instead of conda-mambabuild ([#1544](https://github.com/rapidsai/cuspatial/pull/1544)) [@bdice](https://github.com/bdice)
+- Require CMake 3.30.4 ([#1543](https://github.com/rapidsai/cuspatial/pull/1543)) [@robertmaynard](https://github.com/robertmaynard)
+- Add build_type input to `test.yaml` ([#1541](https://github.com/rapidsai/cuspatial/pull/1541)) [@gforsyth](https://github.com/gforsyth)
+- Use new rapids-logger library ([#1538](https://github.com/rapidsai/cuspatial/pull/1538)) [@vyasr](https://github.com/vyasr)
+- Use shared-workflows branch-25.04 ([#1536](https://github.com/rapidsai/cuspatial/pull/1536)) [@bdice](https://github.com/bdice)
+- add telemetry ([#1535](https://github.com/rapidsai/cuspatial/pull/1535)) [@msarahan](https://github.com/msarahan)
+- Forward-merge branch-25.02 to branch-25.04 ([#1532](https://github.com/rapidsai/cuspatial/pull/1532)) [@bdice](https://github.com/bdice)
+- Forward-merge branch-25.02 into branch-25.04 ([#1531](https://github.com/rapidsai/cuspatial/pull/1531)) [@mroeschke](https://github.com/mroeschke)
+- disallow fallback to Make in Python builds ([#1529](https://github.com/rapidsai/cuspatial/pull/1529)) [@jameslamb](https://github.com/jameslamb)
+- Add `verify-codeowners` hook ([#1528](https://github.com/rapidsai/cuspatial/pull/1528)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- Forward-merge branch-25.02 to branch-25.04 ([#1525](https://github.com/rapidsai/cuspatial/pull/1525)) [@bdice](https://github.com/bdice)
+- Migrate to NVKS for amd64 CI runners ([#1522](https://github.com/rapidsai/cuspatial/pull/1522)) [@bdice](https://github.com/bdice)
+
 # cuspatial 25.02.00 (13 Feb 2025)
 
 ## 🐛 Bug Fixes
