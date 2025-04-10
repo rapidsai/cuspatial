@@ -20,8 +20,8 @@
 #include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/traits.hpp>
 
+#include <cuda/std/iterator>
 #include <cuda/std/utility>
-#include <thrust/distance.h>
 #include <thrust/iterator/counting_iterator.h>
 
 namespace cuspatial {
@@ -64,7 +64,7 @@ class enumerate_range {
   {
     return make_counting_transform_iterator(0, to_indexed_pair_functor{_begin});
   }
-  CUSPATIAL_HOST_DEVICE auto end() { return begin() + thrust::distance(_begin, _end); }
+  CUSPATIAL_HOST_DEVICE auto end() { return begin() + cuda::std::distance(_begin, _end); }
 
  protected:
   Iterator _begin;

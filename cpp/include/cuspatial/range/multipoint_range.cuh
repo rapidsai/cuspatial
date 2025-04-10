@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 #include <cuspatial/traits.hpp>
 #include <cuspatial/types.hpp>
 
+#include <cuda/std/iterator>
 #include <thrust/iterator/counting_iterator.h>
 
 namespace cuspatial {
@@ -237,7 +238,7 @@ auto make_multipoint_range(GeometryColumnView const& points_column)
   auto points_it = make_vec_2d_iterator(points_xy.template begin<T>());
 
   return multipoint_range(geometry_iter,
-                          thrust::next(geometry_iter, points_column.size() + 1),
+                          cuda::std::next(geometry_iter, points_column.size() + 1),
                           points_it,
                           points_it + points_xy.size() / 2);
 }

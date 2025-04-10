@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@
 
 #include <rmm/exec_policy.hpp>
 
+#include <cuda/std/iterator>
 #include <thrust/host_vector.h>
 
 template <typename T>
@@ -2045,7 +2046,7 @@ TYPED_TEST(LinestringIntersectionLargeTest, LongInput_2)
 
   thrust::tabulate(rmm::exec_policy(this->stream()),
                    coordinates.begin(),
-                   thrust::next(coordinates.begin(), 128),
+                   cuda::std::next(coordinates.begin(), 128),
                    coordinate_functor<TypeParam>{});
 
   coordinates.set_element(128, P{127.0, 0.0}, this->stream());

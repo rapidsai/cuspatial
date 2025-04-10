@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@
 #include <rmm/exec_policy.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/std/iterator>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/scan.h>
@@ -199,12 +200,12 @@ std::pair<rmm::device_uvector<IndexType>, rmm::device_uvector<IndexType>> quadtr
       auto poly_and_point_indices =
         thrust::make_zip_iterator(poly_indices.begin(), point_indices.begin()) + memo;
       // Remove (poly, point) pairs that don't intersect
-      return thrust::distance(poly_and_point_indices,
-                              thrust::copy_if(rmm::exec_policy(stream),
-                                              global_to_poly_and_point_indices(offset),
-                                              global_to_poly_and_point_indices(offset) + size,
-                                              poly_and_point_indices,
-                                              test_poly_point_pair));
+      return cuda::std::distance(poly_and_point_indices,
+                                 thrust::copy_if(rmm::exec_policy(stream),
+                                                 global_to_poly_and_point_indices(offset),
+                                                 global_to_poly_and_point_indices(offset) + size,
+                                                 poly_and_point_indices,
+                                                 test_poly_point_pair));
     });
 
     if (num_intersections < output_size) {

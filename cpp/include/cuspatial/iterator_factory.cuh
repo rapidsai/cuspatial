@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/traits.hpp>
 
+#include <cuda/std/iterator>
 #include <thrust/binary_search.h>
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/iterator/counting_iterator.h>
@@ -176,8 +177,8 @@ struct index_to_geometry_id {
 
   CUSPATIAL_HOST_DEVICE auto operator()(IndexT idx)
   {
-    return thrust::distance(geometry_begin,
-                            thrust::upper_bound(thrust::seq, geometry_begin, geometry_end, idx));
+    return cuda::std::distance(geometry_begin,
+                               thrust::upper_bound(thrust::seq, geometry_begin, geometry_end, idx));
   }
 };
 
@@ -278,7 +279,7 @@ auto make_vec_2d_output_iterator(Iter d_points_begin)
   auto even_positions         = thrust::make_permutation_iterator(
     d_points_begin, detail::make_counting_transform_iterator(0, fixed_stride_2_functor));
   auto odd_positions = thrust::make_permutation_iterator(
-    thrust::next(d_points_begin),
+    cuda::std::next(d_points_begin),
     detail::make_counting_transform_iterator(0, fixed_stride_2_functor));
   auto zipped_outputs =
     thrust::make_zip_iterator(thrust::make_tuple(even_positions, odd_positions));
@@ -421,14 +422,14 @@ auto make_geometry_id_iterator(GeometryIter geometry_offsets_begin,
 
   return make_geometry_id_iterator<IndexT>(
     first_part_offsets_begin,
-    thrust::next(first_part_offsets_begin,
-                 std::distance(geometry_offsets_begin, geometry_offsets_end)));
+    cuda::std::next(first_part_offsets_begin,
+                    std::distance(geometry_offsets_begin, geometry_offsets_end)));
 }
 
 template <typename OffsetIterator>
 auto make_count_iterator_from_offset_iterator(OffsetIterator it)
 {
-  auto zipped_offsets_it = thrust::make_zip_iterator(it, thrust::next(it));
+  auto zipped_offsets_it = thrust::make_zip_iterator(it, cuda::std::next(it));
   return thrust::make_transform_iterator(zipped_offsets_it, detail::offset_pair_to_count_functor{});
 }
 
