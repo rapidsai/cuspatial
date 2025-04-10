@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2024, NVIDIA CORPORATION
+# Copyright (c) 2021-2025, NVIDIA CORPORATION
 from __future__ import annotations
 
 from enum import Enum
@@ -6,6 +6,7 @@ from functools import cached_property
 from typing import TypeVar
 
 import cupy as cp
+import numpy as np
 import pyarrow as pa
 
 import cudf
@@ -373,7 +374,9 @@ def _xy_as_variable_sized_list(xy: ColumnBase):
         raise ValueError("xy must have an even number of elements")
 
     num_points = len(xy) // 2
-    indices = as_column(range(0, num_points * 2 + 1, 2), dtype="int32")
+    indices = as_column(
+        range(0, num_points * 2 + 1, 2), dtype=np.dtype(np.int32)
+    )
     return ListColumn(
         data=None,
         dtype=cudf.ListDtype(xy.dtype),

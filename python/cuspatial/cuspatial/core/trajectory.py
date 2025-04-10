@@ -64,7 +64,7 @@ def derive_trajectories(object_ids, points: GeoSeries, timestamps):
     if len(points) > 0 and not contains_only_points(points):
         raise ValueError("`points` must only contain point geometries.")
 
-    object_ids = as_column(object_ids, dtype=np.int32).to_pylibcudf(
+    object_ids = as_column(object_ids, dtype=np.dtype(np.int32)).to_pylibcudf(
         mode="read"
     )
     xs = as_column(points.points.x).to_pylibcudf(mode="read")
@@ -150,7 +150,7 @@ def trajectory_bounding_boxes(num_trajectories, object_ids, points: GeoSeries):
     if len(points) > 0 and not contains_only_points(points):
         raise ValueError("`points` must only contain point geometries.")
 
-    object_ids = as_column(object_ids, dtype=np.int32).to_pylibcudf(
+    object_ids = as_column(object_ids, dtype=np.dtype(np.int32)).to_pylibcudf(
         mode="read"
     )
     xs = as_column(points.points.x).to_pylibcudf(mode="read")
@@ -215,7 +215,7 @@ def trajectory_distances_and_speeds(
     if len(points) > 0 and not contains_only_points(points):
         raise ValueError("`points` must only contain point geometries.")
 
-    object_ids = as_column(object_ids, dtype=np.int32).to_pylibcudf(
+    object_ids = as_column(object_ids, dtype=np.dtype(np.int32)).to_pylibcudf(
         mode="read"
     )
     xs = as_column(points.points.x).to_pylibcudf(mode="read")

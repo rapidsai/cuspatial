@@ -2,6 +2,8 @@
 
 from typing import TYPE_CHECKING
 
+import numpy as np
+
 import cudf
 from cudf.core.column import ColumnBase, ListColumn, as_column
 
@@ -116,7 +118,7 @@ def pairwise_linestring_intersection(
         dtype=cudf.ListDtype(segments.dtype),
         size=segments.size,
         children=(
-            as_column(range(0, len(segments) + 1), dtype="int32"),
+            as_column(range(0, len(segments) + 1), dtype=np.dtype(np.int32)),
             segments,
         ),
     )

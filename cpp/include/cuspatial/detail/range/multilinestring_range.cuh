@@ -27,6 +27,7 @@
 #include <cuspatial/traits.hpp>
 
 #include <cuda/std/iterator>
+#include <cuda/std/optional>
 #include <thrust/binary_search.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
@@ -144,12 +145,12 @@ multilinestring_range<GeometryIterator, PartIterator, VecIterator>::part_idx_fro
 template <typename GeometryIterator, typename PartIterator, typename VecIterator>
 template <typename IndexType>
 CUSPATIAL_HOST_DEVICE
-  thrust::optional<typename thrust::iterator_traits<PartIterator>::difference_type>
+  cuda::std::optional<typename thrust::iterator_traits<PartIterator>::difference_type>
   multilinestring_range<GeometryIterator, PartIterator, VecIterator>::part_idx_from_segment_idx(
     IndexType segment_idx)
 {
   auto part_idx = cuda::std::distance(_part_begin, _part_iter_from_point_idx(segment_idx));
-  if (not is_valid_segment_id(segment_idx, part_idx)) return thrust::nullopt;
+  if (not is_valid_segment_id(segment_idx, part_idx)) return cuda::std::nullopt;
   return part_idx;
 }
 

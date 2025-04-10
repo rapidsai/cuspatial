@@ -21,6 +21,7 @@
 #include <cuspatial/traits.hpp>
 
 #include <cuda/std/iterator>
+#include <cuda/std/utility>
 #include <thrust/iterator/counting_iterator.h>
 
 namespace cuspatial {
@@ -41,7 +42,7 @@ struct to_indexed_pair_functor {
   to_indexed_pair_functor(Iterator begin) : _begin(begin) {}
 
   template <typename IndexType>
-  thrust::pair<IndexType, value_type> CUSPATIAL_HOST_DEVICE operator()(IndexType i)
+  cuda::std::pair<IndexType, value_type> CUSPATIAL_HOST_DEVICE operator()(IndexType i)
   {
     return {i, _begin[i]};
   }

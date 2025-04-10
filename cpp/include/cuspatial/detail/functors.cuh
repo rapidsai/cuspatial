@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 #include <cuspatial/geometry/segment.cuh>
 #include <cuspatial/traits.hpp>
 
+#include <cuda/std/utility>
 #include <thrust/binary_search.h>
 
 namespace cuspatial {
@@ -35,8 +36,8 @@ namespace detail {
  * pair of offsets: (0, 3), (3, 5), (5, 8)
  * number of elements between offsets: 3, 2, 3
  *
- * @tparam OffsetPairIterator Must be iterator type to thrust::pair of indices.
- * @param p Iterator of thrust::pair of indices.
+ * @tparam OffsetPairIterator Must be iterator type to cuda::std::pair of indices.
+ * @param p Iterator of cuda::std::pair of indices.
  */
 struct offset_pair_to_count_functor {
   template <typename OffsetPairIterator>
