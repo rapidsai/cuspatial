@@ -78,6 +78,10 @@ requirements:
     - numpy >=1.23,<3.0a0
     - python
     - rmm ={{ minor_version }}
+  run_constrained:
+    # TODO: remove this transitive dependency pin once the breakages are resolved
+    # https://github.com/rapidsai/cuspatial/issues/1561
+    - shapely <2.1.0
 
 test:            # [linux64]
   imports:       # [linux64]
