@@ -1,7 +1,7 @@
 {
   "packages": {
     "PROJ": {
-      "version": "9.2.0",
+      "version": "9.6.0",
       "git_url": "https://github.com/osgeo/proj.git",
       "git_tag": "${version}",
       "patches": [
