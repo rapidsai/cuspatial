@@ -2,6 +2,8 @@
 
 import warnings
 
+import numpy as np
+
 from cudf import DataFrame
 from cudf.core.column import ColumnBase, as_column
 
@@ -331,10 +333,12 @@ def quadtree_point_to_nearest_linestring(
     plc_result = spatial_join.quadtree_point_to_nearest_linestring(
         linestring_quad_pairs,
         quadtree,
-        as_column(point_indices, dtype="uint32").to_pylibcudf(mode="read"),
+        as_column(point_indices, dtype=np.dtype(np.uint32)).to_pylibcudf(
+            mode="read"
+        ),
         points_x,
         points_y,
-        as_column(linestring_offsets, dtype="uint32").to_pylibcudf(
+        as_column(linestring_offsets, dtype=np.dtype(np.uint32)).to_pylibcudf(
             mode="read"
         ),
         linestring_points_x,

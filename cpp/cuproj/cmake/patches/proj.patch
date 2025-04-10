@@ -1,0 +1,22 @@
+From 4f83ac5a1abdd7833faaae0a8d36bafd3560b55e Mon Sep 17 00:00:00 2001
+From: Gil Forsyth <gforsyth@nvidia.com>
+Date: Tue, 8 Apr 2025 14:19:05 -0400
+Subject: [PATCH] remove uninstall target
+
+---
+ CMakeLists.txt | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index af13b63d..7fa4494b 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -489,6 +489,5 @@ if(NOT _is_multi_config_generator)
+ endif()
+
+ configure_file(cmake/uninstall.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/proj_uninstall.cmake @ONLY)
+-add_custom_target(uninstall COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/proj_uninstall.cmake)
+
+ message(STATUS "EMBED_RESOURCE_FILES=${EMBED_RESOURCE_FILES}")
+--
+2.47.0

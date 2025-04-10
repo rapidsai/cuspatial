@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -13,19 +13,28 @@
 # =============================================================================
 
 # This function finds osgeo/proj and sets any additional necessary environment variables.
-function(find_and_configure_proj VERSION)
+function(find_and_configure_proj)
+  include("${rapids-cmake-dir}/cpm/package_override.cmake")
+  rapids_cpm_package_override("${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../patches/proj_override.json")
+
+  include("${rapids-cmake-dir}/cpm/detail/package_details.cmake")
+  rapids_cpm_package_details(PROJ version repository tag shallow exclude)
+
+  include("${rapids-cmake-dir}/cpm/detail/generate_patch_command.cmake")
+  rapids_cpm_generate_patch_command(PROJ ${version} patch_command build_patch_only)
+
   include(${rapids-cmake-dir}/cpm/find.cmake)
 
   # Find or install Proj
   rapids_cpm_find(
-    PROJ ${VERSION}
+    PROJ ${version} ${build_patch_only}
     GLOBAL_TARGETS PROJ::proj
     BUILD_EXPORT_SET cuproj-exports
     INSTALL_EXPORT_SET cuproj-exports
     CPM_ARGS
-    GIT_REPOSITORY https://github.com/osgeo/proj.git
-    GIT_TAG ${VERSION}
-    GIT_SHALLOW TRUE
+    GIT_REPOSITORY ${repository}
+    GIT_TAG ${tag}
+    GIT_SHALLOW ${shallow} ${patch_command}
   )
 
   if(PROJ_ADDED)
@@ -49,4 +58,4 @@ function(find_and_configure_proj VERSION)
 
 endfunction()
 
-find_and_configure_proj(9.2.0)
+find_and_configure_proj(9.6.0)
