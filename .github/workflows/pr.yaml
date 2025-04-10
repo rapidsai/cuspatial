@@ -159,6 +159,8 @@ jobs:
       matrix_filter: group_by([.ARCH, (.CUDA_VER|split(".")|map(tonumber)|.[0])]) | map(max_by(.PY_VER|split(".")|map(tonumber)))
       build_type: pull-request
       script: ci/build_wheel_libcuspatial.sh
+      package-type: cpp
+      wheel-name: libcuspatial
   wheel-build-cuspatial:
     needs: [checks, wheel-build-libcuspatial]
     secrets: inherit
@@ -166,6 +168,8 @@ jobs:
     with:
       build_type: pull-request
       script: ci/build_wheel_cuspatial.sh
+      package-type: python
+      wheel-name: cuspatial
   wheel-tests-cuspatial:
     needs: [wheel-build-cuspatial, changed-files]
     secrets: inherit
@@ -181,6 +185,8 @@ jobs:
     with:
       build_type: pull-request
       script: ci/build_wheel_cuproj.sh
+      package-type: python
+      wheel-name: cuproj
   wheel-tests-cuproj:
     needs: [wheel-build-cuspatial, wheel-build-cuproj, changed-files]
     secrets: inherit

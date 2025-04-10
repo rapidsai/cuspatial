@@ -17,4 +17,4 @@ echo "libcuspatial-${RAPIDS_PY_CUDA_SUFFIX} @ file://$(echo /tmp/libcuspatial_di
 export PIP_CONSTRAINT="/tmp/constraints.txt"
 
 ci/build_wheel.sh cuspatial ${package_dir} python
-ci/validate_wheel.sh ${package_dir} final_dist
+ci/validate_wheel.sh ${package_dir} "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}"
