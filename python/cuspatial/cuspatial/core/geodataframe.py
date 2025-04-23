@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024, NVIDIA CORPORATION
+# Copyright (c) 2020-2025, NVIDIA CORPORATION
 from __future__ import annotations
 
 from typing import Any, Dict, TypeVar, Union
@@ -51,8 +51,8 @@ class GeoDataFrame(cudf.DataFrame):
                     data[key] = GeoSeries(data[key])
                 except TypeError:
                     pass
-            super()._init_from_dict_like(
-                data, index=self.index if len(self.index) > 0 else None
+            super().__init__(
+                data=data, index=self.index if len(self.index) > 0 else None
             )
         elif data is None:
             pass
