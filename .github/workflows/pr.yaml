@@ -12,7 +12,6 @@ concurrency:
 jobs:
   pr-builder:
     needs:
-      - check-nightly-ci
       - changed-files
       - checks
       - conda-cpp-build
