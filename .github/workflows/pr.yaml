@@ -94,7 +94,7 @@ jobs:
     uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@branch-25.06
     with:
       enable_check_generated_files: false
-      ignored_pr_jobs: telemetry-summarize
+      ignored_pr_jobs: telemetry-summarize check-nightly-ci
   conda-cpp-build:
     needs: checks
     secrets: inherit
