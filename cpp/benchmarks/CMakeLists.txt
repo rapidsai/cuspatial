@@ -1,5 +1,5 @@
 #=============================================================================
-# Copyright (c) 2019-2024, NVIDIA CORPORATION.
+# Copyright (c) 2019-2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ target_link_libraries(cuspatial_benchmark_common
     PUBLIC benchmark::benchmark
            cudf::cudftestutil
            ranger::ranger
-           cuspatial GTest::gtest GTest::gmock 
+           cuspatial GTest::gtest GTest::gmock
            PRIVATE cudf::cudftestutil_impl)
 
 target_compile_options(cuspatial_benchmark_common
@@ -55,6 +55,9 @@ target_include_directories(cuspatial_benchmark_common
 
 function(ConfigureBench CMAKE_BENCH_NAME)
     add_executable(${CMAKE_BENCH_NAME} ${ARGN})
+    target_compile_definitions(
+      ${CMAKE_BENCH_NAME} PRIVATE THRUST_FORCE_32_BIT_OFFSET_TYPE=1 CCCL_AVOID_SORT_UNROLL=1
+    )
     set_target_properties(${CMAKE_BENCH_NAME}
         PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${CUSPATIAL_BINARY_DIR}/benchmarks>"
                    INSTALL_RPATH "\$ORIGIN/../../../lib"
