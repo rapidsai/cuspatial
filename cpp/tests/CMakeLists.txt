@@ -1,5 +1,5 @@
 ﻿#=============================================================================
-# Copyright (c) 2019-2024, NVIDIA CORPORATION.
+# Copyright (c) 2019-2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
 ###################################################################################################
 # - compiler function -----------------------------------------------------------------------------
 
-# cudftestutil_impl is an interface source library, this empty object 
-# library is used to speed-up compilation and linking against it, 
+# cudftestutil_impl is an interface source library, this empty object
+# library is used to speed-up compilation and linking against it,
 # otherwise we pay the non-trivial compilation cost repeatedly for each
 # test executable
 add_library(cuspatial_test_common OBJECT test_common.cpp)
@@ -37,7 +37,7 @@ set_target_properties(cuspatial_test_common
 )
 
 target_link_libraries(cuspatial_test_common
-    PUBLIC cudf::cudftestutil GTest::gtest GTest::gmock 
+    PUBLIC cudf::cudftestutil GTest::gtest GTest::gmock
     PRIVATE cudf::cudftestutil_impl)
 
 target_compile_options(cuspatial_test_common PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:${CUSPATIAL_CXX_FLAGS}>"
@@ -45,6 +45,9 @@ target_compile_options(cuspatial_test_common PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:$
 
 function(ConfigureTest CMAKE_TEST_NAME)
     add_executable(${CMAKE_TEST_NAME} ${ARGN})
+    target_compile_definitions(
+      ${CMAKE_TEST_NAME} PRIVATE THRUST_FORCE_32_BIT_OFFSET_TYPE=1 CCCL_AVOID_SORT_UNROLL=1
+    )
     target_compile_options(${CMAKE_TEST_NAME}
                 PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:${CUSPATIAL_CXX_FLAGS}>"
                         "$<$<COMPILE_LANGUAGE:CUDA>:${CUSPATIAL_CUDA_FLAGS}>")

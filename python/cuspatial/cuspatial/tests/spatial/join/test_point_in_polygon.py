@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2024, NVIDIA CORPORATION.
+# Copyright (c) 2019-2025, NVIDIA CORPORATION.
 
 import numpy as np
 
@@ -27,7 +27,7 @@ def test_one_point_in():
             cudf.Series([0, 1]),
         ),
     )
-    expected = cudf.DataFrame({0: True})
+    expected = cudf.DataFrame({0: [True]})
     cudf.testing.assert_frame_equal(expected, result)
 
 
@@ -41,7 +41,7 @@ def test_one_point_out():
             cudf.Series([0, 1]),
         ),
     )
-    expected = cudf.DataFrame({0: False})
+    expected = cudf.DataFrame({0: [False]})
     cudf.testing.assert_frame_equal(expected, result)
 
 
@@ -60,7 +60,7 @@ def test_one_point_in_two_rings():
         ),
     )
 
-    expected = cudf.DataFrame({0: True})
+    expected = cudf.DataFrame({0: [True]})
     cudf.testing.assert_frame_equal(expected, result)
 
 
@@ -80,7 +80,7 @@ def test_one_point_in_two_unclosed_rings():
             cudf.Series([0, 1]),
         ),
     )
-    expected = cudf.DataFrame({0: True})
+    expected = cudf.DataFrame({0: [True]})
     cudf.testing.assert_frame_equal(expected, result)
 
 
@@ -97,7 +97,7 @@ def test_one_point_out_two_rings():
             cudf.Series([0, 1]),
         ),
     )
-    expected = cudf.DataFrame({0: False})
+    expected = cudf.DataFrame({0: [False]})
     cudf.testing.assert_frame_equal(expected, result)
 
 
@@ -117,7 +117,7 @@ def test_one_point_out_two_unclosed_rings():
             cudf.Series([0, 1]),
         ),
     )
-    expected = cudf.DataFrame({0: False})
+    expected = cudf.DataFrame({0: [False]})
     cudf.testing.assert_frame_equal(expected, result)
 
 

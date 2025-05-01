@@ -16,7 +16,7 @@
 
 cmake_minimum_required(VERSION 3.30.4 FATAL_ERROR)
 
-include(../rapids_config.cmake)
+include(../cmake/rapids_config.cmake)
 include(rapids-cmake)
 include(rapids-cpm)
 include(rapids-cuda)
@@ -201,6 +201,10 @@ endif()
 
 # Define spdlog level
 target_compile_definitions(cuspatial PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
+
+# Remove this after upgrading to a CCCL that has a proper CMake option. See
+# https://github.com/NVIDIA/cccl/pull/2844
+target_compile_definitions(cuspatial PRIVATE THRUST_FORCE_32_BIT_OFFSET_TYPE=1 CCCL_AVOID_SORT_UNROLL=1)
 
 # Specify the target module library dependencies
 target_link_libraries(cuspatial PUBLIC cudf::cudf)
