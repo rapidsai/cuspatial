@@ -355,14 +355,14 @@ class GeoSeries(cudf.Series):
             self._sr = _sr
 
         def __getitem__(self, item):
-            booltest = cudf.Series(item)
-            if booltest.dtype in (bool, np.bool_):
+            series = cudf.Series(item)
+            if series.dtype in (bool, np.bool_):
                 return self._sr.iloc[item]
 
             map_df = cudf.DataFrame(
                 {"map": self._sr.index, "idx": cp.arange(len(self._sr.index))}
             )
-            index_df = cudf.DataFrame({"map": item}).reset_index()
+            index_df = cudf.DataFrame({"map": series}).reset_index()
             new_index = index_df.merge(
                 map_df, how="left", sort=False
             ).sort_values("index")
