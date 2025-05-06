@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,13 +41,13 @@ namespace std {
 
 // Required by gtest EXPECT_EQ test suite to compile.
 // Since `time_point` is an alias on
-// std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>,
+// cuda::std::chrono::time_point<cuda::std::chrono::system_clock, cuda::std::chrono::milliseconds>,
 // according to ADL rules for templates, only the inner most enclosing namespaces,
 // and associated namespaces of the template arguments are added to search. In this
 // case, only `std` namespace is searched.
 //
 // [1]: https://en.cppreference.com/w/cpp/language/adl
-std::ostream& operator<<(std::ostream& os, cuspatial::test::time_point const& tp)
+std::ostream& operator<<(std::ostream& os, cuspatial::test::timestamp_ms const& tp)
 {
   // Output the time point in the desired format
   os << tp.time_since_epoch().count() << "ms";
@@ -68,7 +68,7 @@ TYPED_TEST(DeriveTrajectoriesTest, TenThousandSmallTrajectories)
 
   auto traj_ids    = rmm::device_vector<std::int32_t>(data.ids.size());
   auto traj_points = rmm::device_vector<cuspatial::vec_2d<TypeParam>>(data.points.size());
-  auto traj_times  = rmm::device_vector<cuspatial::test::time_point>(data.times.size());
+  auto traj_times  = rmm::device_vector<cuspatial::test::timestamp_ms>(data.times.size());
 
   auto traj_offsets = cuspatial::derive_trajectories(data.ids.begin(),
                                                      data.ids.end(),
@@ -89,7 +89,7 @@ TYPED_TEST(DeriveTrajectoriesTest, OneHundredLargeTrajectories)
 
   auto traj_ids    = rmm::device_vector<std::int32_t>(data.ids.size());
   auto traj_points = rmm::device_vector<cuspatial::vec_2d<TypeParam>>(data.points.size());
-  auto traj_times  = rmm::device_vector<cuspatial::test::time_point>(data.times.size());
+  auto traj_times  = rmm::device_vector<cuspatial::test::timestamp_ms>(data.times.size());
 
   auto traj_offsets = cuspatial::derive_trajectories(data.ids.begin(),
                                                      data.ids.end(),
@@ -110,7 +110,7 @@ TYPED_TEST(DeriveTrajectoriesTest, OneVeryLargeTrajectory)
 
   auto traj_ids    = rmm::device_vector<std::int32_t>(data.ids.size());
   auto traj_points = rmm::device_vector<cuspatial::vec_2d<TypeParam>>(data.points.size());
-  auto traj_times  = rmm::device_vector<cuspatial::test::time_point>(data.times.size());
+  auto traj_times  = rmm::device_vector<cuspatial::test::timestamp_ms>(data.times.size());
 
   auto traj_offsets = cuspatial::derive_trajectories(data.ids.begin(),
                                                      data.ids.end(),
