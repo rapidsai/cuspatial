@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@
 #include <cuspatial/geometry/vec_2d.hpp>
 #include <cuspatial/iterator_factory.cuh>
 
+#include <cudf/wrappers/timestamps.hpp>
+
 #include <rmm/device_vector.hpp>
 #include <rmm/exec_policy.hpp>
 
@@ -40,7 +42,7 @@
 namespace cuspatial {
 namespace test {
 
-using time_point = std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>;
+using timestamp_ms = cudf::timestamp_ms;
 
 /* Test data generation for trajectory APIs. Generates num_trajectories trajectories of random
    size between 1 and max_trajectory_size samples. Creates both a reference (sorted) set of
@@ -61,11 +63,11 @@ struct trajectory_test_data {
   rmm::device_vector<std::int32_t> offsets;
 
   rmm::device_vector<std::int32_t> ids;
-  rmm::device_vector<time_point> times;
+  rmm::device_vector<timestamp_ms> times;
   rmm::device_vector<cuspatial::vec_2d<T>> points;
 
   rmm::device_vector<std::int32_t> ids_sorted;
-  rmm::device_vector<time_point> times_sorted;
+  rmm::device_vector<timestamp_ms> times_sorted;
   rmm::device_vector<cuspatial::vec_2d<T>> points_sorted;
 
   trajectory_test_data(std::size_t num_trajectories, std::size_t max_trajectory_size)
@@ -93,8 +95,6 @@ struct trajectory_test_data {
     times_sorted.resize(times.size());
     points.resize(total_points);
     points_sorted.resize(points.size());
-
-    using namespace std::chrono_literals;
 
     thrust::tabulate(rmm::exec_policy(),
                      ids_sorted.begin(),
@@ -154,24 +154,24 @@ struct trajectory_test_data {
     {
     }
 
-    __device__ time_point operator()(int i, int id)
+    __device__ timestamp_ms operator()(int i, int id)
     {
       auto offset = thrust::prev(thrust::upper_bound(thrust::seq, offsets_begin, offsets_end, i));
       auto time_step = i - *offset;
       // The arithmetic here just adds some variance to the time step but keeps it monotonically
       // increasing with `i`
-      auto duration = (id % 10) * std::chrono::milliseconds(1000) +
-                      time_step * std::chrono::milliseconds(100) +
-                      std::chrono::milliseconds(int(10 * cos(time_step)));
-      return time_point{duration};
+      auto duration = (id % 10) * cuda::std::chrono::milliseconds(1000) +
+                      time_step * cuda::std::chrono::milliseconds(100) +
+                      cuda::std::chrono::milliseconds(int(10 * cos(time_step)));
+      return timestamp_ms{duration};
     }
   };
 
   struct point_functor {
-    __device__ cuspatial::vec_2d<T> operator()(time_point const& time, std::int32_t id)
+    __device__ cuspatial::vec_2d<T> operator()(timestamp_ms const& time, std::int32_t id)
     {
       // X is time in seconds, Y is cosine(time), offset by ID
-      T duration = (time - time_point{std::chrono::milliseconds(0)}).count();
+      T duration = (time - timestamp_ms{cuda::std::chrono::milliseconds(0)}).count();
       return cuspatial::vec_2d<T>{duration / 1000, id + cos(duration)};
     }
   };
@@ -227,10 +227,10 @@ struct trajectory_test_data {
   }
 
   struct duration_functor {
-    using id_and_timestamp = thrust::tuple<std::int32_t, time_point>;
+    using id_and_timestamp = thrust::tuple<std::int32_t, timestamp_ms>;
 
-    __host__ __device__ time_point::rep operator()(id_and_timestamp const& p0,
-                                                   id_and_timestamp const& p1)
+    __host__ __device__ timestamp_ms::rep operator()(id_and_timestamp const& p0,
+                                                     id_and_timestamp const& p1)
     {
       auto const id0 = thrust::get<0>(p0);
       auto const id1 = thrust::get<0>(p1);
@@ -259,16 +259,16 @@ struct trajectory_test_data {
   };
 
   struct average_distance_speed_functor {
-    using duration_distance = thrust::tuple<time_point::rep, T, T, T>;
+    using duration_distance = thrust::tuple<timestamp_ms::rep, T, T, T>;
     using Sec               = typename cuda::std::chrono::seconds;
     using Period =
-      typename cuda::std::ratio_divide<typename time_point::period, typename Sec::period>::type;
+      typename cuda::std::ratio_divide<typename timestamp_ms::period, typename Sec::period>::type;
 
     __host__ __device__ duration_distance operator()(duration_distance const& a,
                                                      duration_distance const& b)
     {
       auto time_d =
-        time_point::duration(thrust::get<0>(a)) + time_point::duration(thrust::get<0>(b));
+        timestamp_ms::duration(thrust::get<0>(a)) + timestamp_ms::duration(thrust::get<0>(b));
       auto time_s =
         static_cast<T>(time_d.count()) * static_cast<T>(Period::num) / static_cast<T>(Period::den);
       T dist_km   = thrust::get<1>(a) + thrust::get<1>(b);
@@ -280,7 +280,7 @@ struct trajectory_test_data {
 
   std::pair<rmm::device_vector<T>, rmm::device_vector<T>> distance_and_speed()
   {
-    using Rep = typename time_point::rep;
+    using Rep = typename timestamp_ms::rep;
 
     auto id_and_timestamp = thrust::make_zip_iterator(ids_sorted.begin(), times_sorted.begin());
 

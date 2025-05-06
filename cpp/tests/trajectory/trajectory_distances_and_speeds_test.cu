@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,7 +106,7 @@ TYPED_TEST(TrajectoryDistancesAndSpeedsTest, OneVeryLargeTrajectory)
 }
 
 struct time_point_generator {
-  using time_point = cuspatial::test::time_point;
+  using time_point = cuspatial::test::timestamp_ms;
   int init;
 
   time_point __device__ operator()(int const i)
@@ -119,7 +119,7 @@ struct time_point_generator {
 TYPED_TEST(TrajectoryDistancesAndSpeedsTest, ComputeDistanceAndSpeed3Simple)
 {
   using T          = TypeParam;
-  using time_point = cuspatial::test::time_point;
+  using time_point = cuspatial::test::timestamp_ms;
 
   std::int32_t num_trajectories = 3;
 
