@@ -32,6 +32,9 @@ list(APPEND CUPROJ_CUDA_FLAGS -Xcompiler=-Wall,-Werror,-Wno-error=deprecated-dec
 
 # Produce smallest binary size
 list(APPEND CUPROJ_CUDA_FLAGS -Xfatbin=-compress-all)
+if(CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA" AND CMAKE_CUDA_COMPILER_VERSION VERSION_EQUAL 12.9)
+  list(APPEND CUPROJ_CUDA_FLAGS -Xfatbin=--compress-level=3)
+endif()
 
 if(DISABLE_DEPRECATION_WARNING)
     list(APPEND CUPROJ_CXX_FLAGS -Wno-deprecated-declarations)
