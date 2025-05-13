@@ -117,7 +117,7 @@ std::pair<collection_type_id, std::unique_ptr<cudf::column>> make_linestring_col
 
 struct LinestringIntersectionTestBase : public BaseFixture {
   rmm::cuda_stream_view stream{rmm::cuda_stream_default};
-  rmm::device_async_resource_ref mr{rmm::mr::get_current_device_resource()};
+  rmm::device_async_resource_ref mr{rmm::mr::get_current_device_resource_ref()};
 };
 
 template <typename T>

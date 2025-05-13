@@ -55,6 +55,6 @@ struct linestring_intersection_column_result {
 linestring_intersection_column_result pairwise_linestring_intersection(
   geometry_column_view const& multilinestrings_lhs,
   geometry_column_view const& multilinestrings_rhs,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 }  // namespace cuspatial

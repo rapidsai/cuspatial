@@ -29,7 +29,7 @@ namespace test {
  * @brief Mixin to supply rmm resources for fixtures
  */
 class RMMResourceMixin {
-  rmm::device_async_resource_ref _mr{rmm::mr::get_current_device_resource()};
+  rmm::device_async_resource_ref _mr{rmm::mr::get_current_device_resource_ref()};
   rmm::cuda_stream_view _stream{rmm::cuda_stream_default};
 
  public:

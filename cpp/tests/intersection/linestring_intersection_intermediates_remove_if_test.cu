@@ -67,7 +67,7 @@ auto make_linestring_intersection_intermediates(std::initializer_list<IndexType>
 template <typename T>
 struct LinestringIntersectionIntermediatesRemoveIfTest : public ::testing::Test {
   rmm::cuda_stream_view stream() { return rmm::cuda_stream_default; }
-  rmm::device_async_resource_ref mr() { return rmm::mr::get_current_device_resource(); }
+  rmm::device_async_resource_ref mr() { return rmm::mr::get_current_device_resource_ref(); }
 
   template <typename FlagType, typename IntermediateType>
   void run_single(IntermediateType& intermediates,

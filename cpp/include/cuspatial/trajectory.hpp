@@ -63,7 +63,7 @@ std::pair<std::unique_ptr<cudf::table>, std::unique_ptr<cudf::column>> derive_tr
   cudf::column_view const& x,
   cudf::column_view const& y,
   cudf::column_view const& timestamp,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @brief Compute the distance and speed of objects in a trajectory. Groups the
@@ -96,7 +96,7 @@ std::unique_ptr<cudf::table> trajectory_distances_and_speeds(
   cudf::column_view const& x,
   cudf::column_view const& y,
   cudf::column_view const& timestamp,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @brief Compute the spatial bounding boxes of trajectories. Groups the x, y,
@@ -128,7 +128,7 @@ std::unique_ptr<cudf::table> trajectory_bounding_boxes(
   cudf::column_view const& object_id,
   cudf::column_view const& x,
   cudf::column_view const& y,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @} // end of doxygen group

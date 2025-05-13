@@ -51,7 +51,7 @@ std::pair<std::unique_ptr<cudf::column>, std::unique_ptr<cudf::column>> sinusoid
   double origin_lat,
   cudf::column_view const& input_lon,
   cudf::column_view const& input_lat,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @} // end of doxygen group

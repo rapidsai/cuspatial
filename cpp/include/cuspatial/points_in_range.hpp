@@ -61,7 +61,7 @@ std::unique_ptr<cudf::table> points_in_range(
   double range_max_y,
   cudf::column_view const& x,
   cudf::column_view const& y,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @} // end of doxygen group

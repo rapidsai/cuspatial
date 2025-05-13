@@ -87,7 +87,7 @@ std::unique_ptr<rmm::device_uvector<OffsetType>> derive_trajectories(
   PointOutputIt points_output_first,
   TimestampOutputIt timestamps_output_first,
   rmm::cuda_stream_view stream      = rmm::cuda_stream_default,
-  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource());
+  rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref());
 
 /**
  * @brief Compute the total distance (in meters) and average speed (in m/s) of objects in
