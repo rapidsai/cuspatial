@@ -3,7 +3,7 @@ files:
   all:
     output: conda
     matrix:
-      cuda: ["11.8", "12.8"]
+      cuda: ["12.8"]
       arch: [x86_64]
     includes:
       - build_cpp
@@ -187,40 +187,18 @@ dependencies:
         matrices:
           - matrix:
               arch: x86_64
-              cuda: "11.8"
-            packages:
-              - &gcc_amd64_cuda11 gcc_linux-64=11.*
-              - &sysroot_amd64 sysroot_linux-64==2.28
-          - matrix:
-              arch: aarch64
-              cuda: "11.8"
-            packages:
-              - &gcc_aarch64_cuda11 gcc_linux-aarch64=11.*
-              - &sysroot_aarch64 sysroot_linux-aarch64==2.28
-          - matrix:
-              arch: x86_64
               cuda: "12.*"
             packages:
               - &gcc_amd64 gcc_linux-64=13.*
-              - *sysroot_amd64
+              - &sysroot_amd64 sysroot_linux-64==2.28
           - matrix:
               arch: aarch64
               cuda: "12.*"
             packages:
               - &gcc_aarch64 gcc_linux-aarch64=13.*
-              - *sysroot_aarch64
+              - &sysroot_aarch64 sysroot_linux-aarch64==2.28
       - output_types: conda
         matrices:
-          - matrix:
-              arch: x86_64
-              cuda: "11.8"
-            packages:
-              - nvcc_linux-64=11.8
-          - matrix:
-              arch: aarch64
-              cuda: "11.8"
-            packages:
-              - nvcc_linux-aarch64=11.8
           - matrix:
               cuda: "12.*"
             packages:
@@ -242,18 +220,6 @@ dependencies:
         matrices:
           - matrix:
               arch: x86_64
-              cuda: "11.8"
-            packages:
-              - *gcc_amd64_cuda11
-              - *sysroot_amd64
-          - matrix:
-              arch: aarch64
-              cuda: "11.8"
-            packages:
-              - *gcc_aarch64_cuda11
-              - *sysroot_aarch64
-          - matrix:
-              arch: x86_64
               cuda: "12.*"
             packages:
               - *gcc_amd64
@@ -267,16 +233,6 @@ dependencies:
       - output_types: conda
         matrices:
           - matrix:
-              arch: x86_64
-              cuda: "11.8"
-            packages:
-              - nvcc_linux-64=11.8
-          - matrix:
-              arch: aarch64
-              cuda: "11.8"
-            packages:
-              - nvcc_linux-aarch64=11.8
-          - matrix:
               cuda: "12.*"
             packages:
               - cuda-nvcc
@@ -288,18 +244,6 @@ dependencies:
     specific:
       - output_types: conda
         matrices:
-          - matrix:
-              arch: x86_64
-              cuda: "11.8"
-            packages:
-              - *gcc_amd64_cuda11
-              - *sysroot_amd64
-          - matrix:
-              arch: aarch64
-              cuda: "11.8"
-            packages:
-              - *gcc_aarch64_cuda11
-              - *sysroot_aarch64
           - matrix:
               arch: x86_64
               cuda: "12.*"
@@ -333,22 +277,6 @@ dependencies:
       - output_types: conda
         matrices:
           - matrix:
-              cuda: "11.2"
-            packages:
-              - cuda-version=11.2
-          - matrix:
-              cuda: "11.4"
-            packages:
-              - cuda-version=11.4
-          - matrix:
-              cuda: "11.5"
-            packages:
-              - cuda-version=11.5
-          - matrix:
-              cuda: "11.8"
-            packages:
-              - cuda-version=11.8
-          - matrix:
               cuda: "12.0"
             packages:
               - cuda-version=12.0
@@ -374,10 +302,6 @@ dependencies:
               - cuda-cudart-dev
               - cuda-cupti-dev
               - cuda-nvrtc-dev
-          - matrix:
-              cuda: "11.*"
-            packages:
-              - cudatoolkit
   develop:
     common:
       - output_types: [conda, requirements]
@@ -419,13 +343,9 @@ dependencies:
     specific:
       - output_types: [conda, requirements, pyproject]
         matrices:
-          - matrix:
-              cuda: "12.*"
+          - matrix: # All CUDA 12 versions
             packages:
               - cuda-python>=12.6.2,<13.0a0
-          - matrix: # All CUDA 11 versions
-            packages:
-              - cuda-python>=11.8.5,<12.0a0
   # TODO: Remove geopandas.dataset usage in cuspatial_api_examples.ipynb
   test_notebooks:
     common:
@@ -495,11 +415,6 @@ dependencies:
               cuda_suffixed: "true"
             packages:
               - rmm-cu12==25.8.*,>=0.0.0a0
-          - matrix:
-              cuda: "11.*"
-              cuda_suffixed: "true"
-            packages:
-              - rmm-cu11==25.8.*,>=0.0.0a0
           - {matrix: null, packages: [*rmm_unsuffixed]}
 
   depends_on_cudf:
@@ -522,12 +437,6 @@ dependencies:
             packages:
               - cudf-cu12==25.8.*,>=0.0.0a0
               - pylibcudf-cu12==25.8.*,>=0.0.0a0
-          - matrix:
-              cuda: "11.*"
-              cuda_suffixed: "true"
-            packages:
-              - cudf-cu11==25.8.*,>=0.0.0a0
-              - pylibcudf-cu11==25.8.*,>=0.0.0a0
           - {matrix: null, packages: [*cudf_unsuffixed]}
 
   depends_on_libcudf:
@@ -548,11 +457,6 @@ dependencies:
               cuda_suffixed: "true"
             packages:
               - libcudf-cu12==25.8.*,>=0.0.0a0
-          - matrix:
-              cuda: "11.*"
-              cuda_suffixed: "true"
-            packages:
-              - libcudf-cu11==25.8.*,>=0.0.0a0
           - {matrix: null, packages: [*libcudf_unsuffixed]}
 
   depends_on_cuml:
@@ -573,11 +477,6 @@ dependencies:
               cuda_suffixed: "true"
             packages:
               - cuml-cu12==25.8.*,>=0.0.0a0
-          - matrix:
-              cuda: "11.*"
-              cuda_suffixed: "true"
-            packages:
-              - cuml-cu11==25.8.*,>=0.0.0a0
           - {matrix: null, packages: [*cuml_unsuffixed]}
 
   depends_on_cuspatial:
@@ -598,11 +497,6 @@ dependencies:
               cuda_suffixed: "true"
             packages:
               - cuspatial-cu12==25.8.*,>=0.0.0a0
-          - matrix:
-              cuda: "11.*"
-              cuda_suffixed: "true"
-            packages:
-              - cuspatial-cu11==25.8.*,>=0.0.0a0
           - {matrix: null, packages: [*cuspatial_unsuffixed]}
 
   depends_on_cuproj:
@@ -623,11 +517,6 @@ dependencies:
               cuda_suffixed: "true"
             packages:
               - cuproj-cu12==25.8.*,>=0.0.0a0
-          - matrix:
-              cuda: "11.*"
-              cuda_suffixed: "true"
-            packages:
-              - cuproj-cu11==25.8.*,>=0.0.0a0
           - {matrix: null, packages: [*cuproj_unsuffixed]}
 
   depends_on_cupy:
@@ -642,11 +531,8 @@ dependencies:
         matrices:
           - matrix: {cuda: "12.*"}
             packages:
-              - cupy-cuda12x>=12.0.0
-          - matrix: {cuda: "11.*"}
-            packages:
-              - &cupy_cu11 cupy-cuda11x>=12.0.0
-          - {matrix: null, packages: [*cupy_cu11]}
+              - &cupy_cu12 cupy-cuda12x>=12.0.0
+          - {matrix: null, packages: [*cupy_cu12]}
   test_libcuspatial:
     common:
       - output_types: conda
@@ -670,11 +556,6 @@ dependencies:
               cuda_suffixed: "true"
             packages:
               - libcuspatial-cu12==25.8.*,>=0.0.0a0
-          - matrix:
-              cuda: "11.*"
-              cuda_suffixed: "true"
-            packages:
-              - libcuspatial-cu11==25.8.*,>=0.0.0a0
           - {matrix: null, packages: [*libcuspatial_unsuffixed]}
 
   depends_on_librmm:
@@ -695,9 +576,4 @@ dependencies:
               cuda_suffixed: "true"
             packages:
               - librmm-cu12==25.8.*,>=0.0.0a0
-          - matrix:
-              cuda: "11.*"
-              cuda_suffixed: "true"
-            packages:
-              - librmm-cu11==25.8.*,>=0.0.0a0
           - {matrix: null, packages: [*librmm_unsuffixed]}
