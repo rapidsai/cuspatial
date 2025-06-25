@@ -163,12 +163,10 @@ files:
     includes:
       - depends_on_cuspatial
       - test_python_cuproj
-
 channels:
   - rapidsai
   - rapidsai-nightly
   - conda-forge
-  - nvidia
 dependencies:
   build_cpp:
     common:
@@ -476,7 +474,6 @@ dependencies:
       - output_types: [requirements, pyproject]
         packages:
           - pyproj>=3.6.0,<3.7a0
-
   depends_on_rmm:
     common:
       - output_types: conda
@@ -501,7 +498,6 @@ dependencies:
             packages:
               - rmm-cu11==25.8.*,>=0.0.0a0
           - {matrix: null, packages: [*rmm_unsuffixed]}
-
   depends_on_cudf:
     common:
       - output_types: conda
@@ -529,7 +525,6 @@ dependencies:
               - cudf-cu11==25.8.*,>=0.0.0a0
               - pylibcudf-cu11==25.8.*,>=0.0.0a0
           - {matrix: null, packages: [*cudf_unsuffixed]}
-
   depends_on_libcudf:
     common:
       - output_types: conda
@@ -554,7 +549,6 @@ dependencies:
             packages:
               - libcudf-cu11==25.8.*,>=0.0.0a0
           - {matrix: null, packages: [*libcudf_unsuffixed]}
-
   depends_on_cuml:
     common:
       - output_types: conda
@@ -579,7 +573,6 @@ dependencies:
             packages:
               - cuml-cu11==25.8.*,>=0.0.0a0
           - {matrix: null, packages: [*cuml_unsuffixed]}
-
   depends_on_cuspatial:
     common:
       - output_types: conda
@@ -604,7 +597,6 @@ dependencies:
             packages:
               - cuspatial-cu11==25.8.*,>=0.0.0a0
           - {matrix: null, packages: [*cuspatial_unsuffixed]}
-
   depends_on_cuproj:
     common:
       - output_types: conda
@@ -629,7 +621,6 @@ dependencies:
             packages:
               - cuproj-cu11==25.8.*,>=0.0.0a0
           - {matrix: null, packages: [*cuproj_unsuffixed]}
-
   depends_on_cupy:
     common:
       - output_types: conda
@@ -676,7 +667,6 @@ dependencies:
             packages:
               - libcuspatial-cu11==25.8.*,>=0.0.0a0
           - {matrix: null, packages: [*libcuspatial_unsuffixed]}
-
   depends_on_librmm:
     common:
       - output_types: conda
