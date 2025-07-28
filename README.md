@@ -1,3 +1,7 @@
+> [!IMPORTANT]  
+> The final release of this project was `v25.04`.
+> See https://docs.rapids.ai/notices/rsn0045/ for details.
+
 # <div align="left"><img src="https://rapids.ai/assets/images/rapids_logo.png" width="90px"/>&nbsp;cuSpatial - GPU-Accelerated Vector Geospatial Data Analysis</div>
 
 > **Note**
