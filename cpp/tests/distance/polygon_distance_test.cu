@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@
 #include <rmm/exec_policy.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
+#include <cuda/std/iterator>
 #include <thrust/iterator/zip_iterator.h>
 
 #include <initializer_list>
@@ -45,7 +46,7 @@ struct PairwisePolygonDistanceTest : BaseFixture {
     auto ret = pairwise_polygon_distance(lhs, rhs, got.begin(), stream());
 
     CUSPATIAL_EXPECT_VECTORS_EQUIVALENT(expected, got);
-    EXPECT_EQ(thrust::distance(got.begin(), ret), expected.size());
+    EXPECT_EQ(cuda::std::distance(got.begin(), ret), expected.size());
   }
 
   void run(std::initializer_list<std::size_t> lhs_multipolygon_geometry_offsets,

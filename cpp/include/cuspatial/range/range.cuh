@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@
 #include <cuspatial/cuda_utils.hpp>
 #include <cuspatial/traits.hpp>
 
+#include <cuda/std/iterator>
 #include <thrust/detail/raw_reference_cast.h>
-#include <thrust/distance.h>
 
 namespace cuspatial {
 
@@ -50,7 +50,7 @@ class range {
   /// Return the end iterator to the range
   auto CUSPATIAL_HOST_DEVICE end() { return _end; }
   /// Return the size of the range
-  auto CUSPATIAL_HOST_DEVICE size() { return thrust::distance(_begin, _end); }
+  auto CUSPATIAL_HOST_DEVICE size() { return cuda::std::distance(_begin, _end); }
 
   /// Access the `i`th element in the range
   template <typename IndexType>

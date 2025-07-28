@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
+#include <cuda/std/iterator>
 #include <thrust/detail/use_default.h>
-#include <thrust/distance.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_facade.h>
@@ -47,7 +47,8 @@ class scatter_output_iterator_proxy {
   template <typename T>
   __host__ __device__ scatter_output_iterator_proxy operator=(const T& element)
   {
-    auto const scatter_idx = static_cast<uint32_t>(*(scatter_map + thrust::distance(begin, out)));
+    auto const scatter_idx =
+      static_cast<uint32_t>(*(scatter_map + cuda::std::distance(begin, out)));
 
     if (scatter_idx != static_cast<uint32_t>(-1)) {
       // forward assignments if and only if the scatter map indicates to do so.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@
 #include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/traits.hpp>
 
+#include <cuda/std/iterator>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/tuple.h>
 
@@ -58,8 +59,8 @@ template <typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto linestring_ref<VecIterator>::num_segments() const
 {
   // The number of segment equals the number of points minus 1. And the number of points
-  // is thrust::distance(_point_begin, _point_end).
-  return thrust::distance(_point_begin, _point_end) - 1;
+  // is cuda::std::distance(_point_begin, _point_end).
+  return cuda::std::distance(_point_begin, _point_end) - 1;
 }
 
 template <typename VecIterator>

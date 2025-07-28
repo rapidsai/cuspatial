@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,9 @@
 #include <rmm/exec_policy.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/std/iterator>
 #include <thrust/copy.h>
 #include <thrust/count.h>
-#include <thrust/distance.h>
 #include <thrust/fill.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/counting_iterator.h>
@@ -64,7 +64,7 @@ inline rmm::device_uvector<uint32_t> compute_leaf_positions(
                                 leaf_pos.begin(),
                                 !thrust::placeholders::_1);
   // Shrink leaf_pos's underlying device allocation
-  leaf_pos.resize(thrust::distance(leaf_pos.begin(), result), stream);
+  leaf_pos.resize(cuda::std::distance(leaf_pos.begin(), result), stream);
   leaf_pos.shrink_to_fit(stream);
   return leaf_pos;
 }
@@ -281,7 +281,7 @@ inline std::pair<uint32_t, uint32_t> remove_unqualified_quads(
                       [max_size] __device__(auto const n) { return n <= max_size; });
 
   // add the number of level 1 nodes back in to num_valid_nodes
-  auto num_valid_nodes = thrust::distance(tree, last_valid) + level_1_size;
+  auto num_valid_nodes = cuda::std::distance(tree, last_valid) + level_1_size;
 
   quad_keys.resize(num_valid_nodes, stream);
   quad_keys.shrink_to_fit(stream);

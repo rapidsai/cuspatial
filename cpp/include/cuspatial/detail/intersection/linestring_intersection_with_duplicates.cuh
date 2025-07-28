@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,8 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/std/iterator>
 #include <thrust/binary_search.h>
-#include <thrust/distance.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/reduce.h>
@@ -127,9 +127,9 @@ struct offsets_update_functor {
 
   int __device__ operator()(int offset, int i)
   {
-    auto j = thrust::distance(
+    auto j = cuda::std::distance(
       reduced_keys_begin,
-      thrust::prev(thrust::upper_bound(thrust::seq, reduced_keys_begin, reduced_keys_end, i)));
+      cuda::std::prev(thrust::upper_bound(thrust::seq, reduced_keys_begin, reduced_keys_end, i)));
     // j < 0 happens when all groups that precedes `i` don't contain any geometry
     // offset must be 0 and shouldn't be subtracted.
     if (j < 0) return offset;
@@ -259,7 +259,7 @@ struct linestring_intersection_intermediates {
     thrust::inclusive_scan(rmm::exec_policy(stream),
                            num_geoms_per_pair.begin(),
                            num_geoms_per_pair.end(),
-                           thrust::next(offsets->begin()));
+                           cuda::std::next(offsets->begin()));
   }
 
   /** Given a flag array, remove the ith geometry if `flags[i] == 1`.
@@ -316,8 +316,8 @@ struct linestring_intersection_intermediates {
                             thrust::plus<index_t>());  // explicitly cast flags to index_t type
                                                        // before adding to avoid overflow.
 
-    reduced_keys.resize(thrust::distance(reduced_keys.begin(), keys_end), stream);
-    reduced_flags.resize(thrust::distance(reduced_flags.begin(), flags_end), stream);
+    reduced_keys.resize(cuda::std::distance(reduced_keys.begin(), keys_end), stream);
+    reduced_flags.resize(cuda::std::distance(reduced_flags.begin(), flags_end), stream);
 
     // Use `inclusive_scan` to compute the number of removed geometries in *all* previous lists.
     thrust::inclusive_scan(
@@ -345,7 +345,7 @@ struct linestring_intersection_intermediates {
                                          flags.begin(),
                                          [] __device__(uint8_t flag) { return flag == 1; });
 
-    auto new_geom_size = thrust::distance(geom_id_it, geom_id_end);
+    auto new_geom_size = cuda::std::distance(geom_id_it, geom_id_end);
     geoms->resize(new_geom_size, stream);
     lhs_linestring_ids->resize(new_geom_size, stream);
     lhs_segment_ids->resize(new_geom_size, stream);

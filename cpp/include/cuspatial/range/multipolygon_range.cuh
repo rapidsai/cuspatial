@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 
+#include <cuda/std/iterator>
 #include <thrust/pair.h>
 
 namespace cuspatial {
@@ -242,13 +243,13 @@ make_multipolygon_range(GeometryIteratorDiffType num_multipolygons,
 {
   return multipolygon_range{
     geometry_begin,
-    thrust::next(geometry_begin, num_multipolygons + 1),
+    cuda::std::next(geometry_begin, num_multipolygons + 1),
     part_begin,
-    thrust::next(part_begin, num_polygons + 1),
+    cuda::std::next(part_begin, num_polygons + 1),
     ring_begin,
-    thrust::next(ring_begin, num_rings + 1),
+    cuda::std::next(ring_begin, num_rings + 1),
     point_begin,
-    thrust::next(point_begin, num_points),
+    cuda::std::next(point_begin, num_points),
   };
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 #include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/range/multilinestring_range.cuh>
 
+#include <cuda/std/iterator>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 
@@ -100,7 +101,7 @@ TYPED_TEST(PairwiseLinestringDistanceTest, FromSamePointArrayInput)
                                                   offset_b.size() - 1,
                                                   offset_b.begin(),
                                                   4,
-                                                  thrust::next(cart2ds.begin()));
+                                                  cuda::std::next(cart2ds.begin()));
 
   auto ret = pairwise_linestring_distance(mlinestrings1, mlinestrings2, got.begin());
 

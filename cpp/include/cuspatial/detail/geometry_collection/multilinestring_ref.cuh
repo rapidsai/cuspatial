@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 #include <cuspatial/geometry/linestring_ref.cuh>
 #include <cuspatial/iterator_factory.cuh>
 
+#include <cuda/std/iterator>
 #include <thrust/iterator/transform_iterator.h>
 
 namespace cuspatial {
@@ -55,7 +56,7 @@ CUSPATIAL_HOST_DEVICE multilinestring_ref<PartIterator, VecIterator>::multilines
 template <typename PartIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto multilinestring_ref<PartIterator, VecIterator>::num_linestrings() const
 {
-  return thrust::distance(_part_begin, _part_end) - 1;
+  return cuda::std::distance(_part_begin, _part_end) - 1;
 }
 
 template <typename PartIterator, typename VecIterator>
@@ -74,7 +75,7 @@ CUSPATIAL_HOST_DEVICE auto multilinestring_ref<PartIterator, VecIterator>::part_
 template <typename PartIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto multilinestring_ref<PartIterator, VecIterator>::point_begin() const
 {
-  return thrust::next(_point_begin, *_part_begin);
+  return cuda::std::next(_point_begin, *_part_begin);
 }
 
 template <typename PartIterator, typename VecIterator>
@@ -82,7 +83,7 @@ CUSPATIAL_HOST_DEVICE auto multilinestring_ref<PartIterator, VecIterator>::point
 {
   // _part_end refers to the one past the last part index to the points of this multilinestring.
   // So prior to computing the end point index, we need to decrement _part_end.
-  return thrust::next(_point_begin, *thrust::prev(_part_end));
+  return cuda::std::next(_point_begin, *cuda::std::prev(_part_end));
 }
 
 template <typename PartIterator, typename VecIterator>

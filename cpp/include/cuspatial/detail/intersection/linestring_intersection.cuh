@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/atomic>
+#include <cuda/std/iterator>
 #include <thrust/binary_search.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
@@ -116,9 +117,9 @@ struct types_buffer_functor {
   template <typename index_t>
   type_t __device__ operator()(index_t i)
   {
-    auto geometry_idx = thrust::distance(
+    auto geometry_idx = cuda::std::distance(
       geometric_column_offset.begin(),
-      thrust::prev(thrust::upper_bound(
+      cuda::std::prev(thrust::upper_bound(
         thrust::seq, geometric_column_offset.begin(), geometric_column_offset.end(), i)));
 
     auto num_points   = points_offset[geometry_idx + 1] - points_offset[geometry_idx];

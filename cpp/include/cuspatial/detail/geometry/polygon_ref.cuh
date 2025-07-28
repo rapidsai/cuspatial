@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 #include <cuspatial/iterator_factory.cuh>
 #include <cuspatial/traits.hpp>
 
+#include <cuda/std/iterator>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/tuple.h>
 
@@ -44,7 +45,7 @@ CUSPATIAL_HOST_DEVICE polygon_ref<RingIterator, VecIterator>::polygon_ref(RingIt
 template <typename RingIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto polygon_ref<RingIterator, VecIterator>::num_rings() const
 {
-  return thrust::distance(_ring_begin, _ring_end) - 1;
+  return cuda::std::distance(_ring_begin, _ring_end) - 1;
 }
 
 template <typename RingIterator, typename VecIterator>
@@ -63,13 +64,13 @@ CUSPATIAL_HOST_DEVICE auto polygon_ref<RingIterator, VecIterator>::ring_end() co
 template <typename RingIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto polygon_ref<RingIterator, VecIterator>::point_begin() const
 {
-  return thrust::next(_point_begin, *_ring_begin);
+  return cuda::std::next(_point_begin, *_ring_begin);
 }
 
 template <typename RingIterator, typename VecIterator>
 CUSPATIAL_HOST_DEVICE auto polygon_ref<RingIterator, VecIterator>::point_end() const
 {
-  return thrust::next(_point_begin, *thrust::prev(_ring_end));
+  return cuda::std::next(_point_begin, *cuda::std::prev(_ring_end));
 }
 
 template <typename RingIterator, typename VecIterator>

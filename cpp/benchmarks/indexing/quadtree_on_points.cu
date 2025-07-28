@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 #include <rmm/device_vector.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <cuda/std/iterator>
 #include <thrust/host_vector.h>
 
 #include <nvbench/nvbench.cuh>
@@ -104,13 +105,13 @@ void quadtree_on_points_benchmark(nvbench::state& state, nvbench::type_list<T>)
     thrust::device, d_points.begin(), d_points.end(), [] __device__(auto const& a, auto const& b) {
       return a.x <= b.x && a.y <= b.y;
     });
-  auto const vertex_1 = h_points[thrust::distance(d_points.begin(), vertex_1_itr)];
+  auto const vertex_1 = h_points[cuda::std::distance(d_points.begin(), vertex_1_itr)];
 
   auto const vertex_2_itr = thrust::max_element(
     thrust::device, d_points.begin(), d_points.end(), [] __device__(auto const& a, auto const& b) {
       return a.x >= b.x && a.y >= b.y;
     });
-  auto const vertex_2 = h_points[thrust::distance(d_points.begin(), vertex_2_itr)];
+  auto const vertex_2 = h_points[cuda::std::distance(d_points.begin(), vertex_2_itr)];
 
   // TODO: to be replaced by nvbench fixture once it's ready
   cuspatial::rmm_pool_raii rmm_pool;

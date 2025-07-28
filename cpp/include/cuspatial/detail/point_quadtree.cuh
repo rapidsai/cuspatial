@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/functional>
-#include <thrust/distance.h>
+#include <cuda/std/iterator>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/tuple.h>
@@ -246,7 +246,7 @@ std::pair<rmm::device_uvector<uint32_t>, point_quadtree> quadtree_on_points(
   rmm::cuda_stream_view stream,
   rmm::device_async_resource_ref mr)
 {
-  auto num_points = thrust::distance(points_first, points_last);
+  auto num_points = cuda::std::distance(points_first, points_last);
   if (num_points <= 0) {
     return std::make_pair(rmm::device_uvector<uint32_t>(0, stream),
                           point_quadtree{rmm::device_uvector<uint32_t>(0, stream),

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@
 #include <rmm/device_uvector.hpp>
 #include <rmm/exec_policy.hpp>
 
+#include <cuda/std/iterator>
 #include <thrust/copy.h>
-#include <thrust/distance.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
@@ -48,7 +48,7 @@ inline int32_t copy_leaf_intersections(InputIterator input_begin,
                                        OutputIterator output_begin,
                                        rmm::cuda_stream_view stream)
 {
-  return thrust::distance(
+  return cuda::std::distance(
     output_begin,
     thrust::copy_if(
       rmm::exec_policy(stream), input_begin, input_end, output_begin, [] __device__(auto const& t) {
@@ -62,7 +62,7 @@ inline int32_t remove_non_quad_intersections(InputIterator input_begin,
                                              OutputIterator output_begin,
                                              rmm::cuda_stream_view stream)
 {
-  return thrust::distance(
+  return cuda::std::distance(
     output_begin,
     thrust::remove_if(
       rmm::exec_policy(stream), input_begin, input_end, output_begin, [] __device__(auto const& t) {

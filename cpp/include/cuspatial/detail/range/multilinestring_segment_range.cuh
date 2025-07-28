@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 
+#include <cuda/std/iterator>
 #include <thrust/device_vector.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -105,9 +106,9 @@ struct to_valid_segment_functor {
   template <typename IndexType>
   CUSPATIAL_HOST_DEVICE segment<element_t> operator()(IndexType sid)
   {
-    auto kit =
-      thrust::prev(thrust::upper_bound(thrust::seq, segment_offset_begin, segment_offset_end, sid));
-    auto part_id                         = thrust::distance(segment_offset_begin, kit);
+    auto kit = cuda::std::prev(
+      thrust::upper_bound(thrust::seq, segment_offset_begin, segment_offset_end, sid));
+    auto part_id                         = cuda::std::distance(segment_offset_begin, kit);
     auto preceding_non_empty_linestrings = non_empty_partitions_begin[part_id];
     auto pid                             = sid + preceding_non_empty_linestrings;
 
@@ -214,8 +215,8 @@ class multilinestring_segment_range {
   /// multipolygon
   CUSPATIAL_HOST_DEVICE auto multigeometry_count_begin()
   {
-    auto zipped_offset_it = thrust::make_zip_iterator(multigeometry_offset_begin(),
-                                                      thrust::next(multigeometry_offset_begin()));
+    auto zipped_offset_it = thrust::make_zip_iterator(
+      multigeometry_offset_begin(), cuda::std::next(multigeometry_offset_begin()));
 
     return thrust::make_transform_iterator(zipped_offset_it, offset_pair_to_count_functor{});
   }

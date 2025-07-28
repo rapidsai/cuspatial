@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/functional>
+#include <cuda/std/iterator>
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
@@ -55,9 +56,9 @@ inline __device__ std::pair<uint32_t, uint32_t> get_local_linestring_index_and_c
 
   return std::make_pair(
     // local_linestring_index
-    static_cast<uint32_t>(thrust::distance(lhs, quad_offsets + linestring_index)),
+    static_cast<uint32_t>(cuda::std::distance(lhs, quad_offsets + linestring_index)),
     // num_linestrings_in_quad
-    static_cast<uint32_t>(thrust::distance(lhs, rhs)));
+    static_cast<uint32_t>(cuda::std::distance(lhs, rhs)));
 }
 
 template <typename QuadOffsetsIter, typename QuadLengthsIter>
@@ -293,7 +294,7 @@ quadtree_point_to_nearest_linestring(LinestringIndexIterator linestring_indices_
         return d_lhs < d_rhs ? lhs : rhs;
       }));
 
-  auto const num_distances = thrust::distance(point_idxs.begin(), point_idxs_end.first);
+  auto const num_distances = cuda::std::distance(point_idxs.begin(), point_idxs_end.first);
 
   auto point_linestring_idxs_and_distances = thrust::make_zip_iterator(
     point_idxs.begin(), output_linestring_idxs.begin(), output_distances.begin());

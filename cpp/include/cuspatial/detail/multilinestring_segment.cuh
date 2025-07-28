@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@
 #include <rmm/exec_policy.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 
+#include <cuda/std/iterator>
 #include <thrust/device_vector.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -86,7 +87,7 @@ class multilinestring_segment_manager {
   {
     auto offset_range = ::cuspatial::range{_parent.part_offset_begin(), _parent.part_offset_end()};
     auto count_begin  = thrust::make_transform_iterator(
-      thrust::make_zip_iterator(offset_range.begin(), thrust::next(offset_range.begin())),
+      thrust::make_zip_iterator(offset_range.begin(), cuda::std::next(offset_range.begin())),
       offset_pair_to_count_functor{});
 
     auto count_greater_than_zero =
@@ -98,7 +99,7 @@ class multilinestring_segment_manager {
     thrust::inclusive_scan(rmm::exec_policy(stream),
                            count_greater_than_zero,
                            count_greater_than_zero + _parent.num_linestrings(),
-                           thrust::next(_non_empty_linestring_prefix_sum.begin()));
+                           cuda::std::next(_non_empty_linestring_prefix_sum.begin()));
 
     _num_segments = _parent.num_points() - _non_empty_linestring_prefix_sum.element(
                                              _non_empty_linestring_prefix_sum.size() - 1, stream);
